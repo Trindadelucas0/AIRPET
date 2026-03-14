@@ -1,0 +1,68 @@
+<% locals.titulo = 'Escolher Pet' %>
+<%- include('../partials/header') %>
+<%- include('../partials/flash') %>
+
+<main class="flex-1 container mx-auto px-4 py-8 max-w-2xl">
+
+  <a href="/pets" class="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-[#ec5a1c] transition-colors mb-6">
+    <i class="fa-solid fa-arrow-left text-xs"></i> Meus Pets
+  </a>
+
+  <div class="text-center mb-8">
+    <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-[#ec5a1c]/10 mb-4">
+      <i class="fa-solid fa-link text-3xl text-[#ec5a1c]"></i>
+    </div>
+    <h1 class="text-2xl font-bold text-gray-900">Qual pet usara esta tag?</h1>
+    <p class="text-gray-500 text-sm mt-2">Selecione o pet que sera vinculado a tag <strong class="font-mono"><%= tag_code %></strong></p>
+  </div>
+
+  <% if (typeof pets !== 'undefined' && pets.length > 0) { %>
+    <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-8">
+      <% pets.forEach(function(pet) { %>
+        <form action="/tags/<%= tag_code %>/vincular-pet" method="POST">
+          <input type="hidden" name="pet_id" value="<%= pet.id %>">
+          <button type="submit"
+                  class="w-full card hover:shadow-md hover:border-[#ec5a1c]/30 border-2 border-transparent transition-all group text-left">
+            <div class="relative mb-3">
+              <% if (pet.foto) { %>
+                <img src="<%= pet.foto %>" alt="<%= pet.nome %>"
+                     class="w-full aspect-square object-cover rounded-xl bg-gray-100">
+              <% } else { %>
+                <div class="w-full aspect-square rounded-xl bg-gray-100 flex items-center justify-center">
+                  <i class="fa-solid fa-paw text-3xl text-gray-300"></i>
+                </div>
+              <% } %>
+              <div class="absolute inset-0 rounded-xl bg-[#ec5a1c]/0 group-hover:bg-[#ec5a1c]/10 transition-colors flex items-center justify-center">
+                <i class="fa-solid fa-check-circle text-3xl text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-lg"></i>
+              </div>
+            </div>
+            <p class="text-sm font-bold text-gray-800 text-center truncate"><%= pet.nome %></p>
+            <p class="text-xs text-gray-400 text-center mt-0.5">
+              <%= pet.tipo ? pet.tipo.charAt(0).toUpperCase() + pet.tipo.slice(1) : '' %>
+              <%= pet.raca ? '· ' + pet.raca : '' %>
+            </p>
+          </button>
+        </form>
+      <% }); %>
+    </div>
+  <% } else { %>
+    <div class="card text-center py-12 mb-8">
+      <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-4">
+        <i class="fa-solid fa-dog text-2xl text-gray-400"></i>
+      </div>
+      <h2 class="text-lg font-bold text-gray-800 mb-2">Nenhum pet cadastrado</h2>
+      <p class="text-gray-500 text-sm">Cadastre um pet primeiro para vincular a tag.</p>
+    </div>
+  <% } %>
+
+  <div class="text-center">
+    <a href="/pets/cadastro?tag=<%= tag_code %>"
+       class="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold text-[#ec5a1c] border-2 border-[#ec5a1c] hover:bg-[#ec5a1c] hover:text-white transition-colors">
+      <i class="fa-solid fa-plus"></i>
+      Cadastrar novo pet
+    </a>
+  </div>
+
+</main>
+
+<%- include('../partials/footer') %>

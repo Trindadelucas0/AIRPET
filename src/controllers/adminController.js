@@ -1,0 +1,576 @@
+/**
+ * adminController.js — Controller Administrativo do AIRPET
+ *
+ * Gerencia todas as funcionalidades do painel administrativo.
+ * Apenas usuários com role 'admin' podem acessar estas rotas
+ * (protegido pelo middleware adminMiddleware).
+ *
+ * Funcionalidades do painel admin:
+ *   - Dashboard com métricas gerais do sistema
+ *   - Gestão de usuários, pets, petshops
+ *   - Aprovação de alertas de pets perdidos
+ *   - Moderação de mensagens do chat
+ *   - Configurações globais do sistema
+ *   - Gestão de pontos no mapa
+ *   - Escalação de alertas de pets perdidos
+ *
+ * O dashboard agrega contadores de diversas tabelas usando
+ * Promise.all para executar as queries em paralelo.
+ *
+ * Rotas:
+ *   GET  /admin/dashboard           → dashboard
+ *   GET  /admin/usuarios            → listarUsuarios
+ *   GET  /admin/pets                → listarPets
+ *   GET  /admin/petshops            → listarPetshops
+ *   GET  /admin/pets-perdidos       → listarPerdidos
+ *   POST /admin/pets-perdidos/:id/aprovar   → aprovarPerdido
+ *   POST /admin/pets-perdidos/:id/escalar   → escalarAlerta
+ *   GET  /admin/moderacao           → mostrarModeracao
+ *   GET  /admin/configuracoes       → mostrarConfiguracoes
+ *   POST /admin/configuracoes       → salvarConfiguracoes
+ *   GET  /admin/gerenciar-mapa      → mostrarGerenciarMapa
+ *   GET  /admin/mapa                → mostrarMapa
+ */
+
+const Usuario = require('../models/Usuario');
+const Pet = require('../models/Pet');
+const Petshop = require('../models/Petshop');
+const PetPerdido = require('../models/PetPerdido');
+const MensagemChat = require('../models/MensagemChat');
+const Notificacao = require('../models/Notificacao');
+const ConfigSistema = require('../models/ConfigSistema');
+const PontoMapa = require('../models/PontoMapa');
+const notificacaoService = require('../services/notificacaoService');
+const logger = require('../utils/logger');
+
+/**
+ * dashboard — Exibe o painel administrativo com métricas gerais
+ *
+ * Rota: GET /admin/dashboard
+ * View: admin/dashboard
+ *
+ * Agrega contadores de diversas tabelas:
+ *   - Total de usuários cadastrados
+ *   - Total de pets cadastrados
+ *   - Total de pets perdidos (alertas ativos)
+ *   - Total de petshops parceiros
+ *   - Total de mensagens pendentes de moderação
+ *   - Total de alertas pendentes de aprovação
+ *
+ * Todas as queries são executadas em PARALELO via Promise.all
+ * para minimizar o tempo de carregamento da página.
+ *
+ * @param {object} req - Requisição Express
+ * @param {object} res - Resposta Express
+ */
+async function dashboard(req, res) {
+  try {
+    /*
+     * Executa todas as contagens em paralelo.
+     * Promise.all dispara todas as queries simultaneamente
+     * e aguarda todas terminarem antes de prosseguir.
+     * Isso é significativamente mais rápido que executar sequencialmente.
+     */
+    const [
+      usuarios,
+      pets,
+      perdidos,
+      petshops,
+      mensagens,
+      tags,
+    ] = await Promise.all([
+      Usuario.contarTotal(),
+      Pet.contarTotal(),
+      PetPerdido.contarAtivos(),
+      Petshop.contarTotal(),
+      MensagemChat.contarPendentes(),
+      PetPerdido.listarPendentes().then(lista => lista.length),
+    ]);
+
+    return res.render('admin/dashboard', {
+      titulo: 'Painel Administrativo - AIRPET',
+      stats: { usuarios, pets, perdidos, petshops, mensagens, tags },
+    });
+  } catch (erro) {
+    logger.error('AdminController', 'Erro ao carregar dashboard', erro);
+    req.session.flash = { tipo: 'erro', mensagem: 'Erro ao carregar o painel administrativo.' };
+    return res.redirect('/');
+  }
+}
+
+/**
+ * listarUsuarios — Lista todos os usuários do sistema
+ *
+ * Rota: GET /admin/usuarios
+ * View: admin/usuarios
+ *
+ * Exibe todos os usuários (tutores e admins) com seus dados.
+ * Ordenados do mais recente ao mais antigo.
+ *
+ * @param {object} req - Requisição Express
+ * @param {object} res - Resposta Express
+ */
+async function listarUsuarios(req, res) {
+  try {
+    const usuarios = await Usuario.listarTodos();
+
+    return res.render('admin/usuarios', {
+      titulo: 'Usuários - AIRPET',
+      usuarios,
+    });
+  } catch (erro) {
+    logger.error('AdminController', 'Erro ao listar usuários', erro);
+    req.session.flash = { tipo: 'erro', mensagem: 'Erro ao carregar a lista de usuários.' };
+    return res.redirect('/admin');
+  }
+}
+
+/**
+ * listarPets — Lista todos os pets do sistema
+ *
+ * Rota: GET /admin/pets
+ * View: admin/pets
+ *
+ * Exibe todos os pets com o nome do dono (via JOIN).
+ *
+ * @param {object} req - Requisição Express
+ * @param {object} res - Resposta Express
+ */
+async function listarPets(req, res) {
+  try {
+    const pets = await Pet.listarTodos();
+
+    return res.render('admin/pets', {
+      titulo: 'Pets - AIRPET',
+      pets,
+    });
+  } catch (erro) {
+    logger.error('AdminController', 'Erro ao listar pets', erro);
+    req.session.flash = { tipo: 'erro', mensagem: 'Erro ao carregar a lista de pets.' };
+    return res.redirect('/admin');
+  }
+}
+
+/**
+ * listarPetshops — Lista todos os petshops (ativos e inativos)
+ *
+ * Rota: GET /admin/petshops
+ * View: admin/petshops
+ *
+ * Diferente da lista pública, o admin vê TODOS os petshops,
+ * incluindo os inativos que não aparecem no mapa.
+ *
+ * @param {object} req - Requisição Express
+ * @param {object} res - Resposta Express
+ */
+async function listarPetshops(req, res) {
+  try {
+    /* listarTodos() retorna ativos E inativos */
+    const petshops = await Petshop.listarTodos();
+
+    return res.render('admin/petshops', {
+      titulo: 'Petshops - AIRPET',
+      petshops,
+    });
+  } catch (erro) {
+    logger.error('AdminController', 'Erro ao listar petshops', erro);
+    req.session.flash = { tipo: 'erro', mensagem: 'Erro ao carregar a lista de petshops.' };
+    return res.redirect('/admin');
+  }
+}
+
+/**
+ * listarPerdidos — Lista todos os alertas de pets perdidos
+ *
+ * Rota: GET /admin/pets-perdidos
+ * View: admin/pets-perdidos
+ *
+ * Exibe todos os alertas (pendentes, aprovados, resolvidos)
+ * com dados enriquecidos do pet e do tutor.
+ *
+ * @param {object} req - Requisição Express
+ * @param {object} res - Resposta Express
+ */
+async function listarPerdidos(req, res) {
+  try {
+    const perdidos = await PetPerdido.listarTodos();
+
+    return res.render('admin/pets-perdidos', {
+      titulo: 'Pets Perdidos - AIRPET',
+      perdidos,
+    });
+  } catch (erro) {
+    logger.error('AdminController', 'Erro ao listar pets perdidos', erro);
+    req.session.flash = { tipo: 'erro', mensagem: 'Erro ao carregar a lista de pets perdidos.' };
+    return res.redirect('/admin');
+  }
+}
+
+/**
+ * aprovarPerdido — Aprova um alerta de pet perdido
+ *
+ * Rota: POST /admin/pets-perdidos/:id/aprovar
+ *
+ * Fluxo:
+ *   1. Busca o alerta pelo ID
+ *   2. Aprova o alerta (status → aprovado, nível de alerta → 1)
+ *   3. Dispara notificações de proximidade para usuários próximos
+ *   4. Redireciona com mensagem de sucesso
+ *
+ * Ao aprovar, o sistema pode disparar notificações para usuários
+ * que estejam dentro do raio configurado (config_sistema.raio_notificacao).
+ * As notificações são criadas via Notificacao.criarParaMultiplos().
+ *
+ * @param {object} req - Requisição Express com params.id
+ * @param {object} res - Resposta Express
+ */
+async function aprovarPerdido(req, res) {
+  try {
+    const { id } = req.params;
+
+    /* Busca o alerta para obter dados completos */
+    const alerta = await PetPerdido.buscarPorId(id);
+
+    if (!alerta) {
+      req.session.flash = { tipo: 'erro', mensagem: 'Alerta de pet perdido não encontrado.' };
+      return res.redirect('/admin/pets-perdidos');
+    }
+
+    await PetPerdido.aprovar(id);
+
+    try {
+      await notificacaoService.criar(alerta.usuario_id, 'alerta',
+        `O alerta para ${alerta.pet_nome} foi aprovado e está visível no mapa.`,
+        `/pets/${alerta.pet_id}`
+      );
+    } catch (e) { logger.error('AdminController', 'Erro notificação tutor', e); }
+
+    try {
+      const configs = await ConfigSistema.listarTodas();
+      const raioConfig = configs.find(c => c.chave === 'raio_alerta_nivel1_km');
+      const raioKm = raioConfig ? parseFloat(raioConfig.valor) : 1;
+      if (alerta.latitude && alerta.longitude) {
+        await notificacaoService.notificarProximos(id, raioKm);
+      }
+    } catch (e) { logger.error('AdminController', 'Erro notificação proximidade (não crítico)', e); }
+
+    logger.info('AdminController', `Alerta aprovado: ${id} (pet: ${alerta.pet_nome})`);
+
+    req.session.flash = { tipo: 'sucesso', mensagem: `Alerta de ${alerta.pet_nome} aprovado. O alerta agora está visível no mapa.` };
+    return res.redirect('/admin/pets-perdidos');
+  } catch (erro) {
+    logger.error('AdminController', 'Erro ao aprovar alerta de pet perdido', erro);
+    req.session.flash = { tipo: 'erro', mensagem: 'Erro ao aprovar o alerta.' };
+    return res.redirect('/admin/pets-perdidos');
+  }
+}
+
+/**
+ * escalarAlerta — Escalona manualmente o nível de alerta de um pet perdido
+ *
+ * Rota: POST /admin/pets-perdidos/:id/escalar
+ *
+ * Níveis de alerta:
+ *   1 → Raio pequeno (ex: 2km) — notifica apenas vizinhança
+ *   2 → Raio médio (ex: 5km) — notifica bairros próximos
+ *   3 → Raio grande (ex: 15km) — notifica toda a cidade
+ *
+ * Cada escalação amplia o raio de notificação, alcançando
+ * mais voluntários que possam ajudar na busca.
+ *
+ * @param {object} req - Requisição Express com params.id e body.nivel
+ * @param {object} res - Resposta Express
+ */
+async function escalarAlerta(req, res) {
+  try {
+    const { id } = req.params;
+    const { nivel } = req.body;
+
+    /* Valida o nível de alerta (deve ser 1, 2 ou 3) */
+    const nivelNumero = parseInt(nivel, 10);
+    if (!nivelNumero || nivelNumero < 1 || nivelNumero > 3) {
+      req.session.flash = { tipo: 'erro', mensagem: 'O nível de alerta deve ser 1, 2 ou 3.' };
+      return res.redirect('/admin/pets-perdidos');
+    }
+
+    /* Busca o alerta para verificar existência */
+    const alerta = await PetPerdido.buscarPorId(id);
+
+    if (!alerta) {
+      req.session.flash = { tipo: 'erro', mensagem: 'Alerta de pet perdido não encontrado.' };
+      return res.redirect('/admin/pets-perdidos');
+    }
+
+    await PetPerdido.atualizarNivel(id, nivelNumero);
+
+    try {
+      const configs = await ConfigSistema.listarTodas();
+      const raioKey = `raio_alerta_nivel${nivelNumero}_km`;
+      const raioConfig = configs.find(c => c.chave === raioKey);
+      const raioKm = raioConfig ? parseFloat(raioConfig.valor) : (nivelNumero === 1 ? 1 : nivelNumero === 2 ? 3 : 0);
+      if (alerta.latitude && alerta.longitude && raioKm > 0) {
+        await notificacaoService.notificarProximos(id, raioKm);
+      } else if (raioKm === 0) {
+        await notificacaoService.notificarProximos(id, 999);
+      }
+    } catch (e) { logger.error('AdminController', 'Erro notificação escalar', e); }
+
+    logger.info('AdminController', `Alerta ${id} escalado para nível ${nivelNumero}`);
+
+    req.session.flash = { tipo: 'sucesso', mensagem: `Nível de alerta atualizado para ${nivelNumero}. Notificações enviadas.` };
+    return res.redirect('/admin/pets-perdidos');
+  } catch (erro) {
+    logger.error('AdminController', 'Erro ao escalar alerta', erro);
+    req.session.flash = { tipo: 'erro', mensagem: 'Erro ao atualizar o nível de alerta.' };
+    return res.redirect('/admin/pets-perdidos');
+  }
+}
+
+/**
+ * mostrarModeracao — Exibe a página de moderação de mensagens
+ *
+ * Rota: GET /admin/moderacao
+ * View: admin/moderacao
+ *
+ * Lista todas as mensagens de chat que estão pendentes de moderação.
+ * O admin pode aprovar ou rejeitar cada mensagem.
+ * Mensagens aprovadas ficam visíveis na conversa.
+ * Mensagens rejeitadas são ocultadas permanentemente.
+ *
+ * @param {object} req - Requisição Express
+ * @param {object} res - Resposta Express
+ */
+async function mostrarModeracao(req, res) {
+  try {
+    /* Busca todas as mensagens com status 'pendente' */
+    const mensagensPendentes = await MensagemChat.buscarPendentes();
+
+    return res.render('admin/moderacao', {
+      titulo: 'Moderação de Mensagens - AIRPET',
+      mensagens: mensagensPendentes,
+    });
+  } catch (erro) {
+    logger.error('AdminController', 'Erro ao carregar moderação', erro);
+    req.session.flash = { tipo: 'erro', mensagem: 'Erro ao carregar as mensagens para moderação.' };
+    return res.redirect('/admin');
+  }
+}
+
+/**
+ * mostrarConfiguracoes — Exibe a página de configurações do sistema
+ *
+ * Rota: GET /admin/configuracoes
+ * View: admin/configuracoes
+ *
+ * Mostra todos os pares chave-valor de configuração do sistema.
+ * O admin pode editar os valores diretamente nesta página.
+ *
+ * Exemplos de configurações:
+ *   - raio_busca_metros: raio de busca padrão no mapa
+ *   - raio_notificacao: raio para notificações de proximidade
+ *   - max_upload_tamanho: tamanho máximo de upload de fotos
+ *   - intervalo_vacina_alerta: dias de antecedência para alerta de vacina
+ *
+ * @param {object} req - Requisição Express
+ * @param {object} res - Resposta Express
+ */
+async function mostrarConfiguracoes(req, res) {
+  try {
+    /* Busca todas as configurações ordenadas por chave */
+    const configuracoes = await ConfigSistema.listarTodas();
+
+    return res.render('admin/configuracoes', {
+      titulo: 'Configurações do Sistema - AIRPET',
+      configuracoes,
+    });
+  } catch (erro) {
+    logger.error('AdminController', 'Erro ao carregar configurações', erro);
+    req.session.flash = { tipo: 'erro', mensagem: 'Erro ao carregar as configurações.' };
+    return res.redirect('/admin');
+  }
+}
+
+/**
+ * salvarConfiguracoes — Salva as configurações do sistema
+ *
+ * Rota: POST /admin/configuracoes
+ *
+ * Recebe um objeto com pares chave-valor no corpo da requisição.
+ * Atualiza cada configuração individualmente no banco.
+ *
+ * O body esperado tem a estrutura:
+ *   { config_chave1: 'novo_valor1', config_chave2: 'novo_valor2', ... }
+ *
+ * @param {object} req - Requisição Express com body contendo pares chave-valor
+ * @param {object} res - Resposta Express
+ */
+async function salvarConfiguracoes(req, res) {
+  try {
+    const configs = req.body.config || req.body;
+
+    const promessas = Object.entries(configs).map(([chave, valor]) => {
+      return ConfigSistema.atualizar(chave, valor);
+    });
+
+    await Promise.all(promessas);
+
+    logger.info('AdminController', `Configurações atualizadas: ${Object.keys(configs).length} itens`);
+
+    req.session.flash = { tipo: 'sucesso', mensagem: 'Configurações salvas com sucesso!' };
+    return res.redirect('/admin/configuracoes');
+  } catch (erro) {
+    logger.error('AdminController', 'Erro ao salvar configurações', erro);
+    req.session.flash = { tipo: 'erro', mensagem: 'Erro ao salvar as configurações.' };
+    return res.redirect('/admin/configuracoes');
+  }
+}
+
+/**
+ * mostrarGerenciarMapa — Exibe a página de gestão de pontos do mapa
+ *
+ * Rota: GET /admin/gerenciar-mapa
+ * View: admin/gerenciar-mapa
+ *
+ * Mostra todos os pontos de interesse cadastrados no mapa
+ * com opções de criar, editar, ativar/desativar e deletar.
+ *
+ * @param {object} req - Requisição Express
+ * @param {object} res - Resposta Express
+ */
+async function mostrarGerenciarMapa(req, res) {
+  try {
+    const pontos = await PontoMapa.listarTodos();
+
+    return res.render('admin/gerenciar-mapa', {
+      titulo: 'Gerenciar Mapa - AIRPET',
+      pontos,
+    });
+  } catch (erro) {
+    logger.error('AdminController', 'Erro ao carregar gerenciar mapa', erro);
+    req.session.flash = { tipo: 'erro', mensagem: 'Erro ao carregar a gestão do mapa.' };
+    return res.redirect('/admin');
+  }
+}
+
+/**
+ * mostrarMapa — Exibe o mapa administrativo completo
+ *
+ * Rota: GET /admin/mapa
+ * View: admin/mapa
+ *
+ * Mostra o mapa com TODOS os dados sobrepostos:
+ *   - Pontos de interesse (abrigos, ONGs, clínicas)
+ *   - Petshops parceiros
+ *   - Alertas de pets perdidos ativos
+ *   - Localizações recentes de scans
+ *
+ * Esta view é mais completa que o mapa público, pois
+ * inclui dados administrativos e filtros avançados.
+ *
+ * @param {object} req - Requisição Express
+ * @param {object} res - Resposta Express
+ */
+async function mostrarMapa(req, res) {
+  try {
+    return res.render('admin/mapa', {
+      titulo: 'Mapa Administrativo - AIRPET',
+    });
+  } catch (erro) {
+    logger.error('AdminController', 'Erro ao carregar mapa administrativo', erro);
+    req.session.flash = { tipo: 'erro', mensagem: 'Erro ao carregar o mapa.' };
+    return res.redirect('/admin');
+  }
+}
+
+async function rejeitarPerdido(req, res) {
+  try {
+    const { id } = req.params;
+    const alerta = await PetPerdido.buscarPorId(id);
+    if (!alerta) {
+      req.session.flash = { tipo: 'erro', mensagem: 'Alerta não encontrado.' };
+      return res.redirect('/admin/pets-perdidos');
+    }
+
+    await PetPerdido.rejeitar(id);
+    await Pet.atualizarStatus(alerta.pet_id, 'seguro');
+
+    try {
+      await notificacaoService.criar(alerta.usuario_id, 'sistema',
+        `O alerta de ${alerta.pet_nome} foi rejeitado pelo administrador. Verifique os dados e tente novamente.`,
+        `/pets/${alerta.pet_id}`
+      );
+    } catch (e) { logger.error('AdminController', 'Erro notificação rejeição', e); }
+
+    req.session.flash = { tipo: 'sucesso', mensagem: `Alerta de ${alerta.pet_nome} rejeitado.` };
+    return res.redirect('/admin/pets-perdidos');
+  } catch (erro) {
+    logger.error('AdminController', 'Erro ao rejeitar alerta', erro);
+    req.session.flash = { tipo: 'erro', mensagem: 'Erro ao rejeitar o alerta.' };
+    return res.redirect('/admin/pets-perdidos');
+  }
+}
+
+async function atualizarRoleUsuario(req, res) {
+  try {
+    const { id } = req.params;
+    const { role } = req.body;
+    if (!['usuario', 'admin'].includes(role)) {
+      req.session.flash = { tipo: 'erro', mensagem: 'Role inválido.' };
+      return res.redirect('/admin/usuarios');
+    }
+    await Usuario.atualizarRole(id, role);
+    req.session.flash = { tipo: 'sucesso', mensagem: 'Papel do usuário atualizado.' };
+    return res.redirect('/admin/usuarios');
+  } catch (erro) {
+    logger.error('AdminController', 'Erro ao atualizar role', erro);
+    req.session.flash = { tipo: 'erro', mensagem: 'Erro ao atualizar papel do usuário.' };
+    return res.redirect('/admin/usuarios');
+  }
+}
+
+async function aprovarMensagem(req, res) {
+  try {
+    const { id } = req.params;
+    const adminId = req.session.admin ? null : req.session.usuario?.id;
+    await MensagemChat.aprovar(id, adminId);
+    req.session.flash = { tipo: 'sucesso', mensagem: 'Mensagem aprovada.' };
+    return res.redirect('/admin/moderacao');
+  } catch (erro) {
+    logger.error('AdminController', 'Erro ao aprovar mensagem', erro);
+    req.session.flash = { tipo: 'erro', mensagem: 'Erro ao aprovar mensagem.' };
+    return res.redirect('/admin/moderacao');
+  }
+}
+
+async function rejeitarMensagem(req, res) {
+  try {
+    const { id } = req.params;
+    const adminId = req.session.admin ? null : req.session.usuario?.id;
+    await MensagemChat.rejeitar(id, adminId);
+    req.session.flash = { tipo: 'sucesso', mensagem: 'Mensagem rejeitada.' };
+    return res.redirect('/admin/moderacao');
+  } catch (erro) {
+    logger.error('AdminController', 'Erro ao rejeitar mensagem', erro);
+    req.session.flash = { tipo: 'erro', mensagem: 'Erro ao rejeitar mensagem.' };
+    return res.redirect('/admin/moderacao');
+  }
+}
+
+module.exports = {
+  dashboard,
+  listarUsuarios,
+  listarPets,
+  listarPetshops,
+  listarPerdidos,
+  aprovarPerdido,
+  rejeitarPerdido,
+  escalarAlerta,
+  mostrarModeracao,
+  aprovarMensagem,
+  rejeitarMensagem,
+  mostrarConfiguracoes,
+  salvarConfiguracoes,
+  mostrarGerenciarMapa,
+  mostrarMapa,
+  atualizarRoleUsuario,
+};

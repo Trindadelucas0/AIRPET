@@ -1,0 +1,245 @@
+<% locals.titulo = 'Pet Encontrado - ' + pet.nome %>
+<%- include('../partials/header') %>
+
+<main class="flex-1 min-h-screen bg-gradient-to-b from-orange-400 via-rose-400 to-rose-500">
+
+  <%- include('../partials/flash') %>
+
+  <% var perdido = typeof petPerdido !== 'undefined' && petPerdido && petPerdido.status === 'aprovado'; %>
+
+  <% if (perdido) { %>
+    <div class="bg-red-600 text-white text-center px-4 py-3 animate-pulse">
+      <div class="flex items-center justify-center gap-2 font-bold text-lg">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+        ESTE PET ESTA PERDIDO!
+      </div>
+      <p class="text-red-100 text-sm mt-1">O dono esta procurando. Por favor, ajude!</p>
+    </div>
+  <% } %>
+
+  <div class="max-w-lg mx-auto px-4 pt-8 pb-12">
+
+    <div class="text-center mb-6">
+      <div class="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm text-white px-5 py-2 rounded-full text-sm font-bold uppercase tracking-widest">
+        <i class="fa-solid fa-paw"></i>
+        Pet Encontrado
+      </div>
+    </div>
+
+    <div class="flex justify-center mb-6">
+      <div class="relative">
+        <div class="w-40 h-40 sm:w-48 sm:h-48 rounded-full ring-4 ring-white shadow-2xl overflow-hidden bg-white">
+          <% if (pet.foto) { %>
+            <img src="<%= pet.foto %>" alt="<%= pet.nome %>"
+                 class="w-full h-full object-cover">
+          <% } else { %>
+            <div class="w-full h-full flex items-center justify-center bg-orange-50">
+              <i class="fa-solid fa-paw text-5xl text-orange-300"></i>
+            </div>
+          <% } %>
+        </div>
+        <% if (perdido) { %>
+          <span class="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-red-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg whitespace-nowrap">
+            <i class="fa-solid fa-triangle-exclamation mr-1"></i> PERDIDO
+          </span>
+        <% } else { %>
+          <span class="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-emerald-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg whitespace-nowrap">
+            <i class="fa-solid fa-shield-check mr-1"></i> PROTEGIDO
+          </span>
+        <% } %>
+      </div>
+    </div>
+
+    <div class="text-center mb-8">
+      <h1 class="text-4xl sm:text-5xl font-extrabold text-white drop-shadow-lg mb-2"><%= pet.nome %></h1>
+
+      <div class="flex items-center justify-center gap-2 text-white/80 text-sm mb-3">
+        <% if (pet.tipo) { %>
+          <span class="bg-white/20 px-2.5 py-0.5 rounded-full"><%= pet.tipo.charAt(0).toUpperCase() + pet.tipo.slice(1) %></span>
+        <% } %>
+        <% if (pet.raca) { %>
+          <span class="bg-white/20 px-2.5 py-0.5 rounded-full"><%= pet.raca %></span>
+        <% } %>
+      </div>
+
+      <% if (pet.descricao) { %>
+        <p class="text-white/90 italic text-lg leading-relaxed max-w-md mx-auto">
+          "<%= pet.descricao %>"
+        </p>
+      <% } %>
+    </div>
+
+    <% if (perdido && petPerdido.recompensa) { %>
+      <div class="bg-yellow-400 text-yellow-900 rounded-2xl p-4 mb-6 text-center shadow-lg">
+        <div class="flex items-center justify-center gap-2 font-bold text-lg">
+          <i class="fa-solid fa-gift"></i>
+          Recompensa Oferecida
+        </div>
+        <p class="text-2xl font-extrabold mt-1">R$ <%= parseFloat(petPerdido.recompensa).toFixed(2).replace('.', ',') %></p>
+      </div>
+    <% } %>
+
+    <div class="space-y-3 mb-6">
+
+      <% if (pet.Usuario && pet.Usuario.telefone) { %>
+        <a href="tel:<%= pet.Usuario.telefone %>"
+           class="flex items-center gap-4 w-full bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white rounded-2xl px-6 py-5 shadow-lg transition-all active:scale-[0.98]">
+          <span class="w-14 h-14 rounded-xl bg-emerald-400/50 flex items-center justify-center flex-shrink-0">
+            <i class="fa-solid fa-phone text-2xl"></i>
+          </span>
+          <div class="text-left">
+            <span class="block text-lg font-bold">Ligar para o dono</span>
+            <span class="block text-emerald-100 text-sm"><%= pet.Usuario.nome || 'Tutor' %></span>
+          </div>
+          <i class="fa-solid fa-arrow-right ml-auto text-emerald-200"></i>
+        </a>
+      <% } %>
+
+      <button type="button" id="btnLocalizacao"
+              class="flex items-center gap-4 w-full bg-blue-500 hover:bg-blue-600 active:bg-blue-700 text-white rounded-2xl px-6 py-5 shadow-lg transition-all active:scale-[0.98]">
+        <span class="w-14 h-14 rounded-xl bg-blue-400/50 flex items-center justify-center flex-shrink-0">
+          <i class="fa-solid fa-location-dot text-2xl"></i>
+        </span>
+        <div class="text-left">
+          <span class="block text-lg font-bold">Enviar minha localizacao</span>
+          <span class="block text-blue-100 text-sm">Ajude o dono a encontrar o pet</span>
+        </div>
+        <i class="fa-solid fa-arrow-right ml-auto text-blue-200"></i>
+      </button>
+
+      <a href="/nfc/<%= tag.codigo %>/encontrei"
+         class="flex items-center gap-4 w-full bg-rose-500 hover:bg-rose-600 active:bg-rose-700 text-white rounded-2xl px-6 py-5 shadow-lg transition-all active:scale-[0.98]">
+        <span class="w-14 h-14 rounded-xl bg-rose-400/50 flex items-center justify-center flex-shrink-0">
+          <i class="fa-solid fa-hand-holding-heart text-2xl"></i>
+        </span>
+        <div class="text-left">
+          <span class="block text-lg font-bold">Encontrei este pet</span>
+          <span class="block text-rose-100 text-sm">Registrar que voce o encontrou</span>
+        </div>
+        <i class="fa-solid fa-arrow-right ml-auto text-rose-200"></i>
+      </a>
+
+      <a href="/petshops?apoio=1"
+         class="flex items-center gap-4 w-full bg-purple-500 hover:bg-purple-600 active:bg-purple-700 text-white rounded-2xl px-6 py-5 shadow-lg transition-all active:scale-[0.98]">
+        <span class="w-14 h-14 rounded-xl bg-purple-400/50 flex items-center justify-center flex-shrink-0">
+          <i class="fa-solid fa-store text-2xl"></i>
+        </span>
+        <div class="text-left">
+          <span class="block text-lg font-bold">Levar ao petshop parceiro</span>
+          <span class="block text-purple-100 text-sm">Ponto de apoio mais proximo</span>
+        </div>
+        <i class="fa-solid fa-arrow-right ml-auto text-purple-200"></i>
+      </a>
+    </div>
+
+    <% if (perdido) { %>
+      <div class="border-t border-white/20 pt-6 space-y-3 mb-6">
+        <p class="text-center text-white/80 text-sm font-semibold uppercase tracking-wider mb-2">
+          <i class="fa-solid fa-circle-exclamation mr-1"></i> Acoes extras — Pet perdido
+        </p>
+
+        <a href="/chat/novo/<%= pet.id %>"
+           class="flex items-center gap-4 w-full bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white rounded-2xl px-6 py-5 shadow-lg transition-all active:scale-[0.98]">
+          <span class="w-14 h-14 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0">
+            <i class="fa-solid fa-comments text-2xl"></i>
+          </span>
+          <div class="text-left">
+            <span class="block text-lg font-bold">Conversar com o dono</span>
+            <span class="block text-white/70 text-sm">Chat direto e seguro</span>
+          </div>
+          <i class="fa-solid fa-arrow-right ml-auto text-white/50"></i>
+        </a>
+
+        <a href="/nfc/<%= tag.codigo %>/enviar-foto"
+           class="flex items-center gap-4 w-full bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white rounded-2xl px-6 py-5 shadow-lg transition-all active:scale-[0.98]">
+          <span class="w-14 h-14 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0">
+            <i class="fa-solid fa-camera text-2xl"></i>
+          </span>
+          <div class="text-left">
+            <span class="block text-lg font-bold">Enviar foto</span>
+            <span class="block text-white/70 text-sm">Mostre como o pet esta agora</span>
+          </div>
+          <i class="fa-solid fa-arrow-right ml-auto text-white/50"></i>
+        </a>
+      </div>
+    <% } %>
+
+    <p class="text-center text-white/60 text-xs leading-relaxed px-4">
+      <i class="fa-solid fa-lock mr-1"></i>
+      Ao abrir esta pagina, sua localizacao foi enviada ao dono automaticamente.
+      Nenhum dado pessoal seu e armazenado.
+    </p>
+
+  </div>
+</main>
+
+<% locals.extraScripts = `
+<script>
+(function() {
+  var tagCodigo = '${tag.codigo}';
+  var petId = ${pet.id};
+
+  function enviarLocalizacao(lat, lng, manual) {
+    fetch('/api/localizacao', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        pet_id: petId,
+        tag_codigo: tagCodigo,
+        latitude: lat,
+        longitude: lng,
+        tipo: manual ? 'encontrador_manual' : 'encontrador_auto'
+      })
+    }).catch(function() {});
+  }
+
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+      function(pos) {
+        enviarLocalizacao(pos.coords.latitude, pos.coords.longitude, false);
+      },
+      function(err) {
+        console.warn('[NFC] Geoloc auto falhou:', err.code, err.message);
+      },
+      { enableHighAccuracy: true, timeout: 12000 }
+    );
+  }
+
+  var btn = document.getElementById('btnLocalizacao');
+  if (btn) {
+    btn.addEventListener('click', function() {
+      var icon = btn.querySelector('.fa-location-dot');
+      var label = btn.querySelector('.text-lg');
+      if (navigator.geolocation) {
+        label.textContent = 'Obtendo localizacao...';
+        if (icon) icon.className = 'fa-solid fa-spinner fa-spin text-2xl';
+        navigator.geolocation.getCurrentPosition(
+          function(pos) {
+            enviarLocalizacao(pos.coords.latitude, pos.coords.longitude, true);
+            label.textContent = 'Localizacao enviada!';
+            if (icon) icon.className = 'fa-solid fa-check text-2xl';
+            btn.classList.remove('bg-blue-500', 'hover:bg-blue-600');
+            btn.classList.add('bg-emerald-500');
+          },
+          function(err) {
+            var msg = (window.airpetGeo && window.airpetGeo.getErrorMessage)
+              ? window.airpetGeo.getErrorMessage(err)
+              : 'Nao foi possivel obter localizacao';
+            label.textContent = msg.length > 40 ? 'Localizacao bloqueada' : msg;
+            if (icon) icon.className = 'fa-solid fa-xmark text-2xl';
+            if (window.airpetGeo && window.airpetGeo.isIOS && err.code === 1) {
+              alert(window.airpetGeo.getErrorMessage(err));
+            }
+          },
+          { enableHighAccuracy: true, timeout: 15000 }
+        );
+      } else {
+        label.textContent = 'Navegador sem suporte';
+      }
+    });
+  }
+})();
+</script>
+` %>
+
+<%- include('../partials/footer') %>

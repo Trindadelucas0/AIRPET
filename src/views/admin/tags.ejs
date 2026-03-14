@@ -1,0 +1,155 @@
+<% locals.titulo = 'Gerenciar Tags' %>
+<%- include('../partials/header') %>
+<%- include('../partials/flash') %>
+
+<main class="flex-1">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+    <div class="mb-6">
+      <a href="/admin" class="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-primary-500 transition-colors mb-2">
+        <i class="fa-solid fa-arrow-left text-xs"></i> Dashboard
+      </a>
+      <div class="flex items-center justify-between">
+        <h1 class="text-2xl font-bold text-gray-900">Gerenciar Tags</h1>
+        <a href="/tags/admin/lotes" class="text-sm text-primary-500 hover:text-primary-600 font-medium">
+          <i class="fa-solid fa-box mr-1"></i> Ver Lotes
+        </a>
+      </div>
+    </div>
+
+    <!-- Gerar Novo Lote -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
+      <h2 class="text-base font-semibold text-gray-900 mb-4">
+        <i class="fa-solid fa-plus-circle text-primary-500 mr-1"></i> Gerar Novo Lote
+      </h2>
+      <form action="/tags/admin/gerar" method="POST" class="grid grid-cols-1 sm:grid-cols-4 gap-4 items-end">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Quantidade</label>
+          <input type="number" name="quantidade" min="1" max="1000" required placeholder="Ex: 50"
+                 class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Fabricante</label>
+          <input type="text" name="fabricante" placeholder="Nome do fabricante"
+                 class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Observações</label>
+          <input type="text" name="observacoes" placeholder="Observações opcionais"
+                 class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none">
+        </div>
+        <button type="submit"
+                class="px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white text-sm font-semibold rounded-lg transition-colors">
+          <i class="fa-solid fa-wand-magic-sparkles mr-1"></i> Gerar
+        </button>
+      </form>
+    </div>
+
+    <!-- Filter Tabs -->
+    <div class="flex flex-wrap gap-2 mb-6">
+      <%
+        var filtros = [
+          { val: '', label: 'Todas' },
+          { val: 'stock', label: 'Stock' },
+          { val: 'reserved', label: 'Reserved' },
+          { val: 'sent', label: 'Sent' },
+          { val: 'active', label: 'Active' },
+          { val: 'blocked', label: 'Blocked' }
+        ];
+        var currentFilter = typeof statusFilter !== 'undefined' ? statusFilter : '';
+      %>
+      <% filtros.forEach(function(f) { %>
+        <a href="/tags/admin/lista<%= f.val ? '?status=' + f.val : '' %>"
+           class="px-4 py-1.5 rounded-full text-sm font-medium transition-colors
+             <%= currentFilter === f.val ? 'bg-primary-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200' %>">
+          <%= f.label %>
+        </a>
+      <% }); %>
+    </div>
+
+    <!-- Tags Table -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="bg-gray-50 border-b border-gray-200">
+              <th class="px-4 py-3 text-left font-semibold text-gray-600">Tag Code</th>
+              <th class="px-4 py-3 text-left font-semibold text-gray-600">Activation Code</th>
+              <th class="px-4 py-3 text-left font-semibold text-gray-600">Status</th>
+              <th class="px-4 py-3 text-left font-semibold text-gray-600">Usuário</th>
+              <th class="px-4 py-3 text-left font-semibold text-gray-600">Pet</th>
+              <th class="px-4 py-3 text-left font-semibold text-gray-600">Data</th>
+              <th class="px-4 py-3 text-left font-semibold text-gray-600">Ações</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100">
+            <% tags.forEach(function(t) { %>
+              <%
+                var statusBadge = 'bg-gray-100 text-gray-600';
+                if (t.status === 'stock') statusBadge = 'bg-slate-100 text-slate-600';
+                else if (t.status === 'reserved') statusBadge = 'bg-blue-100 text-blue-600';
+                else if (t.status === 'sent') statusBadge = 'bg-yellow-100 text-yellow-700';
+                else if (t.status === 'active') statusBadge = 'bg-emerald-100 text-emerald-700';
+                else if (t.status === 'blocked') statusBadge = 'bg-red-100 text-red-700';
+                var maskedCode = t.activation_code ? t.activation_code.substring(0, 4) + '****' : '—';
+              %>
+              <tr class="hover:bg-gray-50 transition-colors">
+                <td class="px-4 py-3 font-mono text-xs text-gray-700"><%= t.tag_code %></td>
+                <td class="px-4 py-3 font-mono text-xs text-gray-400"><%= maskedCode %></td>
+                <td class="px-4 py-3">
+                  <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold <%= statusBadge %>">
+                    <%= t.status %>
+                  </span>
+                </td>
+                <td class="px-4 py-3 text-gray-600 text-xs"><%= t.usuario_email || '—' %></td>
+                <td class="px-4 py-3 text-gray-600 text-xs"><%= t.pet_nome || '—' %></td>
+                <td class="px-4 py-3 text-gray-500 text-xs"><%= t.criado_em ? new Date(t.criado_em).toLocaleDateString('pt-BR') : '—' %></td>
+                <td class="px-4 py-3">
+                  <% if (t.status === 'stock') { %>
+                    <form action="/tags/admin/<%= t.id %>/reservar" method="POST" class="flex items-center gap-2">
+                      <input type="email" name="email" required placeholder="email@usuario.com"
+                             class="w-36 px-2 py-1 border border-gray-300 rounded text-xs focus:ring-1 focus:ring-primary-500 outline-none">
+                      <button type="submit" class="px-2 py-1 bg-blue-500 hover:bg-blue-600 text-white text-xs font-semibold rounded transition-colors">
+                        Reservar
+                      </button>
+                    </form>
+                  <% } else if (t.status === 'reserved') { %>
+                    <form action="/tags/admin/<%= t.id %>/enviar" method="POST" class="inline">
+                      <button type="submit" class="px-2 py-1 bg-yellow-500 hover:bg-yellow-600 text-white text-xs font-semibold rounded transition-colors">
+                        Marcar Enviada
+                      </button>
+                    </form>
+                  <% } else if (t.status === 'sent') { %>
+                    <span class="text-xs text-gray-400 italic">Aguardando ativação</span>
+                  <% } else if (t.status === 'active') { %>
+                    <form action="/tags/admin/<%= t.id %>/bloquear" method="POST" class="inline">
+                      <button type="submit" class="px-2 py-1 bg-red-500 hover:bg-red-600 text-white text-xs font-semibold rounded transition-colors">
+                        Bloquear
+                      </button>
+                    </form>
+                  <% } else if (t.status === 'blocked') { %>
+                    <form action="/tags/admin/<%= t.id %>/bloquear" method="POST" class="inline">
+                      <button type="submit" class="px-2 py-1 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-semibold rounded transition-colors">
+                        Desbloquear
+                      </button>
+                    </form>
+                  <% } %>
+                </td>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+
+      <% if (tags.length === 0) { %>
+        <div class="text-center py-12 text-gray-400">
+          <i class="fa-solid fa-tag text-3xl mb-2"></i>
+          <p class="text-sm">Nenhuma tag encontrada para este filtro</p>
+        </div>
+      <% } %>
+    </div>
+
+  </div>
+</main>
+
+<%- include('../partials/footer') %>

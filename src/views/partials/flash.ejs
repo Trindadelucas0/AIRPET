@@ -1,0 +1,47 @@
+<% if (typeof flash !== 'undefined' && flash) { %>
+  <%
+    var tipos = {
+      sucesso:  { bg: 'bg-emerald-50', border: 'border-emerald-400', text: 'text-emerald-800', icon: 'fa-circle-check text-emerald-500' },
+      success:  { bg: 'bg-emerald-50', border: 'border-emerald-400', text: 'text-emerald-800', icon: 'fa-circle-check text-emerald-500' },
+      erro:     { bg: 'bg-red-50',     border: 'border-red-400',     text: 'text-red-800',     icon: 'fa-circle-xmark text-red-500' },
+      error:    { bg: 'bg-red-50',     border: 'border-red-400',     text: 'text-red-800',     icon: 'fa-circle-xmark text-red-500' },
+      info:     { bg: 'bg-blue-50',    border: 'border-blue-400',    text: 'text-blue-800',    icon: 'fa-circle-info text-blue-500' },
+      aviso:    { bg: 'bg-amber-50',   border: 'border-amber-400',   text: 'text-amber-800',   icon: 'fa-triangle-exclamation text-amber-500' },
+    };
+
+    var msgs = [];
+    if (flash.success)  msgs.push({ tipo: 'success',  mensagem: flash.success });
+    if (flash.sucesso)  msgs.push({ tipo: 'sucesso',  mensagem: flash.sucesso });
+    if (flash.error)    msgs.push({ tipo: 'error',    mensagem: flash.error });
+    if (flash.erro)     msgs.push({ tipo: 'erro',     mensagem: flash.erro });
+    if (flash.info)     msgs.push({ tipo: 'info',     mensagem: flash.info });
+    if (flash.tipo && flash.mensagem) msgs.push({ tipo: flash.tipo, mensagem: flash.mensagem });
+  %>
+
+  <% if (msgs.length > 0) { %>
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 pt-3 space-y-2" id="flashContainer">
+      <% msgs.forEach(function(msg) { %>
+        <% var s = tipos[msg.tipo] || tipos.info; %>
+        <div class="flash-msg flex items-center gap-3 px-4 py-3 rounded-2xl border-l-4 <%= s.bg %> <%= s.border %> <%= s.text %> shadow-sm animate-slideUp"
+             role="alert">
+          <i class="fa-solid <%= s.icon %> text-lg flex-shrink-0"></i>
+          <span class="text-sm font-medium flex-1"><%= msg.mensagem %></span>
+          <button type="button" onclick="this.parentElement.classList.add('fade-out'); setTimeout(function(){ this.parentElement.remove(); }.bind(this), 400);"
+                  class="ml-auto text-gray-400 hover:text-gray-600 transition-colors">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+      <% }); %>
+    </div>
+
+    <script>
+      setTimeout(function () {
+        var msgs = document.querySelectorAll('.flash-msg');
+        msgs.forEach(function (el) {
+          el.classList.add('fade-out');
+          setTimeout(function () { el.remove(); }, 400);
+        });
+      }, 5000);
+    </script>
+  <% } %>
+<% } %>

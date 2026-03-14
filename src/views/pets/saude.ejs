@@ -1,0 +1,244 @@
+<% locals.titulo = 'Saúde de ' + pet.nome %>
+<%- include('../partials/header') %>
+<%- include('../partials/flash') %>
+
+<main class="flex-1 container mx-auto px-4 py-6 max-w-3xl">
+
+  <a href="/pets/<%= pet.id %>" class="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-primary-500 transition-colors mb-4">
+    <i class="fa-solid fa-arrow-left text-xs"></i> Perfil de <%= pet.nome %>
+  </a>
+
+  <div class="flex items-center justify-between mb-6">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-900">Carteira de Saúde</h1>
+      <p class="text-sm text-gray-500 mt-0.5"><%= pet.nome %></p>
+    </div>
+    <div class="flex items-center gap-2">
+      <% if (pet.foto) { %>
+        <img src="<%= pet.foto %>" alt="<%= pet.nome %>" class="w-10 h-10 rounded-full object-cover border-2 border-white shadow-sm">
+      <% } else { %>
+        <span class="w-10 h-10 rounded-full bg-primary-100 text-primary-500 flex items-center justify-center">
+          <i class="fa-solid fa-paw text-sm"></i>
+        </span>
+      <% } %>
+    </div>
+  </div>
+
+  <!-- ===================== VACINAS ===================== -->
+  <section class="mb-8">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-lg font-bold text-gray-900">
+        <i class="fa-solid fa-syringe text-primary-400 mr-2"></i>Vacinas
+      </h2>
+      <button type="button" onclick="toggleModal('modalVacina')"
+              class="inline-flex items-center gap-1.5 text-sm font-semibold text-primary-500 hover:text-primary-600 transition-colors">
+        <i class="fa-solid fa-plus"></i> Adicionar
+      </button>
+    </div>
+
+    <% if (typeof vacinas !== 'undefined' && vacinas.length > 0) { %>
+      <div class="space-y-3">
+        <% vacinas.forEach(function(v) { %>
+          <div class="card !p-4 flex items-start gap-4">
+            <span class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-500 flex items-center justify-center flex-shrink-0 mt-0.5">
+              <i class="fa-solid fa-syringe"></i>
+            </span>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-start justify-between gap-2">
+                <h3 class="font-semibold text-gray-900 text-sm"><%= v.nome %></h3>
+                <form action="/pets/<%= pet.id %>/saude/vacina/<%= v.id %>/excluir" method="POST" class="flex-shrink-0"
+                      onsubmit="return confirm('Remover esta vacina?')">
+                  <button type="submit" class="text-gray-300 hover:text-red-500 transition-colors" title="Excluir">
+                    <i class="fa-solid fa-trash-can text-xs"></i>
+                  </button>
+                </form>
+              </div>
+              <div class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500 mt-1">
+                <span><i class="fa-regular fa-calendar mr-1"></i><%= new Date(v.data).toLocaleDateString('pt-BR') %></span>
+                <% if (v.proximaDose) { %>
+                  <span><i class="fa-solid fa-clock-rotate-left mr-1"></i>Próxima: <%= new Date(v.proximaDose).toLocaleDateString('pt-BR') %></span>
+                <% } %>
+                <% if (v.veterinario) { %>
+                  <span><i class="fa-solid fa-user-doctor mr-1"></i><%= v.veterinario %></span>
+                <% } %>
+              </div>
+            </div>
+          </div>
+        <% }); %>
+      </div>
+    <% } else { %>
+      <div class="card text-center py-8">
+        <i class="fa-solid fa-syringe text-2xl text-gray-300 mb-2"></i>
+        <p class="text-sm text-gray-400">Nenhuma vacina registrada</p>
+      </div>
+    <% } %>
+  </section>
+
+  <!-- ===================== REGISTROS DE SAÚDE ===================== -->
+  <section class="mb-8">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-lg font-bold text-gray-900">
+        <i class="fa-solid fa-notes-medical text-primary-400 mr-2"></i>Registros de Saúde
+      </h2>
+      <button type="button" onclick="toggleModal('modalRegistro')"
+              class="inline-flex items-center gap-1.5 text-sm font-semibold text-primary-500 hover:text-primary-600 transition-colors">
+        <i class="fa-solid fa-plus"></i> Adicionar
+      </button>
+    </div>
+
+    <%
+      var tiposRegistro = {
+        consulta:   { label: 'Consulta',   icon: 'fa-stethoscope',     color: 'bg-blue-100 text-blue-500' },
+        exame:      { label: 'Exame',      icon: 'fa-microscope',      color: 'bg-purple-100 text-purple-500' },
+        vermifugo:  { label: 'Vermífugo',  icon: 'fa-pills',           color: 'bg-amber-100 text-amber-600' },
+        cirurgia:   { label: 'Cirurgia',   icon: 'fa-hospital',        color: 'bg-red-100 text-red-500' },
+        outro:      { label: 'Outro',      icon: 'fa-file-medical',    color: 'bg-gray-100 text-gray-500' }
+      };
+    %>
+
+    <% if (typeof registros !== 'undefined' && registros.length > 0) { %>
+      <%
+        var grouped = {};
+        registros.forEach(function(r) {
+          var key = r.tipo || 'outro';
+          if (!grouped[key]) grouped[key] = [];
+          grouped[key].push(r);
+        });
+      %>
+
+      <% Object.keys(grouped).forEach(function(tipo) { %>
+        <% var info = tiposRegistro[tipo] || tiposRegistro.outro; %>
+        <div class="mb-4">
+          <h3 class="text-sm font-semibold text-gray-600 mb-2 flex items-center gap-2">
+            <span class="w-6 h-6 rounded-md <%= info.color %> flex items-center justify-center">
+              <i class="fa-solid <%= info.icon %> text-xs"></i>
+            </span>
+            <%= info.label %> (<%= grouped[tipo].length %>)
+          </h3>
+          <div class="space-y-2">
+            <% grouped[tipo].forEach(function(r) { %>
+              <div class="card !p-4 flex items-start gap-4">
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-start justify-between gap-2">
+                    <h4 class="font-semibold text-gray-900 text-sm"><%= r.titulo || info.label %></h4>
+                    <form action="/pets/<%= pet.id %>/saude/registro/<%= r.id %>/excluir" method="POST" class="flex-shrink-0"
+                          onsubmit="return confirm('Remover este registro?')">
+                      <button type="submit" class="text-gray-300 hover:text-red-500 transition-colors" title="Excluir">
+                        <i class="fa-solid fa-trash-can text-xs"></i>
+                      </button>
+                    </form>
+                  </div>
+                  <% if (r.descricao) { %>
+                    <p class="text-xs text-gray-500 mt-1 line-clamp-2"><%= r.descricao %></p>
+                  <% } %>
+                  <div class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-400 mt-2">
+                    <span><i class="fa-regular fa-calendar mr-1"></i><%= new Date(r.data).toLocaleDateString('pt-BR') %></span>
+                    <% if (r.veterinario) { %>
+                      <span><i class="fa-solid fa-user-doctor mr-1"></i><%= r.veterinario %></span>
+                    <% } %>
+                  </div>
+                </div>
+              </div>
+            <% }); %>
+          </div>
+        </div>
+      <% }); %>
+
+    <% } else { %>
+      <div class="card text-center py-8">
+        <i class="fa-solid fa-notes-medical text-2xl text-gray-300 mb-2"></i>
+        <p class="text-sm text-gray-400">Nenhum registro de saúde</p>
+      </div>
+    <% } %>
+  </section>
+
+</main>
+
+<!-- ===================== MODAL VACINA ===================== -->
+<div id="modalVacina" class="fixed inset-0 z-[60] hidden">
+  <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="toggleModal('modalVacina')"></div>
+  <div class="absolute inset-x-4 top-1/2 -translate-y-1/2 mx-auto max-w-md bg-white rounded-2xl shadow-xl p-6 z-10">
+    <div class="flex items-center justify-between mb-5">
+      <h2 class="text-lg font-bold text-gray-900">Adicionar Vacina</h2>
+      <button type="button" onclick="toggleModal('modalVacina')" class="text-gray-400 hover:text-gray-600">
+        <i class="fa-solid fa-xmark text-lg"></i>
+      </button>
+    </div>
+    <form action="/pets/<%= pet.id %>/saude/vacina" method="POST" class="space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Nome da vacina *</label>
+        <input type="text" name="nome" required placeholder="Ex: V10, Antirrábica" class="input-field">
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Data de aplicação *</label>
+        <input type="date" name="data" required class="input-field">
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Próxima dose</label>
+        <input type="date" name="proximaDose" class="input-field">
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Veterinário</label>
+        <input type="text" name="veterinario" placeholder="Nome do veterinário" class="input-field">
+      </div>
+      <button type="submit" class="btn-primary">
+        <i class="fa-solid fa-check mr-2"></i>Salvar Vacina
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- ===================== MODAL REGISTRO ===================== -->
+<div id="modalRegistro" class="fixed inset-0 z-[60] hidden">
+  <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="toggleModal('modalRegistro')"></div>
+  <div class="absolute inset-x-4 top-1/2 -translate-y-1/2 mx-auto max-w-md bg-white rounded-2xl shadow-xl p-6 z-10">
+    <div class="flex items-center justify-between mb-5">
+      <h2 class="text-lg font-bold text-gray-900">Adicionar Registro</h2>
+      <button type="button" onclick="toggleModal('modalRegistro')" class="text-gray-400 hover:text-gray-600">
+        <i class="fa-solid fa-xmark text-lg"></i>
+      </button>
+    </div>
+    <form action="/pets/<%= pet.id %>/saude/registro" method="POST" class="space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Tipo *</label>
+        <select name="tipo" required class="input-field">
+          <option value="">Selecione...</option>
+          <option value="consulta">Consulta</option>
+          <option value="exame">Exame</option>
+          <option value="vermifugo">Vermífugo</option>
+          <option value="cirurgia">Cirurgia</option>
+          <option value="outro">Outro</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Título *</label>
+        <input type="text" name="titulo" required placeholder="Ex: Check-up anual" class="input-field">
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Data *</label>
+        <input type="date" name="data" required class="input-field">
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Descrição</label>
+        <textarea name="descricao" rows="3" placeholder="Detalhes do atendimento..." class="input-field resize-none"></textarea>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Veterinário</label>
+        <input type="text" name="veterinario" placeholder="Nome do veterinário" class="input-field">
+      </div>
+      <button type="submit" class="btn-primary">
+        <i class="fa-solid fa-check mr-2"></i>Salvar Registro
+      </button>
+    </form>
+  </div>
+</div>
+
+<script>
+function toggleModal(id) {
+  var modal = document.getElementById(id);
+  modal.classList.toggle('hidden');
+  document.body.style.overflow = modal.classList.contains('hidden') ? '' : 'hidden';
+}
+</script>
+
+<%- include('../partials/footer') %>

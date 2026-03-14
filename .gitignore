@@ -1,0 +1,10 @@
+node_modules/
+.env
+src/public/css/output.css
+src/public/images/pets/*
+!src/public/images/pets/.gitkeep
+src/public/images/chat/*
+!src/public/images/chat/.gitkeep
+*.log
+.DS_Store
+Thumbs.db

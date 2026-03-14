@@ -1,0 +1,82 @@
+<% locals.titulo = 'Minhas Conversas' %>
+<%- include('../partials/header') %>
+<%- include('../partials/flash') %>
+
+<main class="flex-1 container mx-auto px-4 py-8 max-w-2xl">
+
+  <a href="/pets" class="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-[#ec5a1c] transition-colors mb-6">
+    <i class="fa-solid fa-arrow-left text-xs"></i> Meus Pets
+  </a>
+
+  <div class="flex items-center gap-3 mb-6">
+    <div class="w-10 h-10 rounded-xl bg-[#ec5a1c]/10 flex items-center justify-center">
+      <i class="fa-solid fa-comments text-xl text-[#ec5a1c]"></i>
+    </div>
+    <h1 class="text-2xl font-bold text-gray-900">Minhas Conversas</h1>
+  </div>
+
+  <% if (typeof conversas !== 'undefined' && conversas.length > 0) { %>
+    <div class="space-y-3">
+      <% conversas.forEach(function(conversa) { %>
+        <a href="/chat/<%= conversa.id %>"
+           class="card flex items-center gap-4 hover:shadow-md hover:border-[#ec5a1c]/20 transition-all group">
+
+          <div class="w-14 h-14 rounded-full overflow-hidden bg-gray-100 flex-shrink-0 ring-2 ring-gray-100 group-hover:ring-[#ec5a1c]/20 transition-all">
+            <% if (conversa.pet_foto) { %>
+              <img src="<%= conversa.pet_foto %>" alt="<%= conversa.pet_nome %>" class="w-full h-full object-cover">
+            <% } else { %>
+              <div class="w-full h-full flex items-center justify-center">
+                <i class="fa-solid fa-paw text-gray-300 text-xl"></i>
+              </div>
+            <% } %>
+          </div>
+
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center justify-between gap-2 mb-1">
+              <p class="text-sm font-bold text-gray-900 truncate group-hover:text-[#ec5a1c] transition-colors">
+                <%= conversa.pet_nome || 'Pet' %>
+              </p>
+              <span class="text-[11px] text-gray-400 flex-shrink-0">
+                <%= new Date(conversa.data_criacao).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }) %>
+              </span>
+            </div>
+
+            <p class="text-sm text-gray-500 truncate leading-relaxed">
+              <%= conversa.ultima_mensagem || 'Nenhuma mensagem ainda' %>
+            </p>
+
+            <div class="flex items-center gap-2 mt-1.5">
+              <% if (conversa.status === 'ativa') { %>
+                <span class="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
+                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Ativa
+                </span>
+              <% } else { %>
+                <span class="inline-flex items-center gap-1 text-[11px] font-medium text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
+                  <span class="w-1.5 h-1.5 rounded-full bg-gray-300"></span> Encerrada
+                </span>
+              <% } %>
+            </div>
+          </div>
+
+          <i class="fa-solid fa-chevron-right text-xs text-gray-300 group-hover:text-[#ec5a1c] transition-colors flex-shrink-0"></i>
+        </a>
+      <% }); %>
+    </div>
+
+  <% } else { %>
+
+    <div class="card text-center py-16 px-6">
+      <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gray-100 mb-5">
+        <i class="fa-solid fa-comments text-3xl text-gray-300"></i>
+      </div>
+      <h2 class="text-lg font-bold text-gray-700 mb-2">Voce ainda nao tem conversas</h2>
+      <p class="text-sm text-gray-400 max-w-sm mx-auto leading-relaxed">
+        Quando alguem encontrar seu pet via NFC ou voce iniciar um chat, suas conversas aparecerao aqui.
+      </p>
+    </div>
+
+  <% } %>
+
+</main>
+
+<%- include('../partials/footer') %>

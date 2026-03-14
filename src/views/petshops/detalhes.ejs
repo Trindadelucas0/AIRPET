@@ -1,0 +1,144 @@
+<% locals.titulo = petshop.nome %>
+<% locals.extraHead = '<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""><style>#mapPetshop{height:250px;border-radius:12px;z-index:0;}</style>' %>
+<%- include('../partials/header') %>
+<%- include('../partials/flash') %>
+
+<main class="flex-1">
+
+  <div class="relative">
+    <% if (petshop.foto_capa) { %>
+      <img src="/images/petshops/<%= petshop.foto_capa %>" alt="<%= petshop.nome %>"
+           class="w-full h-56 sm:h-72 object-cover">
+    <% } else { %>
+      <div class="w-full h-56 sm:h-72 bg-gradient-to-br from-[#ec5a1c]/20 to-orange-50 flex items-center justify-center">
+        <i class="fa-solid fa-store text-6xl text-[#ec5a1c]/20"></i>
+      </div>
+    <% } %>
+    <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
+
+    <div class="absolute bottom-0 left-0 right-0 p-4 sm:p-6">
+      <div class="max-w-3xl mx-auto">
+        <% if (petshop.ponto_de_apoio) { %>
+          <span class="inline-flex items-center gap-1.5 bg-emerald-500 text-white text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded-full shadow mb-3">
+            <i class="fa-solid fa-shield-check"></i> Ponto de Apoio Oficial
+          </span>
+        <% } %>
+        <h1 class="text-2xl sm:text-3xl font-extrabold text-white drop-shadow"><%= petshop.nome %></h1>
+      </div>
+    </div>
+  </div>
+
+  <div class="max-w-3xl mx-auto px-4 py-6 space-y-6">
+
+    <div class="card">
+      <div class="space-y-3">
+        <% if (petshop.endereco) { %>
+          <div class="flex items-start gap-3">
+            <span class="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center flex-shrink-0">
+              <i class="fa-solid fa-location-dot text-gray-500"></i>
+            </span>
+            <div>
+              <p class="text-xs text-gray-400 uppercase font-medium">Endereco</p>
+              <p class="text-sm font-medium text-gray-800"><%= petshop.endereco %></p>
+            </div>
+          </div>
+        <% } %>
+
+        <% if (petshop.telefone) { %>
+          <div class="flex items-start gap-3">
+            <span class="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center flex-shrink-0">
+              <i class="fa-solid fa-phone text-gray-500"></i>
+            </span>
+            <div>
+              <p class="text-xs text-gray-400 uppercase font-medium">Telefone</p>
+              <a href="tel:<%= petshop.telefone %>" class="text-sm font-medium text-[#ec5a1c] hover:underline"><%= petshop.telefone %></a>
+            </div>
+          </div>
+        <% } %>
+
+        <% if (petshop.whatsapp) { %>
+          <a href="https://wa.me/55<%= petshop.whatsapp.replace(/\D/g, '') %>" target="_blank" rel="noopener"
+             class="flex items-center gap-3 bg-emerald-50 hover:bg-emerald-100 rounded-xl p-3 transition-colors">
+            <span class="w-10 h-10 rounded-xl bg-emerald-500 text-white flex items-center justify-center flex-shrink-0">
+              <i class="fa-brands fa-whatsapp text-lg"></i>
+            </span>
+            <div>
+              <p class="text-sm font-bold text-emerald-700">Chamar no WhatsApp</p>
+              <p class="text-xs text-emerald-600"><%= petshop.whatsapp %></p>
+            </div>
+            <i class="fa-solid fa-arrow-up-right-from-square ml-auto text-emerald-400 text-sm"></i>
+          </a>
+        <% } %>
+      </div>
+    </div>
+
+    <% if (petshop.servicos && petshop.servicos.length > 0) { %>
+      <div class="card">
+        <h2 class="text-lg font-bold text-gray-900 mb-4">
+          <i class="fa-solid fa-concierge-bell text-[#ec5a1c] mr-2"></i>Servicos
+        </h2>
+        <div class="flex flex-wrap gap-2">
+          <% var iconeServico = { banho: 'fa-shower', tosa: 'fa-scissors', consulta: 'fa-stethoscope', vacina: 'fa-syringe', hospedagem: 'fa-house', adestramento: 'fa-graduation-cap', transporte: 'fa-car', creche: 'fa-children' }; %>
+          <% petshop.servicos.forEach(function(srv) { %>
+            <span class="inline-flex items-center gap-1.5 bg-gray-100 text-gray-700 text-sm font-medium px-3 py-2 rounded-xl">
+              <i class="fa-solid <%= iconeServico[srv.toLowerCase()] || 'fa-paw' %> text-[#ec5a1c]"></i>
+              <%= srv.charAt(0).toUpperCase() + srv.slice(1) %>
+            </span>
+          <% }); %>
+        </div>
+      </div>
+    <% } %>
+
+    <% if (petshop.horario_funcionamento) { %>
+      <div class="card">
+        <h2 class="text-lg font-bold text-gray-900 mb-4">
+          <i class="fa-solid fa-clock text-[#ec5a1c] mr-2"></i>Horarios
+        </h2>
+        <div class="text-sm text-gray-600 whitespace-pre-line leading-relaxed"><%= petshop.horario_funcionamento %></div>
+      </div>
+    <% } %>
+
+    <% if (petshop.latitude && petshop.longitude) { %>
+      <div class="card !p-0 overflow-hidden">
+        <div class="p-4 pb-2">
+          <h2 class="text-lg font-bold text-gray-900">
+            <i class="fa-solid fa-map text-[#ec5a1c] mr-2"></i>Localizacao
+          </h2>
+        </div>
+        <div class="px-4 pb-4">
+          <div id="mapPetshop"></div>
+        </div>
+      </div>
+    <% } %>
+
+    <% if (petshop.agenda_aberta) { %>
+      <a href="/petshops/<%= petshop.id %>/agendar"
+         class="flex items-center justify-center gap-2 w-full px-6 py-4 rounded-2xl text-lg font-bold text-white bg-[#ec5a1c] hover:bg-[#d4500f] shadow-lg transition-all active:scale-[0.98]">
+        <i class="fa-solid fa-calendar-check"></i>
+        Agendar servico
+      </a>
+    <% } %>
+
+  </div>
+</main>
+
+<% locals.extraScripts = `
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script>
+(function() {
+  var lat = ${petshop.latitude || 0};
+  var lng = ${petshop.longitude || 0};
+  if (lat && lng) {
+    var map = L.map('mapPetshop', { scrollWheelZoom: false }).setView([lat, lng], 16);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap'
+    }).addTo(map);
+    L.marker([lat, lng]).addTo(map)
+      .bindPopup('<strong>${petshop.nome.replace(/'/g, "\\'")}</strong>')
+      .openPopup();
+  }
+})();
+</script>
+` %>
+
+<%- include('../partials/footer') %>

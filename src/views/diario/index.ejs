@@ -1,0 +1,209 @@
+<% locals.titulo = 'Diário de ' + pet.nome %>
+<%- include('../partials/header') %>
+<%- include('../partials/flash') %>
+
+<%
+  var diasSemana = ['Domingo','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado'];
+  var meses = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+  var agora = new Date();
+  var dataFormatada = diasSemana[agora.getDay()] + ', ' + agora.getDate() + ' de ' + meses[agora.getMonth()] + ' de ' + agora.getFullYear();
+
+  var icones = {
+    alimentacao: '🍽️',
+    passeio: '🚶',
+    remedio: '💊',
+    necessidades: '💩',
+    foto: '📸',
+    peso: '⚖️'
+  };
+  var labels = {
+    alimentacao: 'Alimentação',
+    passeio: 'Passeio',
+    remedio: 'Remédio',
+    necessidades: 'Necessidades',
+    foto: 'Foto',
+    peso: 'Peso'
+  };
+%>
+
+<main class="flex-1 container mx-auto px-4 py-6 max-w-3xl">
+
+  <!-- Header -->
+  <a href="/pets/<%= pet.id %>" class="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-[#ec5a1c] transition-colors mb-4">
+    <i class="fa-solid fa-arrow-left text-xs"></i> Voltar ao perfil
+  </a>
+
+  <div class="flex items-end justify-between mb-6">
+    <div>
+      <h1 class="text-2xl sm:text-3xl font-bold text-gray-900">
+        <i class="fa-solid fa-book text-[#ec5a1c] mr-2"></i>Diário de <%= pet.nome %>
+      </h1>
+      <p class="text-sm text-gray-500 mt-1"><%= dataFormatada %></p>
+    </div>
+  </div>
+
+  <!-- Quick Actions -->
+  <section class="mb-8">
+    <h2 class="text-lg font-bold text-gray-900 mb-3">
+      <i class="fa-solid fa-bolt text-[#ec5a1c] mr-2"></i>Registrar atividade
+    </h2>
+
+    <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+
+      <form method="POST" action="/diario/<%= pet.id %>">
+        <input type="hidden" name="tipo" value="alimentacao">
+        <button type="submit" class="card w-full text-center !p-5 hover:shadow-md hover:border-[#ec5a1c]/30 transition-all cursor-pointer group">
+          <span class="text-3xl block mb-2 group-hover:scale-110 transition-transform">🍽️</span>
+          <span class="text-sm font-semibold text-gray-700">Comeu</span>
+        </button>
+      </form>
+
+      <form method="POST" action="/diario/<%= pet.id %>">
+        <input type="hidden" name="tipo" value="passeio">
+        <button type="submit" class="card w-full text-center !p-5 hover:shadow-md hover:border-[#ec5a1c]/30 transition-all cursor-pointer group">
+          <span class="text-3xl block mb-2 group-hover:scale-110 transition-transform">🚶</span>
+          <span class="text-sm font-semibold text-gray-700">Passeou</span>
+        </button>
+      </form>
+
+      <form method="POST" action="/diario/<%= pet.id %>">
+        <input type="hidden" name="tipo" value="remedio">
+        <button type="submit" class="card w-full text-center !p-5 hover:shadow-md hover:border-[#ec5a1c]/30 transition-all cursor-pointer group">
+          <span class="text-3xl block mb-2 group-hover:scale-110 transition-transform">💊</span>
+          <span class="text-sm font-semibold text-gray-700">Remédio</span>
+        </button>
+      </form>
+
+      <form method="POST" action="/diario/<%= pet.id %>">
+        <input type="hidden" name="tipo" value="necessidades">
+        <button type="submit" class="card w-full text-center !p-5 hover:shadow-md hover:border-[#ec5a1c]/30 transition-all cursor-pointer group">
+          <span class="text-3xl block mb-2 group-hover:scale-110 transition-transform">💩</span>
+          <span class="text-sm font-semibold text-gray-700">Necessidades</span>
+        </button>
+      </form>
+
+      <form method="POST" action="/diario/<%= pet.id %>" enctype="multipart/form-data" id="formFoto">
+        <input type="hidden" name="tipo" value="foto">
+        <input type="file" name="foto" accept="image/*" class="hidden" id="inputFotoDiario"
+               onchange="document.getElementById('formFoto').submit()">
+        <button type="button" onclick="document.getElementById('inputFotoDiario').click()"
+                class="card w-full text-center !p-5 hover:shadow-md hover:border-[#ec5a1c]/30 transition-all cursor-pointer group">
+          <span class="text-3xl block mb-2 group-hover:scale-110 transition-transform">📸</span>
+          <span class="text-sm font-semibold text-gray-700">Foto do dia</span>
+        </button>
+      </form>
+
+      <form method="POST" action="/diario/<%= pet.id %>" id="formPeso" class="relative">
+        <input type="hidden" name="tipo" value="peso">
+        <div class="card w-full text-center !p-5 hover:shadow-md hover:border-[#ec5a1c]/30 transition-all cursor-pointer group"
+             onclick="this.querySelector('.peso-input').classList.toggle('hidden')">
+          <span class="text-3xl block mb-2 group-hover:scale-110 transition-transform">⚖️</span>
+          <span class="text-sm font-semibold text-gray-700">Peso</span>
+          <div class="peso-input hidden mt-3" onclick="event.stopPropagation()">
+            <div class="flex gap-2">
+              <input type="number" name="valor" step="0.1" min="0" placeholder="kg"
+                     class="input-field !py-1.5 !text-sm text-center flex-1" required>
+              <button type="submit" class="btn-primary !py-1.5 !px-3 !text-sm">
+                <i class="fa-solid fa-check"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </form>
+
+    </div>
+  </section>
+
+  <!-- Today's Log -->
+  <section class="mb-8">
+    <h2 class="text-lg font-bold text-gray-900 mb-3">
+      <i class="fa-solid fa-clock text-[#ec5a1c] mr-2"></i>Hoje
+    </h2>
+
+    <% if (typeof entradasHoje !== 'undefined' && entradasHoje.length > 0) { %>
+      <div class="card !p-0 overflow-hidden">
+        <div class="divide-y divide-gray-100">
+          <% entradasHoje.forEach(function(entry) { %>
+            <div class="flex items-center gap-4 px-5 py-4">
+              <span class="text-2xl flex-shrink-0"><%= icones[entry.tipo] || '📝' %></span>
+              <div class="flex-1 min-w-0">
+                <p class="text-sm font-semibold text-gray-800"><%= labels[entry.tipo] || entry.tipo %></p>
+                <% if (entry.descricao) { %>
+                  <p class="text-xs text-gray-500 mt-0.5 truncate"><%= entry.descricao %></p>
+                <% } %>
+                <% if (entry.valor) { %>
+                  <p class="text-xs text-[#ec5a1c] font-medium mt-0.5"><%= entry.valor %> kg</p>
+                <% } %>
+              </div>
+              <span class="text-xs text-gray-400 flex-shrink-0">
+                <%= new Date(entry.createdAt || entry.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) %>
+              </span>
+            </div>
+          <% }); %>
+        </div>
+      </div>
+    <% } else { %>
+      <div class="card text-center py-8">
+        <i class="fa-solid fa-feather text-gray-300 text-4xl mb-3"></i>
+        <p class="text-sm text-gray-400">Nenhum registro hoje ainda.</p>
+        <p class="text-xs text-gray-300 mt-1">Use os botões acima para registrar atividades!</p>
+      </div>
+    <% } %>
+  </section>
+
+  <!-- Recent History (last 7 days) -->
+  <section class="mb-8">
+    <h2 class="text-lg font-bold text-gray-900 mb-3">
+      <i class="fa-solid fa-calendar-days text-[#ec5a1c] mr-2"></i>Últimos 7 dias
+    </h2>
+
+    <% if (typeof historico !== 'undefined' && historico.length > 0) { %>
+      <%
+        var agrupado = {};
+        historico.forEach(function(entry) {
+          var d = new Date(entry.createdAt || entry.created_at);
+          var chave = d.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
+          if (!agrupado[chave]) agrupado[chave] = [];
+          agrupado[chave].push(entry);
+        });
+      %>
+
+      <div class="space-y-4">
+        <% Object.keys(agrupado).forEach(function(dia) { %>
+          <div class="card !p-0 overflow-hidden">
+            <div class="px-5 py-3 bg-gray-50 border-b border-gray-100">
+              <p class="text-xs font-bold text-gray-500 uppercase tracking-wide"><%= dia %></p>
+            </div>
+            <div class="divide-y divide-gray-100">
+              <% agrupado[dia].forEach(function(entry) { %>
+                <div class="flex items-center gap-4 px-5 py-3">
+                  <span class="text-xl flex-shrink-0"><%= icones[entry.tipo] || '📝' %></span>
+                  <div class="flex-1 min-w-0">
+                    <p class="text-sm font-medium text-gray-700"><%= labels[entry.tipo] || entry.tipo %></p>
+                    <% if (entry.descricao) { %>
+                      <p class="text-xs text-gray-400 truncate"><%= entry.descricao %></p>
+                    <% } %>
+                    <% if (entry.valor) { %>
+                      <p class="text-xs text-[#ec5a1c] font-medium"><%= entry.valor %> kg</p>
+                    <% } %>
+                  </div>
+                  <span class="text-xs text-gray-400 flex-shrink-0">
+                    <%= new Date(entry.createdAt || entry.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) %>
+                  </span>
+                </div>
+              <% }); %>
+            </div>
+          </div>
+        <% }); %>
+      </div>
+    <% } else { %>
+      <div class="card text-center py-8">
+        <i class="fa-solid fa-hourglass-half text-gray-300 text-3xl mb-3"></i>
+        <p class="text-sm text-gray-400">Sem registros nos últimos dias.</p>
+      </div>
+    <% } %>
+  </section>
+
+</main>
+
+<%- include('../partials/footer') %>

@@ -1,0 +1,140 @@
+<% locals.titulo = dados.petNome + ' esta seguro!' %>
+<% locals.extraHead = `
+<style>
+  .confetti-container {
+    position: fixed; inset: 0; pointer-events: none; z-index: 9999; overflow: hidden;
+  }
+  .confetti {
+    position: absolute; top: -20px; width: 10px; height: 10px; border-radius: 2px;
+    animation: confettiFall var(--duration) var(--delay) ease-in forwards;
+  }
+  @keyframes confettiFall {
+    0%   { transform: translateY(0) rotate(0deg) scale(1); opacity: 1; }
+    80%  { opacity: 1; }
+    100% { transform: translateY(100vh) rotate(var(--rot)) scale(0.5); opacity: 0; }
+  }
+  .celebration-bounce {
+    animation: celebrationBounce 0.6s ease-out;
+  }
+  @keyframes celebrationBounce {
+    0%   { transform: scale(0.3); opacity: 0; }
+    50%  { transform: scale(1.08); }
+    70%  { transform: scale(0.95); }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  .stat-card {
+    animation: statReveal 0.5s ease-out backwards;
+  }
+  @keyframes statReveal {
+    from { transform: translateY(20px); opacity: 0; }
+    to   { transform: translateY(0); opacity: 1; }
+  }
+</style>
+` %>
+<%- include('../partials/header') %>
+
+<!-- Confete -->
+<div class="confetti-container" id="confettiBox"></div>
+
+<main class="flex-1 container mx-auto px-4 py-8 max-w-lg text-center">
+
+  <!-- Badge de celebracao -->
+  <div class="celebration-bounce mb-6">
+    <div class="relative inline-block">
+      <% if (dados.petFoto) { %>
+        <img src="<%= dados.petFoto %>" alt="<%= dados.petNome %>"
+             class="w-32 h-32 rounded-full object-cover ring-4 ring-emerald-400 shadow-xl mx-auto">
+      <% } else { %>
+        <div class="w-32 h-32 rounded-full bg-emerald-100 flex items-center justify-center ring-4 ring-emerald-400 shadow-xl mx-auto">
+          <i class="fa-solid fa-paw text-emerald-500 text-4xl"></i>
+        </div>
+      <% } %>
+      <span class="absolute -bottom-2 -right-2 w-12 h-12 bg-emerald-500 rounded-full flex items-center justify-center ring-4 ring-white shadow-lg">
+        <i class="fa-solid fa-shield-halved text-white text-xl"></i>
+      </span>
+    </div>
+  </div>
+
+  <h1 class="text-3xl font-black text-gray-900 mb-2 celebration-bounce" style="animation-delay: 0.1s">
+    Que alivio!
+  </h1>
+  <p class="text-lg text-gray-600 mb-8 celebration-bounce" style="animation-delay: 0.2s">
+    <strong class="text-emerald-600"><%= dados.petNome %></strong> esta seguro e de volta ao lar.
+  </p>
+
+  <!-- Estatisticas -->
+  <div class="grid grid-cols-2 gap-3 mb-8">
+    <div class="stat-card card !p-4 text-center" style="animation-delay: 0.3s">
+      <i class="fa-solid fa-clock text-amber-400 text-xl mb-2"></i>
+      <p class="text-xs text-gray-400 uppercase font-medium">Tempo perdido</p>
+      <p class="text-lg font-bold text-gray-800"><%= dados.tempoPerdido %></p>
+    </div>
+    <div class="stat-card card !p-4 text-center" style="animation-delay: 0.4s">
+      <i class="fa-solid fa-magnifying-glass text-blue-400 text-xl mb-2"></i>
+      <p class="text-xs text-gray-400 uppercase font-medium">Encontrado via</p>
+      <p class="text-lg font-bold text-gray-800">
+        <% if (dados.comoEncontrado === 'voltou_sozinho') { %>Voltou sozinho
+        <% } else if (dados.comoEncontrado === 'alguem_encontrou') { %>Ajuda de alguem
+        <% } else if (dados.comoEncontrado === 'tag_nfc') { %>Tag NFC
+        <% } else { %>Outra forma<% } %>
+      </p>
+    </div>
+  </div>
+
+  <% if (dados.mensagemAgradecimento) { %>
+    <div class="stat-card card mb-8 bg-emerald-50 border border-emerald-200 text-left" style="animation-delay: 0.5s">
+      <div class="flex items-start gap-3">
+        <div class="w-10 h-10 rounded-full bg-emerald-200 flex items-center justify-center flex-shrink-0 mt-0.5">
+          <i class="fa-solid fa-heart text-emerald-600"></i>
+        </div>
+        <div>
+          <p class="text-sm font-semibold text-emerald-800 mb-1">Mensagem de agradecimento</p>
+          <p class="text-sm text-gray-600 leading-relaxed whitespace-pre-line"><%= dados.mensagemAgradecimento %></p>
+        </div>
+      </div>
+    </div>
+  <% } %>
+
+  <!-- Acoes -->
+  <div class="space-y-3 stat-card" style="animation-delay: 0.6s">
+    <a href="/pets/<%= dados.petId %>"
+       class="block w-full py-3.5 rounded-xl font-semibold text-white bg-emerald-500 hover:bg-emerald-600 transition-colors text-center">
+      <i class="fa-solid fa-paw mr-2"></i> Ver perfil de <%= dados.petNome %>
+    </a>
+    <a href="/pets"
+       class="block w-full py-3 rounded-xl font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors text-center">
+      <i class="fa-solid fa-list mr-2"></i> Meus Pets
+    </a>
+  </div>
+
+</main>
+
+<script>
+(function () {
+  var cores = ['#10b981', '#34d399', '#6ee7b7', '#fbbf24', '#f59e0b', '#ec5a1c', '#3b82f6', '#8b5cf6', '#ec4899'];
+  var container = document.getElementById('confettiBox');
+  var total = 60;
+
+  for (var i = 0; i < total; i++) {
+    var piece = document.createElement('div');
+    piece.className = 'confetti';
+    piece.style.left = Math.random() * 100 + '%';
+    piece.style.background = cores[Math.floor(Math.random() * cores.length)];
+    piece.style.width = (Math.random() * 8 + 6) + 'px';
+    piece.style.height = (Math.random() * 8 + 4) + 'px';
+    piece.style.setProperty('--duration', (Math.random() * 2 + 2) + 's');
+    piece.style.setProperty('--delay', (Math.random() * 1.5) + 's');
+    piece.style.setProperty('--rot', (Math.random() * 720 - 360) + 'deg');
+    if (Math.random() > 0.5) piece.style.borderRadius = '50%';
+    container.appendChild(piece);
+  }
+
+  setTimeout(function () {
+    container.style.transition = 'opacity 1s';
+    container.style.opacity = '0';
+    setTimeout(function () { container.remove(); }, 1000);
+  }, 5000);
+})();
+</script>
+
+<%- include('../partials/footer') %>

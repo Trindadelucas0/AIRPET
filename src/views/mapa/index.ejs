@@ -1,0 +1,52 @@
+<% locals.titulo = 'Mapa' %>
+<% locals.extraHead = `
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css">
+<style>
+  #mapaFull { position: absolute; inset: 0; z-index: 0; }
+  .mapa-wrapper { position: relative; flex: 1; display: flex; flex-direction: column; }
+  .layer-btn.active { background-color: #ec5a1c; color: white; border-color: #ec5a1c; }
+</style>
+` %>
+<%- include('../partials/header') %>
+
+<div class="mapa-wrapper">
+
+  <div class="absolute top-3 left-3 right-3 z-[1000]">
+    <div class="bg-white/95 backdrop-blur-sm rounded-2xl shadow-lg p-2 flex items-center gap-2 overflow-x-auto">
+      <button type="button" class="layer-btn active flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold border border-gray-200 whitespace-nowrap transition-all"
+              data-layer="petshops">
+        <i class="fa-solid fa-store"></i> Petshops
+      </button>
+      <button type="button" class="layer-btn active flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold border border-gray-200 whitespace-nowrap transition-all"
+              data-layer="perdidos">
+        <i class="fa-solid fa-triangle-exclamation"></i> Perdidos
+      </button>
+      <button type="button" class="layer-btn active flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold border border-gray-200 whitespace-nowrap transition-all"
+              data-layer="avistamentos">
+        <i class="fa-solid fa-eye"></i> Avistamentos
+      </button>
+      <button type="button" class="layer-btn flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold border border-gray-200 whitespace-nowrap transition-all text-gray-600"
+              data-layer="pontos">
+        <i class="fa-solid fa-map-pin"></i> Pontos
+      </button>
+    </div>
+  </div>
+
+  <div id="mapaFull"></div>
+
+  <button type="button" id="btnMinhaLocalizacao"
+          class="absolute bottom-6 right-4 z-[1000] w-12 h-12 bg-white rounded-full shadow-lg flex items-center justify-center text-[#ec5a1c] hover:bg-gray-50 active:scale-95 transition-all">
+    <i class="fa-solid fa-location-crosshairs text-lg"></i>
+  </button>
+
+</div>
+
+<% locals.extraScripts = `
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+<script src="/js/mapa.js"></script>
+` %>
+
+<%- include('../partials/footer') %>

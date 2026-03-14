@@ -1,0 +1,723 @@
+/**
+ * migrate.js — Auto-criacao de tabelas no boot do servidor
+ *
+ * Executado toda vez que o servidor inicia.
+ * Verifica se as tabelas existem e cria as que faltam.
+ * Usa CREATE TABLE IF NOT EXISTS para ser idempotente (seguro rodar varias vezes).
+ * A ordem respeita foreign keys (tabelas referenciadas sao criadas primeiro).
+ */
+
+const { pool } = require('./database');
+
+const migrations = [
+  // 1. Extensao PostGIS para queries geograficas
+  `CREATE EXTENSION IF NOT EXISTS postgis;`,
+
+  // 2. Usuarios — base de todo o sistema
+  `CREATE TABLE IF NOT EXISTS usuarios (
+    id SERIAL PRIMARY KEY,
+    nome VARCHAR(100) NOT NULL,
+    email VARCHAR(150) UNIQUE NOT NULL,
+    senha_hash VARCHAR(255) NOT NULL,
+    telefone VARCHAR(20),
+    role VARCHAR(20) DEFAULT 'usuario',
+    ultima_localizacao GEOGRAPHY(POINT, 4326),
+    ultima_lat DECIMAL(10,7),
+    ultima_lng DECIMAL(10,7),
+    data_criacao TIMESTAMP DEFAULT NOW()
+  );`,
+
+  // 3. Pets — vinculados a um usuario
+  `CREATE TABLE IF NOT EXISTS pets (
+    id SERIAL PRIMARY KEY,
+    nome VARCHAR(100) NOT NULL,
+    foto TEXT,
+    descricao_emocional TEXT,
+    raca VARCHAR(100),
+    tipo VARCHAR(50) DEFAULT 'cachorro',
+    peso DECIMAL(5,2),
+    data_nascimento DATE,
+    status VARCHAR(20) DEFAULT 'seguro',
+    usuario_id INTEGER REFERENCES usuarios(id) ON DELETE CASCADE,
+    petshop_vinculado_id INTEGER,
+    data_criacao TIMESTAMP DEFAULT NOW()
+  );`,
+
+  // 4. Lotes de fabricacao de tags
+  `CREATE TABLE IF NOT EXISTS tag_batches (
+    id SERIAL PRIMARY KEY,
+    codigo_lote VARCHAR(50) UNIQUE NOT NULL,
+    quantidade INTEGER NOT NULL,
+    fabricante VARCHAR(100),
+    observacoes TEXT,
+    criado_por INTEGER REFERENCES usuarios(id),
+    data_criacao TIMESTAMP DEFAULT NOW()
+  );`,
+
+  // 5. NFC Tags — lifecycle: stock -> reserved -> sent -> active -> blocked
+  `CREATE TABLE IF NOT EXISTS nfc_tags (
+    id SERIAL PRIMARY KEY,
+    tag_code VARCHAR(20) UNIQUE NOT NULL,
+    activation_code VARCHAR(20) NOT NULL,
+    qr_code VARCHAR(100) UNIQUE,
+    status VARCHAR(20) DEFAULT 'stock',
+    batch_id INTEGER REFERENCES tag_batches(id),
+    user_id INTEGER REFERENCES usuarios(id),
+    pet_id INTEGER REFERENCES pets(id) ON DELETE SET NULL,
+    activated_at TIMESTAMP,
+    sent_at TIMESTAMP,
+    reserved_at TIMESTAMP,
+    data_criacao TIMESTAMP DEFAULT NOW()
+  );`,
+
+  // 6. Log de scans — auditoria de todo scan (mesmo pre-ativacao)
+  `CREATE TABLE IF NOT EXISTS tag_scans (
+    id SERIAL PRIMARY KEY,
+    tag_id INTEGER REFERENCES nfc_tags(id),
+    tag_code VARCHAR(20) NOT NULL,
+    latitude DECIMAL(10,7),
+    longitude DECIMAL(10,7),
+    cidade VARCHAR(100),
+    ip VARCHAR(45),
+    user_agent TEXT,
+    data TIMESTAMP DEFAULT NOW()
+  );`,
+
+  // 7. Petshops — perfil completo estilo mini iFood
+  `CREATE TABLE IF NOT EXISTS petshops (
+    id SERIAL PRIMARY KEY,
+    nome VARCHAR(150) NOT NULL,
+    endereco TEXT,
+    localizacao GEOGRAPHY(POINT, 4326),
+    telefone VARCHAR(20),
+    whatsapp VARCHAR(20),
+    descricao TEXT,
+    servicos TEXT[],
+    horario_funcionamento JSONB,
+    galeria_fotos TEXT[],
+    ponto_de_apoio BOOLEAN DEFAULT false,
+    latitude DECIMAL(10,7),
+    longitude DECIMAL(10,7),
+    ativo BOOLEAN DEFAULT true,
+    data_criacao TIMESTAMP DEFAULT NOW()
+  );`,
+
+  // 8. Pontos do mapa — gerenciado pelo admin (vet, abrigo, hospital, etc)
+  `CREATE TABLE IF NOT EXISTS pontos_mapa (
+    id SERIAL PRIMARY KEY,
+    nome VARCHAR(150) NOT NULL,
+    categoria VARCHAR(50) NOT NULL,
+    endereco TEXT,
+    localizacao GEOGRAPHY(POINT, 4326),
+    latitude DECIMAL(10,7),
+    longitude DECIMAL(10,7),
+    telefone VARCHAR(20),
+    whatsapp VARCHAR(20),
+    descricao TEXT,
+    servicos TEXT[],
+    horario_funcionamento JSONB,
+    galeria_fotos TEXT[],
+    icone_mapa VARCHAR(50),
+    ativo BOOLEAN DEFAULT true,
+    criado_por INTEGER REFERENCES usuarios(id),
+    data_criacao TIMESTAMP DEFAULT NOW()
+  );`,
+
+  // Indices espaciais para queries de bounding box (lazy loading do mapa)
+  `CREATE INDEX IF NOT EXISTS idx_pontos_mapa_loc ON pontos_mapa USING GIST (localizacao);`,
+  `CREATE INDEX IF NOT EXISTS idx_petshops_loc ON petshops USING GIST (localizacao);`,
+
+  // 9. Pets perdidos — fluxo de aprovacao pelo admin
+  `CREATE TABLE IF NOT EXISTS pets_perdidos (
+    id SERIAL PRIMARY KEY,
+    pet_id INTEGER REFERENCES pets(id) ON DELETE CASCADE,
+    ultima_localizacao GEOGRAPHY(POINT, 4326),
+    ultima_lat DECIMAL(10,7),
+    ultima_lng DECIMAL(10,7),
+    descricao TEXT,
+    recompensa VARCHAR(50),
+    status VARCHAR(30) DEFAULT 'pendente',
+    nivel_alerta INTEGER DEFAULT 0,
+    data_hora_desaparecimento TIMESTAMP,
+    cidade VARCHAR(100),
+    data TIMESTAMP DEFAULT NOW()
+  );`,
+
+  `CREATE INDEX IF NOT EXISTS idx_pets_perdidos_loc ON pets_perdidos USING GIST (ultima_localizacao);`,
+
+  // 10. Localizacoes / avistamentos
+  `CREATE TABLE IF NOT EXISTS localizacoes (
+    id SERIAL PRIMARY KEY,
+    pet_id INTEGER REFERENCES pets(id) ON DELETE CASCADE,
+    ponto GEOGRAPHY(POINT, 4326),
+    latitude DECIMAL(10,7),
+    longitude DECIMAL(10,7),
+    cidade VARCHAR(100),
+    ip VARCHAR(45),
+    foto_url TEXT,
+    data TIMESTAMP DEFAULT NOW()
+  );`,
+
+  `CREATE INDEX IF NOT EXISTS idx_localizacoes_loc ON localizacoes USING GIST (ponto);`,
+
+  // 11. Notificacoes
+  `CREATE TABLE IF NOT EXISTS notificacoes (
+    id SERIAL PRIMARY KEY,
+    usuario_id INTEGER REFERENCES usuarios(id) ON DELETE CASCADE,
+    tipo VARCHAR(50),
+    mensagem TEXT,
+    link TEXT,
+    lida BOOLEAN DEFAULT false,
+    data TIMESTAMP DEFAULT NOW()
+  );`,
+
+  // 12. Agenda petshop
+  `CREATE TABLE IF NOT EXISTS agenda_petshop (
+    id SERIAL PRIMARY KEY,
+    petshop_id INTEGER REFERENCES petshops(id) ON DELETE CASCADE,
+    pet_id INTEGER REFERENCES pets(id),
+    usuario_id INTEGER REFERENCES usuarios(id),
+    servico VARCHAR(100),
+    data TIMESTAMP,
+    status VARCHAR(30) DEFAULT 'agendado',
+    data_criacao TIMESTAMP DEFAULT NOW()
+  );`,
+
+  // 13. Chat — conversas
+  `CREATE TABLE IF NOT EXISTS conversas (
+    id SERIAL PRIMARY KEY,
+    pet_perdido_id INTEGER REFERENCES pets_perdidos(id) ON DELETE CASCADE,
+    encontrador_nome VARCHAR(100),
+    encontrador_telefone VARCHAR(20),
+    dono_id INTEGER REFERENCES usuarios(id),
+    status VARCHAR(30) DEFAULT 'ativa',
+    data_criacao TIMESTAMP DEFAULT NOW()
+  );`,
+
+  // 14. Chat — mensagens (toda mensagem precisa de aprovacao do admin)
+  `CREATE TABLE IF NOT EXISTS mensagens_chat (
+    id SERIAL PRIMARY KEY,
+    conversa_id INTEGER REFERENCES conversas(id) ON DELETE CASCADE,
+    remetente VARCHAR(30) NOT NULL,
+    tipo VARCHAR(20) DEFAULT 'texto',
+    conteudo TEXT NOT NULL,
+    foto_url TEXT,
+    status_moderacao VARCHAR(30) DEFAULT 'pendente',
+    moderado_por INTEGER REFERENCES usuarios(id),
+    moderado_em TIMESTAMP,
+    data TIMESTAMP DEFAULT NOW()
+  );`,
+
+  // 15. Carteira de saude — vacinas
+  `CREATE TABLE IF NOT EXISTS vacinas (
+    id SERIAL PRIMARY KEY,
+    pet_id INTEGER REFERENCES pets(id) ON DELETE CASCADE,
+    nome VARCHAR(100) NOT NULL,
+    data_aplicacao DATE,
+    data_proxima DATE,
+    veterinario VARCHAR(100),
+    observacoes TEXT,
+    data_criacao TIMESTAMP DEFAULT NOW()
+  );`,
+
+  // 16. Carteira de saude — registros gerais
+  `CREATE TABLE IF NOT EXISTS registros_saude (
+    id SERIAL PRIMARY KEY,
+    pet_id INTEGER REFERENCES pets(id) ON DELETE CASCADE,
+    tipo VARCHAR(50) NOT NULL,
+    descricao TEXT,
+    data_registro DATE,
+    data_proxima DATE,
+    valor_numerico DECIMAL(10,2),
+    veterinario VARCHAR(100),
+    observacoes TEXT,
+    data_criacao TIMESTAMP DEFAULT NOW()
+  );`,
+
+  // 17. Configuracoes globais do sistema
+  `CREATE TABLE IF NOT EXISTS config_sistema (
+    id SERIAL PRIMARY KEY,
+    chave VARCHAR(100) UNIQUE NOT NULL,
+    valor TEXT NOT NULL,
+    descricao TEXT,
+    atualizado_em TIMESTAMP DEFAULT NOW()
+  );`,
+
+  // Seeds de configuracao padrao (niveis de alerta)
+  `INSERT INTO config_sistema (chave, valor, descricao) VALUES
+    ('raio_alerta_nivel1_km', '1', 'Nivel 1: raio inicial de notificacao em km'),
+    ('raio_alerta_nivel2_km', '3', 'Nivel 2: raio expandido apos X horas sem encontrar'),
+    ('raio_alerta_nivel3_km', '0', 'Nivel 3: 0 = cidade inteira'),
+    ('horas_para_nivel2', '6', 'Horas sem encontrar para expandir para nivel 2'),
+    ('horas_para_nivel3', '24', 'Horas sem encontrar para expandir para nivel 3')
+  ON CONFLICT (chave) DO NOTHING;`,
+
+  // FK diferida: pets -> petshops (criada apos petshops existir)
+  `DO $$ BEGIN
+    IF NOT EXISTS (
+      SELECT 1 FROM pg_constraint WHERE conname = 'fk_pets_petshop'
+    ) THEN
+      ALTER TABLE pets
+        ADD CONSTRAINT fk_pets_petshop
+        FOREIGN KEY (petshop_vinculado_id) REFERENCES petshops(id)
+        ON DELETE SET NULL;
+    END IF;
+  END $$;`,
+
+  // === MIGRATIONS INCREMENTAIS (colunas novas em tabelas existentes) ===
+
+  // Novas colunas em pets para completar o cadastro
+  `DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='pets' AND column_name='cor') THEN
+      ALTER TABLE pets ADD COLUMN cor VARCHAR(50);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='pets' AND column_name='porte') THEN
+      ALTER TABLE pets ADD COLUMN porte VARCHAR(30);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='pets' AND column_name='sexo') THEN
+      ALTER TABLE pets ADD COLUMN sexo VARCHAR(20);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='pets' AND column_name='tipo_custom') THEN
+      ALTER TABLE pets ADD COLUMN tipo_custom VARCHAR(100);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='pets' AND column_name='telefone_contato') THEN
+      ALTER TABLE pets ADD COLUMN telefone_contato VARCHAR(20);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='pets' AND column_name='data_atualizacao') THEN
+      ALTER TABLE pets ADD COLUMN data_atualizacao TIMESTAMP;
+    END IF;
+  END $$;`,
+
+  // data_atualizacao em pontos_mapa
+  `DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='pontos_mapa' AND column_name='data_atualizacao') THEN
+      ALTER TABLE pontos_mapa ADD COLUMN data_atualizacao TIMESTAMP;
+    END IF;
+  END $$;`,
+
+  // Cor de perfil e data_atualizacao no usuario
+  `DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='usuarios' AND column_name='cor_perfil') THEN
+      ALTER TABLE usuarios ADD COLUMN cor_perfil VARCHAR(7) DEFAULT '#ec5a1c';
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='usuarios' AND column_name='data_atualizacao') THEN
+      ALTER TABLE usuarios ADD COLUMN data_atualizacao TIMESTAMP;
+    END IF;
+  END $$;`,
+
+  // Tabela de racas para busca no cadastro de pets
+  `CREATE TABLE IF NOT EXISTS racas (
+    id SERIAL PRIMARY KEY,
+    nome VARCHAR(100) NOT NULL,
+    tipo VARCHAR(50) NOT NULL,
+    popular BOOLEAN DEFAULT false
+  );`,
+
+  // Garante constraint UNIQUE (idempotente — ignora se ja existe)
+  `DO $$ BEGIN
+    IF NOT EXISTS (
+      SELECT 1 FROM pg_constraint WHERE conname = 'racas_nome_tipo_key'
+    ) THEN
+      DELETE FROM racas WHERE id NOT IN (
+        SELECT MIN(id) FROM racas GROUP BY nome, tipo
+      );
+      ALTER TABLE racas ADD CONSTRAINT racas_nome_tipo_key UNIQUE (nome, tipo);
+    END IF;
+  END $$;`,
+
+  // ========================================================
+  // SEED COMPLETO DE RACAS — Cachorros (todas as racas reconhecidas)
+  // ========================================================
+  `INSERT INTO racas (nome, tipo, popular) VALUES
+    ('Vira-lata (SRD)', 'cachorro', true),
+    ('Labrador Retriever', 'cachorro', true),
+    ('Golden Retriever', 'cachorro', true),
+    ('Pastor Alemao', 'cachorro', true),
+    ('Bulldog Frances', 'cachorro', true),
+    ('Bulldog Ingles', 'cachorro', true),
+    ('Poodle', 'cachorro', true),
+    ('Poodle Toy', 'cachorro', false),
+    ('Rottweiler', 'cachorro', true),
+    ('Yorkshire Terrier', 'cachorro', true),
+    ('Shih Tzu', 'cachorro', true),
+    ('Pinscher Miniatura', 'cachorro', true),
+    ('Pit Bull', 'cachorro', true),
+    ('American Staffordshire Terrier', 'cachorro', false),
+    ('Husky Siberiano', 'cachorro', true),
+    ('Dachshund (Salsicha)', 'cachorro', true),
+    ('Border Collie', 'cachorro', true),
+    ('Beagle', 'cachorro', true),
+    ('Boxer', 'cachorro', true),
+    ('Maltes', 'cachorro', true),
+    ('Lhasa Apso', 'cachorro', true),
+    ('Chow Chow', 'cachorro', true),
+    ('Akita Inu', 'cachorro', true),
+    ('Akita Americano', 'cachorro', false),
+    ('Spitz Alemao (Lulu da Pomerania)', 'cachorro', true),
+    ('Dobermann', 'cachorro', false),
+    ('Dalmata', 'cachorro', false),
+    ('Cocker Spaniel Ingles', 'cachorro', false),
+    ('Cocker Spaniel Americano', 'cachorro', false),
+    ('Cavalier King Charles Spaniel', 'cachorro', false),
+    ('Schnauzer Miniatura', 'cachorro', false),
+    ('Schnauzer Gigante', 'cachorro', false),
+    ('Schnauzer Standard', 'cachorro', false),
+    ('Shar-Pei', 'cachorro', false),
+    ('Basset Hound', 'cachorro', false),
+    ('Bichon Frise', 'cachorro', false),
+    ('Bull Terrier', 'cachorro', false),
+    ('Bull Terrier Miniatura', 'cachorro', false),
+    ('Staffordshire Bull Terrier', 'cachorro', false),
+    ('West Highland White Terrier', 'cachorro', false),
+    ('Jack Russell Terrier', 'cachorro', false),
+    ('Fox Terrier', 'cachorro', false),
+    ('Scottish Terrier', 'cachorro', false),
+    ('Airedale Terrier', 'cachorro', false),
+    ('Cairn Terrier', 'cachorro', false),
+    ('Boston Terrier', 'cachorro', false),
+    ('Weimaraner', 'cachorro', false),
+    ('Vizsla', 'cachorro', false),
+    ('Pointer Ingles', 'cachorro', false),
+    ('Setter Irlandes', 'cachorro', false),
+    ('Setter Gordon', 'cachorro', false),
+    ('Springer Spaniel Ingles', 'cachorro', false),
+    ('Cane Corso', 'cachorro', false),
+    ('Dogo Argentino', 'cachorro', false),
+    ('Fila Brasileiro', 'cachorro', false),
+    ('Mastiff Ingles', 'cachorro', false),
+    ('Mastim Tibetano', 'cachorro', false),
+    ('Bullmastiff', 'cachorro', false),
+    ('Dogue Alemao (Gran Danes)', 'cachorro', false),
+    ('Sao Bernardo', 'cachorro', false),
+    ('Terra Nova (Newfoundland)', 'cachorro', false),
+    ('Bernese Mountain Dog', 'cachorro', false),
+    ('Pastor Belga Malinois', 'cachorro', false),
+    ('Pastor Belga Tervuren', 'cachorro', false),
+    ('Pastor Australiano', 'cachorro', false),
+    ('Pastor de Shetland', 'cachorro', false),
+    ('Pastor Branco Suico', 'cachorro', false),
+    ('Collie Pelo Longo', 'cachorro', false),
+    ('Collie Pelo Curto', 'cachorro', false),
+    ('Old English Sheepdog (Bobtail)', 'cachorro', false),
+    ('Welsh Corgi Pembroke', 'cachorro', false),
+    ('Welsh Corgi Cardigan', 'cachorro', false),
+    ('Samoieda', 'cachorro', false),
+    ('Malamute do Alasca', 'cachorro', false),
+    ('Shiba Inu', 'cachorro', false),
+    ('Basenji', 'cachorro', false),
+    ('Whippet', 'cachorro', false),
+    ('Galgo (Greyhound)', 'cachorro', false),
+    ('Galgo Italiano', 'cachorro', false),
+    ('Afghan Hound', 'cachorro', false),
+    ('Borzoi', 'cachorro', false),
+    ('Bloodhound', 'cachorro', false),
+    ('Rhodesian Ridgeback', 'cachorro', false),
+    ('Papillon', 'cachorro', false),
+    ('Chihuahua', 'cachorro', false),
+    ('Chihuahua Pelo Longo', 'cachorro', false),
+    ('Pequines', 'cachorro', false),
+    ('Pug', 'cachorro', true),
+    ('Spitz Japones', 'cachorro', false),
+    ('Chinese Crested (Crestado Chines)', 'cachorro', false),
+    ('Coton de Tulear', 'cachorro', false),
+    ('Havanes', 'cachorro', false),
+    ('Komondor', 'cachorro', false),
+    ('Kuvasz', 'cachorro', false),
+    ('Pastor do Caucaso', 'cachorro', false),
+    ('Pastor da Asia Central', 'cachorro', false),
+    ('Leao da Rodesia', 'cachorro', false),
+    ('Flat-Coated Retriever', 'cachorro', false),
+    ('Chesapeake Bay Retriever', 'cachorro', false),
+    ('Nova Scotia Duck Tolling Retriever', 'cachorro', false),
+    ('Curly-Coated Retriever', 'cachorro', false),
+    ('Lagotto Romagnolo', 'cachorro', false),
+    ('Braco Alemao Pelo Curto', 'cachorro', false),
+    ('Braco Italiano', 'cachorro', false),
+    ('Irish Wolfhound', 'cachorro', false),
+    ('Deerhound', 'cachorro', false),
+    ('Saluki', 'cachorro', false),
+    ('Pharaoh Hound', 'cachorro', false),
+    ('Canaan Dog', 'cachorro', false),
+    ('Australian Cattle Dog', 'cachorro', false),
+    ('Bouvier des Flandres', 'cachorro', false),
+    ('Briard', 'cachorro', false),
+    ('Leonberger', 'cachorro', false),
+    ('Hovawart', 'cachorro', false),
+    ('Eurasier', 'cachorro', false),
+    ('Keeshond', 'cachorro', false),
+    ('Schipperke', 'cachorro', false),
+    ('Bedlington Terrier', 'cachorro', false),
+    ('Kerry Blue Terrier', 'cachorro', false),
+    ('Soft Coated Wheaten Terrier', 'cachorro', false),
+    ('Norwich Terrier', 'cachorro', false),
+    ('Norfolk Terrier', 'cachorro', false),
+    ('Rat Terrier', 'cachorro', false),
+    ('Parson Russell Terrier', 'cachorro', false),
+    ('Silky Terrier', 'cachorro', false),
+    ('Biewer Terrier', 'cachorro', false),
+    ('Terrier Brasileiro (Fox Paulistinha)', 'cachorro', false),
+    ('Xoloitzcuintli (Mexicano Pelado)', 'cachorro', false),
+    ('Thai Ridgeback', 'cachorro', false),
+    ('Boerboel', 'cachorro', false),
+    ('Tosa Inu', 'cachorro', false),
+    ('Presa Canario', 'cachorro', false)
+  ON CONFLICT (nome, tipo) DO NOTHING;`,
+
+  // ========================================================
+  // SEED COMPLETO DE RACAS — Gatos
+  // ========================================================
+  `INSERT INTO racas (nome, tipo, popular) VALUES
+    ('Vira-lata (SRD)', 'gato', true),
+    ('Siames', 'gato', true),
+    ('Persa', 'gato', true),
+    ('Maine Coon', 'gato', true),
+    ('Ragdoll', 'gato', true),
+    ('Bengal', 'gato', true),
+    ('British Shorthair', 'gato', true),
+    ('British Longhair', 'gato', false),
+    ('Sphynx', 'gato', true),
+    ('Abissinio', 'gato', true),
+    ('Angora Turco', 'gato', true),
+    ('Scottish Fold', 'gato', false),
+    ('Birmanês (Sagrado da Birmânia)', 'gato', false),
+    ('Burmês', 'gato', false),
+    ('Russian Blue (Azul Russo)', 'gato', false),
+    ('Exotico Pelo Curto', 'gato', false),
+    ('American Shorthair', 'gato', false),
+    ('American Curl', 'gato', false),
+    ('Chartreux', 'gato', false),
+    ('Cornish Rex', 'gato', false),
+    ('Devon Rex', 'gato', false),
+    ('Havana Brown', 'gato', false),
+    ('Manx', 'gato', false),
+    ('Norwegian Forest Cat', 'gato', false),
+    ('Ocicat', 'gato', false),
+    ('Oriental Shorthair', 'gato', false),
+    ('Savannah', 'gato', false),
+    ('Selkirk Rex', 'gato', false),
+    ('Somali', 'gato', false),
+    ('Tonquines', 'gato', false),
+    ('Turkish Van', 'gato', false),
+    ('Bombay', 'gato', false),
+    ('Snowshoe', 'gato', false),
+    ('Himalaio', 'gato', false),
+    ('Singapura', 'gato', false),
+    ('Korat', 'gato', false),
+    ('Munchkin', 'gato', false),
+    ('LaPerm', 'gato', false),
+    ('Toyger', 'gato', false),
+    ('Pixiebob', 'gato', false),
+    ('Egyptian Mau', 'gato', false),
+    ('Balines', 'gato', false),
+    ('Japanese Bobtail', 'gato', false),
+    ('Peterbald', 'gato', false),
+    ('Don Sphynx (Donskoy)', 'gato', false),
+    ('Lykoi (Gato Lobisomem)', 'gato', false),
+    ('Ragamuffin', 'gato', false),
+    ('Nebelung', 'gato', false),
+    ('Curl Americano', 'gato', false),
+    ('Khao Manee', 'gato', false)
+  ON CONFLICT (nome, tipo) DO NOTHING;`,
+
+  // ========================================================
+  // SEED COMPLETO DE RACAS — Passaros
+  // ========================================================
+  `INSERT INTO racas (nome, tipo, popular) VALUES
+    ('Calopsita', 'passaro', true),
+    ('Periquito Australiano', 'passaro', true),
+    ('Papagaio Verdadeiro', 'passaro', true),
+    ('Canario', 'passaro', true),
+    ('Agapornis', 'passaro', true),
+    ('Cacatua', 'passaro', true),
+    ('Arara Azul', 'passaro', false),
+    ('Arara Vermelha', 'passaro', false),
+    ('Arara Caninde', 'passaro', false),
+    ('Ring-neck (Periquito de Colar)', 'passaro', false),
+    ('Rosela', 'passaro', false),
+    ('Diamante de Gould', 'passaro', false),
+    ('Mandarim (Zebra Finch)', 'passaro', false),
+    ('Loris e Loriquito', 'passaro', false),
+    ('Eclectus', 'passaro', false),
+    ('Tucano', 'passaro', false),
+    ('Curio', 'passaro', false),
+    ('Coleiro', 'passaro', false),
+    ('Trinca-ferro', 'passaro', false),
+    ('Sabia', 'passaro', false),
+    ('Maritaca', 'passaro', false),
+    ('Periquito Green Cheek (Pyrrhura)', 'passaro', false),
+    ('Jandaia', 'passaro', false),
+    ('Codorna', 'passaro', false),
+    ('Pombo Domestico', 'passaro', false),
+    ('Galinha (Pet)', 'passaro', false),
+    ('Pato (Pet)', 'passaro', false),
+    ('Cisne', 'passaro', false),
+    ('Gaviao (Falcoaria)', 'passaro', false),
+    ('Coruja (Domesticada)', 'passaro', false)
+  ON CONFLICT (nome, tipo) DO NOTHING;`,
+
+  // ========================================================
+  // SEED COMPLETO DE RACAS — Outros (roedores, répteis, peixes, etc)
+  // ========================================================
+  `INSERT INTO racas (nome, tipo, popular) VALUES
+    ('Hamster Sirio', 'outro', true),
+    ('Hamster Anao Russo', 'outro', true),
+    ('Hamster Roborovski', 'outro', false),
+    ('Hamster Chines', 'outro', false),
+    ('Coelho Mini Lion', 'outro', true),
+    ('Coelho Mini Rex', 'outro', false),
+    ('Coelho Holland Lop', 'outro', false),
+    ('Coelho Netherland Dwarf', 'outro', false),
+    ('Coelho Angorá', 'outro', false),
+    ('Coelho Rex', 'outro', false),
+    ('Coelho Nova Zelandia', 'outro', false),
+    ('Coelho Californiano', 'outro', false),
+    ('Porquinho da India (Peruano)', 'outro', true),
+    ('Porquinho da India (Abissinio)', 'outro', false),
+    ('Porquinho da India (Americano)', 'outro', false),
+    ('Porquinho da India (Texel)', 'outro', false),
+    ('Porquinho da India (Skinny)', 'outro', false),
+    ('Chinchila', 'outro', true),
+    ('Degus', 'outro', false),
+    ('Gerbil', 'outro', false),
+    ('Rato Twister', 'outro', false),
+    ('Camundongo (Pet)', 'outro', false),
+    ('Esquilo da Mongolia', 'outro', false),
+    ('Sugar Glider (Petauro)', 'outro', false),
+    ('Ouriço Africano (Hedgehog)', 'outro', false),
+    ('Mini Porco (Mini Pig)', 'outro', false),
+    ('Furao (Ferret)', 'outro', true),
+    ('Tartaruga Tigre-dagua', 'outro', true),
+    ('Tartaruga Jabuti', 'outro', false),
+    ('Tartaruga de Orelha Vermelha', 'outro', false),
+    ('Tartaruga Cagado', 'outro', false),
+    ('Iguana Verde', 'outro', true),
+    ('Gecko Leopardo', 'outro', false),
+    ('Gecko Crestado', 'outro', false),
+    ('Dragao Barbudo (Pogona)', 'outro', false),
+    ('Cameliao Velado', 'outro', false),
+    ('Cameliao Pantera', 'outro', false),
+    ('Corn Snake (Cobra do Milho)', 'outro', false),
+    ('Ball Python (Piton Real)', 'outro', false),
+    ('Jiboia', 'outro', false),
+    ('Teiú', 'outro', false),
+    ('Axolote', 'outro', false),
+    ('Sapo Pacman', 'outro', false),
+    ('Peixe Betta', 'outro', true),
+    ('Peixe Kinguio (Goldfish)', 'outro', false),
+    ('Peixe Neon', 'outro', false),
+    ('Peixe Guppy', 'outro', false),
+    ('Peixe Oscar', 'outro', false),
+    ('Peixe Palhaço (Nemo)', 'outro', false),
+    ('Peixe Disco', 'outro', false),
+    ('Caranguejo Eremita', 'outro', false),
+    ('Camarao Ornamental', 'outro', false)
+  ON CONFLICT (nome, tipo) DO NOTHING;`,
+
+  // Admin agora e gerenciado via .env (ADMIN_EMAIL / ADMIN_PASSWORD)
+  // Nao ha necessidade de promover usuarios a admin no banco
+
+  // 18. Push subscriptions — Web Push notifications do PWA
+  `CREATE TABLE IF NOT EXISTS push_subscriptions (
+    id SERIAL PRIMARY KEY,
+    usuario_id INTEGER REFERENCES usuarios(id) ON DELETE CASCADE,
+    endpoint TEXT NOT NULL,
+    p256dh TEXT NOT NULL,
+    auth TEXT NOT NULL,
+    user_agent TEXT,
+    data_criacao TIMESTAMP DEFAULT NOW()
+  );`,
+
+  `CREATE UNIQUE INDEX IF NOT EXISTS idx_push_sub_endpoint ON push_subscriptions (endpoint);`,
+
+  // 19. Publicacoes — feed social de fotos de pets
+  `CREATE TABLE IF NOT EXISTS publicacoes (
+    id SERIAL PRIMARY KEY,
+    usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+    pet_id INTEGER REFERENCES pets(id) ON DELETE SET NULL,
+    foto VARCHAR(500) NOT NULL,
+    legenda TEXT,
+    fixada BOOLEAN DEFAULT false,
+    criado_em TIMESTAMP DEFAULT NOW()
+  );`,
+
+  `CREATE INDEX IF NOT EXISTS idx_publicacoes_usuario ON publicacoes (usuario_id);`,
+  `CREATE INDEX IF NOT EXISTS idx_publicacoes_criado ON publicacoes (criado_em DESC);`,
+
+  // 20. Curtidas
+  `CREATE TABLE IF NOT EXISTS curtidas (
+    id SERIAL PRIMARY KEY,
+    usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+    publicacao_id INTEGER NOT NULL REFERENCES publicacoes(id) ON DELETE CASCADE,
+    criado_em TIMESTAMP DEFAULT NOW(),
+    UNIQUE(usuario_id, publicacao_id)
+  );`,
+
+  `CREATE INDEX IF NOT EXISTS idx_curtidas_pub ON curtidas (publicacao_id);`,
+
+  // 21. Comentarios
+  `CREATE TABLE IF NOT EXISTS comentarios (
+    id SERIAL PRIMARY KEY,
+    usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+    publicacao_id INTEGER NOT NULL REFERENCES publicacoes(id) ON DELETE CASCADE,
+    texto TEXT NOT NULL,
+    criado_em TIMESTAMP DEFAULT NOW()
+  );`,
+
+  `CREATE INDEX IF NOT EXISTS idx_comentarios_pub ON comentarios (publicacao_id);`,
+
+  // 22. Seguidores
+  `CREATE TABLE IF NOT EXISTS seguidores (
+    id SERIAL PRIMARY KEY,
+    seguidor_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+    seguido_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+    criado_em TIMESTAMP DEFAULT NOW(),
+    UNIQUE(seguidor_id, seguido_id)
+  );`,
+
+  `CREATE INDEX IF NOT EXISTS idx_seguidores_seguido ON seguidores (seguido_id);`,
+  `CREATE INDEX IF NOT EXISTS idx_seguidores_seguidor ON seguidores (seguidor_id);`,
+
+  // Bio do usuario para perfil social
+  `DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='usuarios' AND column_name='bio') THEN
+      ALTER TABLE usuarios ADD COLUMN bio VARCHAR(160);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='usuarios' AND column_name='foto_perfil') THEN
+      ALTER TABLE usuarios ADD COLUMN foto_perfil TEXT;
+    END IF;
+  END $$;`,
+
+  // 23. Diario do Pet — registro diario de alimentacao, passeios, remedios, etc
+  `CREATE TABLE IF NOT EXISTS diario_pet (
+    id SERIAL PRIMARY KEY,
+    pet_id INTEGER REFERENCES pets(id) ON DELETE CASCADE,
+    usuario_id INTEGER REFERENCES usuarios(id),
+    tipo VARCHAR(30) NOT NULL,
+    descricao TEXT,
+    valor_numerico DECIMAL(10,2),
+    foto TEXT,
+    data DATE DEFAULT CURRENT_DATE,
+    hora TIME DEFAULT CURRENT_TIME,
+    data_criacao TIMESTAMP DEFAULT NOW()
+  );`,
+];
+
+/**
+ * Executa todas as migrations em sequencia.
+ * Cada statement roda dentro do pool — se uma falhar, as outras continuam.
+ */
+async function runMigrations() {
+  console.log('[MIGRATE] Iniciando verificacao de tabelas...');
+
+  for (let i = 0; i < migrations.length; i++) {
+    try {
+      await pool.query(migrations[i]);
+    } catch (err) {
+      console.error(`[MIGRATE] Erro na migration ${i + 1}:`, err.message);
+    }
+  }
+
+  console.log('[MIGRATE] Todas as tabelas verificadas/criadas com sucesso.');
+}
+
+module.exports = { runMigrations };

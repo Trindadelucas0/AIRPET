@@ -1,0 +1,88 @@
+<% locals.titulo = 'Mapa Admin' %>
+<% locals.extraHead = '<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""><link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"><link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"><style>#adminFullMap{height:calc(100vh - 4rem)}</style>' %>
+<%- include('../partials/header') %>
+
+<div id="adminFullMap"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+<script>
+(function () {
+  var map = L.map('adminFullMap').setView([-15.78, -47.93], 5);
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap'
+  }).addTo(map);
+
+  var clusterGroup = L.markerClusterGroup();
+  map.addLayer(clusterGroup);
+
+  var iconColors = {
+    petshop: '#10b981',
+    veterinario: '#3b82f6',
+    hospital_pet: '#ef4444',
+    abrigo: '#8b5cf6',
+    ponto_de_apoio: '#f59e0b',
+    pet_perdido: '#dc2626',
+    avistamento: '#f97316'
+  };
+
+  function makeIcon(color) {
+    return L.divIcon({
+      className: 'custom-marker',
+      html: '<div style="background:' + color + ';width:12px;height:12px;border-radius:50%;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.3)"></div>',
+      iconSize: [16, 16],
+      iconAnchor: [8, 8]
+    });
+  }
+
+  var layers = {};
+
+  function addDataLayer(name, items, color) {
+    var layer = L.layerGroup();
+    items.forEach(function (item) {
+      if (!item.latitude || !item.longitude) return;
+      var m = L.marker([item.latitude, item.longitude], { icon: makeIcon(color) });
+      var popup = '<strong>' + (item.nome || item.pet_nome || 'Ponto') + '</strong>';
+      if (item.categoria) popup += '<br><small>' + item.categoria + '</small>';
+      if (item.status) popup += '<br><small>Status: ' + item.status + '</small>';
+      m.bindPopup(popup);
+      clusterGroup.addLayer(m);
+      layer.addLayer(m);
+    });
+    layers[name] = layer;
+  }
+
+  <% if (typeof pontos !== 'undefined' && pontos) { %>
+    addDataLayer('Pontos do Mapa', <%- JSON.stringify(pontos) %>, iconColors.petshop);
+  <% } %>
+
+  <% if (typeof petshops !== 'undefined' && petshops) { %>
+    addDataLayer('Petshops', <%- JSON.stringify(petshops) %>, iconColors.petshop);
+  <% } %>
+
+  <% if (typeof perdidos !== 'undefined' && perdidos) { %>
+    addDataLayer('Pets Perdidos', <%- JSON.stringify(perdidos) %>, iconColors.pet_perdido);
+  <% } %>
+
+  <% if (typeof avistamentos !== 'undefined' && avistamentos) { %>
+    addDataLayer('Avistamentos', <%- JSON.stringify(avistamentos) %>, iconColors.avistamento);
+  <% } %>
+
+  if (Object.keys(layers).length > 0) {
+    L.control.layers(null, layers, { collapsed: false, position: 'topright' }).addTo(map);
+  }
+
+  L.control.custom = L.Control.extend({
+    options: { position: 'topleft' },
+    onAdd: function () {
+      var div = L.DomUtil.create('div', 'leaflet-bar');
+      div.innerHTML = '<a href="/admin/gerenciar-mapa" title="Gerenciar Pontos" style="display:flex;align-items:center;justify-content:center;width:34px;height:34px;background:#fff;font-size:16px">⚙</a>';
+      return div;
+    }
+  });
+  new L.control.custom().addTo(map);
+})();
+</script>
+
+<%- include('../partials/footer') %>

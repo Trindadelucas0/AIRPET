@@ -1,0 +1,368 @@
+<%- include('../partials/header') %>
+
+<%- include('../partials/flash') %>
+
+<main class="flex-1 flex items-center justify-center py-6 px-4 sm:px-6">
+  <div class="w-full max-w-5xl animate-slideUp">
+    <div class="flex rounded-3xl shadow-2xl overflow-hidden bg-white min-h-[600px]">
+
+      <!-- Left Panel — decorative (hidden on mobile) -->
+      <div class="hidden lg:flex lg:w-5/12 relative overflow-hidden bg-gradient-to-br from-orange-600 via-primary-500 to-rose-500">
+        <!-- Animated background shapes -->
+        <div class="absolute inset-0 overflow-hidden">
+          <div class="absolute top-10 -right-10 w-56 h-56 bg-white/10 rounded-full blur-2xl" style="animation: regFloatA 9s ease-in-out infinite;"></div>
+          <div class="absolute -bottom-10 -left-16 w-72 h-72 bg-white/10 rounded-full blur-2xl" style="animation: regFloatB 11s ease-in-out infinite;"></div>
+          <div class="absolute top-1/3 right-1/4 w-32 h-32 bg-white/5 rounded-full blur-xl" style="animation: regFloatA 14s ease-in-out infinite reverse;"></div>
+
+          <!-- Decorative icons -->
+          <i class="fa-solid fa-heart absolute top-14 left-14 text-white/10 text-5xl rotate-[-15deg]"></i>
+          <i class="fa-solid fa-shield-dog absolute bottom-16 right-10 text-white/10 text-6xl rotate-[10deg]"></i>
+          <i class="fa-solid fa-paw absolute top-1/2 right-8 text-white/8 text-4xl rotate-[30deg]"></i>
+          <i class="fa-solid fa-dog absolute bottom-1/3 left-8 text-white/8 text-3xl rotate-[-10deg]"></i>
+
+          <!-- Dot pattern -->
+          <div class="absolute inset-0" style="background-image: radial-gradient(circle, rgba(255,255,255,0.05) 1.5px, transparent 1.5px); background-size: 24px 24px;"></div>
+        </div>
+
+        <!-- Content -->
+        <div class="relative z-10 flex flex-col items-center justify-center w-full px-8 text-center">
+          <!-- Logo with heartbeat -->
+          <div class="w-20 h-20 bg-white/20 backdrop-blur-sm rounded-3xl flex items-center justify-center mb-6 shadow-lg" style="animation: regFloatB 7s ease-in-out infinite;">
+            <i class="fa-solid fa-paw text-white text-3xl"></i>
+          </div>
+
+          <h2 class="text-white text-3xl font-black tracking-tight mb-3">AIRPET</h2>
+          <div class="w-12 h-1 bg-white/40 rounded-full mb-6"></div>
+
+          <p class="text-white/90 text-lg font-medium leading-relaxed mb-3">
+            Junte-se à comunidade
+          </p>
+          <p class="text-white/70 text-sm leading-relaxed max-w-[260px]">
+            Milhares de tutores já protegem seus pets com tecnologia NFC e uma rede de apoio incrível.
+          </p>
+
+          <!-- Stats -->
+          <div class="flex gap-6 mt-8">
+            <div class="text-center">
+              <div class="text-white text-2xl font-black">10k+</div>
+              <div class="text-white/60 text-[10px] uppercase tracking-widest font-medium mt-0.5">Pets</div>
+            </div>
+            <div class="w-px bg-white/20"></div>
+            <div class="text-center">
+              <div class="text-white text-2xl font-black">5k+</div>
+              <div class="text-white/60 text-[10px] uppercase tracking-widest font-medium mt-0.5">Tutores</div>
+            </div>
+            <div class="w-px bg-white/20"></div>
+            <div class="text-center">
+              <div class="text-white text-2xl font-black">98%</div>
+              <div class="text-white/60 text-[10px] uppercase tracking-widest font-medium mt-0.5">Encontrados</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Panel — register form -->
+      <div class="w-full lg:w-7/12 flex flex-col justify-center px-6 sm:px-10 lg:px-14 py-8">
+
+        <!-- Mobile logo -->
+        <div class="flex items-center gap-2.5 mb-6 lg:mb-8 animate-fadeIn">
+          <span class="bg-gradient-to-br from-primary-500 to-primary-600 text-white w-10 h-10 rounded-2xl flex items-center justify-center shadow-lg shadow-primary-500/20">
+            <i class="fa-solid fa-paw text-base"></i>
+          </span>
+          <span class="text-xl font-black tracking-tight bg-gradient-to-r from-primary-500 to-primary-600 bg-clip-text text-transparent">AIRPET</span>
+        </div>
+
+        <h1 class="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight mb-1 animate-fadeIn" style="animation-delay: .05s">
+          Crie sua conta
+        </h1>
+        <p class="text-gray-400 text-sm mb-6 animate-fadeIn" style="animation-delay: .1s">
+          Cadastre-se e comece a proteger seu pet
+        </p>
+
+        <!-- Form -->
+        <form action="/auth/registro" method="POST" class="space-y-4" id="registroForm">
+
+          <!-- Nome -->
+          <div class="animate-fadeIn" style="animation-delay: .12s">
+            <label for="nome" class="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Nome completo</label>
+            <div class="relative">
+              <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400">
+                <i class="fa-solid fa-user text-sm"></i>
+              </span>
+              <input type="text" id="nome" name="nome" required autocomplete="name"
+                     placeholder="Seu nome"
+                     class="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 bg-gray-50/60 text-sm
+                            placeholder:text-gray-300
+                            focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 focus:bg-white
+                            transition-all duration-200">
+            </div>
+          </div>
+
+          <!-- Email & Telefone — side by side on larger screens -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <!-- Email -->
+            <div class="animate-fadeIn" style="animation-delay: .15s">
+              <label for="email" class="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">E-mail</label>
+              <div class="relative">
+                <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400">
+                  <i class="fa-solid fa-envelope text-sm"></i>
+                </span>
+                <input type="email" id="email" name="email" required autocomplete="email"
+                       placeholder="seu@email.com"
+                       class="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 bg-gray-50/60 text-sm
+                              placeholder:text-gray-300
+                              focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 focus:bg-white
+                              transition-all duration-200">
+              </div>
+            </div>
+
+            <!-- Telefone -->
+            <div class="animate-fadeIn" style="animation-delay: .18s">
+              <label for="telefone" class="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Telefone</label>
+              <div class="relative">
+                <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400">
+                  <i class="fa-solid fa-phone text-sm"></i>
+                </span>
+                <input type="tel" id="telefone" name="telefone" autocomplete="tel"
+                       placeholder="(00) 00000-0000"
+                       class="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 bg-gray-50/60 text-sm
+                              placeholder:text-gray-300
+                              focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 focus:bg-white
+                              transition-all duration-200">
+              </div>
+            </div>
+          </div>
+
+          <!-- Senha -->
+          <div class="animate-fadeIn" style="animation-delay: .21s">
+            <label for="senha" class="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Senha</label>
+            <div class="relative">
+              <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400">
+                <i class="fa-solid fa-lock text-sm"></i>
+              </span>
+              <input type="password" id="senha" name="senha" required minlength="6" autocomplete="new-password"
+                     placeholder="Mínimo 6 caracteres"
+                     class="w-full pl-10 pr-11 py-3 rounded-xl border border-gray-200 bg-gray-50/60 text-sm
+                            placeholder:text-gray-300
+                            focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 focus:bg-white
+                            transition-all duration-200">
+              <button type="button" id="toggleSenha"
+                      class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors p-1"
+                      aria-label="Mostrar/ocultar senha">
+                <i class="fa-solid fa-eye text-sm" id="eyeIcon"></i>
+              </button>
+            </div>
+            <!-- Strength indicator -->
+            <div class="mt-2 flex items-center gap-2">
+              <div class="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                <div id="strengthBar" class="h-full rounded-full transition-all duration-500 ease-out w-0 bg-gray-300"></div>
+              </div>
+              <span id="strengthText" class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider min-w-[50px] text-right"></span>
+            </div>
+          </div>
+
+          <!-- Confirmar Senha -->
+          <div class="animate-fadeIn" style="animation-delay: .24s">
+            <label for="confirmarSenha" class="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Confirmar senha</label>
+            <div class="relative">
+              <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400">
+                <i class="fa-solid fa-lock text-sm"></i>
+              </span>
+              <input type="password" id="confirmarSenha" name="confirmarSenha" required minlength="6" autocomplete="new-password"
+                     placeholder="Repita a senha"
+                     class="w-full pl-10 pr-11 py-3 rounded-xl border border-gray-200 bg-gray-50/60 text-sm
+                            placeholder:text-gray-300
+                            focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 focus:bg-white
+                            transition-all duration-200">
+              <button type="button" id="toggleConfirmar"
+                      class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors p-1"
+                      aria-label="Mostrar/ocultar senha">
+                <i class="fa-solid fa-eye text-sm" id="eyeIconConfirmar"></i>
+              </button>
+            </div>
+            <p id="senhaMatch" class="hidden mt-1.5 text-xs font-medium flex items-center gap-1"></p>
+          </div>
+
+          <!-- Terms checkbox -->
+          <div class="animate-fadeIn" style="animation-delay: .27s">
+            <label class="flex items-start gap-2.5 cursor-pointer select-none group">
+              <input type="checkbox" name="termos" value="1" required
+                     class="w-4 h-4 mt-0.5 rounded border-gray-300 text-primary-500 focus:ring-primary-500/30 transition">
+              <span class="text-xs text-gray-500 group-hover:text-gray-700 transition-colors leading-relaxed">
+                Li e aceito os
+                <a href="/termos" class="font-semibold text-primary-500 hover:underline" target="_blank">Termos de Uso</a>
+                e a
+                <a href="/privacidade" class="font-semibold text-primary-500 hover:underline" target="_blank">Política de Privacidade</a>
+              </span>
+            </label>
+          </div>
+
+          <!-- Submit -->
+          <div class="animate-fadeIn pt-1" style="animation-delay: .3s">
+            <button type="submit" id="btnRegistro"
+                    class="w-full py-3.5 rounded-xl text-sm font-bold text-white
+                           bg-gradient-to-r from-primary-500 to-primary-600
+                           hover:shadow-lg hover:shadow-primary-500/25 hover:-translate-y-0.5
+                           active:scale-[0.98] active:shadow-none
+                           focus:outline-none focus:ring-2 focus:ring-primary-500/40 focus:ring-offset-2
+                           transition-all duration-300
+                           disabled:opacity-40 disabled:cursor-not-allowed
+                           flex items-center justify-center gap-2">
+              <span id="btnRegistroText">Criar conta</span>
+              <i class="fa-solid fa-arrow-right text-xs"></i>
+              <svg id="btnRegistroSpinner" class="hidden animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+              </svg>
+            </button>
+          </div>
+        </form>
+
+        <!-- Divider -->
+        <div class="flex items-center gap-3 my-5 animate-fadeIn" style="animation-delay: .33s">
+          <div class="flex-1 h-px bg-gray-200"></div>
+          <span class="text-xs text-gray-400 font-medium">ou</span>
+          <div class="flex-1 h-px bg-gray-200"></div>
+        </div>
+
+        <!-- Login link -->
+        <p class="text-center text-sm text-gray-500 animate-fadeIn" style="animation-delay: .36s">
+          Já tem conta?
+          <a href="/auth/login" class="font-semibold text-primary-500 hover:text-primary-600 transition-colors hover:underline">
+            Entrar
+          </a>
+        </p>
+
+      </div>
+    </div>
+  </div>
+</main>
+
+<style>
+  @keyframes regFloatA {
+    0%, 100% { transform: translateY(0) translateX(0) rotate(0deg); }
+    50% { transform: translateY(-18px) translateX(8px) rotate(3deg); }
+  }
+  @keyframes regFloatB {
+    0%, 100% { transform: translateY(0) translateX(0); }
+    50% { transform: translateY(12px) translateX(-8px); }
+  }
+</style>
+
+<script>
+(function () {
+  // Toggle password visibility — main password
+  var toggle = document.getElementById('toggleSenha');
+  var senhaInput = document.getElementById('senha');
+  var eyeIcon = document.getElementById('eyeIcon');
+  if (toggle && senhaInput && eyeIcon) {
+    toggle.addEventListener('click', function () {
+      var show = senhaInput.type === 'password';
+      senhaInput.type = show ? 'text' : 'password';
+      eyeIcon.className = show ? 'fa-solid fa-eye-slash text-sm' : 'fa-solid fa-eye text-sm';
+    });
+  }
+
+  // Toggle password visibility — confirm password
+  var toggleC = document.getElementById('toggleConfirmar');
+  var confirmarInput = document.getElementById('confirmarSenha');
+  var eyeIconC = document.getElementById('eyeIconConfirmar');
+  if (toggleC && confirmarInput && eyeIconC) {
+    toggleC.addEventListener('click', function () {
+      var show = confirmarInput.type === 'password';
+      confirmarInput.type = show ? 'text' : 'password';
+      eyeIconC.className = show ? 'fa-solid fa-eye-slash text-sm' : 'fa-solid fa-eye text-sm';
+    });
+  }
+
+  // Password strength indicator
+  var strengthBar = document.getElementById('strengthBar');
+  var strengthText = document.getElementById('strengthText');
+  if (senhaInput && strengthBar && strengthText) {
+    senhaInput.addEventListener('input', function () {
+      var val = senhaInput.value;
+      var score = 0;
+      if (val.length >= 4) score++;
+      if (val.length >= 6) score++;
+      if (val.length >= 8) score++;
+      if (/[A-Z]/.test(val)) score++;
+      if (/[0-9]/.test(val)) score++;
+      if (/[^A-Za-z0-9]/.test(val)) score++;
+
+      var levels = [
+        { w: '0%',   color: 'bg-gray-300',    label: '' },
+        { w: '16%',  color: 'bg-red-400',     label: 'Fraca' },
+        { w: '33%',  color: 'bg-orange-400',  label: 'Fraca' },
+        { w: '50%',  color: 'bg-amber-400',   label: 'Média' },
+        { w: '70%',  color: 'bg-emerald-400', label: 'Boa' },
+        { w: '85%',  color: 'bg-emerald-500', label: 'Forte' },
+        { w: '100%', color: 'bg-emerald-600', label: 'Ótima' }
+      ];
+
+      var level = levels[Math.min(score, levels.length - 1)];
+      strengthBar.style.width = level.w;
+      strengthBar.className = 'h-full rounded-full transition-all duration-500 ease-out ' + level.color;
+      strengthText.textContent = val.length > 0 ? level.label : '';
+
+      var textColors = { Fraca: 'text-red-400', Média: 'text-amber-500', Boa: 'text-emerald-500', Forte: 'text-emerald-600', 'Ótima': 'text-emerald-700' };
+      strengthText.className = 'text-[10px] font-semibold uppercase tracking-wider min-w-[50px] text-right ' + (textColors[level.label] || 'text-gray-400');
+
+      checkMatch();
+    });
+  }
+
+  // Password match checker
+  var matchEl = document.getElementById('senhaMatch');
+  function checkMatch() {
+    if (!confirmarInput || !senhaInput || !matchEl) return;
+    var cv = confirmarInput.value;
+    if (cv.length === 0) { matchEl.classList.add('hidden'); return; }
+    matchEl.classList.remove('hidden');
+    if (cv === senhaInput.value) {
+      matchEl.innerHTML = '<i class="fa-solid fa-circle-check text-emerald-500"></i> <span class="text-emerald-600">Senhas conferem</span>';
+    } else {
+      matchEl.innerHTML = '<i class="fa-solid fa-circle-xmark text-red-400"></i> <span class="text-red-500">Senhas não conferem</span>';
+    }
+  }
+  if (confirmarInput) confirmarInput.addEventListener('input', checkMatch);
+
+  // Phone mask
+  var telefoneInput = document.getElementById('telefone');
+  if (telefoneInput) {
+    telefoneInput.addEventListener('input', function () {
+      var v = telefoneInput.value.replace(/\D/g, '').substring(0, 11);
+      if (v.length > 6) {
+        v = '(' + v.substring(0, 2) + ') ' + v.substring(2, 7) + '-' + v.substring(7);
+      } else if (v.length > 2) {
+        v = '(' + v.substring(0, 2) + ') ' + v.substring(2);
+      } else if (v.length > 0) {
+        v = '(' + v;
+      }
+      telefoneInput.value = v;
+    });
+  }
+
+  // Form submit loading state
+  var form = document.getElementById('registroForm');
+  var btn = document.getElementById('btnRegistro');
+  var btnText = document.getElementById('btnRegistroText');
+  var spinner = document.getElementById('btnRegistroSpinner');
+  if (form && btn) {
+    form.addEventListener('submit', function (e) {
+      if (senhaInput && confirmarInput && senhaInput.value !== confirmarInput.value) {
+        e.preventDefault();
+        if (matchEl) { matchEl.classList.remove('hidden'); matchEl.innerHTML = '<i class="fa-solid fa-circle-xmark text-red-400"></i> <span class="text-red-500">Senhas não conferem</span>'; }
+        confirmarInput.focus();
+        return;
+      }
+      btn.disabled = true;
+      if (btnText) btnText.textContent = 'Criando conta...';
+      if (spinner) spinner.classList.remove('hidden');
+      var arrow = btn.querySelector('.fa-arrow-right');
+      if (arrow) arrow.classList.add('hidden');
+    });
+  }
+})();
+</script>
+
+<%- include('../partials/footer') %>

@@ -1,0 +1,172 @@
+<% locals.titulo = 'Termos de Uso' %>
+<%- include('partials/header') %>
+
+<main class="flex-1">
+  <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+
+    <div class="text-center mb-10">
+      <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-primary-50 text-primary-500 mb-4">
+        <i class="fa-solid fa-file-contract text-2xl"></i>
+      </div>
+      <h1 class="text-3xl font-bold text-gray-900">Termos de Uso</h1>
+      <p class="text-gray-500 mt-2 text-sm">Última atualização: <%= new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' }) %></p>
+    </div>
+
+    <div class="card prose prose-gray max-w-none space-y-8">
+
+      <section>
+        <h2 class="text-lg font-semibold text-gray-900 flex items-center gap-2 mb-3">
+          <i class="fa-solid fa-check-circle text-[#ec5a1c]"></i> 1. Aceitação dos Termos
+        </h2>
+        <p class="text-sm text-gray-600 leading-relaxed">
+          Ao acessar ou utilizar a plataforma AIRPET, você declara que leu, compreendeu e concorda
+          integralmente com estes Termos de Uso. Caso não concorde com qualquer disposição, solicitamos
+          que não utilize nossos serviços. O uso continuado da plataforma após eventuais alterações
+          constitui aceitação dos termos atualizados.
+        </p>
+      </section>
+
+      <section>
+        <h2 class="text-lg font-semibold text-gray-900 flex items-center gap-2 mb-3">
+          <i class="fa-solid fa-paw text-[#ec5a1c]"></i> 2. Descrição do Serviço
+        </h2>
+        <p class="text-sm text-gray-600 leading-relaxed">
+          O AIRPET é uma plataforma de identificação e proteção de pets por meio de tags NFC. Nosso serviço
+          permite o cadastro de animais de estimação, a vinculação de tags NFC para identificação, a localização
+          de pets perdidos, conexão com petshops parceiros, registro de informações de saúde e comunicação
+          entre tutores através de chat integrado.
+        </p>
+      </section>
+
+      <section>
+        <h2 class="text-lg font-semibold text-gray-900 flex items-center gap-2 mb-3">
+          <i class="fa-solid fa-user-shield text-[#ec5a1c]"></i> 3. Cadastro e Conta
+        </h2>
+        <p class="text-sm text-gray-600 leading-relaxed mb-2">
+          Para utilizar os recursos da plataforma, é necessário criar uma conta fornecendo informações
+          verdadeiras e atualizadas. Você é responsável por:
+        </p>
+        <ul class="text-sm text-gray-600 space-y-1 ml-4 list-disc">
+          <li>Manter a confidencialidade de suas credenciais de acesso</li>
+          <li>Fornecer dados corretos e atualizados sobre você e seus pets</li>
+          <li>Toda atividade realizada em sua conta</li>
+          <li>Notificar imediatamente qualquer uso não autorizado</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2 class="text-lg font-semibold text-gray-900 flex items-center gap-2 mb-3">
+          <i class="fa-solid fa-nfc-symbol text-[#ec5a1c]"></i> 4. Tags NFC
+        </h2>
+        <p class="text-sm text-gray-600 leading-relaxed mb-2">
+          As tags NFC fornecidas pelo AIRPET são de uso pessoal e intransferível, vinculadas a um único pet.
+          Ao utilizar as tags, você concorda que:
+        </p>
+        <ul class="text-sm text-gray-600 space-y-1 ml-4 list-disc">
+          <li>Cada tag é associada a apenas um animal por vez</li>
+          <li>A tag não deve ser adulterada, duplicada ou utilizada para fins diversos do proposto</li>
+          <li>O AIRPET não se responsabiliza por danos físicos às tags após a entrega</li>
+          <li>Em caso de perda ou dano, uma nova tag poderá ser solicitada</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2 class="text-lg font-semibold text-gray-900 flex items-center gap-2 mb-3">
+          <i class="fa-solid fa-list-check text-[#ec5a1c]"></i> 5. Responsabilidades do Usuário
+        </h2>
+        <p class="text-sm text-gray-600 leading-relaxed mb-2">
+          O usuário compromete-se a:
+        </p>
+        <ul class="text-sm text-gray-600 space-y-1 ml-4 list-disc">
+          <li>Utilizar a plataforma de forma ética e em conformidade com a legislação vigente</li>
+          <li>Não publicar conteúdo ofensivo, falso ou que viole direitos de terceiros</li>
+          <li>Manter as informações de seus pets atualizadas, especialmente dados de saúde e vacinação</li>
+          <li>Não utilizar a plataforma para fins comerciais sem autorização prévia</li>
+          <li>Reportar qualquer irregularidade encontrada na plataforma</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2 class="text-lg font-semibold text-gray-900 flex items-center gap-2 mb-3">
+          <i class="fa-solid fa-store text-[#ec5a1c]"></i> 6. Petshops Parceiros
+        </h2>
+        <p class="text-sm text-gray-600 leading-relaxed">
+          O AIRPET disponibiliza uma rede de petshops parceiros que podem ser encontrados no mapa da plataforma.
+          A relação entre o usuário e os petshops parceiros é independente, e o AIRPET atua apenas como
+          intermediador de visibilidade. Não nos responsabilizamos pela qualidade dos serviços prestados
+          pelos petshops, preços praticados ou quaisquer disputas comerciais entre as partes.
+        </p>
+      </section>
+
+      <section>
+        <h2 class="text-lg font-semibold text-gray-900 flex items-center gap-2 mb-3">
+          <i class="fa-solid fa-lock text-[#ec5a1c]"></i> 7. Privacidade
+        </h2>
+        <p class="text-sm text-gray-600 leading-relaxed">
+          A coleta e o tratamento de dados pessoais estão descritos em nossa
+          <a href="/privacidade" class="text-[#ec5a1c] hover:underline font-medium">Política de Privacidade</a>,
+          que é parte integrante destes Termos de Uso. Ao utilizar a plataforma, você também
+          concorda com as práticas descritas na Política de Privacidade.
+        </p>
+      </section>
+
+      <section>
+        <h2 class="text-lg font-semibold text-gray-900 flex items-center gap-2 mb-3">
+          <i class="fa-solid fa-copyright text-[#ec5a1c]"></i> 8. Propriedade Intelectual
+        </h2>
+        <p class="text-sm text-gray-600 leading-relaxed">
+          Todo o conteúdo da plataforma AIRPET, incluindo mas não se limitando a textos, imagens, logotipos,
+          ícones, layout, código-fonte e design, é de propriedade exclusiva do AIRPET ou de seus licenciadores
+          e está protegido pelas leis de propriedade intelectual. É proibida a reprodução, distribuição ou
+          modificação sem autorização prévia por escrito.
+        </p>
+      </section>
+
+      <section>
+        <h2 class="text-lg font-semibold text-gray-900 flex items-center gap-2 mb-3">
+          <i class="fa-solid fa-triangle-exclamation text-[#ec5a1c]"></i> 9. Limitação de Responsabilidade
+        </h2>
+        <p class="text-sm text-gray-600 leading-relaxed">
+          O AIRPET se esforça para manter a plataforma disponível e funcional, porém não garante que o
+          serviço estará livre de interrupções ou erros. O AIRPET não se responsabiliza por danos diretos
+          ou indiretos decorrentes do uso da plataforma, incluindo mas não se limitando a: perda de dados,
+          falhas na leitura de tags NFC, imprecisões na localização ou indisponibilidade temporária do serviço.
+          A plataforma não substitui a responsabilidade do tutor no cuidado e proteção de seus animais.
+        </p>
+      </section>
+
+      <section>
+        <h2 class="text-lg font-semibold text-gray-900 flex items-center gap-2 mb-3">
+          <i class="fa-solid fa-pen-to-square text-[#ec5a1c]"></i> 10. Alterações nos Termos
+        </h2>
+        <p class="text-sm text-gray-600 leading-relaxed">
+          O AIRPET reserva-se o direito de modificar estes Termos de Uso a qualquer momento. As alterações
+          entrarão em vigor a partir da data de sua publicação na plataforma. Recomendamos que os usuários
+          revisem periodicamente esta página. O uso continuado da plataforma após modificações implica na
+          aceitação dos novos termos.
+        </p>
+      </section>
+
+      <section>
+        <h2 class="text-lg font-semibold text-gray-900 flex items-center gap-2 mb-3">
+          <i class="fa-solid fa-envelope text-[#ec5a1c]"></i> 11. Contato
+        </h2>
+        <p class="text-sm text-gray-600 leading-relaxed">
+          Em caso de dúvidas, sugestões ou reclamações sobre estes Termos de Uso, entre em contato
+          conosco através do e-mail
+          <a href="mailto:contato@airpet.com.br" class="text-[#ec5a1c] hover:underline font-medium">contato@airpet.com.br</a>.
+        </p>
+      </section>
+
+    </div>
+
+    <div class="text-center mt-8">
+      <a href="/" class="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-[#ec5a1c] transition-colors">
+        <i class="fa-solid fa-arrow-left"></i> Voltar à página inicial
+      </a>
+    </div>
+
+  </div>
+</main>
+
+<%- include('partials/footer') %>

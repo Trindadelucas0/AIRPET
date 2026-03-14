@@ -1,0 +1,444 @@
+<% locals.titulo = typeof titulo !== 'undefined' ? titulo : 'Perfil' %>
+<% locals.extraHead = `
+<style>
+  @keyframes profileReveal { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes gridFadeIn { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
+  .profile-reveal { animation: profileReveal .5s ease-out both; }
+  .grid-item { animation: gridFadeIn .4s ease-out both; }
+  .grid-overlay { opacity: 0; transition: opacity .2s ease; }
+  .grid-item:hover .grid-overlay { opacity: 1; }
+  .pet-scroll::-webkit-scrollbar { display: none; }
+  .pet-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+  .stat-divider { width: 1px; height: 28px; background: linear-gradient(to bottom, transparent, #e5e7eb, transparent); }
+  .follow-btn { transition: all .3s cubic-bezier(.4,0,.2,1); }
+</style>
+` %>
+<%- include('../partials/header') %>
+<%- include('../partials/flash') %>
+
+<main class="flex-1 pb-24 md:pb-6">
+  <div class="max-w-2xl mx-auto px-4">
+
+    <!-- Profile Header -->
+    <section class="pt-6 pb-5 profile-reveal">
+
+      <!-- Top row: avatar + stats (Instagram layout) -->
+      <div class="flex items-center gap-5 sm:gap-8">
+
+        <!-- Avatar -->
+        <div class="flex-shrink-0">
+          <% if (perfil.foto_perfil) { %>
+            <img src="<%= perfil.foto_perfil %>" alt="<%= perfil.nome %>"
+                 class="w-20 h-20 sm:w-24 sm:h-24 rounded-full object-cover ring-4 ring-white shadow-xl shadow-black/10">
+          <% } else { %>
+            <span class="w-20 h-20 sm:w-24 sm:h-24 rounded-full flex items-center justify-center text-2xl sm:text-3xl font-black text-white shadow-xl shadow-black/10 ring-4 ring-white"
+                  style="background: <%= perfil.cor_perfil || '#ec5a1c' %>">
+              <%= perfil.nome ? perfil.nome.charAt(0).toUpperCase() : 'U' %>
+            </span>
+          <% } %>
+        </div>
+
+        <!-- Stats + action -->
+        <div class="flex-1 min-w-0">
+          <h1 class="text-xl sm:text-2xl font-black text-gray-900 truncate"><%= perfil.nome %></h1>
+
+          <!-- Stats row -->
+          <div class="flex items-center gap-4 sm:gap-6 mt-3">
+            <div class="text-center">
+              <span class="block text-lg sm:text-xl font-black text-gray-900"><%= posts.length %></span>
+              <span class="text-[11px] sm:text-xs text-gray-500 font-medium">posts</span>
+            </div>
+            <div class="stat-divider"></div>
+            <div class="text-center">
+              <span class="block text-lg sm:text-xl font-black text-gray-900" id="seguidoresCount"><%= seguidores %></span>
+              <span class="text-[11px] sm:text-xs text-gray-500 font-medium">seguidores</span>
+            </div>
+            <div class="stat-divider"></div>
+            <div class="text-center">
+              <span class="block text-lg sm:text-xl font-black text-gray-900"><%= seguindo %></span>
+              <span class="text-[11px] sm:text-xs text-gray-500 font-medium">seguindo</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bio -->
+      <% if (perfil.bio) { %>
+        <p class="text-sm text-gray-700 leading-relaxed mt-4 max-w-md"><%= perfil.bio %></p>
+      <% } %>
+
+      <!-- Action buttons -->
+      <div class="mt-4 flex items-center gap-2">
+        <% if (eMeuPerfil) { %>
+          <a href="/perfil"
+             class="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-sm font-semibold text-gray-800 transition-all duration-200">
+            <i class="fa-solid fa-pen text-xs"></i> Editar perfil
+          </a>
+        <% } else { %>
+          <button type="button" id="btnFollow"
+                  data-user-id="<%= perfil.id %>"
+                  data-following="<%= estaSeguindo ? 'true' : 'false' %>"
+                  class="follow-btn flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold
+                    <%= estaSeguindo
+                      ? 'bg-gray-100 hover:bg-red-50 text-gray-800 hover:text-red-500 border border-gray-200 hover:border-red-200'
+                      : 'bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-lg shadow-primary-500/20 hover:shadow-xl hover:shadow-primary-500/30 hover:-translate-y-0.5'
+                    %>">
+            <i class="fa-solid <%= estaSeguindo ? 'fa-user-check' : 'fa-user-plus' %> text-xs"></i>
+            <span><%= estaSeguindo ? 'Seguindo' : 'Seguir' %></span>
+          </button>
+          <a href="/chat" class="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-sm font-semibold text-gray-800 transition-all duration-200">
+            <i class="fa-solid fa-paper-plane text-xs"></i>
+          </a>
+        <% } %>
+        <button type="button" class="btn-share-profile flex items-center justify-center w-10 h-10 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-600 transition-all duration-200"
+                title="Compartilhar perfil">
+          <i class="fa-solid fa-share-from-square text-sm"></i>
+        </button>
+      </div>
+    </section>
+
+    <!-- Pets Showcase -->
+    <% if (typeof pets !== 'undefined' && pets.length > 0) { %>
+      <section class="mb-5 profile-reveal" style="animation-delay: .1s">
+        <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 px-1">
+          <i class="fa-solid fa-paw mr-1"></i> Pets de <%= perfil.nome.split(' ')[0] %>
+        </h3>
+        <div class="flex gap-3 overflow-x-auto pet-scroll pb-2">
+          <% pets.forEach(function(pet) { %>
+            <a href="/pets/<%= pet.id %>" class="flex flex-col items-center gap-1.5 flex-shrink-0 group">
+              <div class="w-16 h-16 sm:w-18 sm:h-18 rounded-full overflow-hidden ring-2 ring-gray-100 group-hover:ring-primary-300 transition-all shadow-sm">
+                <% if (pet.foto) { %>
+                  <img src="<%= pet.foto %>" alt="<%= pet.nome %>" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300">
+                <% } else { %>
+                  <div class="w-full h-full bg-gradient-to-br from-orange-100 to-orange-50 flex items-center justify-center">
+                    <i class="fa-solid fa-paw text-orange-300 text-lg"></i>
+                  </div>
+                <% } %>
+              </div>
+              <span class="text-[11px] font-semibold text-gray-600 group-hover:text-primary-600 transition-colors truncate max-w-[68px] text-center">
+                <%= pet.nome %>
+              </span>
+            </a>
+          <% }); %>
+        </div>
+      </section>
+    <% } %>
+
+    <!-- Divider -->
+    <div class="border-t border-gray-100 mb-4"></div>
+
+    <!-- Posts Grid -->
+    <% if (posts.length > 0) { %>
+      <section class="profile-reveal" style="animation-delay: .15s">
+        <div class="grid grid-cols-3 gap-1 sm:gap-1.5">
+          <% posts.forEach(function(post, idx) { %>
+            <div class="grid-item relative aspect-square overflow-hidden rounded-lg sm:rounded-xl cursor-pointer group"
+                 style="animation-delay: <%= (idx * 40) + 200 %>ms"
+                 data-post-id="<%= post.id %>">
+              <img src="<%= post.foto %>" alt="" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy">
+              <div class="grid-overlay absolute inset-0 bg-black/30 backdrop-blur-[1px] flex items-center justify-center gap-4">
+                <span class="flex items-center gap-1.5 text-white text-sm font-bold">
+                  <i class="fa-solid fa-heart"></i> <%= post.total_curtidas %>
+                </span>
+                <span class="flex items-center gap-1.5 text-white text-sm font-bold">
+                  <i class="fa-solid fa-comment"></i> <%= post.total_comentarios %>
+                </span>
+              </div>
+              <% if (post.fixada) { %>
+                <span class="absolute top-2 right-2 w-6 h-6 rounded-full bg-amber-500 text-white flex items-center justify-center shadow-lg z-10">
+                  <i class="fa-solid fa-thumbtack text-[9px]"></i>
+                </span>
+              <% } %>
+            </div>
+          <% }); %>
+        </div>
+      </section>
+    <% } else { %>
+      <section class="text-center py-16 profile-reveal" style="animation-delay: .15s">
+        <div class="w-20 h-20 mx-auto mb-4 rounded-full bg-gray-50 flex items-center justify-center">
+          <i class="fa-solid fa-camera text-3xl text-gray-300"></i>
+        </div>
+        <h3 class="text-lg font-bold text-gray-800 mb-1">Nenhuma publicação ainda</h3>
+        <p class="text-sm text-gray-400 max-w-xs mx-auto">
+          <% if (eMeuPerfil) { %>
+            Compartilhe um momento com seu pet!
+          <% } else { %>
+            <%= perfil.nome.split(' ')[0] %> ainda não publicou nada.
+          <% } %>
+        </p>
+      </section>
+    <% } %>
+
+    <!-- Post Detail Modal -->
+    <div id="postDetailModal" class="fixed inset-0 z-[60] hidden">
+      <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" id="postDetailOverlay"></div>
+      <div class="absolute inset-4 sm:inset-8 md:inset-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-full md:max-w-3xl md:max-h-[85vh] bg-white rounded-2xl overflow-hidden flex flex-col md:flex-row shadow-2xl animate-scaleIn">
+        <div class="md:flex-1 bg-black flex items-center justify-center max-h-[40vh] md:max-h-none">
+          <img id="detailPhoto" src="" alt="" class="w-full h-full object-contain">
+        </div>
+        <div class="md:w-80 lg:w-96 flex flex-col border-l border-gray-100">
+          <div class="flex items-center gap-3 px-4 py-3 border-b border-gray-100">
+            <div id="detailAvatar" class="w-8 h-8 rounded-full bg-gray-200 flex-shrink-0"></div>
+            <div class="flex-1 min-w-0">
+              <a id="detailAuthor" href="#" class="text-sm font-bold text-gray-900 hover:text-primary-600 truncate block"></a>
+              <span id="detailTime" class="text-xs text-gray-400"></span>
+            </div>
+            <button type="button" id="closeDetail" class="p-1 text-gray-400 hover:text-gray-600 transition-colors">
+              <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+          </div>
+          <div class="flex-1 overflow-y-auto px-4 py-3 scrollbar-hide">
+            <p id="detailCaption" class="text-sm text-gray-800 leading-relaxed"></p>
+            <div id="detailComments" class="mt-4 space-y-3"></div>
+          </div>
+          <div class="px-4 py-3 border-t border-gray-100">
+            <div class="flex items-center gap-3 mb-2">
+              <button type="button" id="detailLikeBtn" class="btn-like group transition-colors" data-post-id="" data-liked="false">
+                <i class="fa-regular fa-heart text-xl text-gray-600 group-hover:text-red-400 transition-colors"></i>
+              </button>
+              <span id="detailLikes" class="text-sm font-bold text-gray-900"></span>
+            </div>
+            <form id="detailCommentForm" class="flex items-center gap-2">
+              <input type="text" id="detailCommentInput" placeholder="Comentar..." maxlength="300"
+                     class="flex-1 text-sm bg-gray-50 rounded-full px-4 py-2 border-0 outline-none focus:ring-2 focus:ring-primary-500/20 placeholder-gray-400">
+              <button type="submit" class="w-8 h-8 rounded-full bg-gradient-to-r from-primary-500 to-primary-600 text-white flex items-center justify-center hover:shadow-lg transition-all">
+                <i class="fa-solid fa-paper-plane text-[10px]"></i>
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<%- include('../partials/footer') %>
+
+<script>
+(function () {
+  'use strict';
+
+  var perfilId = '<%= perfil.id %>';
+  var myUserId = document.body.dataset.usuarioId ? parseInt(document.body.dataset.usuarioId) : null;
+
+  /* ── Relative time ── */
+  function tempoRelativo(dateStr) {
+    var d = new Date(dateStr);
+    var diff = Date.now() - d.getTime();
+    var seg = Math.floor(diff / 1000);
+    if (seg < 60) return 'agora';
+    var min = Math.floor(seg / 60);
+    if (min < 60) return 'há ' + min + 'm';
+    var hrs = Math.floor(min / 60);
+    if (hrs < 24) return 'há ' + hrs + 'h';
+    var dias = Math.floor(hrs / 24);
+    if (dias < 7) return 'há ' + dias + 'd';
+    return d.toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' });
+  }
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    var div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  /* ── Follow / Unfollow ── */
+  var btnFollow = document.getElementById('btnFollow');
+  if (btnFollow) {
+    btnFollow.addEventListener('click', function () {
+      var following = btnFollow.dataset.following === 'true';
+      var method = following ? 'DELETE' : 'POST';
+
+      btnFollow.style.pointerEvents = 'none';
+
+      fetch('/explorar/seguir/' + perfilId, {
+        method: method,
+        headers: { 'Accept': 'application/json' },
+        credentials: 'same-origin'
+      })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (data.sucesso) {
+          var nowFollowing = data.seguindo;
+          btnFollow.dataset.following = nowFollowing ? 'true' : 'false';
+
+          var icon = btnFollow.querySelector('i');
+          var label = btnFollow.querySelector('span');
+
+          if (nowFollowing) {
+            btnFollow.className = 'follow-btn flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold bg-gray-100 hover:bg-red-50 text-gray-800 hover:text-red-500 border border-gray-200 hover:border-red-200';
+            icon.className = 'fa-solid fa-user-check text-xs';
+            label.textContent = 'Seguindo';
+          } else {
+            btnFollow.className = 'follow-btn flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-lg shadow-primary-500/20 hover:shadow-xl hover:shadow-primary-500/30 hover:-translate-y-0.5';
+            icon.className = 'fa-solid fa-user-plus text-xs';
+            label.textContent = 'Seguir';
+          }
+
+          if (typeof data.totalSeguidores !== 'undefined') {
+            document.getElementById('seguidoresCount').textContent = data.totalSeguidores;
+          }
+        }
+        btnFollow.style.pointerEvents = '';
+      })
+      .catch(function () { btnFollow.style.pointerEvents = ''; });
+    });
+  }
+
+  /* ── Share profile ── */
+  document.querySelector('.btn-share-profile').addEventListener('click', function () {
+    var url = window.location.origin + '/explorar/perfil/' + perfilId;
+    var text = 'Veja o perfil de <%= perfil.nome.replace(/'/g, "\\'") %> no AIRPET! ' + url;
+    if (navigator.share) {
+      navigator.share({ title: '<%= perfil.nome.replace(/'/g, "\\'") %> — AIRPET', url: url }).catch(function () {});
+    } else {
+      window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
+    }
+  });
+
+  /* ── Post Detail Modal ── */
+  var postsData = <%- JSON.stringify(posts.map(function(p) { return { id: p.id, usuario_id: p.usuario_id, foto: p.foto, legenda: p.legenda, fixada: p.fixada, criado_em: p.criado_em, autor_nome: p.autor_nome, cor_perfil: p.cor_perfil, foto_perfil: p.foto_perfil, total_curtidas: p.total_curtidas, total_comentarios: p.total_comentarios, curtiu: p.curtiu }; })) %>;
+
+  var modal = document.getElementById('postDetailModal');
+  var activePostId = null;
+
+  function openDetail(postId) {
+    var post = null;
+    for (var i = 0; i < postsData.length; i++) {
+      if (String(postsData[i].id) === String(postId)) { post = postsData[i]; break; }
+    }
+    if (!post) return;
+    activePostId = post.id;
+
+    modal.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+
+    document.getElementById('detailPhoto').src = post.foto;
+
+    var avatarEl = document.getElementById('detailAvatar');
+    if (post.foto_perfil) {
+      avatarEl.innerHTML = '<img src="' + post.foto_perfil + '" class="w-8 h-8 rounded-full object-cover">';
+    } else {
+      avatarEl.innerHTML = '<span class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white" style="background:' + (post.cor_perfil || '#ec5a1c') + '">' + (post.autor_nome ? post.autor_nome.charAt(0).toUpperCase() : 'U') + '</span>';
+    }
+
+    var authorEl = document.getElementById('detailAuthor');
+    authorEl.textContent = post.autor_nome;
+    authorEl.href = '/explorar/perfil/' + post.usuario_id;
+
+    document.getElementById('detailTime').textContent = tempoRelativo(post.criado_em);
+
+    var captionEl = document.getElementById('detailCaption');
+    captionEl.innerHTML = post.legenda
+      ? '<a href="/explorar/perfil/' + post.usuario_id + '" class="font-bold text-gray-900 mr-1">' + post.autor_nome + '</a>' + escapeHtml(post.legenda)
+      : '';
+
+    var likeBtn = document.getElementById('detailLikeBtn');
+    likeBtn.dataset.postId = post.id;
+    likeBtn.dataset.liked = post.curtiu ? 'true' : 'false';
+    var likeIcon = likeBtn.querySelector('i');
+    likeIcon.className = (post.curtiu ? 'fa-solid text-red-500' : 'fa-regular text-gray-600 group-hover:text-red-400') + ' fa-heart text-xl transition-colors';
+
+    document.getElementById('detailLikes').textContent = post.total_curtidas + ' curtida' + (post.total_curtidas !== 1 ? 's' : '');
+
+    loadDetailComments(post.id);
+  }
+
+  function closeDetail() {
+    modal.classList.add('hidden');
+    document.body.style.overflow = '';
+    activePostId = null;
+  }
+
+  function loadDetailComments(postId) {
+    var container = document.getElementById('detailComments');
+    container.innerHTML = '<div class="text-center py-4 text-gray-300"><i class="fa-solid fa-spinner fa-spin"></i></div>';
+
+    fetch('/explorar/post/' + postId + '/comentarios', { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (!data.sucesso || !data.comentarios || !data.comentarios.length) {
+          container.innerHTML = '<p class="text-xs text-gray-400 text-center py-4">Nenhum comentário.</p>';
+          return;
+        }
+        var html = '';
+        data.comentarios.forEach(function (c) {
+          var av = c.foto_perfil
+            ? '<img src="' + c.foto_perfil + '" class="w-7 h-7 rounded-full object-cover flex-shrink-0">'
+            : '<span class="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0" style="background:' + (c.cor_perfil || '#ec5a1c') + '">' + (c.nome ? c.nome.charAt(0).toUpperCase() : 'U') + '</span>';
+          html += '<div class="flex gap-2">' + av + '<div class="flex-1 min-w-0"><p class="text-sm"><span class="font-bold text-gray-900 mr-1">' + escapeHtml(c.nome) + '</span>' + escapeHtml(c.texto) + '</p><span class="text-[10px] text-gray-400">' + tempoRelativo(c.criado_em) + '</span></div></div>';
+        });
+        container.innerHTML = html;
+      });
+  }
+
+  document.querySelectorAll('.grid-item[data-post-id]').forEach(function (el) {
+    el.addEventListener('click', function () { openDetail(el.dataset.postId); });
+  });
+
+  document.getElementById('closeDetail').addEventListener('click', closeDetail);
+  document.getElementById('postDetailOverlay').addEventListener('click', closeDetail);
+
+  document.getElementById('detailLikeBtn').addEventListener('click', function () {
+    var btn = this;
+    var postId = btn.dataset.postId;
+    var liked = btn.dataset.liked === 'true';
+    var method = liked ? 'DELETE' : 'POST';
+    var icon = btn.querySelector('i');
+
+    btn.dataset.liked = liked ? 'false' : 'true';
+    icon.className = (liked ? 'fa-regular text-gray-600' : 'fa-solid text-red-500') + ' fa-heart text-xl transition-colors';
+    if (!liked) btn.classList.add('heart-pop');
+    setTimeout(function () { btn.classList.remove('heart-pop'); }, 500);
+
+    fetch('/explorar/post/' + postId + '/curtir', { method: method, headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (data.sucesso) {
+          document.getElementById('detailLikes').textContent = data.total + ' curtida' + (data.total !== 1 ? 's' : '');
+          for (var i = 0; i < postsData.length; i++) {
+            if (String(postsData[i].id) === String(postId)) {
+              postsData[i].curtiu = data.curtiu;
+              postsData[i].total_curtidas = data.total;
+              break;
+            }
+          }
+        }
+      });
+  });
+
+  document.getElementById('detailCommentForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var input = document.getElementById('detailCommentInput');
+    var texto = input.value.trim();
+    if (!texto || !activePostId) return;
+    input.value = '';
+
+    fetch('/explorar/post/' + activePostId + '/comentar', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      credentials: 'same-origin',
+      body: JSON.stringify({ texto: texto })
+    })
+    .then(function (r) { return r.json(); })
+    .then(function (data) {
+      if (data.sucesso) {
+        loadDetailComments(activePostId);
+        for (var i = 0; i < postsData.length; i++) {
+          if (String(postsData[i].id) === String(activePostId)) {
+            postsData[i].total_comentarios = data.total || postsData[i].total_comentarios + 1;
+            break;
+          }
+        }
+      }
+    });
+  });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') closeDetail();
+  });
+
+})();
+</script>

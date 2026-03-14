@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin — AIRPET</title>
+  <link rel="stylesheet" href="/css/output.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body class="bg-gray-900 min-h-screen flex items-center justify-center">
+
+  <div class="w-full max-w-sm px-4">
+    <div class="text-center mb-8">
+      <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-[#ec5a1c] text-white mb-4 shadow-lg shadow-orange-500/30">
+        <i class="fa-solid fa-shield-halved text-3xl"></i>
+      </div>
+      <h1 class="text-2xl font-bold text-white">Painel Admin</h1>
+      <p class="text-gray-400 mt-1 text-sm">Acesso restrito ao administrador</p>
+    </div>
+
+    <% if (typeof flash !== 'undefined' && flash && flash.mensagem) { %>
+      <div class="mb-4 p-3 rounded-xl text-sm font-medium
+        <%= flash.tipo === 'erro' ? 'bg-red-500/20 text-red-300 border border-red-500/30' : 'bg-green-500/20 text-green-300 border border-green-500/30' %>">
+        <i class="fa-solid <%= flash.tipo === 'erro' ? 'fa-circle-exclamation' : 'fa-circle-check' %> mr-1"></i>
+        <%= flash.mensagem %>
+      </div>
+    <% } %>
+
+    <form action="/admin/login" method="POST" class="bg-gray-800 rounded-2xl p-6 space-y-5 shadow-xl border border-gray-700">
+      <div>
+        <label for="email" class="block text-sm font-medium text-gray-300 mb-1">E-mail</label>
+        <input type="email" id="email" name="email" required autofocus
+               placeholder="admin@airpet.com"
+               class="w-full px-4 py-3 rounded-xl bg-gray-700 border border-gray-600 text-white placeholder-gray-500 focus:ring-2 focus:ring-[#ec5a1c] focus:border-transparent outline-none transition-all">
+      </div>
+
+      <div>
+        <label for="senha" class="block text-sm font-medium text-gray-300 mb-1">Senha</label>
+        <div class="relative">
+          <input type="password" id="senha" name="senha" required
+                 placeholder="••••••••"
+                 class="w-full px-4 py-3 rounded-xl bg-gray-700 border border-gray-600 text-white placeholder-gray-500 focus:ring-2 focus:ring-[#ec5a1c] focus:border-transparent outline-none transition-all pr-11">
+          <button type="button" onclick="toggleSenha()"
+                  class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200 transition-colors">
+            <i class="fa-solid fa-eye" id="eyeIcon"></i>
+          </button>
+        </div>
+      </div>
+
+      <button type="submit"
+              class="w-full px-4 py-3 rounded-xl bg-[#ec5a1c] hover:bg-[#d4500f] text-white font-semibold shadow-lg shadow-orange-500/20 transition-all">
+        <i class="fa-solid fa-right-to-bracket mr-2"></i>Entrar
+      </button>
+    </form>
+
+    <p class="text-center text-xs text-gray-500 mt-6">
+      <a href="/" class="hover:text-gray-300 transition-colors">
+        <i class="fa-solid fa-arrow-left mr-1"></i> Voltar ao site
+      </a>
+    </p>
+  </div>
+
+  <script>
+  function toggleSenha() {
+    var input = document.getElementById('senha');
+    var icon = document.getElementById('eyeIcon');
+    if (input.type === 'password') {
+      input.type = 'text';
+      icon.className = 'fa-solid fa-eye-slash';
+    } else {
+      input.type = 'password';
+      icon.className = 'fa-solid fa-eye';
+    }
+  }
+  </script>
+</body>
+</html>

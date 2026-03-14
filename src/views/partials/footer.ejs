@@ -1,0 +1,75 @@
+<% var isLogado = typeof usuario !== 'undefined' && usuario; %>
+
+  <footer class="bg-white border-t border-gray-100 mt-auto safe-bottom <%= isLogado ? 'pb-20 md:pb-0' : '' %>">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 py-5">
+      <div class="flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div class="flex items-center gap-2 text-gray-400 text-xs">
+          <i class="fa-solid fa-paw text-primary-500"></i>
+          <span>&copy; <%= new Date().getFullYear() %> <strong class="text-gray-600">AIRPET</strong></span>
+        </div>
+        <div class="flex items-center gap-4 text-xs text-gray-400">
+          <a href="/termos" class="hover:text-primary-500 transition-colors">Termos</a>
+          <a href="/privacidade" class="hover:text-primary-500 transition-colors">Privacidade</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script src="/js/app.js"></script>
+  <script src="/js/pwa.js"></script>
+  <script src="/js/permissions.js?v=4"></script>
+
+  <% if (isLogado) { %>
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+  (function () {
+    'use strict';
+
+    function atualizarBadges(total) {
+      document.querySelectorAll('[data-notif-badge]').forEach(function (el) {
+        if (total > 0) {
+          el.textContent = total > 9 ? '9+' : total;
+          el.classList.remove('hidden');
+        } else {
+          el.classList.add('hidden');
+        }
+      });
+    }
+
+    function fetchCount() {
+      fetch('/notificacoes/api/count', { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
+        .then(function (r) { return r.json(); })
+        .then(function (data) { atualizarBadges(data.total); })
+        .catch(function () {});
+    }
+
+    var socketOk = false;
+    try {
+      if (typeof io !== 'undefined') {
+        var notifSocket = io('/notificacoes', { transports: ['websocket', 'polling'] });
+        notifSocket.on('connect', function () { socketOk = true; });
+        notifSocket.on('nova_notificacao', function (data) {
+          fetchCount();
+          if ('Notification' in window && Notification.permission === 'granted' && document.hidden) {
+            try {
+              new Notification(data.tipo === 'alerta' ? 'Pet Perdido!' : 'AIRPET', {
+                body: data.mensagem, icon: '/images/icons/icon-192.svg', tag: 'airpet-' + (data.id || Date.now()),
+              });
+            } catch (e) {}
+          }
+        });
+        notifSocket.on('disconnect', function () { socketOk = false; });
+      }
+    } catch (e) {}
+
+    setInterval(function () { if (!socketOk) fetchCount(); }, 30000);
+    fetchCount();
+  })();
+  </script>
+  <% } %>
+
+  <% if (typeof extraScripts !== 'undefined') { %>
+    <%- extraScripts %>
+  <% } %>
+</body>
+</html>

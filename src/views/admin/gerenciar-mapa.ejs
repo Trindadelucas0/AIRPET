@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Gerenciar Mapa | AIRPET Admin</title>
+  <meta name="theme-color" content="#1f2937">
+  <link rel="stylesheet" href="/css/output.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #f3f4f6; }
+    #adminMap { width: 100%; height: 55vh; min-height: 280px; max-height: 600px; }
+    @media (max-width: 768px) {
+      #adminMap { height: 45vh; min-height: 220px; }
+    }
+    .leaflet-container { z-index: 1; }
+    .form-label { display: block; font-size: 11px; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
+    .form-input { width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; outline: none; transition: border-color 0.2s, box-shadow 0.2s; }
+    .form-input:focus { border-color: #ec5a1c; box-shadow: 0 0 0 3px rgba(236,90,28,0.15); }
+    .form-input-ro { background: #f9fafb; color: #6b7280; font-family: monospace; font-size: 13px; }
+    .btn-primary { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 10px 16px; background: #ec5a1c; color: #fff; font-weight: 600; font-size: 14px; border-radius: 8px; border: none; cursor: pointer; transition: background 0.2s; width: 100%; }
+    .btn-primary:hover { background: #d4500f; }
+    .btn-ghost { padding: 10px 16px; background: #f3f4f6; color: #6b7280; font-weight: 600; font-size: 14px; border-radius: 8px; border: none; cursor: pointer; transition: background 0.2s; }
+    .btn-ghost:hover { background: #e5e7eb; }
+    .card-pt { background: #fff; border-radius: 12px; border: 1px solid #e5e7eb; padding: 14px; transition: box-shadow 0.2s; }
+    .card-pt:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
+  </style>
+</head>
+<body>
+
+<!-- Top bar admin -->
+<header class="bg-gray-900 text-white sticky top-0 z-50">
+  <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <a href="/admin" class="flex items-center gap-2 text-gray-300 hover:text-white transition-colors text-sm">
+        <i class="fa-solid fa-arrow-left text-xs"></i> Dashboard
+      </a>
+      <span class="text-gray-600">|</span>
+      <h1 class="text-base font-bold"><i class="fa-solid fa-map-location-dot text-[#ec5a1c] mr-1"></i> Gerenciar Mapa</h1>
+    </div>
+    <a href="/admin/logout" class="text-xs text-gray-400 hover:text-red-400 transition-colors">
+      <i class="fa-solid fa-right-from-bracket mr-1"></i>Sair
+    </a>
+  </div>
+</header>
+
+<% if (typeof flash !== 'undefined' && flash && flash.mensagem) { %>
+  <div class="max-w-7xl mx-auto px-4 mt-3">
+    <div class="p-3 rounded-xl text-sm font-medium
+      <%= flash.tipo === 'erro' ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-green-50 text-green-700 border border-green-200' %>">
+      <i class="fa-solid <%= flash.tipo === 'erro' ? 'fa-circle-exclamation' : 'fa-circle-check' %> mr-1"></i>
+      <%= flash.mensagem %>
+    </div>
+  </div>
+<% } %>
+
+<main class="max-w-7xl mx-auto px-3 sm:px-4 py-4">
+
+  <!-- Barra de busca -->
+  <div class="bg-white rounded-xl border border-gray-200 p-3 mb-4">
+    <div class="flex flex-col sm:flex-row gap-2">
+      <div class="flex-1 relative">
+        <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+        <input type="text" id="buscaEndereco" placeholder="Buscar endereco, cidade ou local..."
+               class="form-input pl-10">
+      </div>
+      <div class="flex gap-2">
+        <button type="button" id="btnBuscar" class="btn-primary !w-auto !px-5 flex-1 sm:flex-none">
+          <i class="fa-solid fa-search"></i> <span class="hidden sm:inline">Buscar</span>
+        </button>
+        <button type="button" id="btnMinhaLocalizacao" class="btn-ghost" title="Minha localizacao">
+          <i class="fa-solid fa-location-crosshairs"></i>
+        </button>
+      </div>
+    </div>
+    <div id="resultadosBusca" class="hidden mt-2 max-h-44 overflow-y-auto border border-gray-200 rounded-lg divide-y divide-gray-100 bg-white"></div>
+  </div>
+
+  <!-- Grid: Mapa + Formulario -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+
+    <!-- Mapa -->
+    <div class="lg:col-span-2 bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <div id="adminMap"></div>
+      <div class="px-3 py-2 bg-gray-50 border-t border-gray-100 flex items-center gap-2 text-xs text-gray-500">
+        <i class="fa-solid fa-hand-pointer text-[#ec5a1c]"></i>
+        <span>Toque/clique no mapa para posicionar o pin</span>
+      </div>
+    </div>
+
+    <!-- Formulario -->
+    <div class="bg-white rounded-xl border border-gray-200 p-4 lg:max-h-[calc(55vh+60px)] lg:overflow-y-auto">
+      <h2 class="text-sm font-bold text-gray-900 mb-0.5" id="formTitle">Novo Ponto</h2>
+      <p class="text-xs text-gray-400 mb-3" id="formSubtitle">Clique no mapa para definir a localizacao</p>
+
+      <form action="/admin/pontos-mapa" method="POST" id="pontoForm" class="space-y-3">
+        <input type="hidden" name="id" id="pontoId">
+
+        <div>
+          <label class="form-label">Nome *</label>
+          <input type="text" name="nome" id="pontoNome" required placeholder="Ex: Pet Shop Amigo Fiel" class="form-input">
+        </div>
+
+        <div>
+          <label class="form-label">Categoria *</label>
+          <select name="categoria" id="pontoCategoria" required class="form-input">
+            <option value="">Selecione...</option>
+            <option value="petshop">Petshop</option>
+            <option value="veterinario">Veterinario</option>
+            <option value="hospital_pet">Hospital Pet</option>
+            <option value="abrigo">Abrigo</option>
+            <option value="ong">ONG</option>
+            <option value="parque">Parque Pet-Friendly</option>
+            <option value="ponto_de_apoio">Ponto de Apoio</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="form-label">Endereco <span class="text-[#ec5a1c] font-normal normal-case" id="enderecoStatus"></span></label>
+          <input type="text" name="endereco" id="pontoEndereco" placeholder="Preenchido automaticamente" class="form-input">
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="form-label">Lat *</label>
+            <input type="text" name="latitude" id="pontoLat" required readonly class="form-input form-input-ro">
+          </div>
+          <div>
+            <label class="form-label">Lng *</label>
+            <input type="text" name="longitude" id="pontoLng" required readonly class="form-input form-input-ro">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="form-label">Telefone</label>
+            <input type="tel" name="telefone" id="pontoTelefone" placeholder="(00) 0000-0000" class="form-input">
+          </div>
+          <div>
+            <label class="form-label">WhatsApp</label>
+            <input type="tel" name="whatsapp" id="pontoWhatsapp" placeholder="(00) 00000-0000" class="form-input">
+          </div>
+        </div>
+
+        <div>
+          <label class="form-label">Descricao</label>
+          <textarea name="descricao" id="pontoDescricao" rows="2" placeholder="Info sobre o local" class="form-input resize-none"></textarea>
+        </div>
+
+        <div>
+          <label class="form-label">Servicos</label>
+          <input type="text" name="servicos" id="pontoServicos" placeholder="banho, tosa, consulta" class="form-input">
+        </div>
+
+        <div class="flex gap-2">
+          <button type="submit" class="btn-primary flex-1">
+            <i class="fa-solid fa-floppy-disk"></i> <span id="formBtnLabel">Criar</span>
+          </button>
+          <button type="button" id="btnLimpar" class="btn-ghost">Limpar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Pontos existentes -->
+  <div>
+    <h2 class="text-base font-bold text-gray-900 mb-3">Pontos (<%= pontos.length %>)</h2>
+
+    <% if (pontos.length === 0) { %>
+      <div class="bg-white rounded-xl border border-gray-200 text-center py-10 text-gray-400">
+        <i class="fa-solid fa-map-pin text-2xl mb-2"></i>
+        <p class="text-sm">Nenhum ponto cadastrado</p>
+      </div>
+    <% } else { %>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        <% pontos.forEach(function(pt) { %>
+          <div class="card-pt">
+            <div class="flex items-start justify-between mb-1.5">
+              <div class="min-w-0 flex-1 mr-2">
+                <h3 class="font-semibold text-gray-900 text-sm truncate"><%= pt.nome %></h3>
+                <span class="text-[11px] text-gray-400 capitalize"><%= pt.categoria ? pt.categoria.replace(/_/g, ' ') : '' %></span>
+              </div>
+              <span class="w-2 h-2 rounded-full flex-shrink-0 mt-1.5 <%= pt.ativo !== false ? 'bg-emerald-400' : 'bg-gray-300' %>"></span>
+            </div>
+            <% if (pt.endereco) { %>
+              <p class="text-[11px] text-gray-500 mb-2 line-clamp-1"><i class="fa-solid fa-location-dot text-[#ec5a1c] mr-1"></i><%= pt.endereco %></p>
+            <% } %>
+            <div class="flex gap-1.5 mt-2">
+              <button type="button" class="btn-editar flex-1 px-2 py-1.5 text-[11px] font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
+                      data-ponto="<%= encodeURIComponent(JSON.stringify(pt)) %>">
+                <i class="fa-solid fa-pen mr-0.5"></i> Editar
+              </button>
+              <form action="/admin/pontos-mapa/<%= pt.id %>/toggle" method="POST" class="flex-1">
+                <button type="submit"
+                        class="w-full px-2 py-1.5 text-[11px] font-semibold rounded-lg transition-colors
+                          <%= pt.ativo !== false ? 'text-red-600 bg-red-50 hover:bg-red-100' : 'text-emerald-600 bg-emerald-50 hover:bg-emerald-100' %>">
+                  <%= pt.ativo !== false ? 'Desativar' : 'Ativar' %>
+                </button>
+              </form>
+              <form action="/admin/pontos-mapa/<%= pt.id %>" method="POST"
+                    onsubmit="return confirm('Deletar?')">
+                <input type="hidden" name="_method" value="DELETE">
+                <button type="submit" class="px-2 py-1.5 text-[11px] font-semibold text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors">
+                  <i class="fa-solid fa-trash"></i>
+                </button>
+              </form>
+            </div>
+          </div>
+        <% }); %>
+      </div>
+    <% } %>
+  </div>
+
+</main>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script>
+(function () {
+  var map = L.map('adminMap', { zoomControl: true, tap: true }).setView([-15.78, -47.93], 5);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OSM', maxZoom: 19 }).addTo(map);
+
+  setTimeout(function () { map.invalidateSize(); }, 300);
+  window.addEventListener('resize', function () { map.invalidateSize(); });
+
+  var activeMarker = null;
+
+  function reverseGeocode(lat, lng) {
+    var s = document.getElementById('enderecoStatus');
+    s.textContent = '(buscando...)';
+    fetch('https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=' + lat + '&lon=' + lng + '&accept-language=pt-BR&addressdetails=1')
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (d && d.display_name) {
+          document.getElementById('pontoEndereco').value = d.display_name;
+          s.textContent = '(auto)';
+          if (activeMarker) activeMarker.setPopupContent('<b>Pin</b><br><small>' + d.display_name + '</small>').openPopup();
+        } else { s.textContent = ''; }
+      }).catch(function () { s.textContent = '(erro)'; });
+  }
+
+  function placeMarker(latlng) {
+    document.getElementById('pontoLat').value = latlng.lat.toFixed(7);
+    document.getElementById('pontoLng').value = latlng.lng.toFixed(7);
+    if (activeMarker) {
+      activeMarker.setLatLng(latlng);
+    } else {
+      activeMarker = L.marker(latlng, { draggable: true }).addTo(map).bindPopup('<b>Pin</b>').openPopup();
+      activeMarker.on('dragend', function (ev) {
+        var p = ev.target.getLatLng();
+        document.getElementById('pontoLat').value = p.lat.toFixed(7);
+        document.getElementById('pontoLng').value = p.lng.toFixed(7);
+        reverseGeocode(p.lat, p.lng);
+      });
+    }
+    reverseGeocode(latlng.lat, latlng.lng);
+  }
+
+  map.on('click', function (e) { placeMarker(e.latlng); });
+
+  var buscaInput = document.getElementById('buscaEndereco');
+  var resultadosDiv = document.getElementById('resultadosBusca');
+
+  function buscarEndereco() {
+    var q = buscaInput.value.trim();
+    if (!q) return;
+    resultadosDiv.innerHTML = '<div class="px-4 py-3 text-sm text-gray-400"><i class="fa-solid fa-spinner fa-spin mr-2"></i>Buscando...</div>';
+    resultadosDiv.classList.remove('hidden');
+    fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&q=' + encodeURIComponent(q) + '&limit=5&countrycodes=br&accept-language=pt-BR')
+      .then(function (r) { return r.json(); })
+      .then(function (res) {
+        resultadosDiv.innerHTML = '';
+        if (!res || !res.length) { resultadosDiv.innerHTML = '<div class="px-4 py-3 text-sm text-gray-400">Sem resultados</div>'; return; }
+        res.forEach(function (r) {
+          var item = document.createElement('div');
+          item.className = 'px-3 py-2.5 hover:bg-orange-50 cursor-pointer text-sm text-gray-700 transition-colors';
+          item.innerHTML = '<i class="fa-solid fa-location-dot text-[#ec5a1c] mr-2"></i>' + r.display_name;
+          item.onclick = function () {
+            var ll = L.latLng(parseFloat(r.lat), parseFloat(r.lon));
+            map.setView(ll, 17);
+            placeMarker(ll);
+            document.getElementById('pontoEndereco').value = r.display_name;
+            document.getElementById('enderecoStatus').textContent = '(busca)';
+            resultadosDiv.classList.add('hidden');
+            buscaInput.value = '';
+          };
+          resultadosDiv.appendChild(item);
+        });
+      }).catch(function () { resultadosDiv.innerHTML = '<div class="px-4 py-3 text-sm text-red-400">Erro</div>'; });
+  }
+
+  document.getElementById('btnBuscar').addEventListener('click', buscarEndereco);
+  buscaInput.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); buscarEndereco(); } });
+  document.getElementById('btnMinhaLocalizacao').addEventListener('click', function () {
+    if (!navigator.geolocation) return alert('Nao suportado');
+    navigator.geolocation.getCurrentPosition(function (p) { map.setView([p.coords.latitude, p.coords.longitude], 15); });
+  });
+
+  var pts = <%- JSON.stringify(pontos) %>;
+  var cc = { petshop:'#ec5a1c', veterinario:'#10b981', hospital_pet:'#ef4444', abrigo:'#6366f1', ong:'#22c55e', parque:'#14b8a6', ponto_de_apoio:'#f59e0b' };
+  pts.forEach(function (pt) {
+    if (pt.latitude && pt.longitude) {
+      L.circleMarker([pt.latitude, pt.longitude], { radius: 7, fillColor: cc[pt.categoria] || '#6b7280', color: '#fff', weight: 2, fillOpacity: 0.9 })
+        .addTo(map).bindPopup('<b>' + pt.nome + '</b><br><small>' + (pt.categoria || '').replace(/_/g,' ') + '</small>' + (pt.endereco ? '<br><small>' + pt.endereco + '</small>' : ''));
+    }
+  });
+
+  window.editarPonto = function (pt) {
+    document.getElementById('pontoId').value = pt.id;
+    document.getElementById('pontoNome').value = pt.nome || '';
+    document.getElementById('pontoCategoria').value = pt.categoria || '';
+    document.getElementById('pontoEndereco').value = pt.endereco || '';
+    document.getElementById('pontoLat').value = pt.latitude || '';
+    document.getElementById('pontoLng').value = pt.longitude || '';
+    document.getElementById('pontoTelefone').value = pt.telefone || '';
+    document.getElementById('pontoWhatsapp').value = pt.whatsapp || '';
+    document.getElementById('pontoDescricao').value = pt.descricao || '';
+    document.getElementById('pontoServicos').value = Array.isArray(pt.servicos) ? pt.servicos.join(', ') : (pt.servicos || '');
+    document.getElementById('formTitle').textContent = 'Editar: ' + pt.nome;
+    document.getElementById('formSubtitle').textContent = 'Arraste o pin para mover';
+    document.getElementById('formBtnLabel').textContent = 'Atualizar';
+    document.getElementById('enderecoStatus').textContent = '';
+    var f = document.getElementById('pontoForm');
+    f.action = '/admin/pontos-mapa/' + pt.id;
+    var m = f.querySelector('input[name="_method"]');
+    if (!m) { m = document.createElement('input'); m.type = 'hidden'; m.name = '_method'; f.appendChild(m); }
+    m.value = 'PUT';
+    if (pt.latitude && pt.longitude) {
+      var ll = L.latLng(pt.latitude, pt.longitude);
+      map.setView(ll, 16);
+      placeMarker(ll);
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  document.getElementById('btnLimpar').addEventListener('click', function () {
+    ['pontoId','pontoNome','pontoEndereco','pontoLat','pontoLng','pontoTelefone','pontoWhatsapp','pontoDescricao','pontoServicos'].forEach(function(id){ document.getElementById(id).value = ''; });
+    document.getElementById('pontoCategoria').value = '';
+    document.getElementById('formTitle').textContent = 'Novo Ponto';
+    document.getElementById('formSubtitle').textContent = 'Clique no mapa';
+    document.getElementById('formBtnLabel').textContent = 'Criar';
+    document.getElementById('enderecoStatus').textContent = '';
+    var f = document.getElementById('pontoForm'); f.action = '/admin/pontos-mapa';
+    var m = f.querySelector('input[name="_method"]'); if (m) m.remove();
+    if (activeMarker) { map.removeLayer(activeMarker); activeMarker = null; }
+  });
+
+  document.querySelectorAll('.btn-editar').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      editarPonto(JSON.parse(decodeURIComponent(this.dataset.ponto)));
+    });
+  });
+
+  document.addEventListener('click', function (e) {
+    if (!resultadosDiv.contains(e.target) && e.target !== buscaInput && e.target.id !== 'btnBuscar') resultadosDiv.classList.add('hidden');
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,923 @@
+<% locals.titulo = typeof titulo !== 'undefined' ? titulo : 'Explorar' %>
+<% locals.extraHead = `
+<style>
+  @keyframes heartPop { 0% { transform: scale(1); } 30% { transform: scale(1.35); } 60% { transform: scale(0.9); } 100% { transform: scale(1); } }
+  @keyframes countdownPulse { 0%, 100% { opacity: 1; } 50% { opacity: .6; } }
+  @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+  @keyframes floatHeart { 0% { opacity: 1; transform: translateY(0) scale(1); } 100% { opacity: 0; transform: translateY(-80px) scale(1.6); } }
+  .heart-pop { animation: heartPop .45s cubic-bezier(.17,.67,.35,1.5); }
+  .countdown-pulse { animation: countdownPulse 2s ease-in-out infinite; }
+  .skeleton { background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; }
+  .float-heart { animation: floatHeart .8s ease-out forwards; pointer-events: none; }
+  .tab-indicator { transition: left .3s cubic-bezier(.4,0,.2,1), width .3s cubic-bezier(.4,0,.2,1); }
+  .post-enter { animation: slideUp .4s ease-out both; }
+  .caption-expanded .line-clamp-2 { -webkit-line-clamp: unset !important; }
+  .menu-dropdown { transform-origin: top right; transition: opacity .15s, transform .15s; }
+  .menu-dropdown.hidden { opacity: 0; transform: scale(.95); pointer-events: none; }
+</style>
+` %>
+<%- include('partials/header') %>
+<%- include('partials/flash') %>
+
+<main class="flex-1 pb-24 md:pb-6">
+
+  <!-- Tabs -->
+  <div class="sticky top-14 z-40 bg-white/80 backdrop-blur-xl border-b border-gray-100">
+    <div class="max-w-lg mx-auto px-4 relative">
+      <div class="flex">
+        <button type="button" data-tab="para-voce"
+                class="tab-btn flex-1 py-3.5 text-center text-sm font-semibold transition-colors duration-200 <%= tab === 'para-voce' ? 'text-gray-900' : 'text-gray-400 hover:text-gray-600' %>">
+          Para Você
+        </button>
+        <button type="button" data-tab="seguindo"
+                class="tab-btn flex-1 py-3.5 text-center text-sm font-semibold transition-colors duration-200 <%= tab === 'seguindo' ? 'text-gray-900' : 'text-gray-400 hover:text-gray-600' %>">
+          Seguindo
+        </button>
+      </div>
+      <div id="tabIndicator" class="absolute bottom-0 h-[3px] rounded-full bg-gradient-to-r from-primary-500 to-primary-600 tab-indicator"></div>
+    </div>
+  </div>
+
+  <!-- Feed -->
+  <div class="max-w-lg mx-auto px-4 pt-4" id="feedContainer">
+
+    <% if (posts.length === 0) { %>
+      <div class="text-center py-16 animate-fadeIn">
+        <div class="w-20 h-20 mx-auto mb-4 rounded-full bg-gradient-to-br from-primary-50 to-orange-50 flex items-center justify-center">
+          <i class="fa-solid fa-compass text-3xl text-primary-400"></i>
+        </div>
+        <h3 class="text-lg font-bold text-gray-800 mb-1">
+          <%= tab === 'seguindo' ? 'Siga pessoas para ver posts aqui' : 'Nenhum post ainda' %>
+        </h3>
+        <p class="text-sm text-gray-400 max-w-xs mx-auto">
+          <%= tab === 'seguindo' ? 'Explore o feed geral e siga perfis que você curtir!' : 'Seja o primeiro a compartilhar um momento com seu pet!' %>
+        </p>
+        <% if (tab === 'seguindo') { %>
+          <a href="/explorar?tab=para-voce" class="inline-flex items-center gap-2 mt-5 px-5 py-2.5 rounded-xl bg-gradient-to-r from-primary-500 to-primary-600 text-white text-sm font-semibold shadow-lg shadow-primary-500/20 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300">
+            <i class="fa-solid fa-compass"></i> Explorar Feed
+          </a>
+        <% } %>
+      </div>
+    <% } %>
+
+    <% posts.forEach(function(post, idx) { %>
+      <article class="bg-white rounded-2xl shadow-sm border border-gray-100/80 mb-4 overflow-hidden post-enter"
+               data-post-id="<%= post.id %>"
+               data-author-id="<%= post.usuario_id %>"
+               style="animation-delay: <%= idx * 60 %>ms">
+
+        <!-- Post Header -->
+        <div class="flex items-center gap-3 px-4 pt-4 pb-2">
+          <a href="/explorar/perfil/<%= post.usuario_id %>" class="flex-shrink-0">
+            <% if (post.foto_perfil) { %>
+              <img src="<%= post.foto_perfil %>" alt="" class="w-10 h-10 rounded-full object-cover ring-2 ring-gray-100 hover:ring-primary-200 transition-all">
+            <% } else { %>
+              <span class="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white shadow-inner hover:scale-105 transition-transform"
+                    style="background: <%= post.cor_perfil || '#ec5a1c' %>">
+                <%= post.autor_nome ? post.autor_nome.charAt(0).toUpperCase() : 'U' %>
+              </span>
+            <% } %>
+          </a>
+          <div class="flex-1 min-w-0">
+            <a href="/explorar/perfil/<%= post.usuario_id %>" class="text-sm font-bold text-gray-900 hover:text-primary-600 transition-colors truncate block">
+              <%= post.autor_nome %>
+            </a>
+            <div class="flex items-center gap-1.5 text-xs text-gray-400">
+              <span class="post-time" data-time="<%= post.criado_em %>"></span>
+              <% if (post.pet_nome) { %>
+                <span class="text-gray-300">·</span>
+                <span class="text-primary-400 font-medium"><i class="fa-solid fa-paw text-[9px] mr-0.5"></i><%= post.pet_nome %></span>
+              <% } %>
+            </div>
+          </div>
+          <% if (post.fixada) { %>
+            <span class="flex items-center gap-1 px-2 py-1 rounded-full bg-amber-50 text-amber-600 text-[10px] font-bold uppercase tracking-wide">
+              <i class="fa-solid fa-thumbtack text-[9px]"></i> Fixado
+            </span>
+          <% } %>
+          <div class="relative">
+            <button type="button" class="post-menu-btn p-2 -mr-2 text-gray-300 hover:text-gray-500 transition-colors rounded-full hover:bg-gray-50"
+                    data-post-id="<%= post.id %>">
+              <i class="fa-solid fa-ellipsis"></i>
+            </button>
+            <div class="menu-dropdown hidden absolute right-0 top-full mt-1 w-48 bg-white rounded-xl shadow-2xl shadow-black/10 ring-1 ring-black/5 py-1.5 z-30"
+                 id="menu-<%= post.id %>">
+              <% if (typeof usuario !== 'undefined' && usuario && post.usuario_id === usuario.id) { %>
+                <% if (post.fixada) { %>
+                  <button type="button" class="btn-desafixar w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors" data-id="<%= post.id %>">
+                    <i class="fa-solid fa-thumbtack-slash w-4 text-center text-gray-400"></i> Desafixar
+                  </button>
+                <% } else { %>
+                  <button type="button" class="btn-fixar w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors" data-id="<%= post.id %>">
+                    <i class="fa-solid fa-thumbtack w-4 text-center text-gray-400"></i> Fixar post
+                  </button>
+                <% } %>
+                <button type="button" class="btn-deletar-post w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 transition-colors" data-id="<%= post.id %>">
+                  <i class="fa-solid fa-trash-can w-4 text-center"></i> Excluir
+                </button>
+              <% } else { %>
+                <button type="button" class="btn-share w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors" data-id="<%= post.id %>">
+                  <i class="fa-solid fa-share-from-square w-4 text-center text-gray-400"></i> Compartilhar
+                </button>
+              <% } %>
+            </div>
+          </div>
+        </div>
+
+        <!-- Photo -->
+        <div class="relative mt-1">
+          <img src="<%= post.foto %>" alt="" class="w-full aspect-[4/5] object-cover" loading="lazy"
+               ondblclick="toggleLike(this, '<%= post.id %>')">
+          <% if (!post.fixada) { %>
+            <div class="post-countdown absolute bottom-3 right-3 flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-black/50 backdrop-blur-sm text-white text-[11px] font-semibold"
+                 data-created="<%= post.criado_em %>">
+              <i class="fa-regular fa-clock text-[10px]"></i>
+              <span class="countdown-text"></span>
+            </div>
+          <% } %>
+          <div class="dbl-heart-overlay absolute inset-0 flex items-center justify-center pointer-events-none">
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="px-4 pt-3">
+          <div class="flex items-center gap-4">
+            <button type="button" class="btn-like group flex items-center gap-1.5 transition-colors"
+                    data-post-id="<%= post.id %>" data-liked="<%= post.curtiu ? 'true' : 'false' %>">
+              <i class="<%= post.curtiu ? 'fa-solid' : 'fa-regular' %> fa-heart text-xl transition-all duration-200 <%= post.curtiu ? 'text-red-500' : 'text-gray-600 group-hover:text-red-400' %>"></i>
+            </button>
+            <button type="button" class="btn-open-comments group flex items-center gap-1.5 text-gray-600 hover:text-accent-500 transition-colors"
+                    data-post-id="<%= post.id %>">
+              <i class="fa-regular fa-comment text-xl"></i>
+            </button>
+            <button type="button" class="btn-share-whatsapp text-gray-600 hover:text-green-500 transition-colors"
+                    data-post-id="<%= post.id %>" data-legenda="<%= post.legenda ? post.legenda.substring(0, 80) : '' %>">
+              <i class="fa-brands fa-whatsapp text-xl"></i>
+            </button>
+          </div>
+
+          <!-- Likes -->
+          <p class="likes-count text-sm font-bold text-gray-900 mt-2" data-post-id="<%= post.id %>">
+            <%= post.total_curtidas %> curtida<%= post.total_curtidas !== 1 ? 's' : '' %>
+          </p>
+
+          <!-- Caption -->
+          <div class="mt-1.5 caption-area" data-post-id="<%= post.id %>">
+            <% if (post.legenda) { %>
+              <p class="text-sm text-gray-800 leading-relaxed">
+                <a href="/explorar/perfil/<%= post.usuario_id %>" class="font-bold hover:text-primary-600 transition-colors mr-1"><%= post.autor_nome %></a><span class="caption-text line-clamp-2"><%= post.legenda %></span>
+              </p>
+              <button type="button" class="btn-ver-mais text-xs text-gray-400 hover:text-gray-600 mt-0.5 hidden">ver mais</button>
+            <% } %>
+          </div>
+
+          <!-- Comments Preview -->
+          <% if (post.total_comentarios > 0) { %>
+            <button type="button" class="btn-open-comments text-xs text-gray-400 hover:text-gray-600 mt-1.5 block" data-post-id="<%= post.id %>">
+              Ver todos os <%= post.total_comentarios %> comentário<%= post.total_comentarios !== 1 ? 's' : '' %>
+            </button>
+          <% } %>
+
+          <!-- Inline Comment -->
+          <form class="comment-form flex items-center gap-2 mt-3 pb-4 border-t border-gray-50 pt-3" data-post-id="<%= post.id %>">
+            <input type="text" placeholder="Adicione um comentário..." maxlength="300"
+                   class="flex-1 text-sm bg-transparent border-0 outline-none placeholder-gray-300 text-gray-700 comment-input">
+            <button type="submit" class="text-sm font-bold text-primary-500 opacity-40 pointer-events-none transition-opacity comment-submit">
+              Publicar
+            </button>
+          </form>
+        </div>
+      </article>
+    <% }); %>
+
+    <!-- Load More / Skeleton -->
+    <% if (temMais) { %>
+      <div id="loadMore" class="py-6">
+        <div class="space-y-4">
+          <div class="bg-white rounded-2xl shadow-sm border border-gray-100/80 overflow-hidden">
+            <div class="flex items-center gap-3 p-4">
+              <div class="w-10 h-10 rounded-full skeleton"></div>
+              <div class="flex-1 space-y-2">
+                <div class="h-3 w-24 rounded skeleton"></div>
+                <div class="h-2 w-16 rounded skeleton"></div>
+              </div>
+            </div>
+            <div class="w-full aspect-[4/5] skeleton"></div>
+            <div class="p-4 space-y-2">
+              <div class="h-3 w-20 rounded skeleton"></div>
+              <div class="h-3 w-full rounded skeleton"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    <% } %>
+  </div>
+
+  <!-- Comments Modal -->
+  <div id="commentsModal" class="fixed inset-0 z-[60] hidden">
+    <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" id="commentsOverlay"></div>
+    <div class="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl max-h-[75vh] flex flex-col animate-slideUp safe-bottom md:relative md:top-1/2 md:-translate-y-1/2 md:max-w-lg md:mx-auto md:rounded-2xl md:max-h-[70vh]">
+      <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+        <h3 class="font-bold text-gray-900">Comentários</h3>
+        <button type="button" id="closeComments" class="p-1 text-gray-400 hover:text-gray-600 transition-colors">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+      <div id="commentsBody" class="flex-1 overflow-y-auto px-5 py-3 space-y-3 scrollbar-hide">
+        <div class="text-center py-6 text-gray-300">
+          <i class="fa-solid fa-spinner fa-spin text-xl"></i>
+        </div>
+      </div>
+      <form id="modalCommentForm" class="flex items-center gap-2 px-5 py-3 border-t border-gray-100">
+        <input type="text" id="modalCommentInput" placeholder="Escreva um comentário..." maxlength="300"
+               class="flex-1 text-sm bg-gray-50 rounded-full px-4 py-2.5 border-0 outline-none focus:ring-2 focus:ring-primary-500/20 placeholder-gray-400">
+        <button type="submit" class="w-9 h-9 rounded-full bg-gradient-to-r from-primary-500 to-primary-600 text-white flex items-center justify-center hover:shadow-lg hover:shadow-primary-500/25 transition-all">
+          <i class="fa-solid fa-paper-plane text-xs"></i>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- New Post Modal -->
+  <div id="newPostModal" class="fixed inset-0 z-[60] hidden">
+    <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" id="newPostOverlay"></div>
+    <div class="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl flex flex-col animate-slideUp safe-bottom md:relative md:top-1/2 md:-translate-y-1/2 md:max-w-lg md:mx-auto md:rounded-2xl">
+      <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+        <h3 class="font-bold text-gray-900">Nova publicação</h3>
+        <button type="button" id="closeNewPost" class="p-1 text-gray-400 hover:text-gray-600 transition-colors">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+      <div class="px-5 py-4 space-y-4">
+        <!-- Upload Preview -->
+        <div id="uploadArea" class="relative w-full aspect-square rounded-2xl border-2 border-dashed border-gray-200 bg-gray-50 flex flex-col items-center justify-center cursor-pointer hover:border-primary-400 hover:bg-primary-50/30 transition-all group overflow-hidden">
+          <input type="file" id="postFileInput" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer z-10">
+          <div id="uploadPlaceholder" class="flex flex-col items-center gap-3 text-gray-400 group-hover:text-primary-500 transition-colors">
+            <div class="w-14 h-14 rounded-full bg-gray-100 group-hover:bg-primary-100 flex items-center justify-center transition-colors">
+              <i class="fa-solid fa-camera text-xl"></i>
+            </div>
+            <div class="text-center">
+              <p class="text-sm font-semibold">Toque para escolher uma foto</p>
+              <p class="text-xs text-gray-300 mt-0.5">JPG, PNG ou WebP até 10MB</p>
+            </div>
+          </div>
+          <img id="uploadPreview" src="" alt="" class="absolute inset-0 w-full h-full object-cover hidden">
+          <button type="button" id="removePhoto" class="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70 transition-colors z-20 hidden">
+            <i class="fa-solid fa-xmark text-sm"></i>
+          </button>
+        </div>
+
+        <textarea id="postLegenda" rows="3" maxlength="500" placeholder="Escreva uma legenda..."
+                  class="w-full text-sm bg-gray-50 rounded-xl px-4 py-3 border-0 outline-none resize-none focus:ring-2 focus:ring-primary-500/20 placeholder-gray-400"></textarea>
+
+        <% if (typeof pets !== 'undefined' && pets.length > 0) { %>
+          <div class="flex items-center gap-2">
+            <i class="fa-solid fa-paw text-gray-400 text-sm"></i>
+            <select id="postPetId" class="flex-1 text-sm bg-gray-50 rounded-xl px-3 py-2.5 border-0 outline-none focus:ring-2 focus:ring-primary-500/20 text-gray-700">
+              <option value="">Nenhum pet (opcional)</option>
+              <% pets.forEach(function(p) { %>
+                <option value="<%= p.id %>"><%= p.nome %></option>
+              <% }); %>
+            </select>
+          </div>
+        <% } %>
+
+        <button type="button" id="submitPost"
+                class="w-full py-3 rounded-xl bg-gradient-to-r from-primary-500 to-primary-600 text-white font-bold text-sm shadow-lg shadow-primary-500/20 hover:shadow-xl hover:shadow-primary-500/30 hover:-translate-y-0.5 disabled:opacity-40 disabled:pointer-events-none transition-all duration-300"
+                disabled>
+          <i class="fa-solid fa-paper-plane mr-1.5"></i> Publicar
+        </button>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<%- include('partials/footer') %>
+
+<script>
+(function () {
+  'use strict';
+
+  var currentTab = '<%= tab %>';
+  var currentPage = <%= page %>;
+  var temMais = <%= temMais ? 'true' : 'false' %>;
+  var loading = false;
+  var myUserId = document.body.dataset.usuarioId ? parseInt(document.body.dataset.usuarioId) : null;
+
+  /* ── Relative time ── */
+  function tempoRelativo(dateStr) {
+    var d = new Date(dateStr);
+    var agora = Date.now();
+    var diff = agora - d.getTime();
+    var seg = Math.floor(diff / 1000);
+    if (seg < 60) return 'agora';
+    var min = Math.floor(seg / 60);
+    if (min < 60) return 'há ' + min + 'm';
+    var hrs = Math.floor(min / 60);
+    if (hrs < 24) return 'há ' + hrs + 'h';
+    var dias = Math.floor(hrs / 24);
+    if (dias < 7) return 'há ' + dias + 'd';
+    var sem = Math.floor(dias / 7);
+    if (sem < 5) return 'há ' + sem + 'sem';
+    return d.toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' });
+  }
+
+  function atualizarTempos() {
+    document.querySelectorAll('.post-time[data-time]').forEach(function (el) {
+      el.textContent = tempoRelativo(el.dataset.time);
+    });
+  }
+  atualizarTempos();
+  setInterval(atualizarTempos, 30000);
+
+  /* ── Countdown for non-pinned posts ── */
+  function atualizarCountdowns() {
+    document.querySelectorAll('.post-countdown[data-created]').forEach(function (el) {
+      var criado = new Date(el.dataset.created).getTime();
+      var expira = criado + 3 * 24 * 60 * 60 * 1000;
+      var restante = expira - Date.now();
+      var txt = el.querySelector('.countdown-text');
+      if (!txt) return;
+      if (restante <= 0) {
+        txt.textContent = 'Expirado';
+        el.classList.add('countdown-pulse');
+        return;
+      }
+      var h = Math.floor(restante / 3600000);
+      var m = Math.floor((restante % 3600000) / 60000);
+      if (h >= 24) {
+        var d = Math.floor(h / 24);
+        txt.textContent = d + 'd ' + (h % 24) + 'h restantes';
+      } else {
+        txt.textContent = h + 'h ' + m + 'min restantes';
+        if (h < 6) el.classList.add('countdown-pulse');
+      }
+    });
+  }
+  atualizarCountdowns();
+  setInterval(atualizarCountdowns, 60000);
+
+  /* ── Tab indicator ── */
+  function posicionarIndicator() {
+    var activeBtn = document.querySelector('.tab-btn[data-tab="' + currentTab + '"]');
+    var indicator = document.getElementById('tabIndicator');
+    if (activeBtn && indicator) {
+      var parent = activeBtn.parentElement;
+      indicator.style.left = (activeBtn.offsetLeft - parent.offsetLeft) + 'px';
+      indicator.style.width = activeBtn.offsetWidth + 'px';
+    }
+  }
+  posicionarIndicator();
+  window.addEventListener('resize', posicionarIndicator);
+
+  document.querySelectorAll('.tab-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var t = btn.dataset.tab;
+      if (t === currentTab) return;
+      window.location.href = '/explorar?tab=' + t;
+    });
+  });
+
+  /* ── Like toggle ── */
+  function doLike(postId, btn) {
+    var liked = btn.dataset.liked === 'true';
+    var icon = btn.querySelector('i');
+    var method = liked ? 'DELETE' : 'POST';
+
+    btn.dataset.liked = liked ? 'false' : 'true';
+    icon.className = (liked ? 'fa-regular' : 'fa-solid') + ' fa-heart text-xl transition-all duration-200 ' + (liked ? 'text-gray-600' : 'text-red-500');
+    if (!liked) btn.classList.add('heart-pop');
+    setTimeout(function () { btn.classList.remove('heart-pop'); }, 500);
+
+    fetch('/explorar/post/' + postId + '/curtir', {
+      method: method,
+      headers: { 'Accept': 'application/json' },
+      credentials: 'same-origin'
+    })
+    .then(function (r) { return r.json(); })
+    .then(function (data) {
+      if (data.sucesso) {
+        var el = document.querySelector('.likes-count[data-post-id="' + postId + '"]');
+        if (el) el.textContent = data.total + ' curtida' + (data.total !== 1 ? 's' : '');
+      }
+    })
+    .catch(function () {});
+  }
+
+  document.addEventListener('click', function (e) {
+    var btn = e.target.closest('.btn-like');
+    if (btn) {
+      e.preventDefault();
+      doLike(btn.dataset.postId, btn);
+    }
+  });
+
+  window.toggleLike = function (img, postId) {
+    var article = img.closest('article');
+    if (!article) return;
+    var btn = article.querySelector('.btn-like[data-post-id="' + postId + '"]');
+    if (btn) doLike(postId, btn);
+    var overlay = article.querySelector('.dbl-heart-overlay');
+    if (overlay) {
+      var heart = document.createElement('i');
+      heart.className = 'fa-solid fa-heart text-white text-6xl float-heart drop-shadow-lg';
+      overlay.appendChild(heart);
+      setTimeout(function () { heart.remove(); }, 900);
+    }
+  };
+
+  /* ── Post menus ── */
+  document.addEventListener('click', function (e) {
+    var menuBtn = e.target.closest('.post-menu-btn');
+    if (menuBtn) {
+      e.stopPropagation();
+      var menu = document.getElementById('menu-' + menuBtn.dataset.postId);
+      document.querySelectorAll('.menu-dropdown').forEach(function (m) {
+        if (m !== menu) m.classList.add('hidden');
+      });
+      if (menu) menu.classList.toggle('hidden');
+      return;
+    }
+    document.querySelectorAll('.menu-dropdown').forEach(function (m) { m.classList.add('hidden'); });
+  });
+
+  /* ── Pin / Unpin ── */
+  document.addEventListener('click', function (e) {
+    var btn = e.target.closest('.btn-fixar');
+    if (btn) {
+      fetch('/explorar/post/' + btn.dataset.id + '/fixar', { method: 'POST', headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
+        .then(function (r) { return r.json(); })
+        .then(function (d) { if (d.sucesso) location.reload(); else alert(d.mensagem || 'Erro'); });
+    }
+    var btn2 = e.target.closest('.btn-desafixar');
+    if (btn2) {
+      fetch('/explorar/post/' + btn2.dataset.id + '/fixar', { method: 'DELETE', headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
+        .then(function (r) { return r.json(); })
+        .then(function (d) { if (d.sucesso) location.reload(); else alert(d.mensagem || 'Erro'); });
+    }
+  });
+
+  /* ── Delete post ── */
+  document.addEventListener('click', function (e) {
+    var btn = e.target.closest('.btn-deletar-post');
+    if (btn && confirm('Tem certeza que deseja excluir este post?')) {
+      fetch('/explorar/post/' + btn.dataset.id, { method: 'DELETE', headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+          if (d.sucesso) {
+            var article = document.querySelector('article[data-post-id="' + btn.dataset.id + '"]');
+            if (article) {
+              article.style.transition = 'all .3s ease';
+              article.style.opacity = '0';
+              article.style.transform = 'scale(0.95)';
+              setTimeout(function () { article.remove(); }, 300);
+            }
+          }
+        });
+    }
+  });
+
+  /* ── Share WhatsApp ── */
+  document.addEventListener('click', function (e) {
+    var btn = e.target.closest('.btn-share-whatsapp') || e.target.closest('.btn-share');
+    if (btn) {
+      var id = btn.dataset.postId || btn.dataset.id;
+      var legenda = btn.dataset.legenda || '';
+      var url = window.location.origin + '/explorar?post=' + id;
+      var text = legenda ? '🐾 ' + legenda + ' — ' + url : '🐾 Veja esse post no AIRPET! ' + url;
+      window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
+    }
+  });
+
+  /* ── Caption expand ── */
+  document.querySelectorAll('.caption-area').forEach(function (area) {
+    var text = area.querySelector('.caption-text');
+    var btn = area.querySelector('.btn-ver-mais');
+    if (text && btn && text.scrollHeight > text.clientHeight + 2) {
+      btn.classList.remove('hidden');
+      btn.addEventListener('click', function () {
+        text.classList.remove('line-clamp-2');
+        btn.classList.add('hidden');
+      });
+    }
+  });
+
+  /* ── Comments modal ── */
+  var commentsModal = document.getElementById('commentsModal');
+  var commentsBody = document.getElementById('commentsBody');
+  var modalCommentForm = document.getElementById('modalCommentForm');
+  var modalCommentInput = document.getElementById('modalCommentInput');
+  var activeCommentPostId = null;
+
+  function openComments(postId) {
+    activeCommentPostId = postId;
+    commentsModal.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+    commentsBody.innerHTML = '<div class="text-center py-6 text-gray-300"><i class="fa-solid fa-spinner fa-spin text-xl"></i></div>';
+
+    fetch('/explorar/post/' + postId + '/comentarios', { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (!data.sucesso || !data.comentarios.length) {
+          commentsBody.innerHTML = '<div class="text-center py-8"><p class="text-sm text-gray-400">Nenhum comentário ainda.</p><p class="text-xs text-gray-300 mt-1">Seja o primeiro a comentar!</p></div>';
+          return;
+        }
+        var html = '';
+        data.comentarios.forEach(function (c) {
+          var isMe = myUserId && c.usuario_id === myUserId;
+          html += '<div class="flex gap-2.5 group" data-comment-id="' + c.id + '">';
+          if (c.foto_perfil) {
+            html += '<a href="/explorar/perfil/' + c.usuario_id + '"><img src="' + c.foto_perfil + '" class="w-8 h-8 rounded-full object-cover flex-shrink-0"></a>';
+          } else {
+            html += '<a href="/explorar/perfil/' + c.usuario_id + '"><span class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0" style="background:' + (c.cor_perfil || '#ec5a1c') + '">' + (c.nome ? c.nome.charAt(0).toUpperCase() : 'U') + '</span></a>';
+          }
+          html += '<div class="flex-1 min-w-0">';
+          html += '<p class="text-sm"><a href="/explorar/perfil/' + c.usuario_id + '" class="font-bold text-gray-900 hover:text-primary-600 transition-colors mr-1">' + c.nome + '</a><span class="text-gray-700">' + escapeHtml(c.texto) + '</span></p>';
+          html += '<div class="flex items-center gap-3 mt-1"><span class="text-[11px] text-gray-400">' + tempoRelativo(c.criado_em) + '</span>';
+          if (isMe) html += '<button type="button" class="btn-del-comment text-[11px] text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all" data-id="' + c.id + '"><i class="fa-solid fa-trash-can"></i></button>';
+          html += '</div></div></div>';
+        });
+        commentsBody.innerHTML = html;
+        commentsBody.scrollTop = commentsBody.scrollHeight;
+      });
+  }
+
+  function closeComments() {
+    commentsModal.classList.add('hidden');
+    document.body.style.overflow = '';
+    activeCommentPostId = null;
+  }
+
+  document.addEventListener('click', function (e) {
+    var btn = e.target.closest('.btn-open-comments');
+    if (btn) openComments(btn.dataset.postId);
+  });
+
+  document.getElementById('closeComments').addEventListener('click', closeComments);
+  document.getElementById('commentsOverlay').addEventListener('click', closeComments);
+
+  modalCommentForm.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var texto = modalCommentInput.value.trim();
+    if (!texto || !activeCommentPostId) return;
+    modalCommentInput.value = '';
+
+    fetch('/explorar/post/' + activeCommentPostId + '/comentar', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      credentials: 'same-origin',
+      body: JSON.stringify({ texto: texto })
+    })
+    .then(function (r) { return r.json(); })
+    .then(function (data) {
+      if (data.sucesso) {
+        openComments(activeCommentPostId);
+        var countEl = document.querySelector('article[data-post-id="' + activeCommentPostId + '"] .btn-open-comments[data-post-id]');
+        if (data.total !== undefined) {
+          var preview = document.querySelector('article[data-post-id="' + activeCommentPostId + '"] button.btn-open-comments:last-of-type');
+          if (preview) preview.textContent = 'Ver todos os ' + data.total + ' comentário' + (data.total !== 1 ? 's' : '');
+        }
+      }
+    });
+  });
+
+  document.addEventListener('click', function (e) {
+    var btn = e.target.closest('.btn-del-comment');
+    if (btn) {
+      fetch('/explorar/comentario/' + btn.dataset.id, { method: 'DELETE', headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
+        .then(function (r) { return r.json(); })
+        .then(function (d) { if (d.sucesso && activeCommentPostId) openComments(activeCommentPostId); });
+    }
+  });
+
+  /* ── Inline comment forms ── */
+  document.querySelectorAll('.comment-form').forEach(function (form) {
+    var input = form.querySelector('.comment-input');
+    var btn = form.querySelector('.comment-submit');
+    input.addEventListener('input', function () {
+      var hasText = input.value.trim().length > 0;
+      btn.style.opacity = hasText ? '1' : '0.4';
+      btn.style.pointerEvents = hasText ? 'auto' : 'none';
+    });
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var texto = input.value.trim();
+      if (!texto) return;
+      var postId = form.dataset.postId;
+      input.value = '';
+      btn.style.opacity = '0.4';
+      btn.style.pointerEvents = 'none';
+
+      fetch('/explorar/post/' + postId + '/comentar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ texto: texto })
+      })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (data.sucesso && data.total !== undefined) {
+          var article = document.querySelector('article[data-post-id="' + postId + '"]');
+          if (article) {
+            var preview = article.querySelectorAll('.btn-open-comments');
+            preview.forEach(function (el) {
+              if (el.textContent.includes('Ver todos')) {
+                el.textContent = 'Ver todos os ' + data.total + ' comentário' + (data.total !== 1 ? 's' : '');
+              }
+            });
+          }
+        }
+      });
+    });
+  });
+
+  /* ── Infinite scroll ── */
+  function carregarMaisPosts() {
+    if (loading || !temMais) return;
+    loading = true;
+    currentPage++;
+
+    fetch('/explorar?tab=' + currentTab + '&page=' + currentPage, {
+      headers: { 'Accept': 'application/json' },
+      credentials: 'same-origin'
+    })
+    .then(function (r) { return r.json(); })
+    .then(function (data) {
+      if (!data.posts || !data.posts.length) {
+        temMais = false;
+        var loader = document.getElementById('loadMore');
+        if (loader) loader.remove();
+        return;
+      }
+
+      var container = document.getElementById('feedContainer');
+      var loader = document.getElementById('loadMore');
+
+      data.posts.forEach(function (post) {
+        var article = criarPostHTML(post);
+        if (loader) {
+          container.insertBefore(article, loader);
+        } else {
+          container.appendChild(article);
+        }
+      });
+
+      if (data.posts.length < 20) {
+        temMais = false;
+        if (loader) loader.remove();
+      }
+
+      atualizarTempos();
+      atualizarCountdowns();
+      inicializarCaptions();
+      loading = false;
+    })
+    .catch(function () { loading = false; });
+  }
+
+  var scrollThrottle = false;
+  window.addEventListener('scroll', function () {
+    if (scrollThrottle) return;
+    scrollThrottle = true;
+    requestAnimationFrame(function () {
+      scrollThrottle = false;
+      if (!temMais) return;
+      var docH = document.documentElement.scrollHeight;
+      var scrollPos = window.scrollY + window.innerHeight;
+      if (scrollPos > docH - 800) carregarMaisPosts();
+    });
+  });
+
+  function criarPostHTML(post) {
+    var article = document.createElement('article');
+    article.className = 'bg-white rounded-2xl shadow-sm border border-gray-100/80 mb-4 overflow-hidden post-enter';
+    article.dataset.postId = post.id;
+    article.dataset.authorId = post.usuario_id;
+
+    var isMe = myUserId && post.usuario_id === myUserId;
+    var avatarHtml = post.foto_perfil
+      ? '<img src="' + post.foto_perfil + '" alt="" class="w-10 h-10 rounded-full object-cover ring-2 ring-gray-100">'
+      : '<span class="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white" style="background:' + (post.cor_perfil || '#ec5a1c') + '">' + (post.autor_nome ? post.autor_nome.charAt(0).toUpperCase() : 'U') + '</span>';
+
+    var pinBadge = post.fixada ? '<span class="flex items-center gap-1 px-2 py-1 rounded-full bg-amber-50 text-amber-600 text-[10px] font-bold uppercase tracking-wide"><i class="fa-solid fa-thumbtack text-[9px]"></i> Fixado</span>' : '';
+    var petInfo = post.pet_nome ? '<span class="text-gray-300">·</span><span class="text-primary-400 font-medium"><i class="fa-solid fa-paw text-[9px] mr-0.5"></i>' + post.pet_nome + '</span>' : '';
+
+    var menuHtml = '';
+    if (isMe) {
+      menuHtml = post.fixada
+        ? '<button type="button" class="btn-desafixar w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors" data-id="' + post.id + '"><i class="fa-solid fa-thumbtack-slash w-4 text-center text-gray-400"></i> Desafixar</button>'
+        : '<button type="button" class="btn-fixar w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors" data-id="' + post.id + '"><i class="fa-solid fa-thumbtack w-4 text-center text-gray-400"></i> Fixar post</button>';
+      menuHtml += '<button type="button" class="btn-deletar-post w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 transition-colors" data-id="' + post.id + '"><i class="fa-solid fa-trash-can w-4 text-center"></i> Excluir</button>';
+    } else {
+      menuHtml = '<button type="button" class="btn-share w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors" data-id="' + post.id + '"><i class="fa-solid fa-share-from-square w-4 text-center text-gray-400"></i> Compartilhar</button>';
+    }
+
+    var countdownHtml = !post.fixada ? '<div class="post-countdown absolute bottom-3 right-3 flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-black/50 backdrop-blur-sm text-white text-[11px] font-semibold" data-created="' + post.criado_em + '"><i class="fa-regular fa-clock text-[10px]"></i><span class="countdown-text"></span></div>' : '';
+
+    var legendaHtml = '';
+    if (post.legenda) {
+      legendaHtml = '<div class="mt-1.5 caption-area" data-post-id="' + post.id + '"><p class="text-sm text-gray-800 leading-relaxed"><a href="/explorar/perfil/' + post.usuario_id + '" class="font-bold hover:text-primary-600 transition-colors mr-1">' + post.autor_nome + '</a><span class="caption-text line-clamp-2">' + escapeHtml(post.legenda) + '</span></p><button type="button" class="btn-ver-mais text-xs text-gray-400 hover:text-gray-600 mt-0.5 hidden">ver mais</button></div>';
+    }
+
+    var commentsLink = post.total_comentarios > 0
+      ? '<button type="button" class="btn-open-comments text-xs text-gray-400 hover:text-gray-600 mt-1.5 block" data-post-id="' + post.id + '">Ver todos os ' + post.total_comentarios + ' comentário' + (post.total_comentarios !== 1 ? 's' : '') + '</button>'
+      : '';
+
+    article.innerHTML =
+      '<div class="flex items-center gap-3 px-4 pt-4 pb-2">' +
+        '<a href="/explorar/perfil/' + post.usuario_id + '" class="flex-shrink-0">' + avatarHtml + '</a>' +
+        '<div class="flex-1 min-w-0">' +
+          '<a href="/explorar/perfil/' + post.usuario_id + '" class="text-sm font-bold text-gray-900 hover:text-primary-600 transition-colors truncate block">' + post.autor_nome + '</a>' +
+          '<div class="flex items-center gap-1.5 text-xs text-gray-400"><span class="post-time" data-time="' + post.criado_em + '"></span>' + petInfo + '</div>' +
+        '</div>' + pinBadge +
+        '<div class="relative">' +
+          '<button type="button" class="post-menu-btn p-2 -mr-2 text-gray-300 hover:text-gray-500 transition-colors rounded-full hover:bg-gray-50" data-post-id="' + post.id + '"><i class="fa-solid fa-ellipsis"></i></button>' +
+          '<div class="menu-dropdown hidden absolute right-0 top-full mt-1 w-48 bg-white rounded-xl shadow-2xl shadow-black/10 ring-1 ring-black/5 py-1.5 z-30" id="menu-' + post.id + '">' + menuHtml + '</div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="relative mt-1">' +
+        '<img src="' + post.foto + '" alt="" class="w-full aspect-[4/5] object-cover" loading="lazy" ondblclick="toggleLike(this,\'' + post.id + '\')">' +
+        countdownHtml +
+        '<div class="dbl-heart-overlay absolute inset-0 flex items-center justify-center pointer-events-none"></div>' +
+      '</div>' +
+      '<div class="px-4 pt-3">' +
+        '<div class="flex items-center gap-4">' +
+          '<button type="button" class="btn-like group flex items-center gap-1.5 transition-colors" data-post-id="' + post.id + '" data-liked="' + (post.curtiu ? 'true' : 'false') + '">' +
+            '<i class="' + (post.curtiu ? 'fa-solid' : 'fa-regular') + ' fa-heart text-xl transition-all duration-200 ' + (post.curtiu ? 'text-red-500' : 'text-gray-600') + '"></i>' +
+          '</button>' +
+          '<button type="button" class="btn-open-comments group flex items-center gap-1.5 text-gray-600 hover:text-accent-500 transition-colors" data-post-id="' + post.id + '"><i class="fa-regular fa-comment text-xl"></i></button>' +
+          '<button type="button" class="btn-share-whatsapp text-gray-600 hover:text-green-500 transition-colors" data-post-id="' + post.id + '" data-legenda="' + (post.legenda ? post.legenda.substring(0, 80).replace(/"/g, '&quot;') : '') + '"><i class="fa-brands fa-whatsapp text-xl"></i></button>' +
+        '</div>' +
+        '<p class="likes-count text-sm font-bold text-gray-900 mt-2" data-post-id="' + post.id + '">' + post.total_curtidas + ' curtida' + (post.total_curtidas !== 1 ? 's' : '') + '</p>' +
+        legendaHtml + commentsLink +
+        '<form class="comment-form flex items-center gap-2 mt-3 pb-4 border-t border-gray-50 pt-3" data-post-id="' + post.id + '">' +
+          '<input type="text" placeholder="Adicione um comentário..." maxlength="300" class="flex-1 text-sm bg-transparent border-0 outline-none placeholder-gray-300 text-gray-700 comment-input">' +
+          '<button type="submit" class="text-sm font-bold text-primary-500 opacity-40 pointer-events-none transition-opacity comment-submit">Publicar</button>' +
+        '</form>' +
+      '</div>';
+
+    bindInlineForm(article);
+    return article;
+  }
+
+  function bindInlineForm(article) {
+    var form = article.querySelector('.comment-form');
+    if (!form) return;
+    var input = form.querySelector('.comment-input');
+    var btn = form.querySelector('.comment-submit');
+    input.addEventListener('input', function () {
+      var hasText = input.value.trim().length > 0;
+      btn.style.opacity = hasText ? '1' : '0.4';
+      btn.style.pointerEvents = hasText ? 'auto' : 'none';
+    });
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var texto = input.value.trim();
+      if (!texto) return;
+      var postId = form.dataset.postId;
+      input.value = '';
+      btn.style.opacity = '0.4';
+      btn.style.pointerEvents = 'none';
+      fetch('/explorar/post/' + postId + '/comentar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ texto: texto })
+      }).then(function (r) { return r.json(); }).then(function (data) {
+        if (data.sucesso && data.total !== undefined) {
+          var previews = article.querySelectorAll('.btn-open-comments');
+          previews.forEach(function (el) {
+            if (el.textContent.includes('Ver todos')) {
+              el.textContent = 'Ver todos os ' + data.total + ' comentário' + (data.total !== 1 ? 's' : '');
+            }
+          });
+        }
+      });
+    });
+  }
+
+  function inicializarCaptions() {
+    document.querySelectorAll('.caption-area').forEach(function (area) {
+      var text = area.querySelector('.caption-text');
+      var btn = area.querySelector('.btn-ver-mais');
+      if (text && btn && text.scrollHeight > text.clientHeight + 2) {
+        btn.classList.remove('hidden');
+        btn.addEventListener('click', function () {
+          text.classList.remove('line-clamp-2');
+          btn.classList.add('hidden');
+        });
+      }
+    });
+  }
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    var div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  /* ── New Post Modal ── */
+  var newPostModal = document.getElementById('newPostModal');
+  var fileInput = document.getElementById('postFileInput');
+  var uploadPreview = document.getElementById('uploadPreview');
+  var uploadPlaceholder = document.getElementById('uploadPlaceholder');
+  var removePhotoBtn = document.getElementById('removePhoto');
+  var submitPostBtn = document.getElementById('submitPost');
+  var legendaInput = document.getElementById('postLegenda');
+  var selectedFile = null;
+
+  function openNewPost() {
+    newPostModal.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeNewPost() {
+    newPostModal.classList.add('hidden');
+    document.body.style.overflow = '';
+    resetUpload();
+  }
+
+  function resetUpload() {
+    selectedFile = null;
+    fileInput.value = '';
+    uploadPreview.classList.add('hidden');
+    uploadPreview.src = '';
+    uploadPlaceholder.classList.remove('hidden');
+    removePhotoBtn.classList.add('hidden');
+    legendaInput.value = '';
+    submitPostBtn.disabled = true;
+    var petSel = document.getElementById('postPetId');
+    if (petSel) petSel.value = '';
+  }
+
+  var fabBtn = document.getElementById('fabNewPost');
+  if (fabBtn) fabBtn.addEventListener('click', openNewPost);
+
+  document.getElementById('closeNewPost').addEventListener('click', closeNewPost);
+  document.getElementById('newPostOverlay').addEventListener('click', closeNewPost);
+
+  fileInput.addEventListener('change', function () {
+    if (fileInput.files && fileInput.files[0]) {
+      selectedFile = fileInput.files[0];
+      var reader = new FileReader();
+      reader.onload = function (e) {
+        uploadPreview.src = e.target.result;
+        uploadPreview.classList.remove('hidden');
+        uploadPlaceholder.classList.add('hidden');
+        removePhotoBtn.classList.remove('hidden');
+        submitPostBtn.disabled = false;
+      };
+      reader.readAsDataURL(selectedFile);
+    }
+  });
+
+  removePhotoBtn.addEventListener('click', function (e) {
+    e.stopPropagation();
+    resetUpload();
+  });
+
+  submitPostBtn.addEventListener('click', function () {
+    if (!selectedFile || submitPostBtn.disabled) return;
+    submitPostBtn.disabled = true;
+    submitPostBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1.5"></i> Publicando...';
+
+    var formData = new FormData();
+    formData.append('foto', selectedFile);
+    formData.append('legenda', legendaInput.value.trim());
+    var petSel = document.getElementById('postPetId');
+    if (petSel && petSel.value) formData.append('pet_id', petSel.value);
+
+    fetch('/explorar/post', {
+      method: 'POST',
+      credentials: 'same-origin',
+      body: formData
+    })
+    .then(function (r) { return r.json(); })
+    .then(function (data) {
+      if (data.sucesso && data.post) {
+        closeNewPost();
+        var container = document.getElementById('feedContainer');
+        var emptyState = container.querySelector('.text-center.py-16');
+        if (emptyState) emptyState.remove();
+        var newArticle = criarPostHTML(data.post);
+        container.insertBefore(newArticle, container.firstChild);
+        atualizarTempos();
+        atualizarCountdowns();
+        inicializarCaptions();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else {
+        alert(data.mensagem || 'Erro ao publicar.');
+        submitPostBtn.disabled = false;
+        submitPostBtn.innerHTML = '<i class="fa-solid fa-paper-plane mr-1.5"></i> Publicar';
+      }
+    })
+    .catch(function () {
+      alert('Erro de conexão. Tente novamente.');
+      submitPostBtn.disabled = false;
+      submitPostBtn.innerHTML = '<i class="fa-solid fa-paper-plane mr-1.5"></i> Publicar';
+    });
+  });
+
+})();
+</script>

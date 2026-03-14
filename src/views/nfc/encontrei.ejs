@@ -1,0 +1,143 @@
+<% locals.titulo = 'Encontrei este Pet' %>
+<%- include('../partials/header') %>
+<%- include('../partials/flash') %>
+
+<main class="flex-1 container mx-auto px-4 py-8 max-w-lg">
+
+  <a href="/nfc/<%= tag_code %>" class="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-[#ec5a1c] transition-colors mb-6">
+    <i class="fa-solid fa-arrow-left text-xs"></i> Voltar
+  </a>
+
+  <div class="text-center mb-8">
+    <div class="flex justify-center mb-4">
+      <div class="w-28 h-28 rounded-full ring-4 ring-[#ec5a1c]/20 shadow-xl overflow-hidden bg-white">
+        <% if (pet.foto) { %>
+          <img src="<%= pet.foto %>" alt="<%= pet.nome %>" class="w-full h-full object-cover">
+        <% } else { %>
+          <div class="w-full h-full flex items-center justify-center bg-orange-50">
+            <i class="fa-solid fa-paw text-4xl text-orange-300"></i>
+          </div>
+        <% } %>
+      </div>
+    </div>
+    <h1 class="text-2xl font-bold text-gray-900"><%= pet.nome %></h1>
+    <% if (pet.descricao_emocional) { %>
+      <p class="text-gray-500 text-sm mt-1 italic">"<%= pet.descricao_emocional %>"</p>
+    <% } %>
+  </div>
+
+  <div class="card">
+    <div class="flex items-center gap-3 mb-6">
+      <div class="w-10 h-10 rounded-xl bg-rose-100 flex items-center justify-center flex-shrink-0">
+        <i class="fa-solid fa-hand-holding-heart text-lg text-rose-500"></i>
+      </div>
+      <div>
+        <h2 class="text-base font-bold text-gray-900">Encontrei este pet</h2>
+        <p class="text-xs text-gray-400">Preencha o que puder para ajudar o dono</p>
+      </div>
+    </div>
+
+    <form action="/nfc/<%= tag_code %>/encontrei" method="POST" enctype="multipart/form-data" class="space-y-5">
+      <input type="hidden" name="pet_id" value="<%= pet.id %>">
+
+      <div>
+        <label for="nome" class="block text-sm font-semibold text-gray-700 mb-1.5">
+          Seu nome <span class="text-gray-400 font-normal">(opcional)</span>
+        </label>
+        <input type="text" id="nome" name="nome"
+               placeholder="Como voce se chama?"
+               class="w-full px-4 py-3 rounded-xl border border-gray-300
+                      focus:ring-2 focus:ring-[#ec5a1c]/30 focus:border-[#ec5a1c] transition-colors placeholder:text-gray-400">
+      </div>
+
+      <div>
+        <label for="telefone" class="block text-sm font-semibold text-gray-700 mb-1.5">
+          Telefone <span class="text-gray-400 font-normal">(opcional)</span>
+        </label>
+        <input type="tel" id="telefone" name="telefone"
+               placeholder="(00) 00000-0000"
+               class="w-full px-4 py-3 rounded-xl border border-gray-300
+                      focus:ring-2 focus:ring-[#ec5a1c]/30 focus:border-[#ec5a1c] transition-colors placeholder:text-gray-400">
+      </div>
+
+      <div>
+        <label for="mensagem" class="block text-sm font-semibold text-gray-700 mb-1.5">
+          Mensagem
+        </label>
+        <textarea id="mensagem" name="mensagem" rows="4"
+                  placeholder="Conte onde encontrou o pet, como ele esta..."
+                  class="w-full px-4 py-3 rounded-xl border border-gray-300 resize-none
+                         focus:ring-2 focus:ring-[#ec5a1c]/30 focus:border-[#ec5a1c] transition-colors placeholder:text-gray-400"></textarea>
+      </div>
+
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-1.5">
+          Foto do pet <span class="text-gray-400 font-normal">(opcional)</span>
+        </label>
+        <label for="foto" class="flex flex-col items-center justify-center gap-2 w-full py-6 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer
+                                  hover:border-[#ec5a1c]/40 hover:bg-orange-50/50 transition-colors" id="fotoLabel">
+          <i class="fa-solid fa-camera text-2xl text-gray-400" id="fotoIcon"></i>
+          <span class="text-sm text-gray-500" id="fotoTexto">Toque para enviar uma foto</span>
+          <input type="file" id="foto" name="foto" accept="image/*" class="hidden">
+        </label>
+        <div id="fotoPreviewContainer" class="hidden mt-3">
+          <img id="fotoPreview" class="w-full max-h-48 object-cover rounded-xl" alt="Preview">
+        </div>
+      </div>
+
+      <div class="bg-blue-50 border border-blue-200 rounded-xl p-4">
+        <div class="flex items-start gap-2.5">
+          <i class="fa-solid fa-circle-info text-blue-400 mt-0.5 flex-shrink-0"></i>
+          <p class="text-sm text-blue-700 leading-relaxed">
+            Quase tudo e opcional. Se preferir, apenas envie sua localizacao.
+          </p>
+        </div>
+      </div>
+
+      <button type="submit"
+              class="w-full px-6 py-4 rounded-2xl text-lg font-bold text-white bg-[#ec5a1c] hover:bg-[#d4500f] active:bg-[#c0470d] shadow-lg transition-all active:scale-[0.98]">
+        <i class="fa-solid fa-paper-plane mr-2"></i>Enviar
+      </button>
+    </form>
+  </div>
+
+</main>
+
+<% locals.extraScripts = `
+<script>
+(function() {
+  var inputFoto = document.getElementById('foto');
+  var preview = document.getElementById('fotoPreview');
+  var previewContainer = document.getElementById('fotoPreviewContainer');
+  var fotoIcon = document.getElementById('fotoIcon');
+  var fotoTexto = document.getElementById('fotoTexto');
+
+  if (inputFoto) {
+    inputFoto.addEventListener('change', function() {
+      if (this.files && this.files[0]) {
+        var reader = new FileReader();
+        reader.onload = function(e) {
+          preview.src = e.target.result;
+          previewContainer.classList.remove('hidden');
+          fotoIcon.className = 'fa-solid fa-check-circle text-2xl text-emerald-500';
+          fotoTexto.textContent = 'Foto selecionada — toque para trocar';
+        };
+        reader.readAsDataURL(this.files[0]);
+      }
+    });
+  }
+
+  var telInput = document.getElementById('telefone');
+  if (telInput) {
+    telInput.addEventListener('input', function() {
+      var v = this.value.replace(/\\D/g, '').substring(0, 11);
+      if (v.length > 6) v = '(' + v.substring(0,2) + ') ' + v.substring(2,7) + '-' + v.substring(7);
+      else if (v.length > 2) v = '(' + v.substring(0,2) + ') ' + v.substring(2);
+      this.value = v;
+    });
+  }
+})();
+</script>
+` %>
+
+<%- include('../partials/footer') %>

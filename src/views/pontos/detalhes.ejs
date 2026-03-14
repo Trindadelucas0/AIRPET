@@ -1,0 +1,119 @@
+<% locals.titulo = ponto.nome %>
+<% locals.extraHead = '<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""><style>#mapPonto{height:220px;border-radius:12px;z-index:0;}</style>' %>
+<%- include('../partials/header') %>
+<%- include('../partials/flash') %>
+
+<main class="flex-1 container mx-auto px-4 py-6 max-w-3xl">
+
+  <a href="/mapa" class="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-[#ec5a1c] transition-colors mb-6">
+    <i class="fa-solid fa-arrow-left text-xs"></i> Voltar ao mapa
+  </a>
+
+  <%
+    var tipoIcone = {
+      veterinario: { icon: 'fa-stethoscope', color: 'bg-blue-500', label: 'Veterinario' },
+      abrigo: { icon: 'fa-house-chimney', color: 'bg-purple-500', label: 'Abrigo' },
+      petshop: { icon: 'fa-store', color: 'bg-orange-500', label: 'Petshop' },
+      parque: { icon: 'fa-tree', color: 'bg-emerald-500', label: 'Parque' },
+      hospital: { icon: 'fa-hospital', color: 'bg-red-500', label: 'Hospital' }
+    };
+    var tp = tipoIcone[ponto.tipo] || { icon: 'fa-map-pin', color: 'bg-gray-500', label: ponto.tipo || 'Ponto' };
+  %>
+
+  <div class="card mb-6">
+    <div class="flex items-start gap-4 mb-4">
+      <span class="w-14 h-14 rounded-2xl <%= tp.color %> text-white flex items-center justify-center flex-shrink-0 shadow-sm">
+        <i class="fa-solid <%= tp.icon %> text-2xl"></i>
+      </span>
+      <div class="min-w-0 flex-1">
+        <span class="inline-block text-xs font-bold uppercase tracking-wider text-gray-400 mb-1"><%= tp.label %></span>
+        <h1 class="text-2xl font-bold text-gray-900 leading-tight"><%= ponto.nome %></h1>
+      </div>
+    </div>
+
+    <% if (ponto.descricao) { %>
+      <p class="text-gray-600 text-sm leading-relaxed mb-4"><%= ponto.descricao %></p>
+    <% } %>
+
+    <div class="space-y-3">
+      <% if (ponto.endereco) { %>
+        <div class="flex items-start gap-3">
+          <span class="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
+            <i class="fa-solid fa-location-dot text-gray-500 text-sm"></i>
+          </span>
+          <div>
+            <p class="text-xs text-gray-400 uppercase font-medium">Endereco</p>
+            <p class="text-sm font-medium text-gray-800"><%= ponto.endereco %></p>
+          </div>
+        </div>
+      <% } %>
+
+      <% if (ponto.telefone) { %>
+        <div class="flex items-start gap-3">
+          <span class="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
+            <i class="fa-solid fa-phone text-gray-500 text-sm"></i>
+          </span>
+          <div>
+            <p class="text-xs text-gray-400 uppercase font-medium">Telefone</p>
+            <a href="tel:<%= ponto.telefone %>" class="text-sm font-medium text-[#ec5a1c] hover:underline"><%= ponto.telefone %></a>
+          </div>
+        </div>
+      <% } %>
+
+      <% if (ponto.horario) { %>
+        <div class="flex items-start gap-3">
+          <span class="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
+            <i class="fa-solid fa-clock text-gray-500 text-sm"></i>
+          </span>
+          <div>
+            <p class="text-xs text-gray-400 uppercase font-medium">Horario</p>
+            <p class="text-sm font-medium text-gray-800"><%= ponto.horario %></p>
+          </div>
+        </div>
+      <% } %>
+    </div>
+  </div>
+
+  <% if (ponto.latitude && ponto.longitude) { %>
+    <div class="card !p-0 overflow-hidden mb-6">
+      <div class="p-4 pb-2">
+        <h2 class="text-lg font-bold text-gray-900">
+          <i class="fa-solid fa-map text-[#ec5a1c] mr-2"></i>Localizacao
+        </h2>
+      </div>
+      <div class="px-4 pb-4">
+        <div id="mapPonto"></div>
+      </div>
+    </div>
+  <% } %>
+
+  <% if (ponto.telefone) { %>
+    <a href="tel:<%= ponto.telefone %>"
+       class="flex items-center justify-center gap-2 w-full px-6 py-4 rounded-2xl text-lg font-bold text-white bg-[#ec5a1c] hover:bg-[#d4500f] shadow-lg transition-all active:scale-[0.98]">
+      <i class="fa-solid fa-phone"></i>
+      Ligar agora
+    </a>
+  <% } %>
+
+</main>
+
+<% locals.extraScripts = `
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script>
+(function() {
+  var lat = ${ponto.latitude || 0};
+  var lng = ${ponto.longitude || 0};
+  if (lat && lng) {
+    var map = L.map('mapPonto', { scrollWheelZoom: false }).setView([lat, lng], 16);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap'
+    }).addTo(map);
+    L.marker([lat, lng]).addTo(map)
+      .bindPopup('<strong>${ponto.nome.replace(/'/g, "\\'")}</strong>')
+      .openPopup();
+  }
+})();
+</script>
+` %>
+
+<%- include('../partials/footer') %>

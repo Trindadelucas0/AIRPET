@@ -1,0 +1,88 @@
+<% locals.titulo = 'Petshops Parceiros' %>
+<%- include('../partials/header') %>
+<%- include('../partials/flash') %>
+
+<main class="flex-1 container mx-auto px-4 py-6 max-w-5xl">
+
+  <div class="flex items-center justify-between mb-6">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-900">Petshops Parceiros</h1>
+      <p class="text-sm text-gray-500 mt-0.5">Encontre servicos e pontos de apoio</p>
+    </div>
+    <a href="/mapa?layer=petshops"
+       class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-[#ec5a1c] border border-[#ec5a1c]/30 hover:bg-[#ec5a1c] hover:text-white transition-colors">
+      <i class="fa-solid fa-map-location-dot"></i>
+      <span class="hidden sm:inline">Ver no mapa</span>
+    </a>
+  </div>
+
+  <% if (typeof petshops !== 'undefined' && petshops.length > 0) { %>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <% petshops.forEach(function(ps) { %>
+        <a href="/petshops/<%= ps.id %>" class="card hover:shadow-md transition-shadow group block">
+
+          <div class="relative mb-4">
+            <% if (ps.foto_capa) { %>
+              <img src="/images/petshops/<%= ps.foto_capa %>" alt="<%= ps.nome %>"
+                   class="w-full h-40 object-cover rounded-xl bg-gray-100">
+            <% } else { %>
+              <div class="w-full h-40 rounded-xl bg-gradient-to-br from-[#ec5a1c]/10 to-orange-50 flex items-center justify-center">
+                <i class="fa-solid fa-store text-3xl text-[#ec5a1c]/30"></i>
+              </div>
+            <% } %>
+
+            <% if (ps.ponto_de_apoio) { %>
+              <span class="absolute top-3 left-3 bg-emerald-500 text-white text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full shadow-sm">
+                <i class="fa-solid fa-shield-check mr-1"></i> Ponto de Apoio
+              </span>
+            <% } %>
+          </div>
+
+          <h3 class="text-lg font-bold text-gray-900 mb-1 group-hover:text-[#ec5a1c] transition-colors"><%= ps.nome %></h3>
+
+          <div class="space-y-1.5 text-sm text-gray-500 mb-3">
+            <% if (ps.endereco) { %>
+              <p class="flex items-start gap-2">
+                <i class="fa-solid fa-location-dot text-gray-400 mt-0.5 w-4 text-center flex-shrink-0"></i>
+                <span class="line-clamp-2"><%= ps.endereco %></span>
+              </p>
+            <% } %>
+            <% if (ps.telefone) { %>
+              <p class="flex items-center gap-2">
+                <i class="fa-solid fa-phone text-gray-400 w-4 text-center flex-shrink-0"></i>
+                <%= ps.telefone %>
+              </p>
+            <% } %>
+            <% if (typeof ps.distancia !== 'undefined' && ps.distancia !== null) { %>
+              <p class="flex items-center gap-2 text-[#ec5a1c] font-medium">
+                <i class="fa-solid fa-route w-4 text-center flex-shrink-0"></i>
+                <%= ps.distancia < 1 ? (ps.distancia * 1000).toFixed(0) + ' m' : ps.distancia.toFixed(1) + ' km' %>
+              </p>
+            <% } %>
+          </div>
+
+          <span class="inline-flex items-center gap-1 text-sm text-[#ec5a1c] font-medium group-hover:gap-2 transition-all">
+            Ver detalhes <i class="fa-solid fa-arrow-right text-xs"></i>
+          </span>
+        </a>
+      <% }); %>
+    </div>
+
+  <% } else { %>
+
+    <div class="card text-center py-16">
+      <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gray-100 mb-5">
+        <i class="fa-solid fa-store text-3xl text-gray-400"></i>
+      </div>
+      <h2 class="text-lg font-bold text-gray-800 mb-2">Nenhum petshop encontrado</h2>
+      <p class="text-gray-500 text-sm max-w-sm mx-auto">
+        Ainda nao temos petshops parceiros cadastrados na sua regiao.
+      </p>
+    </div>
+
+  <% } %>
+
+</main>
+
+<%- include('../partials/footer') %>

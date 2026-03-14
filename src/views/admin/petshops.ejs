@@ -1,0 +1,76 @@
+<% locals.titulo = 'Petshops' %>
+<%- include('../partials/header') %>
+<%- include('../partials/flash') %>
+
+<main class="flex-1">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+    <div class="flex items-center justify-between mb-6">
+      <div>
+        <a href="/admin" class="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-primary-500 transition-colors mb-2">
+          <i class="fa-solid fa-arrow-left text-xs"></i> Dashboard
+        </a>
+        <h1 class="text-2xl font-bold text-gray-900">Petshops</h1>
+      </div>
+      <span class="text-sm text-gray-500"><%= petshops.length %> registros</span>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="bg-gray-50 border-b border-gray-200">
+              <th class="px-4 py-3 text-left font-semibold text-gray-600">Nome</th>
+              <th class="px-4 py-3 text-left font-semibold text-gray-600">Endereço</th>
+              <th class="px-4 py-3 text-left font-semibold text-gray-600">Telefone</th>
+              <th class="px-4 py-3 text-left font-semibold text-gray-600">Ponto de Apoio</th>
+              <th class="px-4 py-3 text-left font-semibold text-gray-600">Ativo</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100">
+            <% petshops.forEach(function(ps) { %>
+              <tr class="hover:bg-gray-50 transition-colors">
+                <td class="px-4 py-3 font-medium text-gray-900">
+                  <div class="flex items-center gap-2">
+                    <span class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-500 flex items-center justify-center text-xs">
+                      <i class="fa-solid fa-store"></i>
+                    </span>
+                    <%= ps.nome %>
+                  </div>
+                </td>
+                <td class="px-4 py-3 text-gray-600 max-w-xs truncate"><%= ps.endereco || '—' %></td>
+                <td class="px-4 py-3 text-gray-600"><%= ps.telefone || '—' %></td>
+                <td class="px-4 py-3">
+                  <% if (ps.ponto_apoio) { %>
+                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">
+                      <i class="fa-solid fa-circle-check text-[10px]"></i> Sim
+                    </span>
+                  <% } else { %>
+                    <span class="text-gray-400 text-xs">Não</span>
+                  <% } %>
+                </td>
+                <td class="px-4 py-3">
+                  <% if (ps.ativo !== false) { %>
+                    <span class="inline-flex w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+                  <% } else { %>
+                    <span class="inline-flex w-2.5 h-2.5 rounded-full bg-gray-300"></span>
+                  <% } %>
+                </td>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+
+      <% if (petshops.length === 0) { %>
+        <div class="text-center py-12 text-gray-400">
+          <i class="fa-solid fa-store text-3xl mb-2"></i>
+          <p class="text-sm">Nenhum petshop cadastrado</p>
+        </div>
+      <% } %>
+    </div>
+
+  </div>
+</main>
+
+<%- include('../partials/footer') %>

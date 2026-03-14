@@ -1,0 +1,500 @@
+<% locals.titulo = pet.nome %>
+<% locals.extraHead = `
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+  #mapaScan { height: 350px; border-radius: 12px; z-index: 1; }
+  .scan-item { transition: all .2s ease; }
+  .scan-item:hover { background: #fff7ed; }
+  .scan-item.active { background: #fff7ed; border-left: 3px solid #ec5a1c; }
+</style>
+` %>
+<%- include('../partials/header') %>
+<%- include('../partials/flash') %>
+
+<main class="flex-1 container mx-auto px-4 py-6 max-w-3xl">
+
+  <a href="/pets" class="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-[#ec5a1c] transition-colors mb-4">
+    <i class="fa-solid fa-arrow-left text-xs"></i> Meus Pets
+  </a>
+
+  <!-- Hero com foto do pet -->
+  <div class="card p-0 overflow-hidden mb-6">
+    <div class="relative">
+      <% if (pet.foto) { %>
+        <img src="<%= pet.foto %>" alt="<%= pet.nome %>"
+             class="w-full h-56 sm:h-72 object-cover">
+      <% } else { %>
+        <div class="w-full h-56 sm:h-72 bg-gradient-to-br from-orange-100 to-orange-50 flex items-center justify-center">
+          <i class="fa-solid fa-paw text-6xl text-orange-300"></i>
+        </div>
+      <% } %>
+      <span class="absolute top-4 right-4 px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wide shadow-sm
+        <%= pet.status === 'perdido' ? 'bg-red-500 text-white' : 'bg-emerald-500 text-white' %>">
+        <i class="fa-solid <%= pet.status === 'perdido' ? 'fa-triangle-exclamation' : 'fa-shield-halved' %> mr-1"></i>
+        <%= pet.status === 'perdido' ? 'Perdido' : 'Seguro' %>
+      </span>
+    </div>
+
+    <div class="p-6">
+      <h1 class="text-2xl sm:text-3xl font-bold text-gray-900">
+        <%= pet.nome %>
+      </h1>
+
+      <% if (pet.data_nascimento) {
+        var agora = new Date();
+        var nasc = new Date(pet.data_nascimento);
+        var anos = agora.getFullYear() - nasc.getFullYear();
+        var meses = agora.getMonth() - nasc.getMonth();
+        if (meses < 0) { anos--; meses += 12; }
+      %>
+        <p class="text-sm text-gray-500 mt-1">
+          <i class="fa-solid fa-cake-candles mr-1"></i>
+          <%= anos %> ano<%= anos !== 1 ? 's' : '' %><% if (meses > 0) { %> e <%= meses %> m<%= meses !== 1 ? 'eses' : 'es' %><% } %>
+        </p>
+      <% } %>
+
+      <% if (pet.descricao_emocional) { %>
+        <p class="text-gray-500 italic text-sm leading-relaxed mt-3">"<%= pet.descricao_emocional %>"</p>
+      <% } %>
+
+      <% if (typeof idadePet !== 'undefined' && idadePet) { %>
+        <div class="mt-3 flex flex-wrap items-center gap-2">
+          <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-orange-100 text-orange-700 text-xs font-semibold">
+            <i class="fa-solid fa-hourglass-half"></i>
+            <%= idadePet.anos %> ano<%= idadePet.anos !== 1 ? 's' : '' %>,
+            <%= idadePet.meses %> m<%= idadePet.meses !== 1 ? 'eses' : 'es' %> e
+            <%= idadePet.dias %> dia<%= idadePet.dias !== 1 ? 's' : '' %>
+          </span>
+          <% if (idadePet.idadeHumana > 0 && (idadePet.tipo === 'cachorro' || idadePet.tipo === 'gato')) { %>
+            <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-blue-100 text-blue-700 text-xs font-semibold">
+              <i class="fa-solid fa-person"></i>
+              ~<%= idadePet.idadeHumana %> anos humanos
+            </span>
+          <% } %>
+        </div>
+      <% } %>
+
+      <% if (pet.dono_nome) { %>
+        <p class="text-xs text-gray-400 mt-3"><i class="fa-solid fa-user mr-1"></i> Tutor: <%= pet.dono_nome %></p>
+      <% } %>
+    </div>
+  </div>
+
+  <% if (pet.status === 'perdido') { %>
+    <div class="mb-6">
+      <button type="button"
+        onclick="compartilharWhatsApp('🚨 Pet perdido: <%= pet.nome %>! Se você viu este pet, acesse: ' + window.location.origin + '/pets/<%= pet.id %>')"
+        class="w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-green-500 hover:bg-green-600 text-white font-bold transition-colors shadow-sm">
+        <i class="fa-brands fa-whatsapp text-xl"></i> Compartilhar no WhatsApp
+      </button>
+    </div>
+  <% } %>
+
+  <!-- Info cards -->
+  <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+    <div class="card text-center !p-4">
+      <i class="fa-solid fa-paw text-[#ec5a1c] text-lg mb-1"></i>
+      <p class="text-xs text-gray-400 uppercase font-medium">Tipo</p>
+      <p class="text-sm font-bold text-gray-800 mt-0.5">
+        <% if (pet.tipo === 'outro' && pet.tipo_custom) { %>
+          <%= pet.tipo_custom %>
+        <% } else { %>
+          <%= pet.tipo ? pet.tipo.charAt(0).toUpperCase() + pet.tipo.slice(1) : '—' %>
+        <% } %>
+      </p>
+    </div>
+    <div class="card text-center !p-4">
+      <i class="fa-solid fa-dna text-[#ec5a1c] text-lg mb-1"></i>
+      <p class="text-xs text-gray-400 uppercase font-medium">Raca</p>
+      <p class="text-sm font-bold text-gray-800 mt-0.5"><%= pet.raca || 'SRD' %></p>
+    </div>
+    <div class="card text-center !p-4">
+      <i class="fa-solid fa-weight-scale text-[#ec5a1c] text-lg mb-1"></i>
+      <p class="text-xs text-gray-400 uppercase font-medium">Peso</p>
+      <p class="text-sm font-bold text-gray-800 mt-0.5"><%= pet.peso ? pet.peso + ' kg' : '—' %></p>
+    </div>
+    <div class="card text-center !p-4">
+      <i class="fa-solid fa-cake-candles text-[#ec5a1c] text-lg mb-1"></i>
+      <p class="text-xs text-gray-400 uppercase font-medium">Nascimento</p>
+      <p class="text-sm font-bold text-gray-800 mt-0.5">
+        <% if (pet.data_nascimento) { %>
+          <%= new Date(pet.data_nascimento).toLocaleDateString('pt-BR') %>
+        <% } else { %>—<% } %>
+      </p>
+    </div>
+  </div>
+
+  <!-- Info extra: sexo, porte, cor -->
+  <% if (pet.sexo || pet.porte || pet.cor) { %>
+    <div class="grid grid-cols-3 gap-3 mb-6">
+      <% if (pet.sexo) { %>
+        <div class="card text-center !p-3">
+          <i class="fa-solid <%= pet.sexo === 'macho' ? 'fa-mars text-blue-500' : pet.sexo === 'femea' ? 'fa-venus text-pink-500' : 'fa-question text-gray-400' %> text-lg mb-1"></i>
+          <p class="text-xs text-gray-400 uppercase font-medium">Sexo</p>
+          <p class="text-sm font-bold text-gray-800 capitalize"><%= pet.sexo === 'femea' ? 'Femea' : pet.sexo === 'nao_sei' ? 'N/A' : pet.sexo %></p>
+        </div>
+      <% } %>
+      <% if (pet.porte) { %>
+        <div class="card text-center !p-3">
+          <span class="text-lg block mb-1"><%= pet.porte === 'pequeno' ? '🐕' : pet.porte === 'medio' ? '🐕‍🦺' : '🦮' %></span>
+          <p class="text-xs text-gray-400 uppercase font-medium">Porte</p>
+          <p class="text-sm font-bold text-gray-800 capitalize"><%= pet.porte %></p>
+        </div>
+      <% } %>
+      <% if (pet.cor) { %>
+        <div class="card text-center !p-3">
+          <i class="fa-solid fa-palette text-[#ec5a1c] text-lg mb-1"></i>
+          <p class="text-xs text-gray-400 uppercase font-medium">Cor</p>
+          <p class="text-sm font-bold text-gray-800"><%= pet.cor %></p>
+        </div>
+      <% } %>
+    </div>
+  <% } %>
+
+  <!-- Acoes do dono -->
+  <% if (ehDono) { %>
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+      <a href="/pets/<%= pet.id %>/editar" class="card !p-4 text-center hover:bg-orange-50 transition-colors group">
+        <i class="fa-solid fa-pen text-gray-400 group-hover:text-[#ec5a1c] text-xl mb-2"></i>
+        <p class="text-xs font-semibold text-gray-700">Editar</p>
+      </a>
+      <a href="/pets/<%= pet.id %>/saude" class="card !p-4 text-center hover:bg-green-50 transition-colors group">
+        <i class="fa-solid fa-heart-pulse text-gray-400 group-hover:text-green-500 text-xl mb-2"></i>
+        <p class="text-xs font-semibold text-gray-700">Saude</p>
+      </a>
+      <a href="/diario/<%= pet.id %>" class="card !p-4 text-center hover:bg-blue-50 transition-colors group">
+        <i class="fa-solid fa-book text-gray-400 group-hover:text-blue-500 text-xl mb-2"></i>
+        <p class="text-xs font-semibold text-gray-700">Diario</p>
+      </a>
+      <% if (pet.status !== 'perdido') { %>
+        <a href="/perdidos/<%= pet.id %>/formulario" class="card !p-4 text-center hover:bg-red-50 transition-colors group">
+          <i class="fa-solid fa-triangle-exclamation text-gray-400 group-hover:text-red-500 text-xl mb-2"></i>
+          <p class="text-xs font-semibold text-gray-700">Reportar Perda</p>
+        </a>
+      <% } else { %>
+        <a href="/perdidos/<%= pet.id %>/encontrado" class="card !p-4 text-center hover:bg-green-50 transition-colors group">
+          <i class="fa-solid fa-check-circle text-gray-400 group-hover:text-green-500 text-xl mb-2"></i>
+          <p class="text-xs font-semibold text-gray-700">Encontrado!</p>
+        </a>
+      <% } %>
+    </div>
+
+    <!-- =====================================================
+         HISTORICO DE SCANS DA TAG NFC (ultimos 10)
+         ===================================================== -->
+    <% if (typeof scans !== 'undefined' && scans && scans.length > 0) { %>
+      <div class="card mb-6">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-lg font-bold text-gray-900">
+            <i class="fa-solid fa-satellite-dish text-[#ec5a1c] mr-2"></i>Historico de Scans
+          </h2>
+          <span class="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded-full font-semibold">
+            <%= scans.length %> registro<%= scans.length !== 1 ? 's' : '' %>
+          </span>
+        </div>
+        <p class="text-xs text-gray-500 mb-4">
+          Ultimas vezes que a tag NFC de <%= pet.nome %> foi escaneada. Toque para ver no mapa.
+        </p>
+
+        <div class="space-y-0 divide-y divide-gray-100 max-h-[400px] overflow-y-auto rounded-xl border border-gray-100">
+          <% scans.forEach(function(scan, idx) {
+            var dt = new Date(scan.data);
+            var agora2 = new Date();
+            var diffMs = agora2 - dt;
+            var diffMin = Math.floor(diffMs / 60000);
+            var diffH = Math.floor(diffMin / 60);
+            var diffD = Math.floor(diffH / 24);
+            var tempoAtras = '';
+            if (diffD > 0) { tempoAtras = diffD + ' dia' + (diffD > 1 ? 's' : '') + ' atras'; }
+            else if (diffH > 0) { tempoAtras = diffH + 'h atras'; }
+            else if (diffMin > 0) { tempoAtras = diffMin + 'min atras'; }
+            else { tempoAtras = 'agora'; }
+          %>
+            <div class="scan-item p-3 flex items-center gap-3 cursor-pointer"
+                 data-lat="<%= scan.latitude %>"
+                 data-lng="<%= scan.longitude %>"
+                 data-data="<%= dt.toISOString() %>"
+                 data-cidade="<%= scan.cidade || '' %>"
+                 data-idx="<%= idx %>"
+                 onclick="mostrarScanNoMapa(this)">
+              <div class="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0
+                   <%= idx === 0 ? 'bg-[#ec5a1c] text-white' : 'bg-gray-100 text-gray-500' %>">
+                <% if (idx === 0) { %>
+                  <i class="fa-solid fa-location-dot text-sm"></i>
+                <% } else { %>
+                  <span class="text-xs font-bold"><%= idx + 1 %></span>
+                <% } %>
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="text-sm font-semibold text-gray-800">
+                  <% if (idx === 0) { %>
+                    <span class="text-[#ec5a1c]">Mais recente</span>
+                  <% } else { %>
+                    Scan #<%= idx + 1 %>
+                  <% } %>
+                </p>
+                <p class="text-xs text-gray-500">
+                  <%= dt.toLocaleDateString('pt-BR') %> as <%= dt.toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'}) %>
+                  <span class="text-gray-400">(<%= tempoAtras %>)</span>
+                </p>
+                <% if (scan.cidade) { %>
+                  <p class="text-xs text-gray-400 truncate"><i class="fa-solid fa-map-pin mr-1"></i><%= scan.cidade %></p>
+                <% } %>
+              </div>
+              <div class="flex items-center gap-2 flex-shrink-0">
+                <i class="fa-solid fa-route text-gray-300 text-sm"></i>
+                <i class="fa-solid fa-chevron-right text-gray-300 text-xs"></i>
+              </div>
+            </div>
+          <% }); %>
+        </div>
+      </div>
+
+      <!-- Mapa de scans -->
+      <div id="mapaScansContainer" class="card mb-6 hidden">
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="text-lg font-bold text-gray-900">
+            <i class="fa-solid fa-map text-[#ec5a1c] mr-2"></i>Localizacao do Scan
+          </h2>
+          <button type="button" onclick="fecharMapaScan()" class="text-gray-400 hover:text-gray-600 transition-colors">
+            <i class="fa-solid fa-times text-lg"></i>
+          </button>
+        </div>
+
+        <!-- Info do scan selecionado -->
+        <div id="scanInfoCard" class="bg-orange-50 border border-orange-200 rounded-xl p-3 mb-3">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm font-bold text-gray-800" id="scanInfoTitle"></p>
+              <p class="text-xs text-gray-500" id="scanInfoData"></p>
+            </div>
+            <div class="text-right">
+              <p class="text-sm font-bold text-[#ec5a1c]" id="scanInfoDist"></p>
+              <p class="text-xs text-gray-500" id="scanInfoTempo"></p>
+            </div>
+          </div>
+        </div>
+
+        <div id="mapaScan"></div>
+
+        <!-- Botoes de navegacao -->
+        <div class="grid grid-cols-2 gap-3 mt-3" id="navButtons" style="display:none">
+          <a id="btnGoogleMaps" href="#" target="_blank"
+             class="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm transition-colors">
+            <i class="fa-solid fa-diamond-turn-right"></i> Google Maps
+          </a>
+          <a id="btnWaze" href="#" target="_blank"
+             class="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-[#33ccff] hover:bg-[#28b8e8] text-white font-semibold text-sm transition-colors">
+            <i class="fa-brands fa-waze"></i> Waze
+          </a>
+        </div>
+      </div>
+    <% } else { %>
+      <!-- Sem scans -->
+      <% if (typeof tags !== 'undefined' && tags && tags.length > 0) { %>
+        <div class="card mb-6 text-center">
+          <i class="fa-solid fa-satellite-dish text-gray-300 text-3xl mb-2"></i>
+          <p class="text-sm text-gray-500">Nenhum scan registrado ainda.</p>
+          <p class="text-xs text-gray-400 mt-1">Quando alguem escanear a tag NFC de <%= pet.nome %>, o historico aparecera aqui.</p>
+        </div>
+      <% } %>
+    <% } %>
+  <% } %>
+
+  <!-- Telefone de contato publico -->
+  <% if (pet.telefone_contato) { %>
+    <div class="card mb-6">
+      <h2 class="text-lg font-bold text-gray-900 mb-3">
+        <i class="fa-solid fa-phone text-[#ec5a1c] mr-2"></i>Contato
+      </h2>
+      <div class="flex gap-3">
+        <a href="tel:<%= pet.telefone_contato %>" class="btn-primary flex-1 !inline-flex items-center justify-center gap-2">
+          <i class="fa-solid fa-phone"></i> Ligar
+        </a>
+        <a href="https://wa.me/55<%= pet.telefone_contato.replace(/\D/g,'') %>" target="_blank"
+           class="flex-1 inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-green-500 hover:bg-green-600 text-white font-semibold transition-colors">
+          <i class="fa-brands fa-whatsapp"></i> WhatsApp
+        </a>
+      </div>
+    </div>
+  <% } %>
+
+  <!-- Contato para quem encontrou (view publica) -->
+  <% if (!ehDono) { %>
+    <div class="card text-center mb-6 bg-orange-50 border border-orange-200">
+      <h2 class="text-lg font-bold text-gray-900 mb-2">
+        <i class="fa-solid fa-heart text-red-400 mr-1"></i> Encontrou este pet?
+      </h2>
+      <p class="text-sm text-gray-500 mb-4">Ajude <%= pet.nome %> a voltar para casa!</p>
+      <div class="flex flex-col gap-2">
+        <% if (pet.telefone_contato) { %>
+          <a href="tel:<%= pet.telefone_contato %>" class="btn-primary !inline-flex items-center justify-center gap-2">
+            <i class="fa-solid fa-phone"></i> Ligar para o tutor
+          </a>
+        <% } %>
+        <button type="button" onclick="enviarLocalizacao()" class="btn-outline !inline-flex items-center justify-center gap-2">
+          <i class="fa-solid fa-location-dot"></i> Enviar minha localizacao
+        </button>
+      </div>
+    </div>
+  <% } %>
+
+</main>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+(function () {
+  var mapaScan = null;
+  var scanMarker = null;
+  var routeLine = null;
+  var userMarker = null;
+  var minhaPos = null;
+
+  /* Tenta obter posicao do usuario em background */
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(function (pos) {
+      minhaPos = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+    }, function () {}, { timeout: 8000 });
+  }
+
+  function initMap() {
+    if (mapaScan) return;
+    mapaScan = L.map('mapaScan').setView([-15.78, -47.93], 5);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OSM', maxZoom: 19
+    }).addTo(mapaScan);
+  }
+
+  function calcDistancia(lat1, lon1, lat2, lon2) {
+    var R = 6371;
+    var dLat = (lat2 - lat1) * Math.PI / 180;
+    var dLon = (lon2 - lon1) * Math.PI / 180;
+    var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  }
+
+  function formatarDistancia(km) {
+    if (km < 1) return Math.round(km * 1000) + ' m';
+    return km.toFixed(1) + ' km';
+  }
+
+  function estimarTempo(km) {
+    var minutos = Math.round((km / 40) * 60);
+    if (minutos < 1) return '< 1 min';
+    if (minutos < 60) return minutos + ' min';
+    var h = Math.floor(minutos / 60);
+    var m = minutos % 60;
+    return h + 'h' + (m > 0 ? ' ' + m + 'min' : '');
+  }
+
+  window.mostrarScanNoMapa = function (el) {
+    var lat = parseFloat(el.dataset.lat);
+    var lng = parseFloat(el.dataset.lng);
+    var data = el.dataset.data;
+    var cidade = el.dataset.cidade;
+    var idx = parseInt(el.dataset.idx, 10);
+
+    document.querySelectorAll('.scan-item').forEach(function (s) { s.classList.remove('active'); });
+    el.classList.add('active');
+
+    var container = document.getElementById('mapaScansContainer');
+    container.classList.remove('hidden');
+
+    initMap();
+
+    setTimeout(function () {
+      mapaScan.invalidateSize();
+
+      if (scanMarker) mapaScan.removeLayer(scanMarker);
+      if (routeLine) mapaScan.removeLayer(routeLine);
+      if (userMarker) mapaScan.removeLayer(userMarker);
+
+      scanMarker = L.marker([lat, lng], {
+        icon: L.divIcon({
+          className: 'custom-pin',
+          html: '<div style="background:#ec5a1c;width:36px;height:36px;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center"><i class="fa-solid fa-paw" style="color:#fff;font-size:14px"></i></div>',
+          iconSize: [36, 36], iconAnchor: [18, 18]
+        })
+      }).addTo(mapaScan);
+
+      var dt = new Date(data);
+      var titulo = idx === 0 ? 'Scan mais recente' : 'Scan #' + (idx + 1);
+      var dataStr = dt.toLocaleDateString('pt-BR') + ' as ' + dt.toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'});
+
+      document.getElementById('scanInfoTitle').textContent = titulo + (cidade ? ' — ' + cidade : '');
+      document.getElementById('scanInfoData').textContent = dataStr;
+
+      if (minhaPos) {
+        var dist = calcDistancia(minhaPos.lat, minhaPos.lng, lat, lng);
+        document.getElementById('scanInfoDist').textContent = formatarDistancia(dist);
+        document.getElementById('scanInfoTempo').textContent = '~' + estimarTempo(dist) + ' de carro';
+
+        userMarker = L.marker([minhaPos.lat, minhaPos.lng], {
+          icon: L.divIcon({
+            className: 'custom-pin',
+            html: '<div style="background:#3b82f6;width:28px;height:28px;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center"><i class="fa-solid fa-user" style="color:#fff;font-size:10px"></i></div>',
+            iconSize: [28, 28], iconAnchor: [14, 14]
+          })
+        }).addTo(mapaScan).bindPopup('<b>Voce esta aqui</b>');
+
+        routeLine = L.polyline([
+          [minhaPos.lat, minhaPos.lng],
+          [lat, lng]
+        ], {
+          color: '#ec5a1c', weight: 3, opacity: 0.7, dashArray: '8, 8'
+        }).addTo(mapaScan);
+
+        var bounds = L.latLngBounds([[minhaPos.lat, minhaPos.lng], [lat, lng]]);
+        mapaScan.fitBounds(bounds, { padding: [40, 40] });
+
+        document.getElementById('navButtons').style.display = 'grid';
+        document.getElementById('btnGoogleMaps').href =
+          'https://www.google.com/maps/dir/?api=1&destination=' + lat + ',' + lng;
+        document.getElementById('btnWaze').href =
+          'https://waze.com/ul?ll=' + lat + ',' + lng + '&navigate=yes';
+      } else {
+        document.getElementById('scanInfoDist').textContent = '—';
+        document.getElementById('scanInfoTempo').textContent = 'Ative o GPS';
+        mapaScan.setView([lat, lng], 15);
+        document.getElementById('navButtons').style.display = 'grid';
+        document.getElementById('btnGoogleMaps').href =
+          'https://www.google.com/maps/dir/?api=1&destination=' + lat + ',' + lng;
+        document.getElementById('btnWaze').href =
+          'https://waze.com/ul?ll=' + lat + ',' + lng + '&navigate=yes';
+      }
+
+      container.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 150);
+  };
+
+  window.fecharMapaScan = function () {
+    document.getElementById('mapaScansContainer').classList.add('hidden');
+    document.querySelectorAll('.scan-item').forEach(function (s) { s.classList.remove('active'); });
+  };
+})();
+
+function enviarLocalizacao() {
+  if (!navigator.geolocation) { alert('Geolocalizacao nao suportada'); return; }
+  navigator.geolocation.getCurrentPosition(function (pos) {
+    fetch('/api/localizacao', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        pet_id: '<%= pet.id %>',
+        latitude: pos.coords.latitude,
+        longitude: pos.coords.longitude,
+        origem: 'encontrado'
+      })
+    }).then(function () {
+      alert('Localizacao enviada! Obrigado por ajudar.');
+    }).catch(function () {
+      alert('Erro ao enviar. Tente novamente.');
+    });
+  });
+}
+</script>
+
+<%- include('../partials/footer') %>

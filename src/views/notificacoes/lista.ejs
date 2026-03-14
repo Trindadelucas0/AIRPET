@@ -1,0 +1,260 @@
+<% locals.titulo = 'Notificações' %>
+<%
+  var naoLidas = 0;
+  if (typeof notificacoes !== 'undefined' && notificacoes.length > 0) {
+    notificacoes.forEach(function(n) { if (!n.lida) naoLidas++; });
+  }
+
+  function agruparPorData(lista) {
+    var hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+    var ontem = new Date(hoje); ontem.setDate(ontem.getDate() - 1);
+    var semana = new Date(hoje); semana.setDate(semana.getDate() - 7);
+
+    var grupos = { hoje: [], ontem: [], semana: [], anteriores: [] };
+    lista.forEach(function(n) {
+      var d = new Date(n.data || n.data_criacao);
+      d.setHours(0, 0, 0, 0);
+      if (d.getTime() >= hoje.getTime()) grupos.hoje.push(n);
+      else if (d.getTime() >= ontem.getTime()) grupos.ontem.push(n);
+      else if (d.getTime() >= semana.getTime()) grupos.semana.push(n);
+      else grupos.anteriores.push(n);
+    });
+    return grupos;
+  }
+
+  var grupos = (typeof notificacoes !== 'undefined' && notificacoes.length > 0)
+    ? agruparPorData(notificacoes)
+    : { hoje: [], ontem: [], semana: [], anteriores: [] };
+
+  var secoes = [
+    { chave: 'hoje', label: 'Hoje', items: grupos.hoje },
+    { chave: 'ontem', label: 'Ontem', items: grupos.ontem },
+    { chave: 'semana', label: 'Esta semana', items: grupos.semana },
+    { chave: 'anteriores', label: 'Anteriores', items: grupos.anteriores }
+  ];
+
+  var tipoConfig = {
+    alerta:     { bg: 'bg-red-100',     text: 'text-red-500',     icon: 'fa-triangle-exclamation' },
+    scan:       { bg: 'bg-blue-100',    text: 'text-blue-500',    icon: 'fa-nfc' },
+    sistema:    { bg: 'bg-gray-100',    text: 'text-gray-500',    icon: 'fa-info-circle' },
+    chat:       { bg: 'bg-green-100',   text: 'text-green-500',   icon: 'fa-comment' },
+    encontrado: { bg: 'bg-emerald-100', text: 'text-emerald-500', icon: 'fa-location-dot' }
+  };
+  var tipoDefault = { bg: 'bg-gray-100', text: 'text-gray-400', icon: 'fa-bell' };
+%>
+<% locals.extraHead = `
+<style>
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeOut {
+    to { opacity: 0; transform: translateY(-8px); height: 0; margin: 0; padding: 0; overflow: hidden; }
+  }
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.6; transform: scale(0.8); }
+  }
+  .notif-card { animation: slideUp 0.4s ease-out both; }
+  .notif-card:nth-child(1) { animation-delay: 0.03s; }
+  .notif-card:nth-child(2) { animation-delay: 0.06s; }
+  .notif-card:nth-child(3) { animation-delay: 0.09s; }
+  .notif-card:nth-child(4) { animation-delay: 0.12s; }
+  .notif-card:nth-child(5) { animation-delay: 0.15s; }
+  .notif-read-out {
+    animation: fadeOut 0.4s ease-out forwards;
+  }
+  .dot-unread {
+    animation: pulse-dot 2s ease-in-out infinite;
+  }
+</style>
+` %>
+<%- include('../partials/header') %>
+<%- include('../partials/flash') %>
+
+<main class="flex-1 pb-24 md:pb-0">
+  <div class="max-w-2xl mx-auto px-4 sm:px-6 py-6">
+
+    <div class="flex items-center justify-between mb-8 animate-slideUp">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center shadow-lg shadow-primary-500/20">
+          <i class="fa-solid fa-bell text-white text-sm"></i>
+        </div>
+        <div>
+          <h1 class="text-2xl font-extrabold text-gray-900 tracking-tight">Notificações</h1>
+          <% if (naoLidas > 0) { %>
+            <p class="text-xs text-gray-500 mt-0.5"><%= naoLidas %> não lida<%= naoLidas > 1 ? 's' : '' %></p>
+          <% } %>
+        </div>
+      </div>
+      <% if (naoLidas > 0) { %>
+        <span class="inline-flex items-center justify-center min-w-[28px] h-7 px-2 rounded-full bg-red-500 text-white text-xs font-bold shadow-sm shadow-red-500/20">
+          <%= naoLidas %>
+        </span>
+      <% } %>
+    </div>
+
+    <% if (typeof notificacoes !== 'undefined' && notificacoes.length > 0) { %>
+
+      <div id="listaNotificacoes" class="space-y-6">
+        <% secoes.forEach(function(secao) { %>
+          <% if (secao.items.length > 0) { %>
+
+            <div>
+              <h2 class="text-xs font-bold uppercase tracking-widest text-gray-400 mb-3 px-1"><%= secao.label %></h2>
+              <div class="space-y-2">
+                <% secao.items.forEach(function(n) { %>
+                  <% var cfg = tipoConfig[n.tipo] || tipoDefault; %>
+                  <div class="notif-card relative group" data-notif-id="<%= n.id %>">
+                    <a href="<%= n.link || '#' %>"
+                       class="flex items-center gap-3.5 p-4 rounded-2xl transition-all duration-200
+                         <%= !n.lida ? 'bg-primary-50/60 hover:bg-primary-50' : 'bg-white hover:bg-gray-50' %>
+                         shadow-sm hover:shadow-md border border-transparent
+                         <%= !n.lida ? 'border-primary-100/60' : 'border-gray-100' %>"
+                       onclick="<%= !n.lida ? 'marcarLidaNav(' + n.id + ', event)' : '' %>">
+
+                      <div class="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0 <%= cfg.bg %> <%= cfg.text %>">
+                        <i class="fa-solid <%= cfg.icon %> text-base"></i>
+                      </div>
+
+                      <div class="flex-1 min-w-0">
+                        <p class="text-sm text-gray-800 leading-snug line-clamp-2 <%= !n.lida ? 'font-semibold' : '' %>"><%= n.mensagem %></p>
+                        <p class="text-[11px] text-gray-400 mt-1" data-time="<%= n.data || n.data_criacao %>"></p>
+                      </div>
+
+                      <div class="flex items-center gap-2 flex-shrink-0">
+                        <% if (!n.lida) { %>
+                          <span class="dot-unread w-2.5 h-2.5 rounded-full bg-accent-500 shadow-sm shadow-accent-500/40" data-dot="<%= n.id %>"></span>
+                        <% } %>
+                        <% if (!n.lida) { %>
+                          <button type="button"
+                                  onclick="event.preventDefault(); event.stopPropagation(); marcarLida(<%= n.id %>, this);"
+                                  class="hidden sm:inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold text-primary-500 hover:bg-primary-100 transition-colors"
+                                  data-btn-lida="<%= n.id %>">
+                            <i class="fa-solid fa-check text-[9px]"></i> Marcar lida
+                          </button>
+                        <% } %>
+                        <% if (n.link) { %>
+                          <i class="fa-solid fa-chevron-right text-[10px] text-gray-300 group-hover:text-primary-400 transition-colors"></i>
+                        <% } %>
+                      </div>
+                    </a>
+                  </div>
+                <% }); %>
+              </div>
+            </div>
+
+          <% } %>
+        <% }); %>
+      </div>
+
+    <% } else { %>
+
+      <div class="flex flex-col items-center justify-center text-center py-24 animate-slideUp">
+        <div class="relative mb-8">
+          <div class="w-24 h-24 rounded-full bg-gradient-to-br from-emerald-50 to-green-50 flex items-center justify-center shadow-inner">
+            <i class="fa-solid fa-bell text-4xl text-emerald-300"></i>
+          </div>
+          <div class="absolute -bottom-1 -right-1 w-9 h-9 rounded-full bg-emerald-100 flex items-center justify-center shadow-sm">
+            <i class="fa-solid fa-check text-emerald-500 text-sm"></i>
+          </div>
+        </div>
+        <h2 class="text-xl font-bold text-gray-800 mb-2">Tudo em dia!</h2>
+        <p class="text-gray-500 text-sm max-w-xs leading-relaxed">
+          Nenhuma notificação. Você receberá alertas de pets perdidos, scans NFC, lembretes e mais.
+        </p>
+      </div>
+
+    <% } %>
+
+  </div>
+</main>
+
+<script>
+(function () {
+  'use strict';
+
+  function tempoRelativo(dataStr) {
+    var agora = Date.now();
+    var data = new Date(dataStr).getTime();
+    var diff = agora - data;
+    if (isNaN(diff) || diff < 0) return '';
+    var seg = Math.floor(diff / 1000);
+    if (seg < 60) return 'agora';
+    var min = Math.floor(seg / 60);
+    if (min < 60) return 'há ' + min + 'min';
+    var hr = Math.floor(min / 60);
+    if (hr < 24) return 'há ' + hr + 'h';
+    var dias = Math.floor(hr / 24);
+    if (dias === 1) return 'há 1 dia';
+    if (dias < 7) return 'há ' + dias + 'd';
+    var semanas = Math.floor(dias / 7);
+    if (semanas < 5) return 'há ' + semanas + ' sem';
+    var meses = Math.floor(dias / 30);
+    return 'há ' + meses + (meses === 1 ? ' mês' : ' meses');
+  }
+
+  document.querySelectorAll('[data-time]').forEach(function (el) {
+    var t = el.getAttribute('data-time');
+    if (t) el.textContent = tempoRelativo(t);
+  });
+
+  window.marcarLida = function (id, btn) {
+    fetch('/notificacoes/' + id + '/lida', {
+      method: 'POST',
+      headers: { 'Accept': 'application/json' },
+      credentials: 'same-origin'
+    })
+    .then(function () {
+      var card = document.querySelector('[data-notif-id="' + id + '"]');
+      if (card) {
+        var link = card.querySelector('a');
+        if (link) {
+          link.classList.remove('bg-primary-50/60', 'border-primary-100/60');
+          link.classList.add('bg-white', 'border-gray-100');
+        }
+        var p = card.querySelector('p.font-semibold');
+        if (p) p.classList.remove('font-semibold');
+        var dot = card.querySelector('[data-dot="' + id + '"]');
+        if (dot) dot.remove();
+        var btnLida = card.querySelector('[data-btn-lida="' + id + '"]');
+        if (btnLida) btnLida.remove();
+      }
+      atualizarBadgeGlobal();
+    })
+    .catch(function () {});
+  };
+
+  window.marcarLidaNav = function (id, event) {
+    fetch('/notificacoes/' + id + '/lida', {
+      method: 'POST',
+      headers: { 'Accept': 'application/json' },
+      credentials: 'same-origin'
+    }).then(function () {
+      atualizarBadgeGlobal();
+    }).catch(function () {});
+  };
+
+  function atualizarBadgeGlobal() {
+    fetch('/notificacoes/api/count', {
+      headers: { 'Accept': 'application/json' },
+      credentials: 'same-origin'
+    })
+    .then(function (r) { return r.json(); })
+    .then(function (data) {
+      document.querySelectorAll('[data-notif-badge]').forEach(function (el) {
+        if (data.total > 0) {
+          el.textContent = data.total > 9 ? '9+' : data.total;
+          el.classList.remove('hidden');
+        } else {
+          el.classList.add('hidden');
+        }
+      });
+    })
+    .catch(function () {});
+  }
+})();
+</script>
+
+<%- include('../partials/footer') %>

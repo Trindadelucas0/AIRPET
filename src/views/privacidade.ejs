@@ -1,0 +1,179 @@
+<% locals.titulo = 'Política de Privacidade' %>
+<%- include('partials/header') %>
+
+<main class="flex-1">
+  <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+
+    <div class="text-center mb-10">
+      <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-primary-50 text-primary-500 mb-4">
+        <i class="fa-solid fa-shield-halved text-2xl"></i>
+      </div>
+      <h1 class="text-3xl font-bold text-gray-900">Política de Privacidade</h1>
+      <p class="text-gray-500 mt-2 text-sm">Última atualização: <%= new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' }) %></p>
+    </div>
+
+    <div class="card prose prose-gray max-w-none space-y-8">
+
+      <p class="text-sm text-gray-600 leading-relaxed">
+        O AIRPET está comprometido com a proteção da privacidade dos seus usuários.
+        Esta Política de Privacidade descreve como coletamos, utilizamos, armazenamos e
+        protegemos seus dados pessoais, em conformidade com a
+        <strong>Lei Geral de Proteção de Dados (LGPD — Lei nº 13.709/2018)</strong>.
+      </p>
+
+      <section>
+        <h2 class="text-lg font-semibold text-gray-900 flex items-center gap-2 mb-3">
+          <i class="fa-solid fa-database text-[#ec5a1c]"></i> 1. Dados Coletados
+        </h2>
+        <p class="text-sm text-gray-600 leading-relaxed mb-2">
+          Coletamos os seguintes dados para a prestação do serviço:
+        </p>
+        <ul class="text-sm text-gray-600 space-y-1 ml-4 list-disc">
+          <li><strong>Dados pessoais:</strong> nome, e-mail, telefone e senha (criptografada)</li>
+          <li><strong>Dados dos pets:</strong> nome, espécie, raça, idade, peso, foto e informações de saúde</li>
+          <li><strong>Dados de localização:</strong> coordenadas GPS quando autorizado pelo usuário</li>
+          <li><strong>Dados de uso:</strong> interações com a plataforma, scans de tags NFC, horários de acesso</li>
+          <li><strong>Dados de dispositivo:</strong> tipo de navegador, sistema operacional e informações para notificações push</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2 class="text-lg font-semibold text-gray-900 flex items-center gap-2 mb-3">
+          <i class="fa-solid fa-gears text-[#ec5a1c]"></i> 2. Como Usamos Seus Dados
+        </h2>
+        <p class="text-sm text-gray-600 leading-relaxed mb-2">
+          Utilizamos os dados coletados para:
+        </p>
+        <ul class="text-sm text-gray-600 space-y-1 ml-4 list-disc">
+          <li>Criar e gerenciar sua conta na plataforma</li>
+          <li>Vincular tags NFC aos seus pets para identificação</li>
+          <li>Exibir perfis públicos de pets quando a tag NFC é escaneada por terceiros</li>
+          <li>Enviar notificações sobre scans de tags, alertas de pets perdidos e atualizações</li>
+          <li>Exibir petshops e pontos de interesse relevantes no mapa</li>
+          <li>Facilitar a comunicação entre tutores através do chat</li>
+          <li>Melhorar a qualidade e segurança da plataforma</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2 class="text-lg font-semibold text-gray-900 flex items-center gap-2 mb-3">
+          <i class="fa-solid fa-location-dot text-[#ec5a1c]"></i> 3. Dados de Localização
+        </h2>
+        <p class="text-sm text-gray-600 leading-relaxed">
+          A coleta de dados de localização ocorre apenas quando você autoriza expressamente
+          através do seu navegador ou dispositivo. Esses dados são utilizados para exibir
+          petshops próximos, registrar a localização de scans de tags NFC e auxiliar na
+          busca de pets perdidos. Você pode revogar essa permissão a qualquer momento
+          nas configurações do seu dispositivo.
+        </p>
+      </section>
+
+      <section>
+        <h2 class="text-lg font-semibold text-gray-900 flex items-center gap-2 mb-3">
+          <i class="fa-solid fa-share-nodes text-[#ec5a1c]"></i> 4. Compartilhamento de Dados
+        </h2>
+        <p class="text-sm text-gray-600 leading-relaxed mb-2">
+          O AIRPET <strong>não vende</strong> seus dados pessoais. O compartilhamento ocorre apenas nas seguintes situações:
+        </p>
+        <ul class="text-sm text-gray-600 space-y-1 ml-4 list-disc">
+          <li><strong>Perfil público do pet:</strong> ao escanear uma tag NFC, informações básicas do pet
+            e dados de contato do tutor podem ser exibidos para facilitar o reencontro</li>
+          <li><strong>Alertas de pet perdido:</strong> quando você reporta um pet como perdido, informações
+            relevantes são compartilhadas com outros usuários da região</li>
+          <li><strong>Obrigação legal:</strong> quando exigido por lei, ordem judicial ou autoridade competente</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2 class="text-lg font-semibold text-gray-900 flex items-center gap-2 mb-3">
+          <i class="fa-solid fa-lock text-[#ec5a1c]"></i> 5. Segurança
+        </h2>
+        <p class="text-sm text-gray-600 leading-relaxed">
+          Adotamos medidas técnicas e organizacionais para proteger seus dados pessoais contra
+          acesso não autorizado, perda, alteração ou destruição. As senhas são armazenadas
+          utilizando criptografia (hash + salt). As comunicações entre seu dispositivo e nossos
+          servidores são protegidas por HTTPS/TLS. No entanto, nenhum sistema é 100% seguro,
+          e recomendamos que você utilize senhas fortes e mantenha suas credenciais em sigilo.
+        </p>
+      </section>
+
+      <section>
+        <h2 class="text-lg font-semibold text-gray-900 flex items-center gap-2 mb-3">
+          <i class="fa-solid fa-scale-balanced text-[#ec5a1c]"></i> 6. Seus Direitos (LGPD)
+        </h2>
+        <p class="text-sm text-gray-600 leading-relaxed mb-2">
+          De acordo com a Lei Geral de Proteção de Dados (LGPD), você tem os seguintes direitos:
+        </p>
+        <ul class="text-sm text-gray-600 space-y-1 ml-4 list-disc">
+          <li><strong>Confirmação e acesso:</strong> saber se tratamos seus dados e ter acesso a eles</li>
+          <li><strong>Correção:</strong> solicitar a correção de dados incompletos ou desatualizados</li>
+          <li><strong>Anonimização ou eliminação:</strong> solicitar que seus dados sejam anonimizados ou excluídos</li>
+          <li><strong>Portabilidade:</strong> solicitar a transferência dos seus dados para outro serviço</li>
+          <li><strong>Revogação do consentimento:</strong> retirar seu consentimento a qualquer momento</li>
+          <li><strong>Oposição:</strong> se opor ao tratamento de dados em determinadas circunstâncias</li>
+        </ul>
+        <p class="text-sm text-gray-600 leading-relaxed mt-2">
+          Para exercer qualquer desses direitos, entre em contato pelo e-mail
+          <a href="mailto:privacidade@airpet.com.br" class="text-[#ec5a1c] hover:underline font-medium">privacidade@airpet.com.br</a>.
+        </p>
+      </section>
+
+      <section>
+        <h2 class="text-lg font-semibold text-gray-900 flex items-center gap-2 mb-3">
+          <i class="fa-solid fa-cookie-bite text-[#ec5a1c]"></i> 7. Cookies e Cache
+        </h2>
+        <p class="text-sm text-gray-600 leading-relaxed">
+          O AIRPET utiliza cookies de sessão para manter seu login ativo e garantir o funcionamento
+          correto da plataforma. Por ser uma Progressive Web App (PWA), também utilizamos cache local
+          (Service Worker) para permitir funcionalidades offline e melhorar a performance. Essas
+          tecnologias não coletam dados pessoais adicionais além do necessário para o funcionamento do serviço.
+        </p>
+      </section>
+
+      <section>
+        <h2 class="text-lg font-semibold text-gray-900 flex items-center gap-2 mb-3">
+          <i class="fa-solid fa-clock-rotate-left text-[#ec5a1c]"></i> 8. Retenção de Dados
+        </h2>
+        <p class="text-sm text-gray-600 leading-relaxed">
+          Seus dados pessoais são armazenados pelo tempo necessário para a prestação do serviço
+          ou pelo período exigido por lei. Ao solicitar a exclusão da sua conta, seus dados pessoais
+          serão removidos em até 30 dias, exceto aqueles que devemos manter por obrigação legal ou
+          regulatória. Dados anonimizados poderão ser mantidos para fins estatísticos.
+        </p>
+      </section>
+
+      <section>
+        <h2 class="text-lg font-semibold text-gray-900 flex items-center gap-2 mb-3">
+          <i class="fa-solid fa-pen-to-square text-[#ec5a1c]"></i> 9. Alterações nesta Política
+        </h2>
+        <p class="text-sm text-gray-600 leading-relaxed">
+          O AIRPET pode atualizar esta Política de Privacidade periodicamente. Notificaremos os
+          usuários sobre alterações significativas através da plataforma ou por e-mail. Recomendamos
+          que você revise esta página regularmente. O uso continuado da plataforma após modificações
+          implica na aceitação da política atualizada.
+        </p>
+      </section>
+
+      <section>
+        <h2 class="text-lg font-semibold text-gray-900 flex items-center gap-2 mb-3">
+          <i class="fa-solid fa-envelope text-[#ec5a1c]"></i> 10. Contato
+        </h2>
+        <p class="text-sm text-gray-600 leading-relaxed">
+          Para dúvidas, solicitações ou reclamações relacionadas à privacidade e proteção de dados,
+          entre em contato com nosso Encarregado de Proteção de Dados (DPO) pelo e-mail
+          <a href="mailto:privacidade@airpet.com.br" class="text-[#ec5a1c] hover:underline font-medium">privacidade@airpet.com.br</a>.
+        </p>
+      </section>
+
+    </div>
+
+    <div class="text-center mt-8">
+      <a href="/" class="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-[#ec5a1c] transition-colors">
+        <i class="fa-solid fa-arrow-left"></i> Voltar à página inicial
+      </a>
+    </div>
+
+  </div>
+</main>
+
+<%- include('partials/footer') %>

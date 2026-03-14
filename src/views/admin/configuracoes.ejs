@@ -1,0 +1,298 @@
+<% locals.titulo = 'Configuracoes do Sistema' %>
+<%- include('../partials/header') %>
+<%- include('../partials/flash') %>
+
+<%
+  const metaDados = {
+    horas_para_nivel2: {
+      label: 'Tempo para escalar ao Nível 2',
+      descAmigavel: 'Após quantas horas sem encontrar o pet, o sistema expande automaticamente o raio de busca para o Nível 2.',
+      grupo: 'tempo',
+      icone: 'fa-clock',
+      unidade: 'horas',
+      cor: 'amber',
+      nivel: 2
+    },
+    horas_para_nivel3: {
+      label: 'Tempo para escalar ao Nível 3',
+      descAmigavel: 'Após quantas horas sem encontrar o pet, o sistema expande automaticamente o raio de busca para o Nível 3 (máximo).',
+      grupo: 'tempo',
+      icone: 'fa-clock',
+      unidade: 'horas',
+      cor: 'red',
+      nivel: 3
+    },
+    raio_alerta_nivel1_km: {
+      label: 'Raio do Nível 1',
+      descAmigavel: 'Raio inicial de notificação assim que o alerta é aprovado. Notifica pessoas próximas ao local onde o pet foi visto pela última vez.',
+      grupo: 'raio',
+      icone: 'fa-location-crosshairs',
+      unidade: 'km',
+      cor: 'green',
+      nivel: 1
+    },
+    raio_alerta_nivel2_km: {
+      label: 'Raio do Nível 2',
+      descAmigavel: 'Raio expandido após o tempo definido sem encontrar o pet. Alcança bairros vizinhos.',
+      grupo: 'raio',
+      icone: 'fa-circle-dot',
+      unidade: 'km',
+      cor: 'amber',
+      nivel: 2
+    },
+    raio_alerta_nivel3_km: {
+      label: 'Raio do Nível 3',
+      descAmigavel: 'Raio máximo de busca. Use 0 para notificar a cidade inteira.',
+      grupo: 'raio',
+      icone: 'fa-bullseye',
+      unidade: 'km',
+      cor: 'red',
+      nivel: 3
+    }
+  };
+
+  const coresMap = {
+    green:  { bg: 'bg-green-50',  border: 'border-green-200',  text: 'text-green-700',  badge: 'bg-green-100 text-green-700',  ring: 'focus:ring-green-400',  dot: 'bg-green-500' },
+    amber:  { bg: 'bg-amber-50',  border: 'border-amber-200',  text: 'text-amber-700',  badge: 'bg-amber-100 text-amber-700',  ring: 'focus:ring-amber-400',  dot: 'bg-amber-500' },
+    red:    { bg: 'bg-red-50',    border: 'border-red-200',    text: 'text-red-700',    badge: 'bg-red-100 text-red-700',    ring: 'focus:ring-red-400',    dot: 'bg-red-500' },
+  };
+
+  const configsTempo = (configuracoes || []).filter(c => metaDados[c.chave] && metaDados[c.chave].grupo === 'tempo');
+  const configsRaio  = (configuracoes || []).filter(c => metaDados[c.chave] && metaDados[c.chave].grupo === 'raio');
+  const configsOutras = (configuracoes || []).filter(c => !metaDados[c.chave]);
+%>
+
+<main class="flex-1">
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+    <div class="mb-8">
+      <a href="/admin" class="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-primary-500 transition-colors mb-3">
+        <i class="fa-solid fa-arrow-left text-xs"></i> Dashboard
+      </a>
+      <h1 class="text-2xl font-bold text-gray-900">Configurações do Sistema</h1>
+      <p class="text-sm text-gray-500 mt-1">Ajuste os parâmetros de funcionamento do AIRPET</p>
+    </div>
+
+    <!-- Banner explicativo -->
+    <div class="mb-8 bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-5 sm:p-6">
+      <div class="flex items-start gap-3 mb-4">
+        <div class="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center flex-shrink-0">
+          <i class="fa-solid fa-circle-info text-blue-600"></i>
+        </div>
+        <div>
+          <h2 class="font-bold text-blue-900 text-base">Como funciona o Sistema de Alertas Escalonáveis</h2>
+          <p class="text-sm text-blue-700 mt-1">
+            Quando um pet é reportado como perdido e o alerta é aprovado, o sistema notifica pessoas em um raio inicial (Nível 1).
+            Se o pet não for encontrado após um tempo configurado, o raio de busca <strong>expande automaticamente</strong> para alcançar mais pessoas.
+          </p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div class="bg-white/70 rounded-xl p-4 border border-green-200">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="w-3 h-3 rounded-full bg-green-500"></span>
+            <span class="text-sm font-bold text-green-800">Nível 1 — Inicial</span>
+          </div>
+          <p class="text-xs text-green-700 leading-relaxed">Ativado imediatamente quando o alerta é aprovado. Notifica pessoas na vizinhança próxima.</p>
+        </div>
+        <div class="bg-white/70 rounded-xl p-4 border border-amber-200">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="w-3 h-3 rounded-full bg-amber-500"></span>
+            <span class="text-sm font-bold text-amber-800">Nível 2 — Expandido</span>
+          </div>
+          <p class="text-xs text-amber-700 leading-relaxed">Ativado automaticamente após X horas sem encontrar. Alcança bairros vizinhos.</p>
+        </div>
+        <div class="bg-white/70 rounded-xl p-4 border border-red-200">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="w-3 h-3 rounded-full bg-red-500"></span>
+            <span class="text-sm font-bold text-red-800">Nível 3 — Máximo</span>
+          </div>
+          <p class="text-xs text-red-700 leading-relaxed">Ativado após mais horas sem sucesso. Use raio 0 para cobrir a cidade inteira.</p>
+        </div>
+      </div>
+
+      <!-- Diagrama de fluxo -->
+      <div class="mt-4 flex items-center justify-center gap-2 text-xs text-blue-600 flex-wrap">
+        <span class="inline-flex items-center gap-1.5 bg-green-100 text-green-700 font-semibold px-3 py-1.5 rounded-full">
+          <i class="fa-solid fa-bell"></i> Alerta Aprovado
+        </span>
+        <i class="fa-solid fa-arrow-right text-blue-300"></i>
+        <span class="inline-flex items-center gap-1.5 bg-green-100 text-green-700 font-medium px-3 py-1.5 rounded-full">
+          Nível 1
+        </span>
+        <i class="fa-solid fa-arrow-right text-blue-300"></i>
+        <span class="inline-flex items-center gap-1 text-blue-400 italic">X horas</span>
+        <i class="fa-solid fa-arrow-right text-blue-300"></i>
+        <span class="inline-flex items-center gap-1.5 bg-amber-100 text-amber-700 font-medium px-3 py-1.5 rounded-full">
+          Nível 2
+        </span>
+        <i class="fa-solid fa-arrow-right text-blue-300"></i>
+        <span class="inline-flex items-center gap-1 text-blue-400 italic">X horas</span>
+        <i class="fa-solid fa-arrow-right text-blue-300"></i>
+        <span class="inline-flex items-center gap-1.5 bg-red-100 text-red-700 font-medium px-3 py-1.5 rounded-full">
+          Nível 3
+        </span>
+      </div>
+    </div>
+
+    <% if (configuracoes && configuracoes.length > 0) { %>
+    <form action="/admin/configuracoes" method="POST">
+
+      <!-- SEÇÃO: Tempos de Escalação -->
+      <% if (configsTempo.length > 0) { %>
+      <div class="mb-8">
+        <div class="flex items-center gap-2.5 mb-4">
+          <div class="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center">
+            <i class="fa-solid fa-clock text-indigo-600 text-sm"></i>
+          </div>
+          <div>
+            <h2 class="text-lg font-bold text-gray-900">Tempos de Escalação</h2>
+            <p class="text-xs text-gray-500">Após quanto tempo sem encontrar o pet, o nível do alerta sobe automaticamente</p>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 divide-y divide-gray-100">
+          <% configsTempo.forEach(function(c) {
+               const meta = metaDados[c.chave];
+               const cores = coresMap[meta.cor];
+          %>
+          <div class="p-5">
+            <div class="flex items-start gap-4">
+              <div class="w-10 h-10 rounded-xl <%= cores.bg %> <%= cores.border %> border flex items-center justify-center flex-shrink-0 mt-0.5">
+                <i class="fa-solid <%= meta.icone %> <%= cores.text %> text-sm"></i>
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 flex-wrap mb-1">
+                  <label for="config_<%= c.chave %>" class="font-semibold text-gray-800 text-sm"><%= meta.label %></label>
+                  <span class="text-[10px] font-bold px-2 py-0.5 rounded-full <%= cores.badge %>">NÍVEL <%= meta.nivel %></span>
+                </div>
+                <p class="text-xs text-gray-500 mb-3 leading-relaxed"><%= meta.descAmigavel %></p>
+                <div class="flex items-center gap-2 max-w-xs">
+                  <input type="number" name="config[<%= c.chave %>]" id="config_<%= c.chave %>"
+                         value="<%= c.valor %>" min="0" step="1"
+                         class="w-24 px-3 py-2 border border-gray-300 rounded-lg text-sm text-center font-semibold focus:ring-2 <%= cores.ring %> focus:border-transparent outline-none">
+                  <span class="text-sm text-gray-400 font-medium"><%= meta.unidade %></span>
+                </div>
+                <p class="text-[11px] text-gray-400 mt-1.5">
+                  <code class="bg-gray-100 px-1.5 py-0.5 rounded text-[10px] font-mono"><%= c.chave %></code>
+                </p>
+              </div>
+            </div>
+          </div>
+          <% }); %>
+        </div>
+      </div>
+      <% } %>
+
+      <!-- SEÇÃO: Raios de Notificação -->
+      <% if (configsRaio.length > 0) { %>
+      <div class="mb-8">
+        <div class="flex items-center gap-2.5 mb-4">
+          <div class="w-8 h-8 rounded-lg bg-teal-100 flex items-center justify-center">
+            <i class="fa-solid fa-satellite-dish text-teal-600 text-sm"></i>
+          </div>
+          <div>
+            <h2 class="text-lg font-bold text-gray-900">Raios de Notificação</h2>
+            <p class="text-xs text-gray-500">Distância em quilômetros que cada nível de alerta cobre para notificar pessoas</p>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 divide-y divide-gray-100">
+          <% configsRaio.forEach(function(c) {
+               const meta = metaDados[c.chave];
+               const cores = coresMap[meta.cor];
+          %>
+          <div class="p-5">
+            <div class="flex items-start gap-4">
+              <div class="w-10 h-10 rounded-xl <%= cores.bg %> <%= cores.border %> border flex items-center justify-center flex-shrink-0 mt-0.5">
+                <i class="fa-solid <%= meta.icone %> <%= cores.text %> text-sm"></i>
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 flex-wrap mb-1">
+                  <label for="config_<%= c.chave %>" class="font-semibold text-gray-800 text-sm"><%= meta.label %></label>
+                  <span class="text-[10px] font-bold px-2 py-0.5 rounded-full <%= cores.badge %>">NÍVEL <%= meta.nivel %></span>
+                </div>
+                <p class="text-xs text-gray-500 mb-3 leading-relaxed"><%= meta.descAmigavel %></p>
+                <div class="flex items-center gap-2 max-w-xs">
+                  <input type="number" name="config[<%= c.chave %>]" id="config_<%= c.chave %>"
+                         value="<%= c.valor %>" min="0" step="0.5"
+                         class="w-24 px-3 py-2 border border-gray-300 rounded-lg text-sm text-center font-semibold focus:ring-2 <%= cores.ring %> focus:border-transparent outline-none">
+                  <span class="text-sm text-gray-400 font-medium"><%= meta.unidade %></span>
+                  <% if (c.valor === '0' || c.valor === 0) { %>
+                    <span class="text-[11px] bg-red-50 text-red-600 font-semibold px-2 py-0.5 rounded-full border border-red-200">= Cidade inteira</span>
+                  <% } %>
+                </div>
+                <p class="text-[11px] text-gray-400 mt-1.5">
+                  <code class="bg-gray-100 px-1.5 py-0.5 rounded text-[10px] font-mono"><%= c.chave %></code>
+                </p>
+              </div>
+            </div>
+          </div>
+          <% }); %>
+        </div>
+      </div>
+      <% } %>
+
+      <!-- SEÇÃO: Outras Configurações (caso existam chaves não mapeadas) -->
+      <% if (configsOutras.length > 0) { %>
+      <div class="mb-8">
+        <div class="flex items-center gap-2.5 mb-4">
+          <div class="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center">
+            <i class="fa-solid fa-sliders text-gray-600 text-sm"></i>
+          </div>
+          <div>
+            <h2 class="text-lg font-bold text-gray-900">Outras Configurações</h2>
+            <p class="text-xs text-gray-500">Parâmetros gerais do sistema</p>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 divide-y divide-gray-100">
+          <% configsOutras.forEach(function(c) { %>
+          <div class="p-5">
+            <div class="flex items-start gap-4">
+              <div class="w-10 h-10 rounded-xl bg-gray-50 border border-gray-200 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <i class="fa-solid fa-gear text-gray-400 text-sm"></i>
+              </div>
+              <div class="flex-1 min-w-0">
+                <label for="config_<%= c.chave %>" class="block font-semibold text-gray-800 text-sm mb-1">
+                  <%= c.chave %>
+                </label>
+                <% if (c.descricao) { %>
+                  <p class="text-xs text-gray-500 mb-3 leading-relaxed"><%= c.descricao %></p>
+                <% } %>
+                <input type="text" name="config[<%= c.chave %>]" id="config_<%= c.chave %>"
+                       value="<%= c.valor %>"
+                       class="w-full max-w-sm px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none">
+                <p class="text-[11px] text-gray-400 mt-1.5">
+                  <code class="bg-gray-100 px-1.5 py-0.5 rounded text-[10px] font-mono"><%= c.chave %></code>
+                </p>
+              </div>
+            </div>
+          </div>
+          <% }); %>
+        </div>
+      </div>
+      <% } %>
+
+      <!-- Botão Salvar -->
+      <div class="flex justify-end">
+        <button type="submit"
+                class="flex items-center gap-2 px-6 py-2.5 bg-primary-500 hover:bg-primary-600 text-white text-sm font-semibold rounded-lg shadow-sm hover:shadow transition-all">
+          <i class="fa-solid fa-floppy-disk"></i> Salvar Configurações
+        </button>
+      </div>
+    </form>
+
+    <% } else { %>
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100 text-center py-16 text-gray-400">
+        <i class="fa-solid fa-gear text-4xl mb-3"></i>
+        <p class="text-sm font-medium">Nenhuma configuração cadastrada</p>
+        <p class="text-xs mt-1">Execute a migração do banco de dados para criar as configurações padrão.</p>
+      </div>
+    <% } %>
+
+  </div>
+</main>
+
+<%- include('../partials/footer') %>

@@ -1,0 +1,42 @@
+<%- include('header') %>
+
+<main class="flex-1 flex items-center justify-center px-4 py-16">
+  <div class="text-center max-w-md">
+    <div class="mb-6">
+      <span class="text-8xl sm:text-9xl font-black text-[#ec5a1c]/15 select-none leading-none">
+        <%= typeof codigo !== 'undefined' ? codigo : 500 %>
+      </span>
+    </div>
+
+    <div class="relative -mt-10">
+      <div class="w-20 h-20 mx-auto mb-6 rounded-2xl bg-[#ec5a1c]/10 flex items-center justify-center">
+        <% var iconMap = { 404: 'fa-magnifying-glass', 403: 'fa-lock', 401: 'fa-user-lock', 500: 'fa-triangle-exclamation' }; %>
+        <% var icon = (typeof codigo !== 'undefined' && iconMap[codigo]) ? iconMap[codigo] : 'fa-triangle-exclamation'; %>
+        <i class="fa-solid <%= icon %> text-3xl text-[#ec5a1c]"></i>
+      </div>
+
+      <h1 class="text-2xl sm:text-3xl font-bold text-gray-800 mb-3">
+        <%= typeof titulo !== 'undefined' ? titulo : 'Algo deu errado' %>
+      </h1>
+
+      <p class="text-gray-500 mb-8 leading-relaxed">
+        <%= typeof mensagem !== 'undefined' ? mensagem : 'Não conseguimos processar sua solicitação. Tente novamente mais tarde.' %>
+      </p>
+
+      <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
+        <a href="javascript:history.back()"
+           class="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium text-gray-700
+                  bg-gray-100 hover:bg-gray-200 transition-colors">
+          <i class="fa-solid fa-arrow-left"></i> Voltar
+        </a>
+        <a href="/"
+           class="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold text-white
+                  bg-[#ec5a1c] hover:bg-[#d4500f] shadow-sm transition-colors">
+          <i class="fa-solid fa-house"></i> Página Inicial
+        </a>
+      </div>
+    </div>
+  </div>
+</main>
+
+<%- include('footer') %>

@@ -1,0 +1,136 @@
+<% locals.titulo = 'Editar ' + pet.nome %>
+<%- include('../partials/header') %>
+<%- include('../partials/flash') %>
+
+<main class="flex-1 container mx-auto px-4 py-6 max-w-lg">
+
+  <a href="/pets/<%= pet.id %>" class="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-primary-500 transition-colors mb-4">
+    <i class="fa-solid fa-arrow-left text-xs"></i> Voltar ao perfil
+  </a>
+
+  <h1 class="text-2xl font-bold text-gray-900 mb-6">Editar <%= pet.nome %></h1>
+
+  <form action="/pets/<%= pet.id %>/editar" method="POST" enctype="multipart/form-data" class="space-y-6">
+
+    <!-- Foto -->
+    <div class="card">
+      <h2 class="text-sm font-semibold text-gray-700 mb-3">Foto</h2>
+      <label for="petFoto" class="block cursor-pointer">
+        <div class="relative w-full h-48 rounded-xl overflow-hidden bg-gray-100 group">
+          <% if (pet.foto) { %>
+            <img src="<%= pet.foto %>" alt="<%= pet.nome %>" id="fotoAtual"
+                 class="w-full h-full object-cover">
+          <% } else { %>
+            <div class="w-full h-full flex items-center justify-center" id="fotoAtual">
+              <i class="fa-solid fa-paw text-4xl text-gray-300"></i>
+            </div>
+          <% } %>
+          <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+            <span class="text-white text-sm font-medium"><i class="fa-solid fa-camera mr-2"></i>Alterar foto</span>
+          </div>
+        </div>
+        <input type="file" id="petFoto" name="foto" accept="image/*" class="hidden" onchange="previewFoto(this)">
+      </label>
+    </div>
+
+    <!-- Dados básicos -->
+    <div class="card space-y-4">
+      <h2 class="text-sm font-semibold text-gray-700 mb-1">Dados básicos</h2>
+
+      <div>
+        <label for="nome" class="block text-sm font-medium text-gray-700 mb-1">Nome</label>
+        <input type="text" id="nome" name="nome" required value="<%= pet.nome %>"
+               class="input-field" maxlength="50">
+      </div>
+
+      <div>
+        <label for="tipo" class="block text-sm font-medium text-gray-700 mb-1">Tipo</label>
+        <select id="tipo" name="tipo" class="input-field">
+          <option value="cachorro" <%= pet.tipo === 'cachorro' ? 'selected' : '' %>>Cachorro</option>
+          <option value="gato" <%= pet.tipo === 'gato' ? 'selected' : '' %>>Gato</option>
+          <option value="passaro" <%= pet.tipo === 'passaro' ? 'selected' : '' %>>Pássaro</option>
+          <option value="outro" <%= pet.tipo === 'outro' ? 'selected' : '' %>>Outro</option>
+        </select>
+      </div>
+
+      <div>
+        <label for="raca" class="block text-sm font-medium text-gray-700 mb-1">Raça</label>
+        <input type="text" id="raca" name="raca" value="<%= pet.raca || '' %>"
+               placeholder="Ex: Golden Retriever" class="input-field">
+      </div>
+    </div>
+
+    <!-- Dados físicos -->
+    <div class="card space-y-4">
+      <h2 class="text-sm font-semibold text-gray-700 mb-1">Dados físicos</h2>
+
+      <div>
+        <label for="dataNascimento" class="block text-sm font-medium text-gray-700 mb-1">Data de nascimento</label>
+        <input type="date" id="dataNascimento" name="dataNascimento"
+               value="<%= pet.dataNascimento ? new Date(pet.dataNascimento).toISOString().split('T')[0] : '' %>"
+               class="input-field">
+      </div>
+
+      <div>
+        <label for="peso" class="block text-sm font-medium text-gray-700 mb-1">Peso (kg)</label>
+        <input type="number" id="peso" name="peso" step="0.1" min="0" max="200"
+               value="<%= pet.peso || '' %>" placeholder="Ex: 12.5" class="input-field">
+      </div>
+    </div>
+
+    <!-- Descrição -->
+    <div class="card">
+      <h2 class="text-sm font-semibold text-gray-700 mb-3">Descrição</h2>
+      <textarea name="descricao" id="descricao" rows="4" maxlength="500"
+                placeholder="Conte algo sobre seu pet..."
+                class="input-field resize-none"><%= pet.descricao || '' %></textarea>
+      <p class="text-xs text-gray-400 text-right mt-1"><span id="descCount"><%= pet.descricao ? pet.descricao.length : 0 %></span>/500</p>
+    </div>
+
+    <!-- Contato -->
+    <div class="card">
+      <h2 class="text-sm font-semibold text-gray-700 mb-3">Contato de emergência</h2>
+      <div>
+        <label for="telefoneContato" class="block text-sm font-medium text-gray-700 mb-1">Telefone</label>
+        <input type="tel" id="telefoneContato" name="telefoneContato"
+               value="<%= pet.telefoneContato || '' %>"
+               placeholder="(00) 00000-0000" class="input-field">
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="flex gap-3">
+      <a href="/pets/<%= pet.id %>" class="btn-outline flex-1 text-center">Cancelar</a>
+      <button type="submit" class="btn-primary flex-1">
+        <i class="fa-solid fa-check mr-2"></i>Salvar
+      </button>
+    </div>
+
+  </form>
+</main>
+
+<script>
+function previewFoto(input) {
+  if (input.files && input.files[0]) {
+    var reader = new FileReader();
+    reader.onload = function (e) {
+      var container = document.getElementById('fotoAtual');
+      if (container.tagName === 'IMG') {
+        container.src = e.target.result;
+      } else {
+        container.innerHTML = '<img src="' + e.target.result + '" class="w-full h-full object-cover" alt="Preview">';
+      }
+    };
+    reader.readAsDataURL(input.files[0]);
+  }
+}
+
+var desc = document.getElementById('descricao');
+if (desc) {
+  desc.addEventListener('input', function () {
+    document.getElementById('descCount').textContent = this.value.length;
+  });
+}
+</script>
+
+<%- include('../partials/footer') %>
