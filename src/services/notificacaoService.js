@@ -96,7 +96,7 @@ const notificacaoService = {
     }
 
     const mensagem = `🚨 Pet perdido na sua região! ${alerta.pet_nome} (${alerta.pet_raca || alerta.pet_tipo || 'pet'}) foi visto pela última vez próximo de você.`;
-    const link = `/pet-perdido/${petPerdidoId}`;
+    const link = `/pets/${alerta.pet_id}`;
 
     const notificacoes = await Notificacao.criarParaMultiplos(
       usuarioIds,

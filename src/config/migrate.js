@@ -786,10 +786,33 @@ const migrations = [
 ];
 
 /**
+ * Verifica se a extensao PostGIS esta disponivel no PostgreSQL.
+ * Sem PostGIS, o tipo geography nao existe e todas as tabelas com coordenadas falham.
+ * @throws {Error} Se PostGIS nao estiver instalado no servidor
+ */
+async function garantirPostGIS() {
+  const res = await pool.query(
+    `SELECT name FROM pg_available_extensions WHERE name = 'postgis'`
+  );
+  if (!res.rows.length) {
+    const msg =
+      'A extensao PostGIS nao esta instalada no PostgreSQL. ' +
+      'Instale no servidor (ex: Ubuntu/Debian: sudo apt install postgresql-16-postgis-3) ' +
+      'e reinicie o PostgreSQL. Depois, no banco: CREATE EXTENSION postgis;';
+    logger.error('MIGRATE', msg);
+    throw new Error(msg);
+  }
+  await pool.query('CREATE EXTENSION IF NOT EXISTS postgis;');
+  logger.info('MIGRATE', 'PostGIS disponivel');
+}
+
+/**
  * Executa todas as migrations em sequencia.
- * Cada statement roda dentro do pool — se uma falhar, as outras continuam.
+ * Exige PostGIS antes; cada statement roda no pool — se uma falhar, as outras continuam.
  */
 async function runMigrations() {
+  await garantirPostGIS();
+
   const total = migrations.length;
   let erros = 0;
 
