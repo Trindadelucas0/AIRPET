@@ -27,15 +27,18 @@ const Localizacao = {
    * @returns {Promise<object>} O registro de localização criado
    */
   async registrar(dados) {
-    const { pet_id, latitude, longitude, origem } = dados;
+    const { pet_id, latitude, longitude, origem, cidade, ip, foto_url } = dados;
+
+    const lat = parseFloat(latitude);
+    const lng = parseFloat(longitude);
 
     const resultado = await query(
-      `INSERT INTO localizacoes (pet_id, latitude, longitude, ponto, origem)
+      `INSERT INTO localizacoes (pet_id, latitude, longitude, ponto, cidade, ip, foto_url)
        VALUES ($1, $2, $3,
-               ST_SetSRID(ST_MakePoint($3, $2), 4326)::geography,
-               $4)
+               ST_SetSRID(ST_MakePoint($4, $5), 4326)::geography,
+               $6, $7, $8)
        RETURNING *`,
-      [pet_id, latitude, longitude, origem]
+      [pet_id, lat, lng, lng, lat, cidade || null, ip || null, foto_url || null]
     );
 
     return resultado.rows[0];
@@ -53,7 +56,7 @@ const Localizacao = {
     const resultado = await query(
       `SELECT * FROM localizacoes
        WHERE pet_id = $1
-       ORDER BY data_registro DESC`,
+       ORDER BY data DESC`,
       [petId]
     );
 
@@ -70,7 +73,7 @@ const Localizacao = {
   async buscarRecentes(limite = 100) {
     const resultado = await query(
       `SELECT * FROM localizacoes
-       ORDER BY data_registro DESC
+       ORDER BY data DESC
        LIMIT $1`,
       [limite]
     );

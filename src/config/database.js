@@ -7,6 +7,7 @@
  */
 
 const { Pool } = require('pg');
+const logger = require('../utils/logger');
 
 const pool = new Pool({
   host: process.env.DB_HOST,
@@ -20,7 +21,7 @@ const pool = new Pool({
 });
 
 pool.on('error', (err) => {
-  console.error('[DB] Erro inesperado no pool de conexoes:', err.message);
+  logger.error('DB', 'Erro inesperado no pool de conexoes', err);
 });
 
 /**

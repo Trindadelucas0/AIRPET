@@ -1,0 +1,217 @@
+<% locals.titulo = 'Detalhes do Lote' %>
+<%- include('../partials/header') %>
+<%- include('../partials/flash') %>
+
+<main class="flex-1">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+    <div class="mb-6">
+      <a href="/tags/admin/lotes" class="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-primary-500 transition-colors mb-2">
+        <i class="fa-solid fa-arrow-left text-xs"></i> Voltar para Lotes
+      </a>
+      <div class="flex items-center justify-between flex-wrap gap-4">
+        <div>
+          <h1 class="text-2xl font-bold text-gray-900">Lote: <span class="text-primary-500"><%= lote.codigo_lote %></span></h1>
+          <p class="text-sm text-gray-500 mt-1">
+            <%= tags.length %> tags &middot; Fabricante: <%= lote.fabricante || 'N/A' %> &middot;
+            Criado em: <%= lote.data_criacao ? new Date(lote.data_criacao).toLocaleDateString('pt-BR') : '—' %>
+          </p>
+        </div>
+        <div class="flex gap-2">
+          <button onclick="copiarTodos()" class="inline-flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white text-sm font-semibold rounded-lg transition-colors">
+            <i class="fa-solid fa-copy"></i> Copiar Todos os Códigos
+          </button>
+          <button onclick="window.print()" class="inline-flex items-center gap-2 px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white text-sm font-semibold rounded-lg transition-colors">
+            <i class="fa-solid fa-print"></i> Imprimir
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Alerta informativo -->
+    <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
+      <div class="flex gap-3">
+        <div class="flex-shrink-0">
+          <i class="fa-solid fa-circle-info text-amber-500 text-lg mt-0.5"></i>
+        </div>
+        <div>
+          <h3 class="text-sm font-semibold text-amber-800">Códigos de Ativação para o Cliente</h3>
+          <p class="text-sm text-amber-700 mt-1">
+            Cada tag tem um <strong>Código da Tag</strong> (gravado na tag NFC) e um <strong>Código de Ativação</strong>
+            (entregue separadamente ao cliente no cartão/embalagem). O cliente precisará dos dois para ativar a tag.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabela de Tags do Lote -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden print:shadow-none print:border-gray-300">
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm" id="tabela-tags">
+          <thead>
+            <tr class="bg-gray-50 border-b border-gray-200">
+              <th class="px-4 py-3 text-left font-semibold text-gray-600">#</th>
+              <th class="px-4 py-3 text-left font-semibold text-gray-600">Código da Tag</th>
+              <th class="px-4 py-3 text-left font-semibold text-gray-600">URL de Escaneamento</th>
+              <th class="px-4 py-3 text-left font-semibold text-gray-600">Código de Ativação</th>
+              <th class="px-4 py-3 text-left font-semibold text-gray-600">Status</th>
+              <th class="px-4 py-3 text-left font-semibold text-gray-600 print:hidden">Ações</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100">
+            <% tags.forEach(function(t, idx) { %>
+              <%
+                var statusBadge = 'bg-gray-100 text-gray-600';
+                if (t.status === 'stock') statusBadge = 'bg-slate-100 text-slate-600';
+                else if (t.status === 'reserved') statusBadge = 'bg-blue-100 text-blue-600';
+                else if (t.status === 'sent') statusBadge = 'bg-yellow-100 text-yellow-700';
+                else if (t.status === 'active') statusBadge = 'bg-emerald-100 text-emerald-700';
+                else if (t.status === 'blocked') statusBadge = 'bg-red-100 text-red-700';
+              %>
+              <tr class="hover:bg-gray-50 transition-colors">
+                <td class="px-4 py-3 text-gray-400 text-xs"><%= idx + 1 %></td>
+                <td class="px-4 py-3">
+                  <span class="font-mono text-sm font-bold text-gray-800"><%= t.tag_code %></span>
+                </td>
+                <td class="px-4 py-3">
+                  <div class="flex items-center gap-1.5">
+                    <a href="<%= BASE_URL %>/tag/<%= t.tag_code %>" target="_blank"
+                       class="font-mono text-xs text-blue-600 hover:text-blue-800 underline truncate max-w-[200px]"
+                       title="<%= BASE_URL %>/tag/<%= t.tag_code %>"><%= BASE_URL %>/tag/<%= t.tag_code %></a>
+                    <button onclick="copiarCodigo('<%= BASE_URL %>/tag/<%= t.tag_code %>', this)"
+                            class="print:hidden p-1 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded transition-colors flex-shrink-0"
+                            title="Copiar URL">
+                      <i class="fa-regular fa-copy text-xs"></i>
+                    </button>
+                  </div>
+                </td>
+                <td class="px-4 py-3">
+                  <div class="flex items-center gap-2">
+                    <span class="font-mono text-sm font-bold text-primary-600 bg-primary-50 px-3 py-1 rounded-lg border border-primary-200"
+                          id="code-<%= t.id %>"><%= t.activation_code %></span>
+                    <button onclick="copiarCodigo('<%= t.activation_code %>', this)"
+                            class="print:hidden p-1.5 text-gray-400 hover:text-primary-500 hover:bg-primary-50 rounded-lg transition-colors"
+                            title="Copiar código">
+                      <i class="fa-regular fa-copy text-sm"></i>
+                    </button>
+                  </div>
+                </td>
+                <td class="px-4 py-3">
+                  <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold <%= statusBadge %>">
+                    <%= t.status %>
+                  </span>
+                </td>
+                <td class="px-4 py-3 print:hidden">
+                  <% if (t.status === 'stock') { %>
+                    <form action="/tags/admin/<%= t.id %>/reservar" method="POST" class="flex items-center gap-2">
+                      <input type="email" name="email" required placeholder="email@usuario.com"
+                             class="w-36 px-2 py-1 border border-gray-300 rounded text-xs focus:ring-1 focus:ring-primary-500 outline-none">
+                      <button type="submit" class="px-2 py-1 bg-blue-500 hover:bg-blue-600 text-white text-xs font-semibold rounded transition-colors">
+                        Reservar
+                      </button>
+                    </form>
+                  <% } else if (t.status === 'reserved') { %>
+                    <form action="/tags/admin/<%= t.id %>/enviar" method="POST" class="inline">
+                      <button type="submit" class="px-2 py-1 bg-yellow-500 hover:bg-yellow-600 text-white text-xs font-semibold rounded transition-colors">
+                        Marcar Enviada
+                      </button>
+                    </form>
+                  <% } else { %>
+                    <span class="text-xs text-gray-400">—</span>
+                  <% } %>
+                </td>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+
+      <% if (tags.length === 0) { %>
+        <div class="text-center py-12 text-gray-400">
+          <i class="fa-solid fa-tag text-3xl mb-2"></i>
+          <p class="text-sm">Nenhuma tag neste lote</p>
+        </div>
+      <% } %>
+    </div>
+
+    <!-- Card para Impressão do Cliente -->
+    <div class="mt-8 bg-white rounded-xl shadow-sm border border-gray-100 p-6 print:shadow-none">
+      <h2 class="text-lg font-bold text-gray-900 mb-4">
+        <i class="fa-solid fa-id-card text-primary-500 mr-2"></i>
+        Cartões para Entrega ao Cliente
+      </h2>
+      <p class="text-sm text-gray-500 mb-6">Recorte cada cartão e entregue junto com a tag NFC correspondente.</p>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" id="cartoes-cliente">
+        <% tags.forEach(function(t) { %>
+          <div class="border-2 border-dashed border-gray-300 rounded-xl p-5 text-center break-inside-avoid">
+            <div class="flex items-center justify-center w-12 h-12 bg-primary-100 rounded-full mx-auto mb-3">
+              <i class="fa-solid fa-paw text-primary-500 text-xl"></i>
+            </div>
+            <p class="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">AIRPET — Tag NFC</p>
+            <p class="text-xs text-gray-400 mb-2">Tag: <span class="font-mono font-semibold"><%= t.tag_code %></span></p>
+            <div class="bg-blue-50 rounded-lg p-2 mb-2">
+              <p class="text-[10px] text-blue-500 uppercase tracking-wider mb-0.5">URL de Escaneamento</p>
+              <p class="text-[10px] font-mono font-semibold text-blue-700 break-all"><%= BASE_URL %>/tag/<%= t.tag_code %></p>
+            </div>
+            <div class="bg-gray-50 rounded-lg p-3 mb-3">
+              <p class="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Código de Ativação</p>
+              <p class="text-2xl font-mono font-black text-gray-900 tracking-widest"><%= t.activation_code %></p>
+            </div>
+            <p class="text-[10px] text-gray-400 leading-relaxed">
+              Para ativar: escaneie a tag com o celular, faça login no AIRPET e digite este código.
+            </p>
+          </div>
+        <% }); %>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<style>
+  @media print {
+    nav, .print\:hidden, footer, button, form { display: none !important; }
+    main { padding: 0 !important; }
+    .max-w-7xl { max-width: 100% !important; padding: 10px !important; }
+    .shadow-sm { box-shadow: none !important; }
+    #cartoes-cliente > div { page-break-inside: avoid; border: 2px dashed #999; }
+  }
+</style>
+
+<script>
+function copiarCodigo(codigo, btn) {
+  navigator.clipboard.writeText(codigo).then(function() {
+    var icone = btn.querySelector('i');
+    icone.className = 'fa-solid fa-check text-sm text-emerald-500';
+    setTimeout(function() {
+      icone.className = 'fa-regular fa-copy text-sm';
+    }, 2000);
+  });
+}
+
+function copiarTodos() {
+  var linhas = [];
+  <% tags.forEach(function(t) { %>
+    linhas.push('<%= t.tag_code %> — Ativação: <%= t.activation_code %> — URL: <%= BASE_URL %>/tag/<%= t.tag_code %>');
+  <% }); %>
+  var texto = 'LOTE: <%= lote.codigo_lote %>\n' +
+              'Data: <%= lote.data_criacao ? new Date(lote.data_criacao).toLocaleDateString("pt-BR") : "—" %>\n' +
+              '—————————————————————\n' +
+              linhas.join('\n');
+  navigator.clipboard.writeText(texto).then(function() {
+    var btn = document.querySelector('[onclick="copiarTodos()"]');
+    var textoOriginal = btn.innerHTML;
+    btn.innerHTML = '<i class="fa-solid fa-check"></i> Copiado!';
+    btn.classList.remove('bg-blue-500', 'hover:bg-blue-600');
+    btn.classList.add('bg-emerald-500');
+    setTimeout(function() {
+      btn.innerHTML = textoOriginal;
+      btn.classList.remove('bg-emerald-500');
+      btn.classList.add('bg-blue-500', 'hover:bg-blue-600');
+    }, 2500);
+  });
+}
+</script>
+
+<%- include('../partials/footer') %>

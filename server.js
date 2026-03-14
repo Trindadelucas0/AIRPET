@@ -11,7 +11,6 @@ const express = require('express');
 const http = require('http');
 const path = require('path');
 const helmet = require('helmet');
-const morgan = require('morgan');
 const cookieParser = require('cookie-parser');
 const { Server } = require('socket.io');
 
@@ -36,7 +35,7 @@ app.use(helmet({
   crossOriginEmbedderPolicy: false,
 }));
 
-app.use(morgan('dev'));
+app.use(logger.requestLogger());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(methodOverride('_method'));
@@ -59,6 +58,7 @@ app.use(async (req, res, next) => {
   res.locals.flash = req.session.flash || null;
   res.locals.verificarPermissoes = req.session.verificarPermissoes || false;
   res.locals.vapidPublicKey = process.env.VAPID_PUBLIC_KEY || '';
+  res.locals.BASE_URL = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
   req.session.flash = null;
   req.session.verificarPermissoes = false;
 
@@ -129,19 +129,27 @@ const PORT = process.env.PORT || 3000;
 
 async function iniciar() {
   try {
-    // Testa conexao com o banco
+    logger.secao('Database');
     await pool.query('SELECT NOW()');
     logger.info('DB', 'Conectado ao PostgreSQL com sucesso');
 
-    // Roda migrations (cria tabelas se nao existirem)
-    await runMigrations();
+    logger.secao('Migrations');
+    const migResult = await runMigrations();
 
-    // Inicia jobs automáticos (escalar alertas, lembretes vacinas)
+    logger.secao('Services');
     schedulerService.iniciar();
+    logger.info('SCHEDULER', 'Jobs automaticos iniciados (alertas, vacinas)');
 
-    // Inicia o servidor HTTP (Express + Socket.IO)
     server.listen(PORT, () => {
-      logger.info('SERVER', `AIRPET rodando em http://localhost:${PORT}`);
+      logger.banner({
+        versao: require('./package.json').version,
+        porta: PORT,
+        ambiente: process.env.NODE_ENV || 'development',
+        db: 'Conectado',
+        migrations: migResult,
+      });
+      logger.secao('Servidor Pronto');
+      logger.info('SERVER', `Acesse http://localhost:${PORT}`);
     });
   } catch (err) {
     logger.error('SERVER', 'Falha ao iniciar o servidor', err);

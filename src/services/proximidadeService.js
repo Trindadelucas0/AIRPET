@@ -205,7 +205,7 @@ const proximidadeService = {
 
     /* Cria notificações em massa se houver usuários no raio */
     if (usuariosParaNotificar.length > 0) {
-      const mensagem = `🚨 Alerta nível ${proximoNivel}! ${alerta.pet_nome} (${alerta.pet_especie}) está perdido na sua região. Última vez visto próximo de você.`;
+      const mensagem = `🚨 Alerta nível ${proximoNivel}! ${alerta.pet_nome} (${alerta.pet_tipo || 'pet'}) está perdido na sua região. Última vez visto próximo de você.`;
       const link = `/pet-perdido/${petPerdidoId}`;
 
       await Notificacao.criarParaMultiplos(

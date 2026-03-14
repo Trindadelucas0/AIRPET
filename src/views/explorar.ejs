@@ -8,10 +8,6 @@
       .animate-heartPop { animation: heartPop 0.4s ease-out; }
       .float-heart { position:absolute; pointer-events:none; animation:floatHeart 0.7s ease-out forwards; color:#ef4444; }
       .skeleton { background:linear-gradient(90deg,#f0f0f0 25%,#e0e0e0 50%,#f0f0f0 75%); background-size:200% 100%; animation:shimmer 1.5s infinite; border-radius:8px; }
-      .tab-indicator { position:absolute; bottom:0; height:3px; background:linear-gradient(90deg,#ec5a1c,#f17a42); border-radius:3px 3px 0 0; transition:left .3s ease,width .3s ease; }
-      .tab-link { position:relative; flex:1; text-align:center; padding:12px 0; font-size:14px; font-weight:600; color:#9ca3af; transition:color .2s; }
-      .tab-link.active { color:#111827; }
-      .tab-link:hover { color:#6b7280; }
       .menu-dropdown { transform-origin:top right; animation:scaleIn .15s ease-out; }
       .mention { color:#328dff; font-weight:500; cursor:pointer; }
       .mention:hover { text-decoration:underline; }
@@ -34,23 +30,11 @@
 
 <main class="flex-1 pb-24 md:pb-6">
 
-  <!-- ═══ Tab Bar ═══ -->
-  <div id="tabBar" class="sticky top-14 z-40 bg-white/90 backdrop-blur-xl border-b border-gray-100">
-    <div class="max-w-4xl mx-auto flex relative">
-      <div class="max-w-xl w-full flex relative">
-        <a href="/explorar?tab=para-voce"
-           class="tab-link <%= tab === 'para-voce' ? 'active' : '' %>"
-           data-tab="para-voce">
-          Para Você
-        </a>
-        <a href="/explorar?tab=seguindo"
-           class="tab-link <%= tab === 'seguindo' ? 'active' : '' %>"
-           data-tab="seguindo">
-          Seguindo
-        </a>
-        <div id="tabIndicator" class="tab-indicator"
-             style="left:<%= tab === 'seguindo' ? '50%' : '0' %>;width:50%"></div>
-      </div>
+  <!-- ═══ Header Explorar ═══ -->
+  <div class="sticky top-14 z-40 bg-white/90 backdrop-blur-xl border-b border-gray-100">
+    <div class="max-w-4xl mx-auto px-4 py-3">
+      <h1 class="text-lg font-bold text-gray-900"><i class="fa-solid fa-compass mr-2 text-primary-500"></i>Explorar</h1>
+      <p class="text-xs text-gray-400 mt-0.5">Descubra o que está acontecendo na sua região</p>
     </div>
   </div>
 
@@ -227,20 +211,13 @@
       <% }); %>
 
     <% } else { %>
-      <!-- ═══ Empty State ═══ -->
       <div class="text-center py-20 animate-fadeIn">
         <div class="w-20 h-20 mx-auto mb-5 rounded-full bg-gradient-to-br from-primary-50 to-orange-50 flex items-center justify-center">
           <i class="fa-solid fa-compass text-3xl text-primary-400"></i>
         </div>
-        <h3 class="text-lg font-bold text-gray-800 mb-1.5">
-          <%= tab === 'seguindo' ? 'Nada por aqui ainda' : 'Sem publicações' %>
-        </h3>
+        <h3 class="text-lg font-bold text-gray-800 mb-1.5">Nenhuma publicação por perto</h3>
         <p class="text-sm text-gray-400 max-w-xs mx-auto leading-relaxed">
-          <% if (tab === 'seguindo') { %>
-            Siga outros tutores para ver as publicações deles aqui.
-          <% } else { %>
-            Seja o primeiro a compartilhar algo! Toque no botão <strong class="text-primary-500">+</strong> para criar um post.
-          <% } %>
+          Ainda não há publicações na sua região. Seja o primeiro a compartilhar algo! Toque no botão <strong class="text-primary-500">+</strong> para criar um post.
         </p>
       </div>
     <% } %>
@@ -526,7 +503,6 @@
   'use strict';
 
   /* ──────────── Config & State ──────────── */
-  var currentTab = '<%= tab %>';
   var currentPage = <%= page %>;
   var hasMore = <%= temMais ? 'true' : 'false' %>;
   var totalPostsLocal = <%= totalPosts %>;
@@ -1107,7 +1083,7 @@
     isLoading = true;
     currentPage++;
 
-    fetch('/explorar?tab=' + currentTab + '&page=' + currentPage, {
+    fetch('/explorar?page=' + currentPage, {
       headers: { 'Accept': 'application/json' },
       credentials: 'same-origin'
     })
@@ -1298,7 +1274,6 @@
     setTimeout(function () {
       var steps = [];
       if (fabBtn) steps.push({ element: '#fabNewPost', popover: { title: 'Crie seu primeiro post!', description: 'Toque aqui para compartilhar uma foto e texto do seu pet com a comunidade.', side: 'top', align: 'center' } });
-      if (document.getElementById('tabBar')) steps.push({ element: '#tabBar', popover: { title: 'Explore o feed', description: 'Alterne entre posts populares e de quem você segue.', side: 'bottom', align: 'center' } });
       var firstActions = document.querySelector('.btn-curtir');
       if (firstActions) {
         var actionBar = firstActions.closest('.flex.items-center');

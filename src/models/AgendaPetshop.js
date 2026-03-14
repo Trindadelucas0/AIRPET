@@ -34,7 +34,7 @@ const AgendaPetshop = {
   async buscarPorId(id) {
     const resultado = await query(
       `SELECT a.*,
-              p.nome AS pet_nome, p.especie AS pet_especie,
+              p.nome AS pet_nome, p.tipo AS pet_tipo,
               ps.nome AS petshop_nome, ps.endereco AS petshop_endereco, ps.telefone AS petshop_telefone,
               u.nome AS usuario_nome, u.email AS usuario_email, u.telefone AS usuario_telefone
        FROM agenda_petshop a
@@ -51,7 +51,7 @@ const AgendaPetshop = {
   async buscarPorUsuario(usuarioId) {
     const resultado = await query(
       `SELECT a.*,
-              p.nome AS pet_nome, p.especie AS pet_especie,
+              p.nome AS pet_nome, p.tipo AS pet_tipo,
               ps.nome AS petshop_nome, ps.endereco AS petshop_endereco
        FROM agenda_petshop a
        LEFT JOIN pets p ON a.pet_id = p.id
@@ -67,7 +67,7 @@ const AgendaPetshop = {
   async buscarPorPetshop(petshopId) {
     const resultado = await query(
       `SELECT a.*,
-              p.nome AS pet_nome, p.especie AS pet_especie,
+              p.nome AS pet_nome, p.tipo AS pet_tipo,
               u.nome AS usuario_nome, u.email AS usuario_email, u.telefone AS usuario_telefone
        FROM agenda_petshop a
        LEFT JOIN pets p ON a.pet_id = p.id

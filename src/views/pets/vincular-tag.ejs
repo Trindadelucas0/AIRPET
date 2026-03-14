@@ -1,0 +1,376 @@
+<% locals.titulo = `Vincular Tag - ${pet.nome}` %>
+<%- include('../partials/header') %>
+<%- include('../partials/flash') %>
+
+<main class="flex-1 container mx-auto px-4 py-6 max-w-lg">
+
+  <a href="/pets/<%= pet.id %>" class="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-[#ec5a1c] transition-colors mb-6">
+    <i class="fa-solid fa-arrow-left text-xs"></i> Voltar para <%= pet.nome %>
+  </a>
+
+  <div class="text-center mb-6">
+    <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-[#ec5a1c]/10 mb-4">
+      <i class="fa-solid fa-microchip text-3xl text-[#ec5a1c]"></i>
+    </div>
+    <h1 class="text-2xl font-bold text-gray-900">Vincular Tag NFC</h1>
+    <p class="text-gray-500 text-sm mt-2">
+      Registre uma tag para <strong><%= pet.nome %></strong>
+    </p>
+  </div>
+
+  <!-- ========== ETAPA 1: Obter o código da tag ========== -->
+  <div id="etapa1">
+
+    <!-- Tabs: Aproximar / Digitar -->
+    <div class="flex rounded-xl bg-gray-100 p-1 mb-6">
+      <button type="button" id="tabNfc" onclick="trocarTab('nfc')"
+              class="flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all bg-white text-[#ec5a1c] shadow-sm">
+        <i class="fa-solid fa-wifi mr-1.5"></i>Aproximar
+      </button>
+      <button type="button" id="tabDigitar" onclick="trocarTab('digitar')"
+              class="flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all text-gray-500">
+        <i class="fa-solid fa-keyboard mr-1.5"></i>Digitar
+      </button>
+    </div>
+
+    <!-- Conteúdo: Aproximar NFC -->
+    <div id="painelNfc" class="card text-center">
+      <div id="nfcDisponivel">
+        <div class="relative inline-block mb-4">
+          <div id="nfcPulse" class="w-28 h-28 mx-auto rounded-full bg-[#ec5a1c]/5 flex items-center justify-center animate-pulse">
+            <div class="w-20 h-20 rounded-full bg-[#ec5a1c]/10 flex items-center justify-center">
+              <i class="fa-solid fa-wifi text-3xl text-[#ec5a1c] rotate-45"></i>
+            </div>
+          </div>
+        </div>
+        <h2 class="text-lg font-bold text-gray-900 mb-1" id="nfcTitulo">Aproxime a tag</h2>
+        <p class="text-sm text-gray-500 mb-4" id="nfcDescricao">
+          Encoste a tag NFC na parte de tras do celular
+        </p>
+        <button type="button" id="btnIniciarNfc" onclick="iniciarLeituraNfc()"
+                class="w-full px-6 py-4 rounded-2xl text-lg font-bold text-white bg-[#ec5a1c] hover:bg-[#d4500f] active:bg-[#c0470d] shadow-lg transition-all active:scale-[0.98]">
+          <i class="fa-solid fa-satellite-dish mr-2"></i>Iniciar leitura NFC
+        </button>
+        <p class="text-xs text-gray-400 mt-3">
+          <i class="fa-solid fa-circle-info mr-1"></i>
+          Funciona em celulares Android com NFC ativado
+        </p>
+      </div>
+
+      <div id="nfcIndisponivel" class="hidden">
+        <div class="w-20 h-20 mx-auto rounded-full bg-gray-100 flex items-center justify-center mb-4">
+          <i class="fa-solid fa-wifi text-3xl text-gray-300 rotate-45"></i>
+        </div>
+        <h2 class="text-lg font-bold text-gray-800 mb-2">NFC nao disponivel</h2>
+        <p class="text-sm text-gray-500 mb-4">
+          Seu navegador nao suporta leitura NFC.<br>
+          Use a aba <strong>"Digitar"</strong> para informar o codigo manualmente.
+        </p>
+        <button type="button" onclick="trocarTab('digitar')"
+                class="px-6 py-3 rounded-xl text-sm font-semibold text-[#ec5a1c] border-2 border-[#ec5a1c] hover:bg-[#ec5a1c] hover:text-white transition-colors">
+          <i class="fa-solid fa-keyboard mr-1.5"></i>Digitar codigo
+        </button>
+      </div>
+    </div>
+
+    <!-- Conteúdo: Digitar código -->
+    <div id="painelDigitar" class="card hidden">
+      <h2 class="text-lg font-bold text-gray-900 mb-1">Digite o codigo da tag</h2>
+      <p class="text-sm text-gray-500 mb-4">
+        O codigo esta impresso na tag ou na embalagem, no formato <strong class="font-mono">PET-XXXXXX</strong>
+      </p>
+      <div class="mb-4">
+        <input type="text" id="inputTagCode" placeholder="PET-XXXXXX"
+               class="w-full px-4 py-3 rounded-xl border border-gray-300 text-center text-lg font-mono font-bold tracking-[0.2em] uppercase
+                      focus:ring-2 focus:ring-[#ec5a1c]/30 focus:border-[#ec5a1c] transition-colors placeholder:text-gray-300"
+               autocomplete="off" maxlength="10">
+      </div>
+      <button type="button" id="btnConfirmarCodigo" onclick="confirmarTagCode()"
+              class="w-full px-6 py-4 rounded-2xl text-lg font-bold text-white bg-[#ec5a1c] hover:bg-[#d4500f] active:bg-[#c0470d] shadow-lg transition-all active:scale-[0.98]">
+        <i class="fa-solid fa-arrow-right mr-2"></i>Continuar
+      </button>
+    </div>
+  </div>
+
+  <!-- ========== ETAPA 2: Código de validação ========== -->
+  <div id="etapa2" class="hidden">
+    <div class="card">
+      <div class="flex items-center gap-3 mb-5">
+        <button type="button" onclick="voltarEtapa1()" class="text-gray-400 hover:text-gray-600 transition-colors">
+          <i class="fa-solid fa-arrow-left"></i>
+        </button>
+        <div>
+          <h2 class="text-lg font-bold text-gray-900">Codigo de validacao</h2>
+          <p class="text-sm text-gray-500">Confirme a posse da tag</p>
+        </div>
+      </div>
+
+      <div class="bg-gray-50 rounded-xl p-4 flex items-center gap-3 mb-5">
+        <span class="w-10 h-10 rounded-lg bg-[#ec5a1c]/10 text-[#ec5a1c] flex items-center justify-center flex-shrink-0">
+          <i class="fa-solid fa-microchip"></i>
+        </span>
+        <div>
+          <p class="text-xs text-gray-400">Tag detectada</p>
+          <p class="text-sm font-bold font-mono text-gray-800 tracking-wider" id="tagCodeExibido"></p>
+        </div>
+        <i class="fa-solid fa-check-circle text-emerald-500 ml-auto"></i>
+      </div>
+
+      <div class="bg-blue-50 rounded-xl p-4 flex items-start gap-3 mb-5">
+        <span class="w-8 h-8 rounded-lg bg-blue-100 text-blue-500 flex items-center justify-center flex-shrink-0 mt-0.5">
+          <i class="fa-solid fa-paw text-sm"></i>
+        </span>
+        <div>
+          <p class="text-xs text-blue-400">Vincular ao pet</p>
+          <p class="text-sm font-bold text-blue-800"><%= pet.nome %></p>
+        </div>
+      </div>
+
+      <form action="/pets/<%= pet.id %>/vincular-tag" method="POST" id="formValidacao">
+        <input type="hidden" name="tag_code" id="hiddenTagCode">
+
+        <div class="mb-5">
+          <label for="codigo_ativacao" class="block text-sm font-semibold text-gray-700 mb-1.5">
+            Codigo de ativacao
+          </label>
+          <input type="text" id="codigo_ativacao" name="codigo_ativacao" required
+                 placeholder="XXXX-XXXX"
+                 class="w-full px-4 py-3 rounded-xl border border-gray-300 text-center text-lg font-mono font-bold tracking-[0.3em] uppercase
+                        focus:ring-2 focus:ring-[#ec5a1c]/30 focus:border-[#ec5a1c] transition-colors placeholder:text-gray-300"
+                 autocomplete="off" maxlength="9">
+          <p class="text-xs text-gray-400 mt-1.5">
+            <i class="fa-solid fa-circle-info mr-1"></i>
+            Encontre este codigo na embalagem ou cartao que acompanha a tag
+          </p>
+        </div>
+
+        <button type="submit" id="btnAtivar"
+                class="w-full px-6 py-4 rounded-2xl text-lg font-bold text-white bg-[#ec5a1c] hover:bg-[#d4500f] active:bg-[#c0470d] shadow-lg transition-all active:scale-[0.98]">
+          <i class="fa-solid fa-link mr-2"></i>Vincular Tag a <%= pet.nome %>
+        </button>
+      </form>
+    </div>
+
+    <div class="mt-4 text-center">
+      <p class="text-xs text-gray-400">
+        <i class="fa-solid fa-shield-halved mr-1"></i>
+        Validacao segura com codigo unico da embalagem
+      </p>
+    </div>
+  </div>
+
+  <!-- ========== ETAPA: Lendo NFC (overlay) ========== -->
+  <div id="overlayNfc" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl">
+      <div class="w-24 h-24 mx-auto rounded-full bg-[#ec5a1c]/10 flex items-center justify-center mb-4 animate-pulse">
+        <i class="fa-solid fa-wifi text-4xl text-[#ec5a1c] rotate-45"></i>
+      </div>
+      <h2 class="text-xl font-bold text-gray-900 mb-2">Aguardando tag...</h2>
+      <p class="text-sm text-gray-500 mb-6">Encoste a tag NFC na parte de tras do celular</p>
+      <button type="button" onclick="cancelarLeituraNfc()"
+              class="px-6 py-3 rounded-xl text-sm font-semibold text-gray-500 border border-gray-300 hover:bg-gray-50 transition-colors">
+        Cancelar
+      </button>
+    </div>
+  </div>
+
+</main>
+
+<script>
+(function() {
+  var tagCodeObtido = '';
+  var nfcReader = null;
+  var nfcAbortController = null;
+
+  /* Verifica suporte a Web NFC */
+  if (!('NDEFReader' in window)) {
+    document.getElementById('nfcDisponivel').classList.add('hidden');
+    document.getElementById('nfcIndisponivel').classList.remove('hidden');
+  }
+
+  /* Troca entre as tabs Aproximar / Digitar */
+  window.trocarTab = function(tab) {
+    var tabNfc = document.getElementById('tabNfc');
+    var tabDigitar = document.getElementById('tabDigitar');
+    var painelNfc = document.getElementById('painelNfc');
+    var painelDigitar = document.getElementById('painelDigitar');
+
+    if (tab === 'nfc') {
+      tabNfc.className = 'flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all bg-white text-[#ec5a1c] shadow-sm';
+      tabDigitar.className = 'flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all text-gray-500';
+      painelNfc.classList.remove('hidden');
+      painelDigitar.classList.add('hidden');
+    } else {
+      tabDigitar.className = 'flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all bg-white text-[#ec5a1c] shadow-sm';
+      tabNfc.className = 'flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all text-gray-500';
+      painelDigitar.classList.remove('hidden');
+      painelNfc.classList.add('hidden');
+      setTimeout(function() { document.getElementById('inputTagCode').focus(); }, 100);
+    }
+  };
+
+  /* Extrai o tag_code de uma URL ou texto */
+  function extrairTagCode(texto) {
+    if (!texto) return null;
+    texto = texto.trim();
+
+    var match = texto.match(/\/t(?:ag)?\/([A-Z0-9\-]+)/i);
+    if (match) return match[1].toUpperCase();
+
+    match = texto.match(/^(PET-[A-Z0-9]{6})$/i);
+    if (match) return match[1].toUpperCase();
+
+    return null;
+  }
+
+  /* Inicia leitura NFC via Web NFC API */
+  window.iniciarLeituraNfc = async function() {
+    if (!('NDEFReader' in window)) {
+      alert('NFC nao suportado neste navegador.');
+      return;
+    }
+
+    try {
+      nfcAbortController = new AbortController();
+      nfcReader = new NDEFReader();
+      await nfcReader.scan({ signal: nfcAbortController.signal });
+
+      document.getElementById('overlayNfc').classList.remove('hidden');
+
+      nfcReader.addEventListener('reading', function(event) {
+        var tagCode = null;
+
+        if (event.serialNumber) {
+          tagCode = extrairTagCode(event.serialNumber);
+        }
+
+        if (!tagCode && event.message && event.message.records) {
+          for (var i = 0; i < event.message.records.length; i++) {
+            var record = event.message.records[i];
+
+            if (record.recordType === 'url' || record.recordType === 'absolute-url') {
+              var decoder = new TextDecoder();
+              var url = decoder.decode(record.data);
+              tagCode = extrairTagCode(url);
+              if (tagCode) break;
+            }
+
+            if (record.recordType === 'text') {
+              var decoder2 = new TextDecoder();
+              var texto = decoder2.decode(record.data);
+              tagCode = extrairTagCode(texto);
+              if (tagCode) break;
+            }
+          }
+        }
+
+        document.getElementById('overlayNfc').classList.add('hidden');
+
+        if (tagCode) {
+          avancarParaEtapa2(tagCode);
+        } else {
+          alert('Nao foi possivel ler o codigo da tag. Tente novamente ou digite o codigo manualmente.');
+        }
+
+        if (nfcAbortController) nfcAbortController.abort();
+      });
+
+      nfcReader.addEventListener('readingerror', function() {
+        document.getElementById('overlayNfc').classList.add('hidden');
+        alert('Erro ao ler a tag NFC. Tente novamente.');
+        if (nfcAbortController) nfcAbortController.abort();
+      });
+
+    } catch (erro) {
+      document.getElementById('overlayNfc').classList.add('hidden');
+
+      if (erro.name === 'NotAllowedError') {
+        alert('Permissao NFC negada. Ative o NFC nas configuracoes do celular e permita o acesso.');
+      } else if (erro.name === 'AbortError') {
+        /* cancelado */
+      } else {
+        alert('Erro ao iniciar NFC: ' + erro.message);
+      }
+    }
+  };
+
+  /* Cancela a leitura NFC */
+  window.cancelarLeituraNfc = function() {
+    document.getElementById('overlayNfc').classList.add('hidden');
+    if (nfcAbortController) {
+      nfcAbortController.abort();
+      nfcAbortController = null;
+    }
+  };
+
+  /* Confirma o código digitado manualmente */
+  window.confirmarTagCode = function() {
+    var input = document.getElementById('inputTagCode');
+    var valor = input.value.trim().toUpperCase();
+
+    if (!valor) {
+      input.classList.add('border-red-400');
+      input.focus();
+      return;
+    }
+
+    if (!valor.match(/^PET-[A-Z0-9]{6}$/)) {
+      if (valor.match(/^[A-Z0-9]{6}$/)) {
+        valor = 'PET-' + valor;
+      } else {
+        alert('Formato invalido. O codigo deve ser no formato PET-XXXXXX');
+        input.focus();
+        return;
+      }
+    }
+
+    input.classList.remove('border-red-400');
+    avancarParaEtapa2(valor);
+  };
+
+  /* Avança da etapa 1 para a etapa 2 */
+  function avancarParaEtapa2(tagCode) {
+    tagCodeObtido = tagCode;
+
+    document.getElementById('tagCodeExibido').textContent = tagCode;
+    document.getElementById('hiddenTagCode').value = tagCode;
+
+    document.getElementById('etapa1').classList.add('hidden');
+    document.getElementById('etapa2').classList.remove('hidden');
+
+    setTimeout(function() {
+      document.getElementById('codigo_ativacao').focus();
+    }, 200);
+  }
+
+  /* Volta para a etapa 1 */
+  window.voltarEtapa1 = function() {
+    document.getElementById('etapa2').classList.add('hidden');
+    document.getElementById('etapa1').classList.remove('hidden');
+    tagCodeObtido = '';
+  };
+
+  /* Enter no campo de tag code */
+  document.getElementById('inputTagCode').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') { e.preventDefault(); confirmarTagCode(); }
+  });
+
+  /* Formata automaticamente o código de ativação com hífen */
+  document.getElementById('codigo_ativacao').addEventListener('input', function(e) {
+    var val = this.value.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+    if (val.length > 4) {
+      val = val.substring(0, 4) + '-' + val.substring(4, 8);
+    }
+    this.value = val;
+  });
+
+  /* Formata automaticamente o tag code com PET- */
+  document.getElementById('inputTagCode').addEventListener('input', function() {
+    var val = this.value.replace(/[^A-Za-z0-9\-]/g, '').toUpperCase();
+    this.value = val;
+    this.classList.remove('border-red-400');
+  });
+})();
+</script>
+
+<%- include('../partials/footer') %>

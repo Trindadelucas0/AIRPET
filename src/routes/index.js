@@ -24,7 +24,7 @@ router.use(limiterGeral);
 
 router.get('/', async (req, res) => {
   if (req.session && req.session.usuario) {
-    return res.redirect('/explorar');
+    return res.redirect('/feed');
   }
 
   let stats = { pets: 0, usuarios: 0, petshops: 0 };
@@ -73,6 +73,7 @@ router.use('/diario', estaAutenticado, require('./diarioRoutes'));
 router.use('/agenda', estaAutenticado, agendaRoutes);
 router.use('/perdidos', estaAutenticado, petPerdidoRoutes);
 router.use('/explorar', estaAutenticado, explorarRoutes);
+router.get('/feed', estaAutenticado, require('../controllers/explorarController').feedSeguidos);
 
 // Perfil do usuario
 router.get('/perfil', estaAutenticado, require('../controllers/perfilController').mostrarPerfil);

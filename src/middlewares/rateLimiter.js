@@ -40,6 +40,7 @@ const limiterAuth = rateLimit({
   ),
   standardHeaders: true,
   legacyHeaders: false,
+  skip: (req) => process.env.NODE_ENV === 'development',
 });
 
 const limiterAtivacao = rateLimit({
@@ -51,6 +52,7 @@ const limiterAtivacao = rateLimit({
   ),
   standardHeaders: true,
   legacyHeaders: false,
+  skip: (req) => process.env.NODE_ENV === 'development',
 });
 
 module.exports = {

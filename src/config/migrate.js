@@ -8,6 +8,7 @@
  */
 
 const { pool } = require('./database');
+const logger = require('../utils/logger');
 
 const migrations = [
   // 1. Extensao PostGIS para queries geograficas
@@ -766,6 +767,22 @@ const migrations = [
     hora TIME DEFAULT CURRENT_TIME,
     data_criacao TIMESTAMP DEFAULT NOW()
   );`,
+
+  // 29. Notificacoes sociais — remetente e referencia a publicacao
+  `DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='notificacoes' AND column_name='remetente_id') THEN
+      ALTER TABLE notificacoes ADD COLUMN remetente_id INTEGER REFERENCES usuarios(id) ON DELETE SET NULL;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='notificacoes' AND column_name='publicacao_id') THEN
+      ALTER TABLE notificacoes ADD COLUMN publicacao_id INTEGER REFERENCES publicacoes(id) ON DELETE CASCADE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='notificacoes' AND column_name='data_criacao') THEN
+      ALTER TABLE notificacoes ADD COLUMN data_criacao TIMESTAMP DEFAULT NOW();
+    END IF;
+  END $$;`,
+
+  `CREATE INDEX IF NOT EXISTS idx_notificacoes_usuario ON notificacoes (usuario_id, data_criacao DESC);`,
+  `CREATE INDEX IF NOT EXISTS idx_notificacoes_remetente ON notificacoes (remetente_id);`,
 ];
 
 /**
@@ -773,17 +790,28 @@ const migrations = [
  * Cada statement roda dentro do pool — se uma falhar, as outras continuam.
  */
 async function runMigrations() {
-  console.log('[MIGRATE] Iniciando verificacao de tabelas...');
+  const total = migrations.length;
+  let erros = 0;
 
-  for (let i = 0; i < migrations.length; i++) {
+  logger.info('MIGRATE', `Verificando ${total} migrations...`);
+
+  for (let i = 0; i < total; i++) {
     try {
       await pool.query(migrations[i]);
     } catch (err) {
-      console.error(`[MIGRATE] Erro na migration ${i + 1}:`, err.message);
+      erros++;
+      logger.error('MIGRATE', `Migration ${i + 1}/${total} falhou`, err);
     }
   }
 
-  console.log('[MIGRATE] Todas as tabelas verificadas/criadas com sucesso.');
+  const ok = total - erros;
+  if (erros > 0) {
+    logger.warn('MIGRATE', `Concluido: ${ok}/${total} OK, ${erros} erro(s)`);
+  } else {
+    logger.info('MIGRATE', `Todas as ${total} migrations executadas com sucesso`);
+  }
+
+  return { total, ok, erros };
 }
 
 module.exports = { runMigrations };

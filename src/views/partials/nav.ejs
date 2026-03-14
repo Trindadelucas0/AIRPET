@@ -7,7 +7,7 @@
   <div class="max-w-5xl mx-auto px-4 sm:px-6">
     <div class="flex items-center justify-between h-14">
 
-      <a href="<%= isLogado ? '/explorar' : '/' %>" class="flex items-center gap-2.5 group">
+      <a href="<%= isLogado ? '/feed' : '/' %>" class="flex items-center gap-2.5 group">
         <span class="bg-gradient-to-br from-primary-500 to-primary-600 text-white w-8 h-8 rounded-xl flex items-center justify-center shadow-lg shadow-primary-500/20 group-hover:scale-110 transition-all duration-300">
           <i class="fa-solid fa-paw text-sm"></i>
         </span>
@@ -17,19 +17,22 @@
       <!-- Desktop -->
       <div class="hidden md:flex items-center gap-1">
         <% if (isLogado) { %>
-          <a href="/explorar" class="relative px-3.5 py-2 rounded-xl text-sm font-medium transition-all duration-200 hover:bg-primary-50 hover:text-primary-600 text-gray-500">
-            <i class="fa-solid fa-compass mr-1.5"></i>Feed
+          <a href="/feed" class="relative px-3.5 py-2 rounded-xl text-sm font-medium transition-all duration-200 <%= currentPath === '/feed' ? 'bg-primary-50 text-primary-600' : 'text-gray-500 hover:bg-primary-50 hover:text-primary-600' %>">
+            <i class="fa-solid fa-house mr-1.5"></i>Feed
           </a>
-          <a href="/explorar/busca" class="px-3.5 py-2 rounded-xl text-sm font-medium transition-all duration-200 hover:bg-primary-50 hover:text-primary-600 text-gray-500">
+          <a href="/explorar" class="relative px-3.5 py-2 rounded-xl text-sm font-medium transition-all duration-200 <%= currentPath === '/explorar' ? 'bg-primary-50 text-primary-600' : 'text-gray-500 hover:bg-primary-50 hover:text-primary-600' %>">
+            <i class="fa-solid fa-compass mr-1.5"></i>Explorar
+          </a>
+          <a href="/explorar/busca" class="px-3.5 py-2 rounded-xl text-sm font-medium transition-all duration-200 <%= currentPath.startsWith('/explorar/busca') ? 'bg-primary-50 text-primary-600' : 'text-gray-500 hover:bg-primary-50 hover:text-primary-600' %>">
             <i class="fa-solid fa-magnifying-glass mr-1.5"></i>Buscar
           </a>
-          <a href="/pets" class="px-3.5 py-2 rounded-xl text-sm font-medium transition-all duration-200 hover:bg-primary-50 hover:text-primary-600 text-gray-500">
+          <a href="/pets" class="px-3.5 py-2 rounded-xl text-sm font-medium transition-all duration-200 <%= currentPath.startsWith('/pets') ? 'bg-primary-50 text-primary-600' : 'text-gray-500 hover:bg-primary-50 hover:text-primary-600' %>">
             <i class="fa-solid fa-paw mr-1.5"></i>Meus Pets
           </a>
-          <a href="/mapa" class="px-3.5 py-2 rounded-xl text-sm font-medium transition-all duration-200 hover:bg-primary-50 hover:text-primary-600 text-gray-500">
+          <a href="/mapa" class="px-3.5 py-2 rounded-xl text-sm font-medium transition-all duration-200 <%= currentPath.startsWith('/mapa') ? 'bg-primary-50 text-primary-600' : 'text-gray-500 hover:bg-primary-50 hover:text-primary-600' %>">
             <i class="fa-solid fa-map-location-dot mr-1.5"></i>Mapa
           </a>
-          <a href="/notificacoes" class="relative px-3.5 py-2 rounded-xl text-sm font-medium transition-all duration-200 hover:bg-primary-50 hover:text-primary-600 text-gray-500">
+          <a href="/notificacoes" class="relative px-3.5 py-2 rounded-xl text-sm font-medium transition-all duration-200 <%= currentPath.startsWith('/notificacoes') ? 'bg-primary-50 text-primary-600' : 'text-gray-500 hover:bg-primary-50 hover:text-primary-600' %>">
             <i class="fa-solid fa-bell mr-1.5"></i>
             <span data-notif-badge class="absolute -top-0.5 left-[22px] min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center animate-pulse <%= notifCount > 0 ? '' : 'hidden' %>">
               <%= notifCount > 9 ? '9+' : notifCount %>
@@ -109,18 +112,18 @@
 <% if (isLogado) { %>
 <nav id="bottomNav" class="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-xl border-t border-gray-200/60 safe-bottom">
   <div class="flex items-center justify-around h-16 px-2 max-w-lg mx-auto">
-    <a href="/explorar" class="bottom-tab flex flex-col items-center justify-center gap-0.5 w-14 py-1 rounded-2xl transition-all duration-200 text-gray-400 hover:text-primary-500">
+    <a href="/feed" class="bottom-tab flex flex-col items-center justify-center gap-0.5 w-14 py-1 rounded-2xl transition-all duration-200 <%= currentPath === '/feed' ? 'text-primary-500' : 'text-gray-400 hover:text-primary-500' %>">
       <i class="fa-solid fa-house text-lg"></i>
-      <span class="text-[10px] font-medium">Início</span>
+      <span class="text-[10px] font-medium">Feed</span>
     </a>
-    <a href="/pets" class="bottom-tab flex flex-col items-center justify-center gap-0.5 w-14 py-1 rounded-2xl transition-all duration-200 text-gray-400 hover:text-primary-500">
-      <i class="fa-solid fa-paw text-lg"></i>
-      <span class="text-[10px] font-medium">Pets</span>
+    <a href="/explorar" class="bottom-tab flex flex-col items-center justify-center gap-0.5 w-14 py-1 rounded-2xl transition-all duration-200 <%= currentPath === '/explorar' ? 'text-primary-500' : 'text-gray-400 hover:text-primary-500' %>">
+      <i class="fa-solid fa-compass text-lg"></i>
+      <span class="text-[10px] font-medium">Explorar</span>
     </a>
     <button type="button" id="fabNewPost" class="relative -mt-5 w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-primary-500/30 hover:shadow-xl hover:shadow-primary-500/40 hover:scale-105 active:scale-95 transition-all duration-300">
       <i class="fa-solid fa-plus text-lg"></i>
     </button>
-    <a href="/notificacoes" class="bottom-tab relative flex flex-col items-center justify-center gap-0.5 w-14 py-1 rounded-2xl transition-all duration-200 text-gray-400 hover:text-primary-500">
+    <a href="/notificacoes" class="bottom-tab relative flex flex-col items-center justify-center gap-0.5 w-14 py-1 rounded-2xl transition-all duration-200 <%= currentPath.startsWith('/notificacoes') ? 'text-primary-500' : 'text-gray-400 hover:text-primary-500' %>">
       <i class="fa-solid fa-bell text-lg"></i>
       <span data-notif-badge class="absolute top-0 right-2 min-w-[16px] h-[16px] px-0.5 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center <%= notifCount > 0 ? '' : 'hidden' %>">
         <%= notifCount > 9 ? '9+' : notifCount %>

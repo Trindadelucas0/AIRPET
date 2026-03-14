@@ -74,7 +74,7 @@ const NfcTag = {
     const resultado = await query(
       `SELECT t.*,
               p.nome AS pet_nome,
-              p.especie AS pet_especie,
+              p.tipo AS pet_tipo,
               p.raca AS pet_raca,
               p.foto AS pet_foto,
               u.nome AS dono_nome,
@@ -131,17 +131,25 @@ const NfcTag = {
    * @returns {Promise<Array>} Lista de tags
    */
   async listarTodas(filtroStatus) {
-    /* Monta a query dinamicamente conforme haja filtro ou não */
+    const baseQuery = `
+      SELECT t.*,
+             u.email AS usuario_email,
+             u.nome AS usuario_nome,
+             p.nome AS pet_nome
+      FROM nfc_tags t
+      LEFT JOIN usuarios u ON u.id = t.user_id
+      LEFT JOIN pets p ON p.id = t.pet_id`;
+
     if (filtroStatus) {
       const resultado = await query(
-        `SELECT * FROM nfc_tags WHERE status = $1 ORDER BY data_criacao DESC`,
+        `${baseQuery} WHERE t.status = $1 ORDER BY t.data_criacao DESC`,
         [filtroStatus]
       );
       return resultado.rows;
     }
 
     const resultado = await query(
-      `SELECT * FROM nfc_tags ORDER BY data_criacao DESC`
+      `${baseQuery} ORDER BY t.data_criacao DESC`
     );
     return resultado.rows;
   },

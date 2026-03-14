@@ -8,3 +8,4 @@ src/public/images/chat/*
 *.log
 .DS_Store
 Thumbs.db
+testes/

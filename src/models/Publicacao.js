@@ -64,7 +64,38 @@ const Publicacao = {
     const resultado = await query(
       `SELECT ${SELECT_COLS} ${curtiuCol(usuarioId)} ${repostouCol(usuarioId)} ${FROM_JOINS}
        WHERE p.usuario_id IN (SELECT seguido_id FROM seguidores WHERE seguidor_id = $1)
+          OR p.usuario_id = $1
+       ORDER BY p.fixada DESC, p.criado_em DESC
+       LIMIT $2 OFFSET $3`,
+      [usuarioId, limite, offset]
+    );
+    return resultado.rows;
+  },
+
+  async feedRegional(usuarioId, limite = 20, offset = 0) {
+    const resultado = await query(
+      `SELECT ${SELECT_COLS} ${curtiuCol(usuarioId)} ${repostouCol(usuarioId)} ${FROM_JOINS}
+       JOIN usuarios eu ON eu.id = $1
+       WHERE p.usuario_id != $1
+         AND u.ultima_localizacao IS NOT NULL
+         AND eu.ultima_localizacao IS NOT NULL
+         AND ST_DWithin(u.ultima_localizacao, eu.ultima_localizacao, 50000)
        ORDER BY p.criado_em DESC
+       LIMIT $2 OFFSET $3`,
+      [usuarioId, limite, offset]
+    );
+    return resultado.rows;
+  },
+
+  async feedRegionalCidade(usuarioId, limite = 20, offset = 0) {
+    const resultado = await query(
+      `SELECT ${SELECT_COLS} ${curtiuCol(usuarioId)} ${repostouCol(usuarioId)} ${FROM_JOINS}
+       WHERE p.usuario_id != $1
+         AND u.cidade IS NOT NULL
+         AND LOWER(u.cidade) = LOWER((SELECT cidade FROM usuarios WHERE id = $1))
+       ORDER BY
+         CASE WHEN LOWER(u.bairro) = LOWER((SELECT bairro FROM usuarios WHERE id = $1)) THEN 0 ELSE 1 END,
+         p.criado_em DESC
        LIMIT $2 OFFSET $3`,
       [usuarioId, limite, offset]
     );

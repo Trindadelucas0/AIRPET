@@ -1,61 +1,24 @@
-/**
- * Notificacao.js — Modelo de dados para a tabela "notificacoes"
- *
- * Este módulo gerencia as notificações enviadas aos usuários.
- * Notificações informam sobre eventos como: pet encontrado,
- * nova mensagem no chat, alerta de pet perdido na região, etc.
- *
- * Tabela: notificacoes
- * Campos principais: id, usuario_id, tipo, mensagem, link,
- *                    lida, data_criacao
- */
-
-const { query, getClient } = require('../config/database');
+const { query } = require('../config/database');
 
 const Notificacao = {
 
-  /**
-   * Cria uma notificação para um único usuário.
-   *
-   * @param {object} dados - Dados da notificação
-   * @param {string} dados.usuario_id - UUID do usuário destinatário
-   * @param {string} dados.tipo - Tipo da notificação (ex: 'alerta', 'chat', 'sistema')
-   * @param {string} dados.mensagem - Texto da notificação
-   * @param {string} dados.link - Link de ação (ex: '/pet-perdido/uuid')
-   * @returns {Promise<object>} O registro da notificação criada
-   */
   async criar(dados) {
-    const { usuario_id, tipo, mensagem, link } = dados;
+    const { usuario_id, tipo, mensagem, link, remetente_id, publicacao_id } = dados;
 
     const resultado = await query(
-      `INSERT INTO notificacoes (usuario_id, tipo, mensagem, link)
-       VALUES ($1, $2, $3, $4)
+      `INSERT INTO notificacoes (usuario_id, tipo, mensagem, link, remetente_id, publicacao_id, data_criacao)
+       VALUES ($1, $2, $3, $4, $5, $6, NOW())
        RETURNING *`,
-      [usuario_id, tipo, mensagem, link]
+      [usuario_id, tipo, mensagem, link, remetente_id || null, publicacao_id || null]
     );
 
     return resultado.rows[0];
   },
 
-  /**
-   * Cria a mesma notificação para múltiplos usuários de uma vez.
-   * Utiliza unnest do PostgreSQL para inserção em massa eficiente.
-   * Todos os usuários recebem a mesma mensagem, tipo e link.
-   *
-   * @param {Array<string>} usuarioIds - Lista de UUIDs dos destinatários
-   * @param {string} tipo - Tipo da notificação
-   * @param {string} mensagem - Texto da notificação
-   * @param {string} link - Link de ação
-   * @returns {Promise<Array>} Lista de notificações criadas
-   */
   async criarParaMultiplos(usuarioIds, tipo, mensagem, link) {
-    /*
-     * Usa unnest para transformar o array de UUIDs em múltiplas linhas,
-     * evitando N queries individuais (muito mais performático).
-     */
     const resultado = await query(
-      `INSERT INTO notificacoes (usuario_id, tipo, mensagem, link)
-       SELECT unnest($1::uuid[]), $2, $3, $4
+      `INSERT INTO notificacoes (usuario_id, tipo, mensagem, link, data_criacao)
+       SELECT unnest($1::integer[]), $2, $3, $4, NOW()
        RETURNING *`,
       [usuarioIds, tipo, mensagem, link]
     );
@@ -63,50 +26,66 @@ const Notificacao = {
     return resultado.rows;
   },
 
-  /**
-   * Busca todas as notificações de um usuário.
-   * Ordena da mais recente para a mais antiga.
-   *
-   * @param {string} usuarioId - UUID do usuário
-   * @returns {Promise<Array>} Notificações do usuário
-   */
-  async buscarPorUsuario(usuarioId) {
+  async buscarPorUsuario(usuarioId, limite = 80) {
     const resultado = await query(
-      `SELECT * FROM notificacoes
-       WHERE usuario_id = $1
-       ORDER BY data_criacao DESC`,
-      [usuarioId]
+      `SELECT n.*,
+              COALESCE(n.data_criacao, n.data) AS data_criacao,
+              r.nome AS remetente_nome,
+              r.cor_perfil AS remetente_cor,
+              r.foto_perfil AS remetente_foto
+       FROM notificacoes n
+       LEFT JOIN usuarios r ON r.id = n.remetente_id
+       WHERE n.usuario_id = $1
+       ORDER BY COALESCE(n.data_criacao, n.data) DESC
+       LIMIT $2`,
+      [usuarioId, limite]
     );
 
     return resultado.rows;
   },
 
-  /**
-   * Marca uma notificação como lida.
-   * Atualiza o campo 'lida' de false para true.
-   *
-   * @param {string} id - UUID da notificação
-   * @returns {Promise<object>} Notificação atualizada
-   */
-  async marcarComoLida(id) {
+  async buscarPorTipos(usuarioId, tipos, limite = 80) {
+    const resultado = await query(
+      `SELECT n.*,
+              COALESCE(n.data_criacao, n.data) AS data_criacao,
+              r.nome AS remetente_nome,
+              r.cor_perfil AS remetente_cor,
+              r.foto_perfil AS remetente_foto
+       FROM notificacoes n
+       LEFT JOIN usuarios r ON r.id = n.remetente_id
+       WHERE n.usuario_id = $1 AND n.tipo = ANY($2)
+       ORDER BY COALESCE(n.data_criacao, n.data) DESC
+       LIMIT $3`,
+      [usuarioId, tipos, limite]
+    );
+
+    return resultado.rows;
+  },
+
+  async marcarComoLida(id, usuarioId) {
     const resultado = await query(
       `UPDATE notificacoes
        SET lida = true
-       WHERE id = $1
+       WHERE id = $1 AND usuario_id = $2
        RETURNING *`,
-      [id]
+      [id, usuarioId]
     );
 
     return resultado.rows[0];
   },
 
-  /**
-   * Conta quantas notificações não lidas um usuário possui.
-   * Usado para exibir o badge/contador na interface.
-   *
-   * @param {string} usuarioId - UUID do usuário
-   * @returns {Promise<number>} Número de notificações não lidas
-   */
+  async marcarTodasComoLidas(usuarioId) {
+    const resultado = await query(
+      `UPDATE notificacoes
+       SET lida = true
+       WHERE usuario_id = $1 AND lida = false
+       RETURNING id`,
+      [usuarioId]
+    );
+
+    return resultado.rowCount;
+  },
+
   async contarNaoLidas(usuarioId) {
     const resultado = await query(
       `SELECT COUNT(*) AS total

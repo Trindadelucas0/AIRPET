@@ -402,6 +402,123 @@ const petController = {
       res.redirect(`/pets/${req.params.id}`);
     }
   },
+
+  /**
+   * Renderiza a pagina de vinculacao de tag NFC a um pet.
+   * Rota: GET /pets/:id/vincular-tag
+   */
+  async mostrarVincularTag(req, res) {
+    try {
+      const { id } = req.params;
+      const pet = await Pet.buscarPorId(id);
+
+      if (!pet) {
+        req.session.flash = { tipo: 'erro', mensagem: 'Pet não encontrado.' };
+        return res.redirect('/pets');
+      }
+
+      if (pet.usuario_id !== req.session.usuario.id) {
+        req.session.flash = { tipo: 'erro', mensagem: 'Você não tem permissão para vincular tags a este pet.' };
+        return res.redirect('/pets');
+      }
+
+      res.render('pets/vincular-tag', {
+        titulo: `Vincular Tag - ${pet.nome}`,
+        pet,
+      });
+    } catch (erro) {
+      logger.error('PET_CTRL', 'Erro ao exibir página de vinculação de tag', erro);
+      req.session.flash = { tipo: 'erro', mensagem: 'Erro ao carregar a página.' };
+      res.redirect(`/pets/${req.params.id}`);
+    }
+  },
+
+  /**
+   * Processa a vinculacao de tag NFC a um pet com validacao de codigo de ativacao.
+   * Rota: POST /pets/:id/vincular-tag
+   *
+   * Recebe tag_code e codigo_ativacao, valida ambos e vincula
+   * a tag diretamente ao pet (pula a etapa de escolha de pet).
+   */
+  async vincularTag(req, res) {
+    const MAX_TENTATIVAS = 5;
+    const BLOQUEIO_MINUTOS = 30;
+
+    try {
+      const { id } = req.params;
+      const { tag_code, codigo_ativacao } = req.body;
+      const usuarioId = req.session.usuario.id;
+
+      const pet = await Pet.buscarPorId(id);
+
+      if (!pet) {
+        req.session.flash = { tipo: 'erro', mensagem: 'Pet não encontrado.' };
+        return res.redirect('/pets');
+      }
+
+      if (pet.usuario_id !== usuarioId) {
+        req.session.flash = { tipo: 'erro', mensagem: 'Você não tem permissão para vincular tags a este pet.' };
+        return res.redirect('/pets');
+      }
+
+      if (!tag_code) {
+        req.session.flash = { tipo: 'erro', mensagem: 'Código da tag não informado.' };
+        return res.redirect(`/pets/${id}/vincular-tag`);
+      }
+
+      const tag = await NfcTag.buscarPorTagCode(tag_code.trim().toUpperCase());
+
+      if (!tag) {
+        req.session.flash = { tipo: 'erro', mensagem: 'Tag NFC não encontrada no sistema. Verifique o código.' };
+        return res.redirect(`/pets/${id}/vincular-tag`);
+      }
+
+      if (tag.status !== 'sent') {
+        const msgs = {
+          manufactured: 'Esta tag ainda não foi preparada para envio.',
+          reserved: 'Esta tag está reservada mas ainda não foi enviada.',
+          active: 'Esta tag já está ativa e vinculada a um pet.',
+          blocked: 'Esta tag está bloqueada.',
+        };
+        req.session.flash = { tipo: 'erro', mensagem: msgs[tag.status] || 'Esta tag não está disponível para ativação.' };
+        return res.redirect(`/pets/${id}/vincular-tag`);
+      }
+
+      if (tag.bloqueada_ate && new Date(tag.bloqueada_ate) > new Date()) {
+        const minRestantes = Math.ceil((new Date(tag.bloqueada_ate) - new Date()) / 60000);
+        req.session.flash = { tipo: 'erro', mensagem: `Muitas tentativas incorretas. Tente novamente em ${minRestantes} minuto(s).` };
+        return res.redirect(`/pets/${id}/vincular-tag`);
+      }
+
+      if (!codigo_ativacao || tag.activation_code !== codigo_ativacao.trim().toUpperCase()) {
+        const tagAtualizada = await NfcTag.incrementarTentativas(tag.id);
+        const tentativas = tagAtualizada.tentativas_ativacao || 0;
+        const restantes = MAX_TENTATIVAS - tentativas;
+
+        if (tentativas >= MAX_TENTATIVAS) {
+          await NfcTag.bloquearTemporariamente(tag.id, BLOQUEIO_MINUTOS);
+          logger.warn('PET_CTRL', `Tag ${tag_code} bloqueada por ${BLOQUEIO_MINUTOS}min após ${tentativas} tentativas`);
+          req.session.flash = { tipo: 'erro', mensagem: `Muitas tentativas incorretas. Tag bloqueada por ${BLOQUEIO_MINUTOS} minutos.` };
+        } else {
+          req.session.flash = { tipo: 'erro', mensagem: `Código de ativação inválido. Restam ${restantes} tentativa(s).` };
+        }
+        return res.redirect(`/pets/${id}/vincular-tag`);
+      }
+
+      await NfcTag.resetarTentativas(tag.id);
+      await NfcTag.reservar(tag.id, usuarioId);
+      await NfcTag.ativar(tag.id, id);
+
+      logger.info('PET_CTRL', `Tag ${tag_code} vinculada ao pet ${pet.nome} (ID: ${id}) pelo usuário ${usuarioId}`);
+
+      req.session.flash = { tipo: 'sucesso', mensagem: `Tag vinculada a ${pet.nome} com sucesso! A tag NFC agora identifica seu pet.` };
+      return res.redirect(`/pets/${id}`);
+    } catch (erro) {
+      logger.error('PET_CTRL', 'Erro ao vincular tag ao pet', erro);
+      req.session.flash = { tipo: 'erro', mensagem: 'Erro ao vincular a tag. Tente novamente.' };
+      return res.redirect(`/pets/${req.params.id}/vincular-tag`);
+    }
+  },
 };
 
 const PESO_IDEAL = {

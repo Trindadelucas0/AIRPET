@@ -91,7 +91,7 @@ async function ativar(req, res) {
 
   try {
     const { tag_code } = req.params;
-    const { activation_code } = req.body;
+    const activation_code = req.body.activation_code || req.body.codigo_ativacao;
     const usuarioId = req.session.usuario.id;
 
     const tag = await NfcTag.buscarPorTagCode(tag_code);
@@ -274,12 +274,14 @@ async function gerarLote(req, res) {
     });
 
     /* 2. Gera os dados de cada tag do lote */
+    const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
     const tagsParaCriar = [];
     for (let i = 0; i < qtd; i++) {
+      const tagCode = gerarTagCode();
       tagsParaCriar.push({
-        tag_code: gerarTagCode(),
+        tag_code: tagCode,
         activation_code: gerarActivationCode(),
-        qr_code: gerarTagCode(),
+        qr_code: `${baseUrl}/tag/${tagCode}`,
       });
     }
 
@@ -288,8 +290,8 @@ async function gerarLote(req, res) {
 
     logger.info('TagController', `Lote gerado: ${lote.codigo_lote} com ${qtd} tags (admin: ${adminId})`);
 
-    req.session.flash = { tipo: 'sucesso', mensagem: `Lote "${lote.codigo_lote}" gerado com sucesso! ${qtd} tags criadas.` };
-    return res.redirect('/tags/admin/lista');
+    req.session.flash = { tipo: 'sucesso', mensagem: `Lote "${lote.codigo_lote}" gerado com sucesso! ${qtd} tags criadas. Copie os códigos de ativação abaixo.` };
+    return res.redirect(`/tags/admin/lote/${lote.id}`);
   } catch (erro) {
     logger.error('TagController', 'Erro ao gerar lote de tags', erro);
     req.session.flash = { tipo: 'erro', mensagem: 'Erro ao gerar o lote de tags. Tente novamente.' };
@@ -360,6 +362,44 @@ async function listarLotes(req, res) {
     logger.error('TagController', 'Erro ao listar lotes', erro);
     req.session.flash = { tipo: 'erro', mensagem: 'Erro ao carregar a lista de lotes.' };
     return res.redirect('/tags/admin/lista');
+  }
+}
+
+/**
+ * mostrarLote — Exibe os detalhes de um lote com todos os códigos de ativação
+ *
+ * Rota: GET /tags/admin/lote/:id
+ * View: admin/lote-detalhes
+ *
+ * Exibe todas as tags do lote com os códigos de ativação COMPLETOS
+ * para que o funcionário possa copiar/imprimir e entregar ao cliente.
+ *
+ * @param {object} req - Requisição Express com params.id (id do lote)
+ * @param {object} res - Resposta Express
+ */
+async function mostrarLote(req, res) {
+  try {
+    const { id } = req.params;
+
+    const lote = await TagBatch.buscarPorId(id);
+
+    if (!lote) {
+      req.session.flash = { tipo: 'erro', mensagem: 'Lote não encontrado.' };
+      return res.redirect('/tags/admin/lotes');
+    }
+
+    const tags = await NfcTag.listarPorBatch(id);
+
+    return res.render('admin/lote-detalhes', {
+      titulo: `Lote ${lote.codigo_lote} - AIRPET`,
+      lote,
+      tags,
+      adminPath: process.env.ADMIN_PATH || '/admin',
+    });
+  } catch (erro) {
+    logger.error('TagController', 'Erro ao exibir detalhes do lote', erro);
+    req.session.flash = { tipo: 'erro', mensagem: 'Erro ao carregar os detalhes do lote.' };
+    return res.redirect('/tags/admin/lotes');
   }
 }
 
@@ -492,6 +532,7 @@ module.exports = {
   gerarLote,
   listarTags,
   listarLotes,
+  mostrarLote,
   reservar,
   enviar,
   bloquear,

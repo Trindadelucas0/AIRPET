@@ -30,6 +30,10 @@ router.get('/cadastro', petController.mostrarCadastro);
 // Criar pet com upload de foto e validação
 router.post('/cadastro', upload.single('foto'), validarPet, validarResultado, petController.criar);
 
+// Vincular tag NFC ao pet
+router.get('/:id/vincular-tag', petController.mostrarVincularTag);
+router.post('/:id/vincular-tag', petController.vincularTag);
+
 // Perfil do pet
 router.get('/:id', petController.mostrarPerfil);
 

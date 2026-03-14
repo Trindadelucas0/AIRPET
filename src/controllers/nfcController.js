@@ -103,6 +103,7 @@ const nfcController = {
           return res.render('nfc/nao-ativada', {
             titulo: 'Tag não ativada',
             tag_code,
+            tag: resultado.tag || { status: 'stock' },
           });
 
         /*

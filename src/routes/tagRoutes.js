@@ -9,6 +9,7 @@ const { limiterAtivacao } = require('../middlewares/rateLimiter');
 // --- Rotas administrativas (devem vir antes das rotas com parâmetro dinâmico) ---
 router.get('/admin/lista', estaAutenticado, apenasAdmin, tagController.listarTags);
 router.get('/admin/lotes', estaAutenticado, apenasAdmin, tagController.listarLotes);
+router.get('/admin/lote/:id', estaAutenticado, apenasAdmin, tagController.mostrarLote);
 router.post('/admin/gerar', estaAutenticado, apenasAdmin, tagController.gerarLote);
 router.post('/admin/:id/reservar', estaAutenticado, apenasAdmin, tagController.reservar);
 router.post('/admin/:id/enviar', estaAutenticado, apenasAdmin, tagController.enviar);

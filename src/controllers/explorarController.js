@@ -25,7 +25,7 @@ async function notificarMencoes(texto, autorId, publicacaoId) {
   for (const u of usuarios) {
     if (u.id === autorId) continue;
     try {
-      await svc.criar(u.id, 'mencao', `${autor.nome} mencionou você em um comentário.`, `/explorar#post-${publicacaoId}`);
+      await svc.criar(u.id, 'mencao', `${autor.nome} mencionou você em um comentário.`, `/explorar#post-${publicacaoId}`, { remetente_id: autorId, publicacao_id: publicacaoId });
     } catch (_) {}
   }
 }
@@ -45,18 +45,63 @@ async function autoDeleteSeNecessario(usuarioId) {
 
 const explorarController = {
 
-  async feed(req, res) {
+  async feedSeguidos(req, res) {
     try {
       const uid = req.session.usuario.id;
-      const tab = req.query.tab || 'para-voce';
       const page = parseInt(req.query.page) || 1;
       const limite = 20;
       const offset = (page - 1) * limite;
 
-      let posts;
-      if (tab === 'seguindo') {
-        posts = await Publicacao.feedSeguindo(uid, limite, offset);
-      } else {
+      const posts = await Publicacao.feedSeguindo(uid, limite, offset);
+
+      const [pets, totalPosts, totalFixadas, recomendacoes, petsRecomendados] = await Promise.all([
+        Pet.buscarPorUsuario(uid),
+        Publicacao.contarAtivas(uid),
+        Publicacao.contarFixadas(uid),
+        page === 1 ? recomendacaoService.recomendarPessoas(uid, 6).catch(() => []) : [],
+        page === 1 ? recomendacaoService.petsRecomendados(uid, 8).catch(() => []) : [],
+      ]);
+
+      if (req.headers.accept && req.headers.accept.includes('application/json')) {
+        return res.json({ sucesso: true, posts, totalPosts, totalFixadas });
+      }
+
+      res.render('feed', {
+        titulo: 'Feed',
+        posts,
+        page,
+        pets,
+        totalPosts,
+        totalFixadas,
+        temMais: posts.length === limite,
+        recomendacoes,
+        petsRecomendados,
+      });
+    } catch (err) {
+      logger.error('EXPLORAR', 'Erro no feed de seguidos', err);
+      req.session.flash = { tipo: 'erro', mensagem: 'Erro ao carregar o feed.' };
+      res.redirect('/pets');
+    }
+  },
+
+  async feed(req, res) {
+    try {
+      const uid = req.session.usuario.id;
+      const page = parseInt(req.query.page) || 1;
+      const limite = 20;
+      const offset = (page - 1) * limite;
+
+      let posts = await Publicacao.feedRegional(uid, limite, offset);
+
+      if (posts.length < 5) {
+        const cidadePosts = await Publicacao.feedRegionalCidade(uid, limite - posts.length, 0);
+        const idsJaTem = new Set(posts.map(p => p.id));
+        for (const p of cidadePosts) {
+          if (!idsJaTem.has(p.id)) posts.push(p);
+        }
+      }
+
+      if (posts.length === 0) {
         posts = await Publicacao.feedGeral(limite, offset, uid);
       }
 
@@ -75,7 +120,6 @@ const explorarController = {
       res.render('explorar', {
         titulo: 'Explorar',
         posts,
-        tab,
         page,
         pets,
         totalPosts,
@@ -85,8 +129,8 @@ const explorarController = {
         petsRecomendados,
       });
     } catch (err) {
-      logger.error('EXPLORAR', 'Erro no feed', err);
-      req.session.flash = { tipo: 'erro', mensagem: 'Erro ao carregar o feed.' };
+      logger.error('EXPLORAR', 'Erro no feed regional', err);
+      req.session.flash = { tipo: 'erro', mensagem: 'Erro ao carregar o explorar.' };
       res.redirect('/pets');
     }
   },
@@ -146,6 +190,12 @@ const explorarController = {
       const completo = await Publicacao.buscarPorId(post.id, uid);
       const totalReposts = await Repost.contar(id);
 
+      const svc = getNotificacaoService();
+      if (svc && original.usuario_id !== uid) {
+        const autor = await Usuario.buscarPorId(uid);
+        svc.criar(original.usuario_id, 'repost', `${autor.nome} repostou sua publicação.`, `/explorar#post-${id}`, { remetente_id: uid, publicacao_id: parseInt(id) }).catch(() => {});
+      }
+
       res.json({ sucesso: true, post: completo, totalReposts, removido: removido ? removido.id : null });
     } catch (err) {
       logger.error('EXPLORAR', 'Erro ao repostar', err);
@@ -159,6 +209,16 @@ const explorarController = {
       const { id } = req.params;
       await Curtida.curtir(uid, id);
       const total = await Curtida.contar(id);
+
+      const svc = getNotificacaoService();
+      if (svc) {
+        const post = await Publicacao.buscarPorId(id);
+        if (post && post.usuario_id !== uid) {
+          const autor = await Usuario.buscarPorId(uid);
+          svc.criar(post.usuario_id, 'curtida', `${autor.nome} curtiu sua publicação.`, `/explorar#post-${id}`, { remetente_id: uid, publicacao_id: parseInt(id) }).catch(() => {});
+        }
+      }
+
       res.json({ sucesso: true, curtiu: true, total });
     } catch (err) {
       logger.error('EXPLORAR', 'Erro ao curtir', err);
@@ -203,6 +263,15 @@ const explorarController = {
       await Comentario.criar({ usuario_id: uid, publicacao_id: id, texto: texto.trim() });
 
       notificarMencoes(texto.trim(), uid, id).catch(() => {});
+
+      const svc = getNotificacaoService();
+      if (svc) {
+        const post = await Publicacao.buscarPorId(id);
+        if (post && post.usuario_id !== uid) {
+          const autor = await Usuario.buscarPorId(uid);
+          svc.criar(post.usuario_id, 'comentario', `${autor.nome} comentou na sua publicação.`, `/explorar#post-${id}`, { remetente_id: uid, publicacao_id: parseInt(id) }).catch(() => {});
+        }
+      }
 
       const lista = await Comentario.buscarPorPublicacao(id);
       res.json({ sucesso: true, comentarios: lista, total: lista.length });
@@ -301,6 +370,13 @@ const explorarController = {
       }
       await Seguidor.seguir(uid, id);
       const total = await Seguidor.contarSeguidores(id);
+
+      const svc = getNotificacaoService();
+      if (svc) {
+        const autor = await Usuario.buscarPorId(uid);
+        svc.criar(parseInt(id), 'seguidor', `${autor.nome} começou a seguir você.`, `/explorar/perfil/${uid}`, { remetente_id: uid }).catch(() => {});
+      }
+
       res.json({ sucesso: true, seguindo: true, totalSeguidores: total });
     } catch (err) {
       logger.error('EXPLORAR', 'Erro ao seguir', err);

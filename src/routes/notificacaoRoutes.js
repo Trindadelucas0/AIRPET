@@ -7,6 +7,8 @@ router.get('/', notificacaoController.listar);
 
 router.get('/api/count', notificacaoController.contarNaoLidas);
 
+router.post('/marcar-todas-lidas', notificacaoController.marcarTodasLidas);
+
 router.post('/:id/lida', notificacaoController.marcarLida);
 
 router.post('/push/subscribe', notificacaoController.subscribe);

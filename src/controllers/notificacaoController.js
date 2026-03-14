@@ -1,76 +1,42 @@
-/**
- * notificacaoController.js — Controller de Notificações do AIRPET
- *
- * Gerencia as notificações enviadas aos usuários do sistema.
- * As notificações informam sobre eventos como:
- *   - Alerta de pet perdido na região (baseado em proximidade)
- *   - Nova mensagem aprovada no chat
- *   - Vacina do pet próxima de vencer
- *   - Alteração de status de alerta (aprovado, resolvido)
- *   - Mensagens do sistema (atualizações, avisos)
- *
- * O sistema suporta dois modos de exibição:
- *   1. View renderizada (GET /notificacoes) — página completa de notificações
- *   2. JSON (GET /api/notificacoes) — para atualizações em tempo real via fetch
- *
- * Rotas:
- *   GET  /notificacoes           → listar (renderiza view ou retorna JSON)
- *   PUT  /api/notificacoes/:id   → marcarLida (API, retorna JSON)
- */
-
 const Notificacao = require('../models/Notificacao');
 const PushSubscription = require('../models/PushSubscription');
 const logger = require('../utils/logger');
 
-/**
- * listar — Lista as notificações do usuário logado
- *
- * Rota: GET /notificacoes
- * View: notificacoes/lista (ou JSON se Accept: application/json)
- *
- * Esta rota é "bidirecional":
- *   - Se a requisição aceita HTML, renderiza a view com todas as notificações
- *   - Se a requisição aceita JSON (fetch do frontend), retorna dados como JSON
- *
- * Isso permite que a mesma rota sirva tanto a página completa quanto
- * atualizações parciais via AJAX/fetch.
- *
- * @param {object} req - Requisição Express
- * @param {object} res - Resposta Express
- */
+const TIPOS_MENCOES = ['mencao'];
+const TIPOS_TODAS = null;
+
 async function listar(req, res) {
   try {
     const usuarioId = req.session.usuario.id;
+    const tab = req.query.tab || 'todas';
 
-    /* Busca todas as notificações do usuário (lidas e não lidas) */
-    const notificacoes = await Notificacao.buscarPorUsuario(usuarioId);
+    let notificacoes;
+    if (tab === 'mencoes') {
+      notificacoes = await Notificacao.buscarPorTipos(usuarioId, TIPOS_MENCOES);
+    } else {
+      notificacoes = await Notificacao.buscarPorUsuario(usuarioId);
+    }
 
-    /* Conta quantas notificações não lidas existem (para o badge) */
     const naoLidas = await Notificacao.contarNaoLidas(usuarioId);
 
-    /*
-     * Verifica se a requisição espera JSON (chamada AJAX do frontend)
-     * ou HTML (navegação normal). O header 'Accept' indica a preferência.
-     */
     if (req.accepts('json') && !req.accepts('html')) {
-      /* Retorna JSON para consumo via fetch/AJAX */
       return res.status(200).json({
         sucesso: true,
         dados: notificacoes,
         naoLidas,
+        tab,
       });
     }
 
-    /* Renderiza a view completa de notificações */
     return res.render('notificacoes/lista', {
       titulo: 'Notificações - AIRPET',
       notificacoes,
       naoLidas,
+      tab,
     });
   } catch (erro) {
     logger.error('NotificacaoController', 'Erro ao listar notificações', erro);
 
-    /* Resposta de erro adequada ao tipo de requisição */
     if (req.accepts('json') && !req.accepts('html')) {
       return res.status(500).json({
         sucesso: false,
@@ -83,31 +49,13 @@ async function listar(req, res) {
   }
 }
 
-/**
- * marcarLida — Marca uma notificação como lida
- *
- * Rota: PUT /api/notificacoes/:id
- * Tipo: API (retorna JSON)
- *
- * Quando o usuário clica em uma notificação ou a visualiza,
- * o frontend chama esta rota para atualizar o status de leitura.
- *
- * Apenas o dono da notificação pode marcá-la como lida.
- * Isso é verificado comparando o usuario_id da notificação
- * com o ID do usuário na sessão (mas confiamos no middleware
- * de autenticação para garantir que o usuário está logado).
- *
- * @param {object} req - Requisição Express com params.id
- * @param {object} res - Resposta Express (JSON)
- */
 async function marcarLida(req, res) {
   try {
     const { id } = req.params;
+    const usuarioId = req.session.usuario.id;
 
-    /* Marca a notificação como lida no banco de dados */
-    const notificacao = await Notificacao.marcarComoLida(id);
+    const notificacao = await Notificacao.marcarComoLida(id, usuarioId);
 
-    /* Se não encontrou a notificação, retorna 404 */
     if (!notificacao) {
       return res.status(404).json({
         sucesso: false,
@@ -115,11 +63,9 @@ async function marcarLida(req, res) {
       });
     }
 
-    /* Retorna confirmação de sucesso */
     return res.status(200).json({
       sucesso: true,
       mensagem: 'Notificação marcada como lida.',
-      dados: notificacao,
     });
   } catch (erro) {
     logger.error('NotificacaoController', 'Erro ao marcar notificação como lida', erro);
@@ -127,6 +73,26 @@ async function marcarLida(req, res) {
     return res.status(500).json({
       sucesso: false,
       mensagem: 'Erro ao atualizar a notificação.',
+    });
+  }
+}
+
+async function marcarTodasLidas(req, res) {
+  try {
+    const usuarioId = req.session.usuario.id;
+    const total = await Notificacao.marcarTodasComoLidas(usuarioId);
+
+    return res.json({
+      sucesso: true,
+      mensagem: `${total} notificação(ões) marcada(s) como lida(s).`,
+      total,
+    });
+  } catch (erro) {
+    logger.error('NotificacaoController', 'Erro ao marcar todas como lidas', erro);
+
+    return res.status(500).json({
+      sucesso: false,
+      mensagem: 'Erro ao marcar notificações como lidas.',
     });
   }
 }
@@ -182,6 +148,7 @@ async function unsubscribe(req, res) {
 module.exports = {
   listar,
   marcarLida,
+  marcarTodasLidas,
   contarNaoLidas,
   subscribe,
   unsubscribe,

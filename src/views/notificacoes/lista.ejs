@@ -5,6 +5,22 @@
     notificacoes.forEach(function(n) { if (!n.lida) naoLidas++; });
   }
 
+  var currentTab = typeof tab !== 'undefined' ? tab : 'todas';
+
+  var tipoConfig = {
+    curtida:    { icon: 'fa-heart',              iconColor: 'text-red-500',     bg: 'bg-red-50' },
+    comentario: { icon: 'fa-comment',            iconColor: 'text-blue-500',    bg: 'bg-blue-50' },
+    repost:     { icon: 'fa-retweet',            iconColor: 'text-emerald-500', bg: 'bg-emerald-50' },
+    seguidor:   { icon: 'fa-user-plus',          iconColor: 'text-primary-500', bg: 'bg-primary-50' },
+    mencao:     { icon: 'fa-at',                 iconColor: 'text-indigo-500',  bg: 'bg-indigo-50' },
+    alerta:     { icon: 'fa-triangle-exclamation',iconColor: 'text-red-500',    bg: 'bg-red-50' },
+    scan:       { icon: 'fa-nfc',                iconColor: 'text-blue-500',    bg: 'bg-blue-50' },
+    sistema:    { icon: 'fa-bell',               iconColor: 'text-gray-500',    bg: 'bg-gray-50' },
+    chat:       { icon: 'fa-comment-dots',       iconColor: 'text-green-500',   bg: 'bg-green-50' },
+    encontrado: { icon: 'fa-location-dot',       iconColor: 'text-emerald-500', bg: 'bg-emerald-50' }
+  };
+  var tipoDefault = { icon: 'fa-bell', iconColor: 'text-gray-400', bg: 'bg-gray-50' };
+
   function agruparPorData(lista) {
     var hoje = new Date();
     hoje.setHours(0, 0, 0, 0);
@@ -13,7 +29,7 @@
 
     var grupos = { hoje: [], ontem: [], semana: [], anteriores: [] };
     lista.forEach(function(n) {
-      var d = new Date(n.data || n.data_criacao);
+      var d = new Date(n.data_criacao || n.data);
       d.setHours(0, 0, 0, 0);
       if (d.getTime() >= hoje.getTime()) grupos.hoje.push(n);
       else if (d.getTime() >= ontem.getTime()) grupos.ontem.push(n);
@@ -33,16 +49,6 @@
     { chave: 'semana', label: 'Esta semana', items: grupos.semana },
     { chave: 'anteriores', label: 'Anteriores', items: grupos.anteriores }
   ];
-
-  var tipoConfig = {
-    alerta:     { bg: 'bg-red-100',     text: 'text-red-500',     icon: 'fa-triangle-exclamation' },
-    scan:       { bg: 'bg-blue-100',    text: 'text-blue-500',    icon: 'fa-nfc' },
-    sistema:    { bg: 'bg-gray-100',    text: 'text-gray-500',    icon: 'fa-info-circle' },
-    chat:       { bg: 'bg-green-100',   text: 'text-green-500',   icon: 'fa-comment' },
-    encontrado: { bg: 'bg-emerald-100', text: 'text-emerald-500', icon: 'fa-location-dot' },
-    mencao:     { bg: 'bg-indigo-100',  text: 'text-indigo-500',  icon: 'fa-at' }
-  };
-  var tipoDefault = { bg: 'bg-gray-100', text: 'text-gray-400', icon: 'fa-bell' };
 %>
 <% locals.extraHead = `
 <style>
@@ -69,6 +75,10 @@
   .dot-unread {
     animation: pulse-dot 2s ease-in-out infinite;
   }
+  .tab-notif { position:relative; flex:1; text-align:center; padding:12px 0; font-size:14px; font-weight:600; color:#9ca3af; transition:color .2s; cursor:pointer; }
+  .tab-notif.active { color:#111827; }
+  .tab-notif:hover { color:#6b7280; }
+  .tab-notif-indicator { position:absolute; bottom:0; height:3px; background:linear-gradient(90deg,#ec5a1c,#f17a42); border-radius:3px 3px 0 0; transition:left .3s ease,width .3s ease; }
 </style>
 ` %>
 <%- include('../partials/header') %>
@@ -77,7 +87,8 @@
 <main class="flex-1 pb-24 md:pb-0">
   <div class="max-w-2xl mx-auto px-4 sm:px-6 py-6">
 
-    <div class="flex items-center justify-between mb-8 animate-slideUp">
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-2 animate-slideUp">
       <div class="flex items-center gap-3">
         <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center shadow-lg shadow-primary-500/20">
           <i class="fa-solid fa-bell text-white text-sm"></i>
@@ -89,11 +100,35 @@
           <% } %>
         </div>
       </div>
-      <% if (naoLidas > 0) { %>
-        <span class="inline-flex items-center justify-center min-w-[28px] h-7 px-2 rounded-full bg-red-500 text-white text-xs font-bold shadow-sm shadow-red-500/20">
-          <%= naoLidas %>
-        </span>
-      <% } %>
+      <div class="flex items-center gap-2">
+        <% if (naoLidas > 0) { %>
+          <button type="button" id="btnMarcarTodasLidas"
+                  class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-primary-500 hover:bg-primary-50 transition-colors">
+            <i class="fa-solid fa-check-double text-[10px]"></i> Marcar todas
+          </button>
+          <span class="inline-flex items-center justify-center min-w-[28px] h-7 px-2 rounded-full bg-red-500 text-white text-xs font-bold shadow-sm shadow-red-500/20">
+            <%= naoLidas %>
+          </span>
+        <% } %>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="sticky top-14 z-40 bg-white/90 backdrop-blur-xl border-b border-gray-100 rounded-t-xl mb-4">
+      <div class="flex relative">
+        <a href="/notificacoes?tab=todas"
+           class="tab-notif <%= currentTab === 'todas' ? 'active' : '' %>"
+           data-tab="todas">
+          Todas
+        </a>
+        <a href="/notificacoes?tab=mencoes"
+           class="tab-notif <%= currentTab === 'mencoes' ? 'active' : '' %>"
+           data-tab="mencoes">
+          Menções
+        </a>
+        <div class="tab-notif-indicator"
+             style="left:<%= currentTab === 'mencoes' ? '50%' : '0' %>;width:50%"></div>
+      </div>
     </div>
 
     <% if (typeof notificacoes !== 'undefined' && notificacoes.length > 0) { %>
@@ -104,37 +139,57 @@
 
             <div>
               <h2 class="text-xs font-bold uppercase tracking-widest text-gray-400 mb-3 px-1"><%= secao.label %></h2>
-              <div class="space-y-2">
+              <div class="space-y-1.5">
                 <% secao.items.forEach(function(n) { %>
                   <% var cfg = tipoConfig[n.tipo] || tipoDefault; %>
                   <div class="notif-card relative group" data-notif-id="<%= n.id %>">
                     <a href="<%= n.link || '#' %>"
-                       class="flex items-center gap-3.5 p-4 rounded-2xl transition-all duration-200
-                         <%= !n.lida ? 'bg-primary-50/60 hover:bg-primary-50' : 'bg-white hover:bg-gray-50' %>
-                         shadow-sm hover:shadow-md border border-transparent
-                         <%= !n.lida ? 'border-primary-100/60' : 'border-gray-100' %>"
+                       class="flex items-start gap-3 p-3.5 rounded-2xl transition-all duration-200
+                         <%= !n.lida ? 'bg-primary-50/40 hover:bg-primary-50/70' : 'bg-white hover:bg-gray-50' %>
+                         border <%= !n.lida ? 'border-primary-100/50' : 'border-gray-100/80' %>"
                        onclick="<%= !n.lida ? 'marcarLidaNav(' + n.id + ', event)' : '' %>">
 
-                      <div class="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0 <%= cfg.bg %> <%= cfg.text %>">
-                        <i class="fa-solid <%= cfg.icon %> text-base"></i>
+                      <!-- Avatar ou Icone -->
+                      <div class="relative shrink-0">
+                        <% if (n.remetente_foto) { %>
+                          <img src="<%= n.remetente_foto %>" alt="" class="w-10 h-10 rounded-full object-cover">
+                        <% } else if (n.remetente_nome) { %>
+                          <span class="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white"
+                                style="background:<%= n.remetente_cor || '#ec5a1c' %>">
+                            <%= n.remetente_nome.charAt(0).toUpperCase() %>
+                          </span>
+                        <% } else { %>
+                          <div class="w-10 h-10 rounded-full <%= cfg.bg %> flex items-center justify-center">
+                            <i class="fa-solid <%= cfg.icon %> <%= cfg.iconColor %>"></i>
+                          </div>
+                        <% } %>
+                        <% if (n.remetente_nome) { %>
+                          <div class="absolute -bottom-1 -right-1 w-5 h-5 rounded-full <%= cfg.bg %> flex items-center justify-center ring-2 ring-white">
+                            <i class="fa-solid <%= cfg.icon %> <%= cfg.iconColor %> text-[8px]"></i>
+                          </div>
+                        <% } %>
                       </div>
 
+                      <!-- Content -->
                       <div class="flex-1 min-w-0">
-                        <p class="text-sm text-gray-800 leading-snug line-clamp-2 <%= !n.lida ? 'font-semibold' : '' %>"><%= n.mensagem %></p>
-                        <p class="text-[11px] text-gray-400 mt-1" data-time="<%= n.data || n.data_criacao %>"></p>
+                        <p class="text-sm text-gray-800 leading-snug line-clamp-2 <%= !n.lida ? 'font-medium' : '' %>">
+                          <% if (n.remetente_nome) { %>
+                            <strong class="font-semibold text-gray-900"><%= n.remetente_nome %></strong>
+                            <%
+                              var msgSemNome = (n.mensagem || '').replace(n.remetente_nome, '').trim();
+                            %>
+                            <%= msgSemNome %>
+                          <% } else { %>
+                            <%= n.mensagem %>
+                          <% } %>
+                        </p>
+                        <p class="text-[11px] text-gray-400 mt-1" data-time="<%= n.data_criacao || n.data %>"></p>
                       </div>
 
-                      <div class="flex items-center gap-2 flex-shrink-0">
+                      <!-- Unread dot + Actions -->
+                      <div class="flex items-center gap-2 shrink-0 mt-1">
                         <% if (!n.lida) { %>
                           <span class="dot-unread w-2.5 h-2.5 rounded-full bg-accent-500 shadow-sm shadow-accent-500/40" data-dot="<%= n.id %>"></span>
-                        <% } %>
-                        <% if (!n.lida) { %>
-                          <button type="button"
-                                  onclick="event.preventDefault(); event.stopPropagation(); marcarLida(<%= n.id %>, this);"
-                                  class="hidden sm:inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold text-primary-500 hover:bg-primary-100 transition-colors"
-                                  data-btn-lida="<%= n.id %>">
-                            <i class="fa-solid fa-check text-[9px]"></i> Marcar lida
-                          </button>
                         <% } %>
                         <% if (n.link) { %>
                           <i class="fa-solid fa-chevron-right text-[10px] text-gray-300 group-hover:text-primary-400 transition-colors"></i>
@@ -163,7 +218,11 @@
         </div>
         <h2 class="text-xl font-bold text-gray-800 mb-2">Tudo em dia!</h2>
         <p class="text-gray-500 text-sm max-w-xs leading-relaxed">
-          Nenhuma notificação. Você receberá alertas de pets perdidos, scans NFC, lembretes e mais.
+          <% if (currentTab === 'mencoes') { %>
+            Nenhuma menção ainda. Quando alguém mencionar você em um comentário, aparecerá aqui.
+          <% } else { %>
+            Nenhuma notificação. Você receberá alertas de curtidas, comentários, novos seguidores e mais.
+          <% } %>
         </p>
       </div>
 
@@ -212,15 +271,13 @@
       if (card) {
         var link = card.querySelector('a');
         if (link) {
-          link.classList.remove('bg-primary-50/60', 'border-primary-100/60');
-          link.classList.add('bg-white', 'border-gray-100');
+          link.classList.remove('bg-primary-50/40', 'border-primary-100/50');
+          link.classList.add('bg-white', 'border-gray-100/80');
         }
-        var p = card.querySelector('p.font-semibold');
-        if (p) p.classList.remove('font-semibold');
+        var p = card.querySelector('p.font-medium');
+        if (p) p.classList.remove('font-medium');
         var dot = card.querySelector('[data-dot="' + id + '"]');
         if (dot) dot.remove();
-        var btnLida = card.querySelector('[data-btn-lida="' + id + '"]');
-        if (btnLida) btnLida.remove();
       }
       atualizarBadgeGlobal();
     })
@@ -236,6 +293,33 @@
       atualizarBadgeGlobal();
     }).catch(function () {});
   };
+
+  var btnMarcarTodas = document.getElementById('btnMarcarTodasLidas');
+  if (btnMarcarTodas) {
+    btnMarcarTodas.addEventListener('click', function () {
+      fetch('/notificacoes/marcar-todas-lidas', {
+        method: 'POST',
+        headers: { 'Accept': 'application/json' },
+        credentials: 'same-origin'
+      })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (data.sucesso) {
+          document.querySelectorAll('.dot-unread').forEach(function (dot) { dot.remove(); });
+          document.querySelectorAll('[data-notif-id] a').forEach(function (link) {
+            link.classList.remove('bg-primary-50/40', 'border-primary-100/50');
+            link.classList.add('bg-white', 'border-gray-100/80');
+          });
+          document.querySelectorAll('.notif-card p.font-medium').forEach(function (p) {
+            p.classList.remove('font-medium');
+          });
+          btnMarcarTodas.closest('.flex').innerHTML = '<span class="text-xs text-emerald-500 font-semibold"><i class="fa-solid fa-check mr-1"></i>Todas lidas</span>';
+          atualizarBadgeGlobal();
+        }
+      })
+      .catch(function () {});
+    });
+  }
 
   function atualizarBadgeGlobal() {
     fetch('/notificacoes/api/count', {
