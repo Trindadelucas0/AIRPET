@@ -326,6 +326,7 @@ async function listarTags(req, res) {
       tags,
       contagens,
       filtroAtual: status || 'todos',
+      adminPath: process.env.ADMIN_PATH || '/admin',
     });
   } catch (erro) {
     logger.error('TagController', 'Erro ao listar tags', erro);
