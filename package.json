@@ -8,6 +8,7 @@
     "dev": "nodemon server.js",
     "prestart": "npm run css:build",
     "predev": "npm run css:build",
+    "start:prod": "npm run css:build && node server.js",
     "css:build": "node node_modules/tailwindcss/lib/cli.js -i ./src/public/css/input.css -o ./src/public/css/output.css --minify",
     "css:watch": "node node_modules/tailwindcss/lib/cli.js -i ./src/public/css/input.css -o ./src/public/css/output.css --watch"
   },

@@ -25,6 +25,11 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
+// Atrás de proxy (nginx, etc.): usa X-Forwarded-Proto e Host para req.protocol e req.get('host')
+if (process.env.NODE_ENV === 'production') {
+  app.set('trust proxy', 1);
+}
+
 // ========================
 // MIDDLEWARES GLOBAIS
 // ========================
