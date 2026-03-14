@@ -85,33 +85,10 @@ const nfcController = {
        *   - dono: dados do dono (se tag ativa)
        *   - erro: mensagem de erro (se houver)
        */
-      const resultado = await nfcService.processarScan({
-        tag_code,
+      const resultado = await nfcService.processarScan(tag_code, {
         ip,
         user_agent,
       });
-
-      /*
-       * Registra o scan na tabela tag_scans para auditoria.
-       * Mesmo que a tag não exista ou esteja bloqueada, o scan é registrado.
-       * Isso permite detectar tentativas suspeitas de acesso.
-       */
-      if (resultado.tag) {
-        try {
-          await TagScan.registrar({
-            tag_id: resultado.tag.id,
-            tag_code,
-            latitude: resultado.latitude || null,
-            longitude: resultado.longitude || null,
-            cidade: resultado.cidade || null,
-            ip,
-            user_agent,
-          });
-        } catch (erroScan) {
-          /* Erro ao registrar scan não deve impedir a exibição da tela */
-          logger.error('NFC_CTRL', 'Erro ao registrar scan (não crítico)', erroScan);
-        }
-      }
 
       /*
        * Decide qual view renderizar baseado no campo 'tela'
@@ -150,6 +127,7 @@ const nfcController = {
             tag: resultado.tag,
             pet: resultado.pet,
             dono: resultado.dono,
+            petPerdido: resultado.petPerdidoAlerta,
           });
 
         /*
@@ -250,6 +228,72 @@ const nfcController = {
     } catch (erro) {
       logger.error('NFC_CTRL', 'Erro ao mostrar enviar-foto', erro);
       res.status(500).render('partials/erro', { titulo: 'Erro', mensagem: 'Erro ao carregar a página.', codigo: 500 });
+    }
+  },
+
+  async registrarLocalizacaoPublica(req, res) {
+    try {
+      const { tag_code } = req.params;
+      const { latitude, longitude } = req.body;
+
+      if (!latitude || !longitude) {
+        return res.status(400).json({ sucesso: false, mensagem: 'Latitude e longitude são obrigatórios.' });
+      }
+
+      const lat = parseFloat(latitude);
+      const lng = parseFloat(longitude);
+      if (isNaN(lat) || isNaN(lng)) {
+        return res.status(400).json({ sucesso: false, mensagem: 'Coordenadas inválidas.' });
+      }
+
+      const tag = await NfcTag.buscarPorTagCode(tag_code);
+      if (!tag || tag.status !== 'active' || !tag.pet_id) {
+        return res.status(404).json({ sucesso: false, mensagem: 'Tag não encontrada ou inativa.' });
+      }
+
+      const ip = req.ip || req.connection.remoteAddress;
+
+      let cidade = null;
+      try {
+        const geocoding = require('../utils/geocoding');
+        cidade = await geocoding.reverseGeocode(lat, lng);
+      } catch (e) {
+        logger.error('NFC_CTRL', 'Erro no reverse geocoding (não crítico)', e);
+      }
+
+      await Localizacao.registrar({ pet_id: tag.pet_id, latitude: lat, longitude: lng, origem: 'encontrador' });
+
+      try {
+        await TagScan.registrar({
+          tag_id: tag.id,
+          tag_code,
+          latitude: lat,
+          longitude: lng,
+          cidade,
+          ip,
+          user_agent: req.headers['user-agent'] || 'desconhecido',
+        });
+      } catch (e) { logger.error('NFC_CTRL', 'Erro ao registrar scan de localização', e); }
+
+      const pet = await Pet.buscarPorId(tag.pet_id);
+      if (pet) {
+        const cidadeTexto = cidade ? ` em ${cidade}` : '';
+        try {
+          await notificacaoService.criar(
+            pet.usuario_id,
+            'scan',
+            `Localização de ${pet.nome} recebida${cidadeTexto}.`,
+            `/pets/${pet.id}`
+          );
+        } catch (e) { logger.error('NFC_CTRL', 'Erro ao notificar dono sobre localização', e); }
+      }
+
+      logger.info('NFC_CTRL', `Localização pública registrada para tag ${tag_code}: ${lat}, ${lng} — ${cidade || 'sem cidade'}`);
+
+      return res.status(201).json({ sucesso: true, mensagem: 'Localização registrada com sucesso.', cidade });
+    } catch (erro) {
+      logger.error('NFC_CTRL', 'Erro ao registrar localização pública', erro);
+      return res.status(500).json({ sucesso: false, mensagem: 'Erro ao registrar localização.' });
     }
   },
 

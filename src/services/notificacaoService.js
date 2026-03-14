@@ -58,7 +58,7 @@ const notificacaoService = {
 
     logger.info('NotificacaoService', `Notificação criada: ${notificacao.id}`);
 
-    const tituloMap = { scan: 'Tag Escaneada', alerta: 'Pet Perdido!', chat: 'Nova Mensagem', sistema: 'AIRPET', encontrado: 'Pet Encontrado!' };
+    const tituloMap = { scan: 'Tag Escaneada', alerta: 'Pet Perdido!', chat: 'Nova Mensagem', sistema: 'AIRPET', encontrado: 'Pet Encontrado!', mencao: 'Você foi mencionado' };
     pushService.enviarParaUsuario(usuarioId, {
       titulo: tituloMap[tipo] || 'AIRPET',
       corpo: mensagem,

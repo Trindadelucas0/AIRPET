@@ -687,7 +687,73 @@ const migrations = [
     END IF;
   END $$;`,
 
-  // 23. Diario do Pet — registro diario de alimentacao, passeios, remedios, etc
+  // Colunas extras para publicacoes: texto, repost, tipo
+  `DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='publicacoes' AND column_name='texto') THEN
+      ALTER TABLE publicacoes ADD COLUMN texto TEXT;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='publicacoes' AND column_name='repost_id') THEN
+      ALTER TABLE publicacoes ADD COLUMN repost_id INTEGER REFERENCES publicacoes(id) ON DELETE SET NULL;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='publicacoes' AND column_name='tipo') THEN
+      ALTER TABLE publicacoes ADD COLUMN tipo VARCHAR(20) DEFAULT 'original';
+    END IF;
+    ALTER TABLE publicacoes ALTER COLUMN foto DROP NOT NULL;
+  END $$;`,
+
+  // 24. Reposts tracking
+  `CREATE TABLE IF NOT EXISTS reposts (
+    id SERIAL PRIMARY KEY,
+    usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+    publicacao_id INTEGER NOT NULL REFERENCES publicacoes(id) ON DELETE CASCADE,
+    criado_em TIMESTAMP DEFAULT NOW(),
+    UNIQUE(usuario_id, publicacao_id)
+  );`,
+
+  `CREATE INDEX IF NOT EXISTS idx_reposts_pub ON reposts (publicacao_id);`,
+
+  // Colunas de controle de tentativas de ativacao em nfc_tags
+  `DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='nfc_tags' AND column_name='tentativas_ativacao') THEN
+      ALTER TABLE nfc_tags ADD COLUMN tentativas_ativacao INTEGER DEFAULT 0;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='nfc_tags' AND column_name='bloqueada_ate') THEN
+      ALTER TABLE nfc_tags ADD COLUMN bloqueada_ate TIMESTAMP;
+    END IF;
+  END $$;`,
+
+  // 26. Campos de endereco no perfil do usuario
+  `DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='usuarios' AND column_name='endereco') THEN
+      ALTER TABLE usuarios ADD COLUMN endereco VARCHAR(300);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='usuarios' AND column_name='cidade') THEN
+      ALTER TABLE usuarios ADD COLUMN cidade VARCHAR(100);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='usuarios' AND column_name='estado') THEN
+      ALTER TABLE usuarios ADD COLUMN estado VARCHAR(2);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='usuarios' AND column_name='cep') THEN
+      ALTER TABLE usuarios ADD COLUMN cep VARCHAR(10);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='usuarios' AND column_name='bairro') THEN
+      ALTER TABLE usuarios ADD COLUMN bairro VARCHAR(100);
+    END IF;
+  END $$;`,
+
+  // 27. Seguidores de pets
+  `CREATE TABLE IF NOT EXISTS seguidores_pets (
+    id SERIAL PRIMARY KEY,
+    usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+    pet_id INTEGER NOT NULL REFERENCES pets(id) ON DELETE CASCADE,
+    criado_em TIMESTAMP DEFAULT NOW(),
+    UNIQUE(usuario_id, pet_id)
+  );`,
+
+  `CREATE INDEX IF NOT EXISTS idx_seguidores_pets_pet ON seguidores_pets (pet_id);`,
+  `CREATE INDEX IF NOT EXISTS idx_seguidores_pets_user ON seguidores_pets (usuario_id);`,
+
+  // 28. Diario do Pet — registro diario de alimentacao, passeios, remedios, etc
   `CREATE TABLE IF NOT EXISTS diario_pet (
     id SERIAL PRIMARY KEY,
     pet_id INTEGER REFERENCES pets(id) ON DELETE CASCADE,

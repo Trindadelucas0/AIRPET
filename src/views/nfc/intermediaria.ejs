@@ -62,9 +62,9 @@
         <% } %>
       </div>
 
-      <% if (pet.descricao) { %>
+      <% if (pet.descricao_emocional) { %>
         <p class="text-white/90 italic text-lg leading-relaxed max-w-md mx-auto">
-          "<%= pet.descricao %>"
+          "<%= pet.descricao_emocional %>"
         </p>
       <% } %>
     </div>
@@ -81,15 +81,16 @@
 
     <div class="space-y-3 mb-6">
 
-      <% if (pet.Usuario && pet.Usuario.telefone) { %>
-        <a href="tel:<%= pet.Usuario.telefone %>"
+      <% var telefone = (dono && dono.telefone) || pet.telefone_contato; %>
+      <% if (telefone) { %>
+        <a href="tel:<%= telefone %>"
            class="flex items-center gap-4 w-full bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white rounded-2xl px-6 py-5 shadow-lg transition-all active:scale-[0.98]">
           <span class="w-14 h-14 rounded-xl bg-emerald-400/50 flex items-center justify-center flex-shrink-0">
             <i class="fa-solid fa-phone text-2xl"></i>
           </span>
           <div class="text-left">
             <span class="block text-lg font-bold">Ligar para o dono</span>
-            <span class="block text-emerald-100 text-sm"><%= pet.Usuario.nome || 'Tutor' %></span>
+            <span class="block text-emerald-100 text-sm"><%= (dono && dono.nome) || 'Tutor' %></span>
           </div>
           <i class="fa-solid fa-arrow-right ml-auto text-emerald-200"></i>
         </a>
@@ -107,7 +108,7 @@
         <i class="fa-solid fa-arrow-right ml-auto text-blue-200"></i>
       </button>
 
-      <a href="/nfc/<%= tag.codigo %>/encontrei"
+      <a href="/tag/<%= tag.tag_code %>/encontrei"
          class="flex items-center gap-4 w-full bg-rose-500 hover:bg-rose-600 active:bg-rose-700 text-white rounded-2xl px-6 py-5 shadow-lg transition-all active:scale-[0.98]">
         <span class="w-14 h-14 rounded-xl bg-rose-400/50 flex items-center justify-center flex-shrink-0">
           <i class="fa-solid fa-hand-holding-heart text-2xl"></i>
@@ -150,7 +151,7 @@
           <i class="fa-solid fa-arrow-right ml-auto text-white/50"></i>
         </a>
 
-        <a href="/nfc/<%= tag.codigo %>/enviar-foto"
+        <a href="/tag/<%= tag.tag_code %>/enviar-foto"
            class="flex items-center gap-4 w-full bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white rounded-2xl px-6 py-5 shadow-lg transition-all active:scale-[0.98]">
           <span class="w-14 h-14 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0">
             <i class="fa-solid fa-camera text-2xl"></i>
@@ -176,16 +177,13 @@
 <% locals.extraScripts = `
 <script>
 (function() {
-  var tagCodigo = '${tag.codigo}';
-  var petId = ${pet.id};
+  var tagCode = '${tag.tag_code}';
 
   function enviarLocalizacao(lat, lng, manual) {
-    fetch('/api/localizacao', {
+    fetch('/tag/' + tagCode + '/localizacao', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        pet_id: petId,
-        tag_codigo: tagCodigo,
         latitude: lat,
         longitude: lng,
         tipo: manual ? 'encontrador_manual' : 'encontrador_auto'

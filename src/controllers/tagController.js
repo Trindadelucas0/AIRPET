@@ -86,12 +86,14 @@ async function mostrarAtivacao(req, res) {
  * @param {object} res - Resposta Express
  */
 async function ativar(req, res) {
+  const MAX_TENTATIVAS = 5;
+  const BLOQUEIO_MINUTOS = 30;
+
   try {
     const { tag_code } = req.params;
     const { activation_code } = req.body;
     const usuarioId = req.session.usuario.id;
 
-    /* === FATOR 2: Busca a tag e verifica se existe === */
     const tag = await NfcTag.buscarPorTagCode(tag_code);
 
     if (!tag) {
@@ -99,26 +101,37 @@ async function ativar(req, res) {
       return res.redirect('/');
     }
 
-    /* Verifica se a tag está no status correto para ativação */
     if (tag.status !== 'sent') {
       req.session.flash = { tipo: 'erro', mensagem: 'Esta tag não está disponível para ativação. Status atual: ' + tag.status };
       return res.redirect('/');
     }
 
-    /* === FATOR 3: Verifica o código de ativação === */
-    if (!activation_code || tag.activation_code !== activation_code.trim().toUpperCase()) {
-      req.session.flash = { tipo: 'erro', mensagem: 'Código de ativação inválido. Verifique o código impresso no cartão.' };
+    if (tag.bloqueada_ate && new Date(tag.bloqueada_ate) > new Date()) {
+      const minRestantes = Math.ceil((new Date(tag.bloqueada_ate) - new Date()) / 60000);
+      req.session.flash = { tipo: 'erro', mensagem: `Muitas tentativas incorretas. Tente novamente em ${minRestantes} minuto(s).` };
       return res.redirect(`/tags/${tag_code}/ativar`);
     }
 
-    /* === TODOS OS 3 FATORES VALIDADOS === */
+    if (!activation_code || tag.activation_code !== activation_code.trim().toUpperCase()) {
+      const tagAtualizada = await NfcTag.incrementarTentativas(tag.id);
+      const tentativas = tagAtualizada.tentativas_ativacao || 0;
+      const restantes = MAX_TENTATIVAS - tentativas;
 
-    /* Reserva a tag para o usuário (associa user_id) */
+      if (tentativas >= MAX_TENTATIVAS) {
+        await NfcTag.bloquearTemporariamente(tag.id, BLOQUEIO_MINUTOS);
+        logger.warn('TagController', `Tag ${tag_code} bloqueada por ${BLOQUEIO_MINUTOS}min após ${tentativas} tentativas`);
+        req.session.flash = { tipo: 'erro', mensagem: `Muitas tentativas incorretas. Tag bloqueada por ${BLOQUEIO_MINUTOS} minutos.` };
+      } else {
+        req.session.flash = { tipo: 'erro', mensagem: `Código de ativação inválido. Restam ${restantes} tentativa(s).` };
+      }
+      return res.redirect(`/tags/${tag_code}/ativar`);
+    }
+
+    await NfcTag.resetarTentativas(tag.id);
     await NfcTag.reservar(tag.id, usuarioId);
 
     logger.info('TagController', `Tag ativada: ${tag_code} pelo usuário ${usuarioId}`);
 
-    /* Redireciona para a página de escolha de pet para vincular à tag */
     req.session.flash = { tipo: 'sucesso', mensagem: 'Tag validada com sucesso! Agora escolha um pet para vincular.' };
     return res.redirect(`/tags/${tag_code}/escolher-pet`);
   } catch (erro) {

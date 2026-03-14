@@ -1,17 +1,6 @@
-/**
- * schedulerService.js — Jobs automáticos do AIRPET
- *
- * Executa tarefas periódicas:
- *   1. Escalamento automático de alertas de pets perdidos
- *   2. Lembretes de vacinas vencendo
- */
-
-const fs = require('fs');
-const path = require('path');
 const { query } = require('../config/database');
 const ConfigSistema = require('../models/ConfigSistema');
 const PetPerdido = require('../models/PetPerdido');
-const Publicacao = require('../models/Publicacao');
 const Vacina = require('../models/Vacina');
 const logger = require('../utils/logger');
 
@@ -67,18 +56,15 @@ async function escalarAlertasAutomaticamente() {
 async function enviarLembretesVacinas() {
   try {
     const vacinasVencendo = await Vacina.buscarVencendo(7);
-
     if (!notificacaoService) return;
 
     for (const vacina of vacinasVencendo) {
       const diasRestantes = Math.ceil(
         (new Date(vacina.data_proxima) - Date.now()) / (1000 * 60 * 60 * 24)
       );
-
       const msg = diasRestantes <= 0
         ? `A vacina "${vacina.nome_vacina}" de ${vacina.pet_nome} está vencida!`
         : `A vacina "${vacina.nome_vacina}" de ${vacina.pet_nome} vence em ${diasRestantes} dia(s).`;
-
       try {
         await notificacaoService.criar(vacina.usuario_id, 'sistema', msg, `/pets/${vacina.pet_id}/saude`);
       } catch (e) {}
@@ -92,43 +78,22 @@ async function enviarLembretesVacinas() {
   }
 }
 
-async function limparPostsExpirados() {
-  try {
-    const removidos = await Publicacao.limparExpirados();
-    for (const r of removidos) {
-      if (r.foto) {
-        const caminho = path.join(__dirname, '..', 'public', r.foto);
-        fs.unlink(caminho, () => {});
-      }
-    }
-    if (removidos.length > 0) {
-      logger.info('Scheduler', `${removidos.length} post(s) expirado(s) removido(s)`);
-    }
-  } catch (erro) {
-    logger.error('Scheduler', 'Erro ao limpar posts expirados', erro);
-  }
-}
-
 let escalarInterval = null;
 let vacinaInterval = null;
-let postsInterval = null;
 
 function iniciar() {
   escalarInterval = setInterval(escalarAlertasAutomaticamente, 30 * 60 * 1000);
   vacinaInterval = setInterval(enviarLembretesVacinas, 6 * 60 * 60 * 1000);
-  postsInterval = setInterval(limparPostsExpirados, 60 * 60 * 1000);
 
   setTimeout(escalarAlertasAutomaticamente, 10000);
   setTimeout(enviarLembretesVacinas, 30000);
-  setTimeout(limparPostsExpirados, 60000);
 
-  logger.info('Scheduler', 'Jobs automáticos iniciados (alertas: 30min, vacinas: 6h, posts: 1h)');
+  logger.info('Scheduler', 'Jobs automáticos iniciados (alertas: 30min, vacinas: 6h)');
 }
 
 function parar() {
   if (escalarInterval) clearInterval(escalarInterval);
   if (vacinaInterval) clearInterval(vacinaInterval);
-  if (postsInterval) clearInterval(postsInterval);
 }
 
-module.exports = { iniciar, parar, setNotificacaoService, escalarAlertasAutomaticamente, enviarLembretesVacinas, limparPostsExpirados };
+module.exports = { iniciar, parar, setNotificacaoService, escalarAlertasAutomaticamente, enviarLembretesVacinas };

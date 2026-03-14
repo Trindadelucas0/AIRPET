@@ -29,10 +29,10 @@ const perfilController = {
 
   async atualizar(req, res) {
     try {
-      const { nome, telefone, cor_perfil } = req.body;
+      const { nome, telefone, cor_perfil, bio, endereco, bairro, cidade, estado, cep } = req.body;
       const id = req.session.usuario.id;
 
-      await Usuario.atualizarPerfil(id, { nome, telefone, cor_perfil: cor_perfil || '#ec5a1c' });
+      await Usuario.atualizarPerfil(id, { nome, telefone, cor_perfil: cor_perfil || '#ec5a1c', bio, endereco, bairro, cidade, estado, cep });
 
       req.session.usuario.nome = nome;
       req.session.usuario.cor_perfil = cor_perfil || '#ec5a1c';

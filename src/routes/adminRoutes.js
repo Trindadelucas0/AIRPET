@@ -9,6 +9,14 @@ const { limiterLogin } = require('../middlewares/rateLimiter');
 
 const BASE = process.env.ADMIN_PATH || '/admin';
 
+router.use((req, res, next) => {
+  res.locals.adminPath = BASE;
+  // #region agent log
+  fetch('http://127.0.0.1:7619/ingest/ae098eda-cae8-4273-b296-012a1e446933',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'3944ff'},body:JSON.stringify({sessionId:'3944ff',location:'adminRoutes.js:middleware',message:'Admin router hit',data:{method:req.method,url:req.url,originalUrl:req.originalUrl,BASE},timestamp:Date.now(),hypothesisId:'H1'})}).catch(()=>{});
+  // #endregion
+  next();
+});
+
 router.get('/login', (req, res) => {
   if (req.session && req.session.admin) {
     return res.redirect(BASE);
@@ -24,12 +32,22 @@ router.post('/login', limiterLogin, async (req, res) => {
   const adminPasswordHash = process.env.ADMIN_PASSWORD_HASH;
   const adminPasswordPlain = process.env.ADMIN_PASSWORD;
 
+  // #region agent log
+  fetch('http://127.0.0.1:7619/ingest/ae098eda-cae8-4273-b296-012a1e446933',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'3944ff'},body:JSON.stringify({sessionId:'3944ff',location:'adminRoutes.js:POST /login',message:'Login attempt entry',data:{emailReceived:email,adminEmailConfigured:adminEmail,hasHash:!!adminPasswordHash,hasPlain:!!adminPasswordPlain,BASE},timestamp:Date.now(),hypothesisId:'H1-H3'})}).catch(()=>{});
+  // #endregion
+
   if (!adminEmail || (!adminPasswordHash && !adminPasswordPlain)) {
+    // #region agent log
+    fetch('http://127.0.0.1:7619/ingest/ae098eda-cae8-4273-b296-012a1e446933',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'3944ff'},body:JSON.stringify({sessionId:'3944ff',location:'adminRoutes.js:POST /login',message:'No credentials configured',data:{},timestamp:Date.now(),hypothesisId:'H3'})}).catch(()=>{});
+    // #endregion
     req.session.flash = { tipo: 'erro', mensagem: 'Credenciais de admin nao configuradas no servidor.' };
     return res.redirect(BASE + '/login');
   }
 
   if (email !== adminEmail) {
+    // #region agent log
+    fetch('http://127.0.0.1:7619/ingest/ae098eda-cae8-4273-b296-012a1e446933',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'3944ff'},body:JSON.stringify({sessionId:'3944ff',location:'adminRoutes.js:POST /login',message:'Email mismatch',data:{emailReceived:email,adminEmail},timestamp:Date.now(),hypothesisId:'H3'})}).catch(()=>{});
+    // #endregion
     req.session.flash = { tipo: 'erro', mensagem: 'E-mail ou senha incorretos.' };
     return res.redirect(BASE + '/login');
   }
@@ -40,6 +58,10 @@ router.post('/login', limiterLogin, async (req, res) => {
   } else {
     if (senha === adminPasswordPlain) senhaValida = true;
   }
+
+  // #region agent log
+  fetch('http://127.0.0.1:7619/ingest/ae098eda-cae8-4273-b296-012a1e446933',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'3944ff'},body:JSON.stringify({sessionId:'3944ff',location:'adminRoutes.js:POST /login',message:'Password validation result',data:{senhaValida,usedHash:!!adminPasswordHash,redirectTo:senhaValida?BASE:BASE+'/login'},timestamp:Date.now(),hypothesisId:'H3-H4'})}).catch(()=>{});
+  // #endregion
 
   if (senhaValida) {
     req.session.admin = { email: adminEmail, autenticado: true };

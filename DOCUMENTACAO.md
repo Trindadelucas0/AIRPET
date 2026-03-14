@@ -1,60 +1,1159 @@
 # AIRPET — Documentacao Completa do Sistema
 
-## Indice
+## Indice Geral
 
+### Parte 1 — Visao Geral
 1. [O que e o AIRPET](#1-o-que-e-o-airpet)
-2. [Como instalar e rodar](#2-como-instalar-e-rodar)
-3. [Estrutura do projeto](#3-estrutura-do-projeto)
-4. [Banco de dados](#4-banco-de-dados)
-5. [Fluxos principais](#5-fluxos-principais)
-6. [Todas as paginas e o que cada botao faz](#6-todas-as-paginas-e-o-que-cada-botao-faz)
-7. [Painel do administrador](#7-painel-do-administrador)
-8. [Sistema de tags NFC](#8-sistema-de-tags-nfc)
-9. [Sistema de mapas](#9-sistema-de-mapas)
-10. [Chat moderado](#10-chat-moderado)
-11. [Sistema de notificacoes e push](#11-sistema-de-notificacoes-e-push)
-12. [PWA — instalacao no celular](#12-pwa)
-13. [Scheduler — jobs automaticos](#13-scheduler)
-14. [Seguranca](#14-seguranca)
-15. [API endpoints](#15-api-endpoints)
-16. [Como integrar com outros sistemas](#16-como-integrar)
-17. [Tecnologias usadas](#17-tecnologias-usadas)
+2. [Principais funcionalidades](#2-principais-funcionalidades)
+3. [Tecnologias utilizadas](#3-tecnologias-utilizadas)
+
+### Parte 2 — Guia do Usuario
+4. [Criar conta e fazer login](#4-criar-conta-e-fazer-login)
+5. [Cadastrar um pet](#5-cadastrar-um-pet)
+6. [Perfil do pet](#6-perfil-do-pet)
+7. [Carteira de saude](#7-carteira-de-saude)
+8. [Diario do pet](#8-diario-do-pet)
+9. [Tags NFC](#9-tags-nfc)
+10. [Reportar pet perdido](#10-reportar-pet-perdido)
+11. [Feed social — Explorar](#11-feed-social--explorar)
+12. [Mapa interativo](#12-mapa-interativo)
+13. [Chat](#13-chat)
+14. [Agendamentos](#14-agendamentos)
+15. [Notificacoes](#15-notificacoes)
+16. [Perfil do usuario](#16-perfil-do-usuario)
+17. [Instalar como aplicativo — PWA](#17-instalar-como-aplicativo--pwa)
+
+### Parte 3 — Guia do Administrador
+18. [Acessar o painel admin](#18-acessar-o-painel-admin)
+19. [Dashboard](#19-dashboard)
+20. [Gerenciar usuarios](#20-gerenciar-usuarios)
+21. [Gerenciar pets](#21-gerenciar-pets)
+22. [Gerenciar petshops](#22-gerenciar-petshops)
+23. [Aprovar e rejeitar pets perdidos](#23-aprovar-e-rejeitar-pets-perdidos)
+24. [Moderar mensagens do chat](#24-moderar-mensagens-do-chat)
+25. [Gerenciar tags NFC](#25-gerenciar-tags-nfc)
+26. [Gerenciar pontos no mapa](#26-gerenciar-pontos-no-mapa)
+27. [Configuracoes do sistema](#27-configuracoes-do-sistema)
+
+### Parte 4 — Documentacao Tecnica (Programadores)
+28. [Arquitetura do sistema](#28-arquitetura-do-sistema)
+29. [Estrutura de pastas](#29-estrutura-de-pastas)
+30. [Como instalar e rodar](#30-como-instalar-e-rodar)
+31. [Banco de dados](#31-banco-de-dados)
+32. [Rotas e endpoints](#32-rotas-e-endpoints)
+33. [Controllers](#33-controllers)
+34. [Models](#34-models)
+35. [Services](#35-services)
+36. [Middlewares](#36-middlewares)
+37. [WebSockets — tempo real](#37-websockets--tempo-real)
+38. [Upload de arquivos](#38-upload-de-arquivos)
+39. [Scheduler — jobs automaticos](#39-scheduler--jobs-automaticos)
+40. [Seguranca](#40-seguranca)
+41. [PWA e Service Worker](#41-pwa-e-service-worker)
+
+### Parte 5 — Referencia Rapida
+42. [Tabela de referencia rapida](#42-tabela-de-referencia-rapida)
+
+---
+
+# PARTE 1 — VISAO GERAL
 
 ---
 
 ## 1. O que e o AIRPET
 
-O AIRPET e um sistema de **identificacao e recuperacao de pets** usando tags NFC.
+O AIRPET e um sistema de **identificacao e recuperacao de pets** usando tags NFC. Funciona como uma plataforma web completa (PWA) que conecta tutores, comunidade e servicos de apoio animal.
 
-**O conceito e simples:**
-- Cada pet recebe uma tag NFC na coleira
-- Se o pet se perder, qualquer pessoa que encontrar pode encostar o celular na tag
-- Uma pagina abre automaticamente com a foto do pet, nome e botoes para contatar o dono
-- O sistema salva a localizacao de quem escaneou, criando um rastro de avistamentos
+**O conceito central:**
+- Cada pet recebe uma **tag NFC** na coleira
+- Se o pet se perder, qualquer pessoa pode encostar o celular na tag
+- Uma pagina abre automaticamente com a **foto do pet**, **nome do dono** e **botoes para contato**
+- O sistema registra a **localizacao GPS** de cada scan, criando um rastro de avistamentos
+- Usuarios proximos ao ultimo avistamento recebem **alertas automaticos** via push notification
 
-**O sistema tambem oferece:**
-- Rede de petshops parceiros (pontos de apoio)
-- Mapa interativo com petshops, pets perdidos e avistamentos
-- Carteira de saude digital (vacinas, consultas, exames) com lembretes automaticos
-- Diario do pet (registro diario com fotos, anotacoes, peso)
-- Chat moderado entre quem encontrou o pet e o dono
-- Lista de conversas do usuario
-- Notificacoes em tempo real + Web Push
-- Escalamento automatico de alertas de pets perdidos (6h → nivel 2, 24h → nivel 3)
-- Calendario de cuidados (proximas vacinas e consultas)
-- Contador de idade do pet (anos/meses/dias + idade humana equivalente)
-- Referencia de peso ideal por raca/porte
-- Compartilhamento via WhatsApp (pet perdido)
-- Pagina "Encontrei este pet" (via scan NFC)
-- Pagina Explorar (mural da comunidade)
-- Home dinamica com estatisticas e pets perdidos recentes
-- Recuperacao de senha (esqueci minha senha)
-- Dashboard administrativo completo
-- Funciona como PWA (instala no celular como app)
+O sistema vai alem da tag NFC e oferece uma experiencia completa para tutores de pets:
+
+- **Rede social de pets** — feed com publicacoes, curtidas, comentarios, reposts e seguidores
+- **Carteira de saude digital** — vacinas, consultas e exames com lembretes automaticos
+- **Diario do pet** — registro diario com fotos (alimentacao, passeio, humor, peso)
+- **Mapa interativo** — petshops, clinicas, abrigos, pets perdidos e avistamentos
+- **Chat moderado** — comunicacao segura entre quem encontrou o pet e o dono
+- **Agendamentos** — agendar servicos em petshops parceiros
+- **Escalamento automatico** — alertas de pets perdidos ampliam o raio de busca com o tempo
+- **Dashboard administrativo** — gestao completa do sistema
 
 ---
 
-## 2. Como instalar e rodar
+## 2. Principais funcionalidades
+
+### Para o tutor (usuario comum)
+
+| Funcionalidade | Descricao |
+|---|---|
+| Cadastro de pets | Wizard de 8 passos com tipo, raca, aparencia, foto e descricao emocional |
+| Perfil do pet | Idade calculada (humana), peso ideal por raca, calendario de cuidados |
+| Carteira de saude | Vacinas com lembretes automaticos (7 dias antes), consultas, exames |
+| Diario do pet | Registro diario com fotos (alimentacao, passeio, remedio, humor) |
+| Tags NFC | Ativar tag, vincular ao pet, receber notificacao quando alguem escaneia |
+| Pet perdido | Reportar desaparecimento com mapa, escalamento automatico por proximidade |
+| Feed social | Publicar fotos, curtir, comentar, repostar, seguir outros usuarios |
+| Perfil publico | Pagina publica com posts, pets e contagem de seguidores |
+| Mapa interativo | Petshops, clinicas, abrigos, pets perdidos e avistamentos em tempo real |
+| Chat moderado | Conversar com quem encontrou o pet (mensagens passam por moderacao) |
+| Agendamentos | Agendar banho, tosa, consulta em petshops parceiros |
+| Notificacoes | Alertas in-app, push no celular e em tempo real via WebSocket |
+| PWA | Instalar no celular como aplicativo nativo |
+
+### Para quem encontrou um pet (sem cadastro)
+
+| Funcionalidade | Descricao |
+|---|---|
+| Scan NFC | Escanear a tag na coleira para ver os dados do pet e do dono |
+| Contatar o dono | Ligar diretamente ou enviar mensagem pelo formulario |
+| Enviar localizacao | GPS e enviado automaticamente ao dono |
+| Enviar foto | Tirar foto do pet encontrado e enviar ao dono |
+| Chat | Conversar com o dono via chat moderado |
+
+### Para o administrador
+
+| Funcionalidade | Descricao |
+|---|---|
+| Dashboard | Metricas em tempo real (usuarios, pets, alertas, tags, petshops) |
+| Gerenciar usuarios | Listar, promover a admin ou rebaixar |
+| Gerenciar pets | Visualizar todos os pets cadastrados |
+| Gerenciar petshops | CRUD completo de petshops parceiros |
+| Pets perdidos | Aprovar, rejeitar e escalar alertas manualmente |
+| Moderacao do chat | Aprovar ou rejeitar mensagens antes de chegarem ao destinatario |
+| Tags NFC | Gerar lotes, reservar para usuarios, enviar, bloquear |
+| Pontos no mapa | Adicionar/editar clinicas, abrigos, ONGs, parques |
+| Configuracoes | Raios de alerta, horas para escalamento automatico |
+
+---
+
+## 3. Tecnologias utilizadas
+
+| Categoria | Tecnologia |
+|---|---|
+| Backend | Node.js + Express 5 |
+| Banco de dados | PostgreSQL + PostGIS (queries geograficas) |
+| Template engine | EJS (server-side rendering) |
+| CSS | TailwindCSS 3 |
+| Tempo real | Socket.IO (chat, notificacoes, admin) |
+| Autenticacao | express-session + JWT (cookie httpOnly) |
+| Hash de senhas | bcrypt (12 rounds) |
+| Upload | multer (fotos de pets, diario, chat, posts) |
+| Push | Web Push API (VAPID) |
+| Mapas | Leaflet + MarkerCluster + OpenStreetMap |
+| PWA | Service Worker + manifest.json + cache offline |
+| Seguranca | helmet, express-rate-limit, express-validator |
+| Icones | Font Awesome 6 |
+
+---
+
+# PARTE 2 — GUIA DO USUARIO
+
+---
+
+## 4. Criar conta e fazer login
+
+### Criar uma conta
+
+1. Acesse a pagina inicial do AIRPET
+2. Clique em **"Registrar"** no menu superior (ou acesse `/auth/registro`)
+3. Preencha os campos:
+   - **Nome** (minimo 2 caracteres)
+   - **Email** (sera usado para login)
+   - **Telefone** (minimo 10 digitos, com DDD)
+   - **Senha** (minimo 6 caracteres — um indicador de forca aparece enquanto voce digita)
+4. Clique em **"Criar Conta"**
+5. Voce sera redirecionado automaticamente para o feed social (Explorar)
+
+### Fazer login
+
+1. Acesse `/auth/login`
+2. Informe seu **email** e **senha**
+3. Clique em **"Entrar"**
+4. Voce sera redirecionado para o feed social (Explorar)
+
+### Esqueci minha senha
+
+1. Na tela de login, clique em **"Esqueci minha senha"**
+2. Informe o **email** da sua conta
+3. Um link de recuperacao sera gerado (valido por 1 hora)
+4. Acesse o link e defina uma **nova senha**
+5. Faca login normalmente com a nova senha
+
+### Sair da conta
+
+Clique no botao de **logout** no menu. Sua sessao sera encerrada e os cookies removidos.
+
+---
+
+## 5. Cadastrar um pet
+
+### Como cadastrar
+
+1. Faca login na sua conta
+2. Acesse **"Meus Pets"** no menu ou va para `/pets`
+3. Clique em **"Cadastrar Pet"**
+4. Siga o wizard de 8 passos:
+
+| Passo | O que preencher |
+|---|---|
+| 1. Tipo | Cachorro, Gato, Passaro ou Outro (com campo personalizado) |
+| 2. Raca | Selecione da lista com autocomplete (200+ racas cadastradas) ou digite manualmente |
+| 3. Nome | Nome do seu pet |
+| 4. Aparencia | Cor, porte (mini, pequeno, medio, grande, gigante) e sexo |
+| 5. Nascimento | Data de nascimento (aproximada, se nao souber a exata) |
+| 6. Peso | Peso atual em kg |
+| 7. Foto | Envie uma foto do pet (formatos: jpg, png, gif, webp — maximo 5MB) |
+| 8. Descricao | Descricao emocional do pet e telefone de contato alternativo |
+
+5. Clique em **"Cadastrar"**
+6. Voce vera uma tela de confirmacao com links para os proximos passos
+
+### Editar um pet
+
+1. Acesse **"Meus Pets"** → clique no pet desejado
+2. Clique em **"Editar"**
+3. Altere os campos desejados (incluindo a foto)
+4. Clique em **"Salvar"**
+
+### Tela "Meus Pets"
+
+A tela exibe todos os seus pets em formato de cards, mostrando:
+- Foto do pet
+- Nome e tipo
+- Status atual: **seguro** (verde) ou **perdido** (vermelho)
+- Botoes rapidos: editar, saude, reportar perdido
+
+Se voce ainda nao tem pets cadastrados, uma animacao aparece convidando voce a cadastrar o primeiro.
+
+---
+
+## 6. Perfil do pet
+
+O perfil do pet (`/pets/:id`) e a pagina central com todas as informacoes sobre ele.
+
+### O que voce encontra no perfil
+
+**Informacoes basicas:**
+- Foto, nome, tipo, raca, cor, porte, sexo
+- Descricao emocional
+- Status (seguro ou perdido)
+
+**Contador de idade:**
+- Exibe a idade em **anos, meses e dias**
+- Calcula a **idade humana equivalente**:
+  - Para caes: primeiro ano = 15 anos humanos, segundo = 9, depois 5 por ano
+  - Para gatos: primeiro ano = 15, segundo = 9, depois 4 por ano
+
+**Peso ideal:**
+- Mostra o peso atual e o **peso ideal de referencia** para a raca/porte
+- Classifica como: **abaixo do peso**, **peso ideal** ou **acima do peso**
+- Referencia por porte: mini (1-4kg), pequeno (5-10kg), medio (11-25kg), grande (26-45kg), gigante (45-90kg)
+
+**Calendario de cuidados:**
+- Exibe os **proximos 5 eventos** agendados (vacinas e consultas futuras)
+- Ordenado por data mais proxima
+
+**Tags NFC vinculadas:**
+- Lista de tags NFC ativas vinculadas ao pet
+- Ultimas localizacoes registradas por scans NFC (com data, hora e local)
+
+**Botoes de acao:**
+- Editar pet
+- Carteira de saude
+- Diario do pet
+- Reportar como perdido
+- Compartilhar via WhatsApp (quando perdido)
+
+---
+
+## 7. Carteira de saude
+
+A carteira de saude digital (`/pets/:id/saude`) centraliza todo o historico medico do pet.
+
+### Vacinas
+
+Para adicionar uma vacina:
+1. Acesse o perfil do pet → clique em **"Saude"**
+2. Na aba **"Vacinas"**, clique em **"Adicionar Vacina"**
+3. Preencha:
+   - **Nome da vacina** (ex: V10, Antirrabica, Gripe)
+   - **Data da aplicacao**
+   - **Data da proxima dose** (para reforcos)
+   - **Veterinario** (opcional)
+   - **Observacoes** (opcional)
+4. Clique em **"Salvar"**
+
+**Lembretes automaticos:** o sistema verifica automaticamente a cada 6 horas se alguma vacina esta vencendo nos proximos 7 dias. Se estiver, voce recebe uma notificacao push e in-app.
+
+### Registros de saude
+
+Para adicionar um registro:
+1. Na aba **"Registros"**, clique em **"Adicionar Registro"**
+2. Selecione o tipo:
+   - Consulta
+   - Exame
+   - Cirurgia
+   - Vermifugo
+   - Antipulgas
+   - Outro
+3. Preencha descricao, data, veterinario e observacoes
+4. Clique em **"Salvar"**
+
+### Excluir registros
+
+Clique no botao de lixeira ao lado do registro. Apenas o dono do pet pode excluir registros.
+
+---
+
+## 8. Diario do pet
+
+O diario (`/diario/:pet_id`) permite registrar o dia a dia do pet com fotos e anotacoes.
+
+### Como usar
+
+1. Acesse o perfil do pet → clique em **"Diario"**
+2. Clique em **"Adicionar Entrada"**
+3. Preencha:
+   - **Tipo**: alimentacao, passeio, remedio, necessidades, humor, peso, banho, brincar, veterinario, outro
+   - **Descricao** (opcional)
+   - **Valor numerico** (opcional — ex: peso em kg, quantidade de racao em gramas)
+   - **Foto** (opcional — maximo 5MB)
+4. Clique em **"Salvar"**
+
+### Visualizacao
+
+- O diario exibe as entradas de **hoje** em destaque
+- Abaixo, mostra o **historico dos ultimos 30 dias**
+- Cada entrada tem icone colorido de acordo com o tipo
+- Fotos aparecem em miniatura ao lado da entrada
+
+---
+
+## 9. Tags NFC
+
+As tags NFC sao o coracao do sistema AIRPET. Cada tag e um adesivo ou pingente com um chip NFC que pode ser lido por qualquer celular com NFC.
+
+### Como funciona o ciclo de vida de uma tag
+
+```
+Fabricada (stock) → Reservada → Enviada → Ativada (active) → [Bloqueada]
+```
+
+1. **Stock**: a tag foi fabricada e esta no estoque
+2. **Reservada**: foi separada para um usuario especifico
+3. **Enviada**: foi despachada pelo correio ao usuario
+4. **Ativa**: o usuario ativou e vinculou a um pet
+5. **Bloqueada**: desativada por um administrador (ex: perda, roubo)
+
+### Como ativar uma tag NFC
+
+1. Voce recebera a tag com um **codigo de ativacao** impresso na embalagem (ex: `ABCD-EFGH`)
+2. Escaneie a tag com o celular (encoste o celular no adesivo/pingente)
+3. A pagina do AIRPET abrira automaticamente
+4. Se voce **ja esta logado**, o formulario de ativacao aparecera
+5. Se **nao esta logado**, faca login primeiro (sera redirecionado de volta)
+6. Digite o **codigo de ativacao** da embalagem
+7. Clique em **"Ativar"**
+8. Escolha qual **pet vincular** a esta tag (da sua lista de pets)
+9. Pronto! A tag esta ativa e vinculada ao seu pet
+
+**Seguranca da ativacao (3 fatores):**
+- Fator 1: posse fisica da tag (URL unica)
+- Fator 2: estar logado na sua conta
+- Fator 3: codigo de ativacao impresso (nao esta na tag)
+
+### O que acontece quando alguem escaneia a tag
+
+Quando qualquer pessoa escaneia a tag NFC de um pet:
+
+1. O celular abre a **pagina intermediaria** do pet
+2. A pagina exibe:
+   - Foto do pet
+   - Nome e tipo
+   - Nome do dono
+   - Telefone de contato
+3. Se o pet **esta seguro**, a pessoa pode:
+   - Ligar para o dono
+   - Enviar uma mensagem pelo formulario "Encontrei este pet"
+   - Enviar foto do pet
+4. Se o pet **esta perdido**, a pagina mostra:
+   - Banner vermelho "ESTE PET ESTA PERDIDO!"
+   - Recompensa (se configurada)
+   - Botao para iniciar conversa via chat
+   - Botao para enviar localizacao GPS
+   - Formulario completo para relatar o avistamento
+
+**Auditoria:** todo scan e registrado com latitude, longitude, IP, navegador e horario.
+
+O dono recebe uma **notificacao instantanea** sempre que a tag do pet e escaneada.
+
+---
+
+## 10. Reportar pet perdido
+
+### Como reportar
+
+1. Acesse o perfil do pet → clique em **"Reportar como Perdido"**
+2. Preencha o formulario:
+   - **Localizacao**: clique no mapa para marcar onde o pet foi visto pela ultima vez (ou use o campo de busca por endereco)
+   - **Data e hora do desaparecimento**
+   - **Cidade**
+   - **Descricao** (detalhes como direcao que correu, se estava com coleira, etc.)
+   - **Recompensa** (opcional)
+3. Clique em **"Reportar"**
+4. O alerta fica com status **"pendente"** ate ser aprovado por um administrador
+
+### Como funciona o escalamento automatico
+
+Apos a aprovacao pelo admin, o alerta passa por 3 niveis automaticos:
+
+| Nivel | Quando | Raio de notificacao | O que acontece |
+|---|---|---|---|
+| Nivel 1 | Ao aprovar | ~1 km (configuravel) | Usuarios proximos sao notificados |
+| Nivel 2 | Apos 6 horas | ~3 km (configuravel) | Raio de busca e ampliado, mais usuarios notificados |
+| Nivel 3 | Apos 24 horas | ~15 km (configuravel) | Alerta maximo, raio amplo |
+
+O escalamento acontece automaticamente a cada 30 minutos. O admin tambem pode escalar manualmente a qualquer momento.
+
+### Marcar pet como encontrado
+
+1. Acesse o perfil do pet → clique em **"Meu Pet Foi Encontrado"**
+2. Confirme que o pet foi encontrado
+3. O sistema:
+   - Muda o status do pet para **"seguro"**
+   - Resolve o alerta de pet perdido
+   - Encerra todas as conversas abertas relacionadas
+   - Limpa dados senssiveis das conversas (LGPD)
+4. Uma tela de celebracao aparece confirmando que o pet esta de volta
+
+---
+
+## 11. Feed social — Explorar
+
+O feed social (`/explorar`) e uma rede social de pets, similar ao Instagram/Twitter, onde tutores compartilham fotos e momentos dos seus pets.
+
+### Navegacao do feed
+
+O feed tem duas abas:
+- **"Para Voce"**: mostra publicacoes de todos os usuarios, ordenadas por posts fixados e depois por data
+- **"Seguindo"**: mostra apenas publicacoes de usuarios que voce segue
+
+O feed carrega 20 publicacoes por vez, com scroll infinito para carregar mais.
+
+### Criar uma publicacao
+
+1. No topo do feed, clique na area de criacao de post
+2. Escolha uma **foto** (obrigatoria, maximo 10MB, formatos: jpg, png, gif, webp)
+3. Escreva uma **legenda** (opcional)
+4. Vincule um **pet** da sua lista (opcional — aparece o nome do pet na publicacao)
+5. Clique em **"Publicar"**
+
+**Limite:** cada usuario pode ter no maximo **10 publicacoes ativas** ao mesmo tempo. Ao atingir o limite, a publicacao mais antiga nao fixada e removida automaticamente.
+
+### Curtir
+
+Clique no icone de coracao em qualquer publicacao. Clique novamente para descurtir. Uma animacao de coracao aparece ao curtir.
+
+### Comentar
+
+1. Clique no icone de comentario na publicacao
+2. A secao de comentarios abre abaixo do post
+3. Digite seu comentario
+4. Clique em **"Enviar"**
+
+Voce pode **mencionar outros usuarios** usando `@nome` no comentario.
+
+Para deletar um comentario seu, clique no botao de lixeira ao lado dele.
+
+### Repostar
+
+Clique no icone de repost para compartilhar a publicacao de outro usuario no seu perfil. O post original e referenciado com credito ao autor.
+
+### Fixar publicacao
+
+Voce pode fixar ate **2 publicacoes** no topo do seu perfil:
+1. Na sua publicacao, clique nas opcoes → **"Fixar"**
+2. Para desafixar, clique em **"Desafixar"**
+
+Publicacoes fixadas aparecem sempre no topo do feed "Para Voce" e do seu perfil.
+
+### Seguir e deixar de seguir
+
+- No perfil de outro usuario, clique em **"Seguir"** para acompanhar suas publicacoes
+- Clique em **"Deixar de seguir"** para parar de acompanhar
+- Seus seguidores e quem voce segue aparecem no seu perfil publico
+
+### Perfil publico
+
+Acesse o perfil de qualquer usuario clicando no nome dele em uma publicacao ou em `/explorar/perfil/:id`.
+
+O perfil publico exibe:
+- Avatar, nome, bio
+- Contagem de seguidores e seguindo
+- Abas: posts do usuario, reposts e curtidas
+- Lista de pets do usuario
+
+### Deletar publicacao
+
+Na sua publicacao, clique nas opcoes → **"Deletar"**. A foto associada tambem e removida do servidor.
+
+---
+
+## 12. Mapa interativo
+
+O mapa (`/mapa`) mostra em tempo real todos os pontos de interesse, pets perdidos e avistamentos.
+
+### Como usar
+
+1. Acesse **"Mapa"** no menu
+2. O mapa carrega centralizado na sua localizacao (se permitir acesso ao GPS)
+3. Navegue pelo mapa arrastando e dando zoom
+
+### Camadas e filtros
+
+O mapa exibe diferentes tipos de marcadores:
+
+| Marcador | Cor/Icone | O que mostra |
+|---|---|---|
+| Petshops | Azul | Petshops parceiros com endereco e servicos |
+| Pontos de interesse | Variado por categoria | Clinicas, abrigos, ONGs, parques pet-friendly |
+| Pets perdidos | Vermelho | Alertas ativos de pets perdidos com foto e descricao |
+| Avistamentos | Amarelo | Localizacoes registradas via scan NFC |
+
+### Funcionalidades do mapa
+
+- **Lazy loading**: os pontos sao carregados conforme voce navega (apenas o que esta visivel)
+- **Clustering**: quando muitos pontos estao proximos, eles se agrupam em clusters com contagem
+- **Clique em marcador**: abre um popup com detalhes (nome, endereco, telefone, servicos)
+- **Detalhes**: clique em "Ver mais" no popup para acessar a pagina completa do local
+
+---
+
+## 13. Chat
+
+O chat (`/chat`) permite comunicacao entre o tutor e quem encontrou o pet perdido.
+
+### Como funciona
+
+1. Quando alguem encontra o pet e preenche o formulario "Encontrei este pet", uma **conversa e criada automaticamente**
+2. As mensagens enviadas ficam com status **"pendente"** ate serem aprovadas por um administrador
+3. Apos aprovacao, a mensagem aparece para o destinatario em **tempo real** (via WebSocket)
+4. Mensagens rejeitadas nao sao entregues
+
+### Usando o chat
+
+1. Acesse **"Chat"** no menu ou `/chat`
+2. Voce vera a lista de todas as suas conversas com:
+   - Foto do pet
+   - Nome do pet e de quem encontrou
+   - Ultima mensagem e horario
+3. Clique em uma conversa para abrir
+4. Digite sua mensagem e clique em enviar
+5. Aguarde a aprovacao do admin para a mensagem ser entregue
+
+### Por que o chat e moderado?
+
+A moderacao garante que:
+- Nao sejam trocados dados pessoais indevidamente
+- Mensagens ofensivas ou spam sejam bloqueadas
+- A comunicacao seja segura para ambas as partes
+
+Quando o pet e encontrado e o alerta e resolvido, as conversas sao **encerradas e os dados senssiveis removidos** (conforme LGPD).
+
+---
+
+## 14. Agendamentos
+
+O sistema permite agendar servicos em petshops parceiros.
+
+### Como agendar
+
+1. Acesse a pagina de um **petshop** (via lista de petshops ou pelo mapa)
+2. Clique em **"Agendar"**
+3. Preencha:
+   - **Pet**: selecione qual pet vai ao servico
+   - **Servico**: banho, tosa, consulta, etc.
+   - **Data e horario**
+4. Clique em **"Confirmar Agendamento"**
+
+### Gerenciar agendamentos
+
+Acesse **"Agenda"** no menu (`/agenda`) para ver todos os seus agendamentos:
+- **Agendado**: aguardando confirmacao do petshop
+- **Confirmado**: confirmado pelo admin/petshop
+- **Cancelado**: cancelado por voce ou pelo sistema
+
+Para cancelar, clique em **"Cancelar"** no agendamento desejado (apenas agendamentos que ainda nao foram realizados).
+
+---
+
+## 15. Notificacoes
+
+O AIRPET envia notificacoes para manter voce informado sobre tudo que acontece com seus pets.
+
+### Tipos de notificacao
+
+| Tipo | Quando voce recebe |
+|---|---|
+| Scan NFC | Alguem escaneou a tag do seu pet |
+| Alerta | Um pet perdido foi reportado perto de voce |
+| Chat | Uma nova mensagem foi aprovada na conversa |
+| Sistema | Vacina vencendo, alerta rejeitado, pet encontrado |
+| Encontrado | Alguem reportou ter encontrado seu pet |
+
+### Onde aparecem
+
+1. **Badge no menu**: um numero vermelho aparece ao lado do icone de sino com a quantidade de notificacoes nao lidas
+2. **Pagina de notificacoes** (`/notificacoes`): lista completa agrupada por data (hoje, ontem, esta semana, anteriores)
+3. **Push no celular**: notificacoes nativas do navegador/celular, mesmo com a pagina fechada
+4. **Tempo real**: novas notificacoes aparecem instantaneamente via WebSocket
+
+### Ativar push notifications
+
+1. Ao acessar o AIRPET pela primeira vez, um modal de permissao aparece
+2. Clique em **"Permitir"** para receber notificacoes push
+3. As notificacoes aparecerao mesmo quando o AIRPET nao estiver aberto
+
+Para desativar, acesse as configuracoes de notificacao do seu navegador.
+
+---
+
+## 16. Perfil do usuario
+
+Acesse seu perfil em `/perfil` (menu → "Perfil").
+
+### O que voce pode editar
+
+| Campo | Descricao |
+|---|---|
+| Nome | Seu nome exibido no sistema |
+| Telefone | Numero de contato |
+| Bio | Descricao curta (ate 160 caracteres) exibida no perfil publico |
+| Cor do perfil | Cor tema do seu perfil (hex, ex: #ec5a1c) |
+| Foto de perfil | Sua foto exibida no feed e nos comentarios |
+
+### Perfil publico vs privado
+
+- Seu **perfil publico** (`/explorar/perfil/:id`) e visivel para qualquer usuario logado
+- Ele exibe: avatar, bio, posts, pets, seguidores e seguindo
+- Dados como email e telefone **nao aparecem** no perfil publico
+
+---
+
+## 17. Instalar como aplicativo — PWA
+
+O AIRPET funciona como PWA (Progressive Web App), ou seja, pode ser instalado no celular como um aplicativo nativo.
+
+### Como instalar no Android
+
+1. Acesse o AIRPET pelo Chrome
+2. Um banner **"Adicionar a tela inicial"** aparecera automaticamente
+3. Clique em **"Instalar"**
+4. O AIRPET aparecera como um icone na sua tela inicial
+
+### Como instalar no iPhone
+
+1. Acesse o AIRPET pelo Safari
+2. Toque no botao de **compartilhar** (icone de quadrado com seta)
+3. Selecione **"Adicionar a Tela de Inicio"**
+4. Clique em **"Adicionar"**
+
+### Funcionalidades offline
+
+Com o PWA instalado:
+- Paginas ja visitadas ficam em **cache** e podem ser acessadas offline
+- Se nao houver conexao, uma **pagina offline** amigavel e exibida
+- Push notifications funcionam normalmente em segundo plano
+- O app abre em **tela cheia**, sem a barra de endereco do navegador
+
+---
+
+# PARTE 3 — GUIA DO ADMINISTRADOR
+
+---
+
+## 18. Acessar o painel admin
+
+O painel administrativo possui **login separado** do login de usuarios.
+
+### Como acessar
+
+1. Acesse `/admin/login` (ou o path customizado definido em `ADMIN_PATH` no `.env`)
+2. Informe o **email** e **senha** de administrador (configurados no `.env`)
+3. Clique em **"Entrar"**
+
+**Seguranca:**
+- O login admin usa credenciais definidas nas variaveis de ambiente (`ADMIN_EMAIL` e `ADMIN_PASSWORD_HASH`)
+- A senha e comparada usando **bcrypt** (nao texto puro)
+- Rate limiting de 20 tentativas por 15 minutos
+- O path de acesso pode ser customizado via `ADMIN_PATH` no `.env` (seguranca por obscuridade)
+
+### Sessao admin
+
+A sessao do admin e **independente** da sessao de usuario. Voce pode estar logado como usuario e como admin ao mesmo tempo.
+
+Para sair, clique em **"Sair"** no painel admin ou acesse `/admin/logout`.
+
+---
+
+## 19. Dashboard
+
+O dashboard (`/admin`) e a pagina inicial do painel administrativo.
+
+### Metricas exibidas
+
+| Card | O que mostra |
+|---|---|
+| Total de usuarios | Quantidade de contas criadas no sistema |
+| Total de pets | Quantidade de pets cadastrados |
+| Pets perdidos ativos | Alertas com status "aprovado" (em andamento) |
+| Total de petshops | Petshops parceiros cadastrados |
+| Mensagens pendentes | Mensagens do chat aguardando moderacao |
+| Alertas pendentes | Alertas de pet perdido aguardando aprovacao |
+
+Todas as metricas sao carregadas em paralelo para rapidez.
+
+### Navegacao
+
+O dashboard tem links rapidos para todas as secoes de gestao: usuarios, pets, petshops, pets perdidos, moderacao, tags NFC, mapa e configuracoes.
+
+---
+
+## 20. Gerenciar usuarios
+
+Acesse em **Admin → Usuarios** (`/admin/usuarios`).
+
+### O que voce pode fazer
+
+- **Listar todos os usuarios**: tabela com id, nome, email, telefone, role e data de criacao
+- **Alterar role**: clique no botao ao lado do usuario para alternar entre `usuario` e `admin`
+  - Promover a admin: o usuario passa a ter acesso ao painel administrativo
+  - Rebaixar a usuario: remove o acesso ao painel
+
+### Cuidados
+
+- Nao e possivel rebaixar a si mesmo (sempre havera pelo menos 1 admin)
+- A alteracao de role e imediata — o usuario tera (ou perdera) acesso ao painel na proxima requisicao
+
+---
+
+## 21. Gerenciar pets
+
+Acesse em **Admin → Pets** (`/admin/pets`).
+
+### O que voce ve
+
+Tabela com **todos os pets** do sistema, incluindo:
+- Nome, tipo, raca
+- Nome do dono
+- Status (seguro/perdido)
+- Data de cadastro
+
+Esta pagina e apenas para **visualizacao** — a edicao de pets e feita pelo dono na area de usuario.
+
+---
+
+## 22. Gerenciar petshops
+
+Acesse em **Admin → Petshops** (`/admin/petshops`).
+
+### O que voce pode fazer
+
+- **Listar todos os petshops** com status (ativo/inativo)
+- **Criar novo petshop**: nome, endereco, localizacao (lat/lng), telefone, WhatsApp, descricao, servicos oferecidos, horario de funcionamento, galeria de fotos, se e ponto de apoio
+- **Editar petshop**: alterar qualquer informacao
+- **Ativar/desativar**: petshops inativos nao aparecem no mapa nem na lista publica
+- **Deletar**: remocao permanente
+
+### Ponto de apoio
+
+Um petshop pode ser marcado como **ponto de apoio**, indicando que aceita pets encontrados temporariamente ate o dono buscar.
+
+---
+
+## 23. Aprovar e rejeitar pets perdidos
+
+Acesse em **Admin → Pets Perdidos** (`/admin/pets-perdidos`).
+
+### Fluxo de aprovacao
+
+Quando um tutor reporta um pet perdido, o alerta fica com status **"pendente"**. O admin deve:
+
+1. **Revisar** as informacoes: foto do pet, localizacao, descricao, data/hora
+2. Decidir:
+   - **Aprovar e Notificar**: o alerta e publicado e usuarios proximos sao notificados automaticamente via push + Socket.IO
+   - **Rejeitar**: o alerta e descartado e o tutor e notificado com o motivo
+
+### Escalamento manual
+
+Para alertas ja aprovados, o admin pode **escalar manualmente** o nivel do alerta:
+- Clique em **"Escalar"** para aumentar o nivel (1 → 2 → 3)
+- Cada nivel amplia o raio de notificacao, atingindo mais usuarios
+
+### Status dos alertas
+
+| Status | Significado |
+|---|---|
+| Pendente | Aguardando aprovacao do admin |
+| Aprovado | Ativo, buscando o pet |
+| Resolvido | Pet foi encontrado |
+| Rejeitado | Alerta descartado pelo admin |
+
+---
+
+## 24. Moderar mensagens do chat
+
+Acesse em **Admin → Moderacao** (`/admin/moderacao`).
+
+### Como funciona
+
+Toda mensagem enviada no chat entre tutor e encontrador fica com status **"pendente"** ate o admin agir.
+
+A pagina de moderacao exibe:
+- Remetente da mensagem
+- Conteudo
+- Conversa relacionada (qual pet, quem encontrou)
+- Horario de envio
+
+### Acoes
+
+- **Aprovar**: a mensagem e entregue ao destinatario em tempo real (via Socket.IO)
+- **Rejeitar**: a mensagem e descartada e nao e entregue
+
+### Dica
+
+Verifique a moderacao regularmente — mensagens pendentes significam que tutores e encontradores estao aguardando resposta. O badge de "mensagens pendentes" no dashboard indica quantas mensagens estao na fila.
+
+---
+
+## 25. Gerenciar tags NFC
+
+As tags NFC sao gerenciadas em **Admin → Tags** (`/tags/admin/lista`).
+
+### Gerar lotes de tags
+
+1. Acesse **"Gerar Lote"** (`/tags/admin/gerar`)
+2. Informe:
+   - **Quantidade** (1 a 1000 tags por lote)
+   - **Fabricante** (opcional)
+   - **Observacoes** (opcional)
+3. Clique em **"Gerar"**
+4. O sistema cria automaticamente:
+   - Um **lote** com codigo unico
+   - N tags com codigos unicos no formato `PET-XXXXXX`
+   - Cada tag recebe um **codigo de ativacao** aleatorio (formato `XXXX-XXXX`)
+
+### Ciclo de vida das tags
+
+```
+stock → reserved → sent → active → [blocked]
+```
+
+| Acao | De → Para | Descricao |
+|---|---|---|
+| Reservar | stock → reserved | Separa a tag para um usuario especifico |
+| Enviar | reserved → sent | Marca que a tag foi despachada pelo correio |
+| Ativar | sent → active | O usuario ativa a tag (feito pelo proprio usuario) |
+| Bloquear | qualquer → blocked | Desativa a tag (perda, roubo, mau uso) |
+
+### Listagem e filtros
+
+A pagina de tags exibe todas as tags com:
+- Codigo da tag (`PET-XXXXXX`)
+- Status atual
+- Lote de origem
+- Usuario vinculado (se houver)
+- Pet vinculado (se houver)
+- Data de criacao/ativacao
+
+Filtros por status permitem localizar rapidamente tags em cada fase do ciclo.
+
+### Lotes
+
+Acesse **"Lotes"** (`/tags/admin/lotes`) para ver todos os lotes criados, com codigo, quantidade, fabricante e data.
+
+---
+
+## 26. Gerenciar pontos no mapa
+
+Acesse em **Admin → Gerenciar Mapa** (`/admin/gerenciar-mapa`).
+
+### O que sao pontos no mapa
+
+Sao locais de interesse para tutores de pets que aparecem no mapa interativo. Categorias disponiveis:
+
+| Categoria | Icone | Exemplos |
+|---|---|---|
+| Clinica | Veterinaria | Clinicas veterinarias |
+| Abrigo | Casa | Abrigos de animais |
+| ONG | Coracao | ONGs de protecao animal |
+| Parque | Arvore | Parques pet-friendly |
+| Petshop | Loja | (gerenciados separadamente em Petshops) |
+
+### Como adicionar um ponto
+
+1. Na pagina de gerenciamento, clique em **"Adicionar Ponto"**
+2. Preencha:
+   - **Nome**
+   - **Categoria**
+   - **Endereco**
+   - **Latitude e Longitude** (ou clique no mapa para selecionar)
+   - **Telefone e WhatsApp**
+   - **Descricao**
+   - **Servicos oferecidos**
+   - **Horario de funcionamento** (formato JSON)
+3. Clique em **"Salvar"**
+
+### Acoes
+
+- **Editar**: alterar qualquer informacao do ponto
+- **Ativar/Desativar**: pontos inativos nao aparecem no mapa publico
+- **Deletar**: remocao permanente
+
+### Mapa admin
+
+Acesse **Admin → Mapa** (`/admin/mapa`) para ver uma visao geral de todos os pontos, petshops e alertas no mapa.
+
+---
+
+## 27. Configuracoes do sistema
+
+Acesse em **Admin → Configuracoes** (`/admin/configuracoes`).
+
+### Configuracoes disponiveis
+
+| Chave | Padrao | Descricao |
+|---|---|---|
+| `raio_alerta_nivel1_km` | 1 | Raio em km para notificacao no nivel 1 |
+| `raio_alerta_nivel2_km` | 3 | Raio em km para notificacao no nivel 2 |
+| `raio_alerta_nivel3_km` | 0 | Raio em km para notificacao no nivel 3 (0 = todos) |
+| `horas_para_nivel2` | 6 | Horas apos aprovacao para escalar para nivel 2 |
+| `horas_para_nivel3` | 24 | Horas apos aprovacao para escalar para nivel 3 |
+
+### Como alterar
+
+1. Na pagina de configuracoes, edite os valores desejados
+2. Clique em **"Salvar"**
+3. As alteracoes entram em vigor imediatamente — o proximo ciclo do scheduler usara os novos valores
+
+### Impacto das configuracoes
+
+- **Raios maiores** = mais usuarios notificados (maior cobertura, mais notificacoes)
+- **Raios menores** = notificacoes mais precisas (menos spam, menor cobertura)
+- **Raio 0** no nivel 3 = todos os usuarios do sistema sao notificados
+- **Horas menores** = escalamento mais rapido (mais urgente)
+- **Horas maiores** = escalamento mais lento (da tempo ao tutor antes de ampliar)
+
+---
+
+# PARTE 4 — DOCUMENTACAO TECNICA (PROGRAMADORES)
+
+---
+
+## 28. Arquitetura do sistema
+
+O AIRPET segue a arquitetura **MVC (Model-View-Controller)** estendida com uma **camada de Services** para logica de negocio.
+
+### Fluxo de uma requisicao
+
+```
+Browser → Routes → Middlewares → Controllers → Services → Models → PostgreSQL/PostGIS
+                                      ↓
+                                  Views (EJS)
+                                      ↓
+                                   Browser
+```
+
+### Camadas
+
+| Camada | Pasta | Responsabilidade |
+|---|---|---|
+| Routes | `src/routes/` | Define URLs, aplica middlewares, conecta a controllers |
+| Middlewares | `src/middlewares/` | Auth, admin, rate limiting, validacao |
+| Controllers | `src/controllers/` | Recebe requests, orquestra a logica, retorna responses |
+| Services | `src/services/` | Logica de negocio pura (proximidade, push, moderacao) |
+| Models | `src/models/` | Queries SQL parametrizadas ao PostgreSQL |
+| Views | `src/views/` | Templates EJS para server-side rendering |
+| Sockets | `src/sockets/` | WebSocket para comunicacao em tempo real |
+| Utils | `src/utils/` | Funcoes auxiliares (helpers, logger, upload, geo) |
+
+### Comunicacao em tempo real (WebSocket)
+
+```
+Browser ←→ Socket.IO Server
+            ├── /chat          → Chat moderado
+            ├── /admin         → Painel admin em tempo real
+            └── /notificacoes  → Push de notificacoes
+```
+
+---
+
+## 29. Estrutura de pastas
+
+```
+AIRPET/
+├── server.js                          ← Ponto de entrada (Express + Socket.IO)
+├── package.json                       ← Dependencias e scripts
+├── .env                               ← Variaveis de ambiente (NAO commitado)
+├── .env.example                       ← Template do .env
+├── tailwind.config.js                 ← Config TailwindCSS
+├── postcss.config.js                  ← PostCSS (Tailwind + Autoprefixer)
+├── DOCUMENTACAO.md                    ← Este arquivo
+│
+├── fontes/                            ← PDFs de referencia e planejamento
+│
+└── src/
+    ├── config/
+    │   ├── database.js                ← Pool PostgreSQL (pg) — 20 conexoes max
+    │   ├── session.js                 ← express-session + connect-pg-simple
+    │   └── migrate.js                 ← Auto-criacao de 25 tabelas no boot
+    │
+    ├── controllers/                   ← 16+ controllers
+    │   ├── authController.js          ← Login, registro, logout, esqueci/redefinir senha
+    │   ├── petController.js           ← CRUD pets + perfil com idade/peso ideal
+    │   ├── nfcController.js           ← Scan NFC, encontrei pet, enviar foto
+    │   ├── tagController.js           ← Ativacao e gestao de tags
+    │   ├── petshopController.js       ← Listagem de petshops
+    │   ├── petPerdidoController.js    ← Reportar e resolver pets perdidos
+    │   ├── localizacaoController.js   ← API de localizacao
+    │   ├── notificacaoController.js   ← Notificacoes e push subscriptions
+    │   ├── agendaController.js        ← Agendamentos (criar, listar, cancelar)
+    │   ├── adminController.js         ← Painel admin completo
+    │   ├── mapaController.js          ← API de pins do mapa (GeoJSON)
+    │   ├── chatController.js          ← Chat moderado + lista de conversas
+    │   ├── saudeController.js         ← Carteira de saude (vacinas, registros)
+    │   ├── diarioController.js        ← Diario do pet
+    │   ├── perfilController.js        ← Perfil do usuario + API de racas
+    │   ├── explorarController.js      ← Feed social (posts, curtidas, comentarios)
+    │   ├── pontoMapaController.js     ← Gestao de pontos no mapa
+    │   └── usuarioController.js       ← Operacoes de usuario
+    │
+    ├── models/                        ← 20+ models
+    │   ├── Usuario.js                 ← Usuarios do sistema
+    │   ├── Pet.js                     ← Pets cadastrados
+    │   ├── NfcTag.js                  ← Tags NFC (ciclo de vida)
+    │   ├── TagBatch.js                ← Lotes de fabricacao
+    │   ├── TagScan.js                 ← Auditoria de scans
+    │   ├── Petshop.js                 ← Petshops parceiros
+    │   ├── PontoMapa.js               ← Pontos de interesse no mapa
+    │   ├── PetPerdido.js              ← Alertas de pets perdidos
+    │   ├── Localizacao.js             ← Registro de localizacoes (PostGIS)
+    │   ├── Notificacao.js             ← Notificacoes do usuario
+    │   ├── AgendaPetshop.js           ← Agendamentos
+    │   ├── Conversa.js                ← Sessoes de chat
+    │   ├── MensagemChat.js            ← Mensagens + moderacao
+    │   ├── Vacina.js                  ← Carteira de vacinacao
+    │   ├── RegistroSaude.js           ← Consultas, exames
+    │   ├── DiarioPet.js               ← Diario do pet
+    │   ├── ConfigSistema.js           ← Configuracoes chave/valor
+    │   ├── PushSubscription.js        ← Inscricoes Web Push
+    │   ├── Publicacao.js              ← Publicacoes do feed social
+    │   ├── Curtida.js                 ← Curtidas em publicacoes
+    │   ├── Comentario.js              ← Comentarios em publicacoes
+    │   ├── Seguidor.js                ← Sistema de seguidores
+    │   └── Repost.js                  ← Reposts de publicacoes
+    │
+    ├── routes/                        ← 15 arquivos de rotas
+    │   ├── index.js                   ← Hub central (monta sub-rotas)
+    │   ├── authRoutes.js
+    │   ├── petRoutes.js
+    │   ├── nfcRoutes.js
+    │   ├── tagRoutes.js
+    │   ├── petshopRoutes.js
+    │   ├── mapaRoutes.js
+    │   ├── chatRoutes.js
+    │   ├── saudeRoutes.js
+    │   ├── diarioRoutes.js
+    │   ├── agendaRoutes.js
+    │   ├── petPerdidoRoutes.js
+    │   ├── localizacaoRoutes.js
+    │   ├── notificacaoRoutes.js
+    │   ├── adminRoutes.js
+    │   └── explorarRoutes.js
+    │
+    ├── services/                      ← 12 services (logica de negocio)
+    │   ├── authService.js             ← Hash de senha, JWT, login
+    │   ├── nfcService.js              ← Decisao de tela ao escanear tag
+    │   ├── notificacaoService.js      ← Criacao, envio, proximidade PostGIS
+    │   ├── pushService.js             ← Web Push API (VAPID)
+    │   ├── schedulerService.js        ← Jobs automaticos
+    │   ├── localizacaoService.js      ← Registro de localizacoes
+    │   ├── mapaService.js             ← Queries PostGIS por bounding box
+    │   ├── chatService.js             ← Moderacao de mensagens
+    │   ├── proximidadeService.js      ← Busca de usuarios proximos (raio)
+    │   ├── saudeService.js            ← Lembretes de vacinas
+    │   ├── petService.js              ← Regras de negocio de pets
+    │   └── tagService.js              ← Geracao de codigos, ativacao 3 fatores
+    │
+    ├── middlewares/
+    │   ├── authMiddleware.js          ← estaAutenticado, estaAutenticadoAPI
+    │   ├── adminMiddleware.js         ← apenasAdmin
+    │   ├── rateLimiter.js             ← Rate limiting (geral, auth, login, ativacao)
+    │   └── validator.js               ← Validacao de formularios
+    │
+    ├── sockets/
+    │   ├── index.js                   ← Inicializa 3 namespaces Socket.IO
+    │   ├── chatSocket.js              ← Chat em tempo real
+    │   ├── adminSocket.js             ← Painel admin em tempo real
+    │   └── notificacaoSocket.js       ← Notificacoes em tempo real
+    │
+    ├── utils/
+    │   ├── helpers.js                 ← Geracao de codigos, formatacao
+    │   ├── logger.js                  ← Log padronizado (info/error/warn)
+    │   ├── geolocation.js             ← Helpers PostGIS
+    │   └── upload.js                  ← Factory de multer (pets/diario/chat)
+    │
+    ├── views/                         ← ~40 templates EJS
+    │   ├── home.ejs                   ← Landing page
+    │   ├── explorar.ejs               ← Feed social
+    │   ├── termos.ejs                 ← Termos de uso
+    │   ├── privacidade.ejs            ← Politica de privacidade
+    │   ├── perfil.ejs                 ← Perfil do usuario
+    │   ├── auth/                      ← login, registro, esqueci-senha, redefinir-senha
+    │   ├── pets/                      ← meus-pets, cadastro, perfil, editar, saude, confirmacao
+    │   ├── nfc/                       ← intermediaria, ativar, nao-ativada, escolher-pet, encontrei, enviar-foto, encontrei-sucesso
+    │   ├── chat/                      ← lista, conversa
+    │   ├── diario/                    ← index
+    │   ├── mapa/                      ← index
+    │   ├── petshops/                  ← lista, detalhes
+    │   ├── pontos/                    ← detalhes
+    │   ├── pets-perdidos/             ← formulario, confirmacao, encontrado
+    │   ├── notificacoes/              ← lista
+    │   ├── agenda/                    ← lista
+    │   ├── explorar/                  ← perfil (perfil publico de usuarios)
+    │   ├── admin/                     ← dashboard, login, usuarios, pets, petshops, pets-perdidos, moderacao, configuracoes, gerenciar-mapa, mapa, tags, gerar-tags, lotes
+    │   ├── partials/                  ← header, nav, footer, flash, erro
+    │   └── layouts/                   ← main.ejs
+    │
+    └── public/                        ← Arquivos estaticos
+        ├── css/
+        │   ├── input.css              ← Entrada Tailwind
+        │   └── output.css             ← CSS compilado (gerado, no .gitignore)
+        ├── js/
+        │   ├── app.js                 ← Logica geral + compartilharWhatsApp()
+        │   ├── mapa.js                ← Integracao Leaflet + lazy loading
+        │   ├── chat.js                ← Socket.IO client para chat
+        │   ├── pwa.js                 ← Registro do Service Worker + push
+        │   ├── permissions.js         ← Modais de permissao (camera, GPS, notificacao)
+        │   └── admin-moderacao.js     ← JS do painel de moderacao admin
+        ├── images/
+        │   ├── pets/                  ← Fotos de perfil dos pets
+        │   ├── diario/               ← Fotos do diario
+        │   ├── chat/                  ← Fotos do chat
+        │   ├── posts/                 ← Fotos de publicacoes do feed
+        │   └── icons/                 ← Icones PWA (icon-192.svg, icon-512.svg)
+        ├── manifest.json              ← Config PWA
+        ├── sw.js                      ← Service Worker (cache offline)
+        └── offline.html               ← Pagina offline
+```
+
+---
+
+## 30. Como instalar e rodar
 
 ### Pre-requisitos
 
@@ -62,1216 +1161,1134 @@ O AIRPET e um sistema de **identificacao e recuperacao de pets** usando tags NFC
 2. **PostgreSQL** (versao 14 ou superior) com extensao **PostGIS**
 3. **Git** (opcional, para clonar o repositorio)
 
-### Passo a passo
-
-**1. Instalar o PostgreSQL com PostGIS**
+### Passo 1: Instalar PostgreSQL com PostGIS
 
 No Windows, baixe o instalador em [postgresql.org](https://www.postgresql.org/download/).
-Durante a instalacao, selecione o "Stack Builder" e instale o PostGIS.
+Durante a instalacao, use o "Stack Builder" para instalar o PostGIS.
 
-Depois, crie o banco de dados:
+Crie o banco de dados:
 ```sql
 CREATE DATABASE airpet;
 \c airpet
 CREATE EXTENSION postgis;
 ```
 
-**2. Configurar o arquivo .env**
+### Passo 2: Configurar o .env
 
 Copie o arquivo de exemplo:
 ```bash
 cp .env.example .env
 ```
 
-Preencha os valores:
-```
+Edite o `.env` com suas credenciais:
+```env
+# Banco de dados
 DB_HOST=localhost
 DB_PORT=5432
 DB_USER=postgres
-DB_PASSWORD=sua_senha_do_postgres
-DB_DATABASE=airpet
+DB_PASSWORD=sua_senha
+DB_NAME=airpet
 
-JWT_SECRET=cole_aqui_um_hash_aleatorio_longo
-JWT_EXPIRES_IN=7d
+# Seguranca
+JWT_SECRET=uma_chave_secreta_longa_e_aleatoria
+SESSION_SECRET=outra_chave_secreta_longa_e_aleatoria
 
-SESSION_SECRET=cole_aqui_outro_hash_aleatorio_diferente
+# Admin
+ADMIN_EMAIL=admin@airpet.com
+ADMIN_PASSWORD_HASH=$2b$12$...    # Hash bcrypt da senha admin
+ADMIN_PATH=/admin                  # Path customizavel do painel admin
 
+# Web Push (VAPID)
+VAPID_PUBLIC_KEY=sua_chave_publica
+VAPID_PRIVATE_KEY=sua_chave_privada
+VAPID_EMAIL=mailto:admin@airpet.com
+
+# Servidor
 PORT=3000
 NODE_ENV=development
-BASE_URL=http://localhost:3000
-
-# Admin do painel /admin (login separado)
-ADMIN_EMAIL=admin@airpet.com
-ADMIN_PASSWORD_HASH=$2b$12$... (hash bcrypt da senha)
-# OU para desenvolvimento (menos seguro):
-ADMIN_PASSWORD=sua_senha_admin
-
-# Web Push (opcional — gere com: npx web-push generate-vapid-keys)
-VAPID_PUBLIC_KEY=
-VAPID_PRIVATE_KEY=
-VAPID_EMAIL=mailto:seu@email.com
 ```
 
-Para gerar os secrets, rode no terminal:
+Para gerar as chaves VAPID:
 ```bash
-node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
+npx web-push generate-vapid-keys
 ```
 
 Para gerar o hash da senha admin:
 ```bash
-node -e "require('bcrypt').hash('sua_senha', 12).then(h => console.log(h))"
+node -e "const bcrypt = require('bcrypt'); bcrypt.hash('sua_senha', 12).then(h => console.log(h))"
 ```
 
-**3. Instalar dependencias**
+### Passo 3: Instalar dependencias
+
 ```bash
 npm install
 ```
 
-**4. Compilar o CSS (TailwindCSS)**
-```bash
-npm run css:build
-```Comando	Quando usar
-npm run css:watch	Durante o desenvolvimento (recompila sozinho a cada mudança)
-npm run css:build	Antes de colocar em produção (gera o CSS final minificado)
-Sem rodar um desses comandos, o arquivo output.css não é gerado/atualizado e o visual do site não reflete as classes Tailwind que você usou nos templates.
+### Passo 4: Compilar o CSS (TailwindCSS)
 
-**5. Iniciar o servidor**
+```bash
+npx tailwindcss -i src/public/css/input.css -o src/public/css/output.css
+```
+
+Para modo watch (recompila automaticamente):
+```bash
+npx tailwindcss -i src/public/css/input.css -o src/public/css/output.css --watch
+```
+
+### Passo 5: Iniciar o servidor
+
+**Desenvolvimento (com auto-restart):**
 ```bash
 npm run dev
 ```
 
-O servidor vai:
-1. Conectar no PostgreSQL
-2. Criar todas as tabelas automaticamente (se nao existirem)
-3. Iniciar os jobs automaticos (escalar alertas, lembretes de vacinas)
-4. Iniciar em http://localhost:3000
-
-### Criar o primeiro usuario admin
-
-Cadastre-se normalmente em http://localhost:3000/auth/registro.
-Depois, no banco de dados, mude o role para admin:
-```sql
-UPDATE usuarios SET role = 'admin' WHERE email = 'seu@email.com';
+**Producao:**
+```bash
+npm start
 ```
 
-Ou use o painel admin separado em `/admin/login` (usa as credenciais do .env).
+O servidor inicia em `http://localhost:3000` (ou a porta definida no `.env`).
+
+### O que acontece no boot
+
+1. Conecta ao PostgreSQL
+2. Executa `migrate.js` — cria as 25 tabelas automaticamente (idempotente)
+3. Insere seeds (configuracoes padrao, catalogo de racas)
+4. Inicializa Socket.IO com 3 namespaces
+5. Inicia o scheduler (escalar alertas a cada 30min, lembretes a cada 6h, limpeza a cada 1h)
+6. Servidor pronto para receber requisicoes
 
 ---
 
-## 3. Estrutura do projeto
+## 31. Banco de dados
+
+O sistema usa **PostgreSQL** com a extensao **PostGIS** para queries geograficas. Sao **25 tabelas** criadas automaticamente via `src/config/migrate.js`.
+
+### Tabela: `usuarios`
+
+| Campo | Tipo | Detalhes |
+|---|---|---|
+| id | SERIAL (PK) | Auto-incremento |
+| nome | VARCHAR(100) | NOT NULL |
+| email | VARCHAR(150) | UNIQUE NOT NULL |
+| senha_hash | VARCHAR(255) | NOT NULL (bcrypt 12 rounds) |
+| telefone | VARCHAR(20) | |
+| role | VARCHAR(20) | Default: 'usuario'. Valores: 'usuario', 'admin' |
+| ultima_localizacao | GEOGRAPHY(POINT, 4326) | PostGIS — atualizada via GPS |
+| ultima_lat | DECIMAL(10,7) | |
+| ultima_lng | DECIMAL(10,7) | |
+| cor_perfil | VARCHAR(7) | Default: '#ec5a1c' |
+| bio | VARCHAR(160) | Descricao curta para perfil publico |
+| foto_perfil | TEXT | URL da foto |
+| data_criacao | TIMESTAMP | Default: NOW() |
+| data_atualizacao | TIMESTAMP | |
+
+### Tabela: `pets`
+
+| Campo | Tipo | Detalhes |
+|---|---|---|
+| id | SERIAL (PK) | |
+| usuario_id | INTEGER (FK) | → usuarios(id) ON DELETE CASCADE |
+| nome | VARCHAR(100) | NOT NULL |
+| tipo | VARCHAR(50) | Default: 'cachorro' |
+| tipo_custom | VARCHAR(100) | Para tipos personalizados |
+| raca | VARCHAR(100) | |
+| cor | VARCHAR(50) | |
+| porte | VARCHAR(30) | mini, pequeno, medio, grande, gigante |
+| sexo | VARCHAR(20) | |
+| data_nascimento | DATE | |
+| peso | DECIMAL(5,2) | Em kg |
+| foto | TEXT | Path da foto |
+| descricao_emocional | TEXT | |
+| telefone_contato | VARCHAR(20) | Telefone alternativo |
+| status | VARCHAR(20) | Default: 'seguro'. Valores: 'seguro', 'perdido' |
+| petshop_vinculado_id | INTEGER (FK) | → petshops(id) |
+| data_criacao | TIMESTAMP | |
+| data_atualizacao | TIMESTAMP | |
+
+### Tabela: `nfc_tags`
+
+| Campo | Tipo | Detalhes |
+|---|---|---|
+| id | SERIAL (PK) | |
+| tag_code | VARCHAR(20) | UNIQUE NOT NULL (formato: PET-XXXXXX) |
+| activation_code | VARCHAR(20) | NOT NULL (formato: XXXX-XXXX) |
+| qr_code | VARCHAR(100) | UNIQUE |
+| status | VARCHAR(20) | Default: 'stock'. Valores: stock, reserved, sent, active, blocked |
+| batch_id | INTEGER (FK) | → tag_batches(id) |
+| user_id | INTEGER (FK) | → usuarios(id) |
+| pet_id | INTEGER (FK) | → pets(id) ON DELETE SET NULL |
+| activated_at | TIMESTAMP | |
+| sent_at | TIMESTAMP | |
+| reserved_at | TIMESTAMP | |
+| data_criacao | TIMESTAMP | |
+
+### Tabela: `tag_batches`
+
+| Campo | Tipo | Detalhes |
+|---|---|---|
+| id | SERIAL (PK) | |
+| codigo_lote | VARCHAR(50) | UNIQUE NOT NULL |
+| quantidade | INTEGER | NOT NULL |
+| fabricante | VARCHAR(100) | |
+| observacoes | TEXT | |
+| criado_por | INTEGER (FK) | → usuarios(id) |
+| data_criacao | TIMESTAMP | |
+
+### Tabela: `tag_scans`
+
+| Campo | Tipo | Detalhes |
+|---|---|---|
+| id | SERIAL (PK) | |
+| tag_id | INTEGER (FK) | → nfc_tags(id) |
+| tag_code | VARCHAR(20) | NOT NULL |
+| latitude | DECIMAL(10,7) | |
+| longitude | DECIMAL(10,7) | |
+| cidade | VARCHAR(100) | |
+| ip | VARCHAR(45) | |
+| user_agent | TEXT | |
+| data | TIMESTAMP | Default: NOW() |
+
+### Tabela: `petshops`
+
+| Campo | Tipo | Detalhes |
+|---|---|---|
+| id | SERIAL (PK) | |
+| nome | VARCHAR(150) | NOT NULL |
+| endereco | TEXT | |
+| localizacao | GEOGRAPHY(POINT, 4326) | Indice GIST para busca espacial |
+| telefone | VARCHAR(20) | |
+| whatsapp | VARCHAR(20) | |
+| descricao | TEXT | |
+| servicos | TEXT[] | Array PostgreSQL |
+| horario_funcionamento | JSONB | |
+| galeria_fotos | TEXT[] | |
+| ponto_de_apoio | BOOLEAN | Default: false |
+| latitude | DECIMAL(10,7) | |
+| longitude | DECIMAL(10,7) | |
+| ativo | BOOLEAN | Default: true |
+| data_criacao | TIMESTAMP | |
+
+### Tabela: `pontos_mapa`
+
+| Campo | Tipo | Detalhes |
+|---|---|---|
+| id | SERIAL (PK) | |
+| nome | VARCHAR(150) | NOT NULL |
+| categoria | VARCHAR(50) | NOT NULL (abrigo, ong, clinica, parque) |
+| endereco | TEXT | |
+| localizacao | GEOGRAPHY(POINT, 4326) | Indice GIST |
+| latitude | DECIMAL(10,7) | |
+| longitude | DECIMAL(10,7) | |
+| telefone | VARCHAR(20) | |
+| whatsapp | VARCHAR(20) | |
+| descricao | TEXT | |
+| servicos | TEXT[] | |
+| horario_funcionamento | JSONB | |
+| galeria_fotos | TEXT[] | |
+| icone_mapa | VARCHAR(50) | |
+| ativo | BOOLEAN | Default: true |
+| criado_por | INTEGER (FK) | → usuarios(id) |
+| data_criacao | TIMESTAMP | |
+| data_atualizacao | TIMESTAMP | |
+
+### Tabela: `pets_perdidos`
+
+| Campo | Tipo | Detalhes |
+|---|---|---|
+| id | SERIAL (PK) | |
+| pet_id | INTEGER (FK) | → pets(id) ON DELETE CASCADE |
+| ultima_localizacao | GEOGRAPHY(POINT, 4326) | Indice GIST |
+| ultima_lat | DECIMAL(10,7) | |
+| ultima_lng | DECIMAL(10,7) | |
+| descricao | TEXT | |
+| recompensa | VARCHAR(50) | |
+| status | VARCHAR(30) | Default: 'pendente'. Valores: pendente, aprovado, resolvido, rejeitado |
+| nivel_alerta | INTEGER | Default: 0 (1 a 3 apos aprovacao) |
+| data_hora_desaparecimento | TIMESTAMP | |
+| cidade | VARCHAR(100) | |
+| data | TIMESTAMP | Default: NOW() |
+
+### Tabela: `localizacoes`
+
+| Campo | Tipo | Detalhes |
+|---|---|---|
+| id | SERIAL (PK) | |
+| pet_id | INTEGER (FK) | → pets(id) ON DELETE CASCADE |
+| ponto | GEOGRAPHY(POINT, 4326) | Indice GIST |
+| latitude | DECIMAL(10,7) | |
+| longitude | DECIMAL(10,7) | |
+| cidade | VARCHAR(100) | |
+| ip | VARCHAR(45) | |
+| foto_url | TEXT | |
+| data | TIMESTAMP | |
+
+### Tabela: `conversas`
+
+| Campo | Tipo | Detalhes |
+|---|---|---|
+| id | SERIAL (PK) | |
+| pet_perdido_id | INTEGER (FK) | → pets_perdidos(id) ON DELETE CASCADE |
+| encontrador_nome | VARCHAR(100) | |
+| encontrador_telefone | VARCHAR(20) | |
+| dono_id | INTEGER (FK) | → usuarios(id) |
+| status | VARCHAR(30) | Default: 'ativa' |
+| data_criacao | TIMESTAMP | |
+
+### Tabela: `mensagens_chat`
+
+| Campo | Tipo | Detalhes |
+|---|---|---|
+| id | SERIAL (PK) | |
+| conversa_id | INTEGER (FK) | → conversas(id) ON DELETE CASCADE |
+| remetente | VARCHAR(30) | NOT NULL |
+| tipo | VARCHAR(20) | Default: 'texto' |
+| conteudo | TEXT | NOT NULL |
+| foto_url | TEXT | |
+| status_moderacao | VARCHAR(30) | Default: 'pendente'. Valores: pendente, aprovada, rejeitada |
+| moderado_por | INTEGER (FK) | → usuarios(id) |
+| moderado_em | TIMESTAMP | |
+| data | TIMESTAMP | |
+
+### Tabela: `notificacoes`
+
+| Campo | Tipo | Detalhes |
+|---|---|---|
+| id | SERIAL (PK) | |
+| usuario_id | INTEGER (FK) | → usuarios(id) ON DELETE CASCADE |
+| tipo | VARCHAR(50) | scan, alerta, chat, sistema, encontrado |
+| mensagem | TEXT | |
+| link | TEXT | |
+| lida | BOOLEAN | Default: false |
+| data | TIMESTAMP | |
+
+### Tabela: `vacinas`
+
+| Campo | Tipo | Detalhes |
+|---|---|---|
+| id | SERIAL (PK) | |
+| pet_id | INTEGER (FK) | → pets(id) ON DELETE CASCADE |
+| nome | VARCHAR(100) | NOT NULL |
+| data_aplicacao | DATE | |
+| data_proxima | DATE | Proximo reforco |
+| veterinario | VARCHAR(100) | |
+| observacoes | TEXT | |
+| data_criacao | TIMESTAMP | |
+
+### Tabela: `registros_saude`
+
+| Campo | Tipo | Detalhes |
+|---|---|---|
+| id | SERIAL (PK) | |
+| pet_id | INTEGER (FK) | → pets(id) ON DELETE CASCADE |
+| tipo | VARCHAR(50) | NOT NULL (consulta, exame, cirurgia, vermifugo, antipulgas, outro) |
+| descricao | TEXT | |
+| data_registro | DATE | |
+| data_proxima | DATE | |
+| valor_numerico | DECIMAL(10,2) | |
+| veterinario | VARCHAR(100) | |
+| observacoes | TEXT | |
+| data_criacao | TIMESTAMP | |
+
+### Tabela: `diario_pet`
+
+| Campo | Tipo | Detalhes |
+|---|---|---|
+| id | SERIAL (PK) | |
+| pet_id | INTEGER (FK) | → pets(id) ON DELETE CASCADE |
+| usuario_id | INTEGER (FK) | → usuarios(id) |
+| tipo | VARCHAR(30) | NOT NULL (alimentacao, passeio, remedio, necessidades, humor, peso, banho, brincar, veterinario, outro) |
+| descricao | TEXT | |
+| valor_numerico | DECIMAL(10,2) | |
+| foto | TEXT | |
+| data | DATE | Default: CURRENT_DATE |
+| hora | TIME | Default: CURRENT_TIME |
+| data_criacao | TIMESTAMP | |
+
+### Tabela: `agenda_petshop`
+
+| Campo | Tipo | Detalhes |
+|---|---|---|
+| id | SERIAL (PK) | |
+| petshop_id | INTEGER (FK) | → petshops(id) ON DELETE CASCADE |
+| pet_id | INTEGER (FK) | → pets(id) |
+| usuario_id | INTEGER (FK) | → usuarios(id) |
+| servico | VARCHAR(100) | |
+| data | TIMESTAMP | |
+| status | VARCHAR(30) | Default: 'agendado'. Valores: agendado, confirmado, cancelado, concluido |
+| data_criacao | TIMESTAMP | |
+
+### Tabela: `config_sistema`
+
+| Campo | Tipo | Detalhes |
+|---|---|---|
+| id | SERIAL (PK) | |
+| chave | VARCHAR(100) | UNIQUE NOT NULL |
+| valor | TEXT | NOT NULL |
+| descricao | TEXT | |
+| atualizado_em | TIMESTAMP | |
+
+Seeds padrao: `raio_alerta_nivel1_km` (1), `raio_alerta_nivel2_km` (3), `raio_alerta_nivel3_km` (0), `horas_para_nivel2` (6), `horas_para_nivel3` (24).
+
+### Tabela: `push_subscriptions`
+
+| Campo | Tipo | Detalhes |
+|---|---|---|
+| id | SERIAL (PK) | |
+| usuario_id | INTEGER (FK) | → usuarios(id) ON DELETE CASCADE |
+| endpoint | TEXT | NOT NULL, UNIQUE INDEX |
+| p256dh | TEXT | NOT NULL |
+| auth | TEXT | NOT NULL |
+| user_agent | TEXT | |
+| data_criacao | TIMESTAMP | |
+
+### Tabela: `publicacoes`
+
+| Campo | Tipo | Detalhes |
+|---|---|---|
+| id | SERIAL (PK) | |
+| usuario_id | INTEGER (FK) | NOT NULL → usuarios(id) ON DELETE CASCADE |
+| pet_id | INTEGER (FK) | → pets(id) ON DELETE SET NULL |
+| foto | VARCHAR(500) | |
+| legenda | TEXT | |
+| texto | TEXT | Para posts sem foto |
+| fixada | BOOLEAN | Default: false |
+| tipo | VARCHAR(20) | Default: 'original'. Valores: original, repost |
+| repost_id | INTEGER (FK) | → publicacoes(id) ON DELETE SET NULL |
+| criado_em | TIMESTAMP | |
+
+Limites: MAX_POSTS = 10 por usuario, MAX_FIXADAS = 3.
+
+### Tabela: `curtidas`
+
+| Campo | Tipo | Detalhes |
+|---|---|---|
+| id | SERIAL (PK) | |
+| usuario_id | INTEGER (FK) | → usuarios(id) ON DELETE CASCADE |
+| publicacao_id | INTEGER (FK) | → publicacoes(id) ON DELETE CASCADE |
+| criado_em | TIMESTAMP | |
+
+Constraint: UNIQUE(usuario_id, publicacao_id) — um usuario so pode curtir cada post uma vez.
+
+### Tabela: `comentarios`
+
+| Campo | Tipo | Detalhes |
+|---|---|---|
+| id | SERIAL (PK) | |
+| usuario_id | INTEGER (FK) | → usuarios(id) ON DELETE CASCADE |
+| publicacao_id | INTEGER (FK) | → publicacoes(id) ON DELETE CASCADE |
+| texto | TEXT | NOT NULL |
+| criado_em | TIMESTAMP | |
+
+### Tabela: `reposts`
+
+| Campo | Tipo | Detalhes |
+|---|---|---|
+| id | SERIAL (PK) | |
+| usuario_id | INTEGER (FK) | → usuarios(id) ON DELETE CASCADE |
+| publicacao_id | INTEGER (FK) | → publicacoes(id) ON DELETE CASCADE |
+| criado_em | TIMESTAMP | |
+
+Constraint: UNIQUE(usuario_id, publicacao_id) — um usuario so pode repostar cada post uma vez.
+
+### Tabela: `seguidores`
+
+| Campo | Tipo | Detalhes |
+|---|---|---|
+| id | SERIAL (PK) | |
+| seguidor_id | INTEGER (FK) | → usuarios(id) ON DELETE CASCADE |
+| seguido_id | INTEGER (FK) | → usuarios(id) ON DELETE CASCADE |
+| criado_em | TIMESTAMP | |
+
+Constraint: UNIQUE(seguidor_id, seguido_id) — auto-referenciamento.
+
+### Tabela: `racas`
+
+| Campo | Tipo | Detalhes |
+|---|---|---|
+| id | SERIAL (PK) | |
+| nome | VARCHAR(100) | UNIQUE(nome, tipo) |
+| tipo | VARCHAR(50) | cachorro, gato, passaro, outro |
+| popular | BOOLEAN | Default: false |
+
+Seed com ~200 racas incluindo cachorros, gatos, passaros e outros animais.
+
+### Tabela: `user_sessions`
+
+Tabela auto-gerenciada pelo `connect-pg-simple` para armazenar sessoes Express.
+
+### Indices espaciais (GIST)
+
+Tabelas com indice GIST para queries geograficas rapidas:
+- `pontos_mapa.localizacao`
+- `petshops.localizacao`
+- `pets_perdidos.ultima_localizacao`
+- `localizacoes.ponto`
+
+### Diagrama de relacionamentos
 
 ```
-AIRPET/
-  server.js              ← Ponto de entrada (inicia tudo)
-  package.json           ← Dependencias e scripts
-  .env                   ← Credenciais (NUNCA commitar)
-  .env.example           ← Template do .env
-  tailwind.config.js     ← Config do TailwindCSS
-  
-  src/
-    config/
-      database.js        ← Conexao com PostgreSQL (pool)
-      session.js         ← Configuracao de sessoes
-      migrate.js         ← Criacao automatica de tabelas
-    
-    controllers/         ← Recebem as requisicoes HTTP
-      authController.js       → Login, registro, logout, esqueci senha, redefinir senha
-      petController.js        → CRUD de pets, perfil com idade/peso ideal/calendario
-      nfcController.js        → Scan NFC, encontrei pet, enviar foto
-      tagController.js        → Ativacao e gestao de tags
-      petshopController.js    → Listagem de petshops
-      petPerdidoController.js → Reporte de pets perdidos
-      localizacaoController.js → API de localizacao
-      notificacaoController.js → Notificacoes do usuario
-      agendaController.js     → Agendamentos (criar, listar, cancelar, confirmar)
-      adminController.js      → Painel admin (dashboard, aprovar/rejeitar alertas,
-                                  moderacao, escalar, CRUD usuarios, role)
-      mapaController.js       → API de pins do mapa
-      chatController.js       → Chat moderado + lista de conversas
-      saudeController.js      → Carteira de saude (com ownership check)
-      diarioController.js     → Diario do pet (com ownership check)
-      pontoMapaController.js  → Gestao de pontos no mapa (usa model, sem query direta)
-      perfilController.js     → Perfil do usuario (usa model, sem query direta)
-    
-    models/              ← Queries ao banco de dados
-      Usuario.js              → +atualizarPerfil(), +atualizarRole()
-      Pet.js                  → CRUD completo, atualizarStatus()
-      NfcTag.js               → Ciclo de vida da tag
-      TagBatch.js             → Lotes de fabricacao
-      TagScan.js              → Auditoria de scans
-      Petshop.js              → Listagem e busca
-      PontoMapa.js            → CRUD completo (+deletar)
-      PetPerdido.js           → +rejeitar(), aprovar, resolver, atualizarNivel
-      Localizacao.js          → Registro e historico
-      Notificacao.js          → Criar, listar, marcar lida, criar para multiplos
-      AgendaPetshop.js        → +buscarPorId, +cancelar, +confirmar, +concluir
-      Conversa.js             → +buscarPorUsuario() para lista de conversas
-      MensagemChat.js         → CRUD + aprovar/rejeitar moderacao
-      Vacina.js               → CRUD + buscarVencendo() para lembretes
-      RegistroSaude.js        → CRUD completo
-      DiarioPet.js            → CRUD de entradas do diario
-      ConfigSistema.js        → Chave/valor de configuracoes
-      PushSubscription.js     → Inscricoes Web Push
-    
-    routes/              ← Define URLs e conecta a controllers
-      index.js                → Rota raiz, /termos, /privacidade, /explorar
-      authRoutes.js           → Login, registro, esqueci-senha, redefinir-senha
-      petRoutes.js            → CRUD pets (validacao no PUT tambem)
-      nfcRoutes.js            → Scan, encontrei, enviar-foto (com multer)
-      tagRoutes.js            → Ativacao, admin de tags
-      petshopRoutes.js        → Listagem publica
-      mapaRoutes.js           → API GeoJSON
-      chatRoutes.js           → Lista conversas, mostrar conversa (autenticado)
-      saudeRoutes.js          → Vacinas e registros
-      diarioRoutes.js         → Diario (upload separado em /images/diario/)
-      agendaRoutes.js         → Criar, listar, cancelar, confirmar
-      petPerdidoRoutes.js     → Reportar, encontrado, resolver
-      localizacaoRoutes.js    → API localizacao (protegida com auth)
-      notificacaoRoutes.js    → Notificacoes do usuario
-      adminRoutes.js          → Painel admin (login com bcrypt + rate limit)
-    
-    services/            ← Logica de negocio
-      authService.js          → Hash de senha, JWT, login
-      nfcService.js           → Decisao de tela ao escanear
-      notificacaoService.js   → Criacao, envio, proximidade PostGIS
-      pushService.js          → Web Push API (VAPID)
-      schedulerService.js     → Jobs automaticos (escalar alertas, lembretes vacinas)
-      localizacaoService.js   → Registro de localizacoes
-      mapaService.js          → Queries PostGIS por bounding box
-      chatService.js          → Moderacao de mensagens
-      proximidadeService.js   → Busca de usuarios proximos (raio)
-      saudeService.js         → Lembretes de vacinas
-      petService.js           → Regras de pets
-      tagService.js           → Geracao de codigos, ativacao 3 fatores
-    
-    middlewares/          ← Filtros que rodam antes dos controllers
-      authMiddleware.js       → Verifica se esta logado (estaAutenticado)
-      adminMiddleware.js      → Verifica se e admin (apenasAdmin)
-      rateLimiter.js          → Limita requisicoes: geral, auth, login, ativacao
-      validator.js            → Valida dados de formularios (validarPet, validarRegistro...)
-    
-    sockets/             ← WebSocket (tempo real)
-      index.js                → Inicializa Socket.IO
-      chatSocket.js           → Chat entre encontrador e dono
-      notificacaoSocket.js    → Notificacoes em tempo real
-    
-    views/               ← Paginas HTML (EJS + TailwindCSS)
-      home.ejs                → Landing dinamica (stats + pets perdidos)
-      explorar.ejs            → Mural da comunidade (pets, petshops, recentes)
-      termos.ejs              → Termos de uso
-      privacidade.ejs         → Politica de privacidade (LGPD)
-      perfil.ejs              → Perfil do usuario
-      auth/
-        login.ejs             → Login
-        registro.ejs          → Registro
-        esqueci-senha.ejs     → Formulario de recuperacao
-        redefinir-senha.ejs   → Formulario de nova senha (com token)
-      pets/
-        meus-pets.ejs         → Grid de pets do usuario
-        cadastro.ejs          → Wizard de cadastro
-        perfil.ejs            → Perfil do pet (idade, peso ideal, calendario)
-        editar.ejs            → Edicao do pet
-        saude.ejs             → Carteira de saude
-        confirmacao.ejs       → Confirmacao pos-cadastro
-      nfc/
-        nao-ativada.ejs       → Tag ainda nao vendida
-        ativar.ejs            → Formulario de ativacao (3 fatores)
-        intermediaria.ejs     → Tela principal quando alguem encontra o pet
-        escolher-pet.ejs      → Escolher pet para tag
-        encontrei.ejs         → Formulario "encontrei este pet"
-        enviar-foto.ejs       → Upload de foto do pet encontrado
-        encontrei-sucesso.ejs → Confirmacao pos-envio
-      chat/
-        lista.ejs             → Lista de conversas do usuario
-        conversa.ejs          → Tela de chat
-      diario/
-        index.ejs             → Diario do pet
-      mapa/
-        index.ejs             → Mapa interativo
-      petshops/
-        lista.ejs             → Lista de petshops
-        detalhes.ejs          → Detalhes do petshop
-      pontos/
-        detalhes.ejs          → Detalhes de ponto no mapa
-      admin/
-        login.ejs             → Login admin separado
-        dashboard.ejs         → Dashboard com metricas
-        usuarios.ejs          → Gerenciar usuarios (+alterar role)
-        pets.ejs              → Gerenciar pets
-        petshops.ejs          → Gerenciar petshops
-        pets-perdidos.ejs     → Aprovar/rejeitar/escalar alertas
-        moderacao.ejs         → Moderar mensagens do chat
-        configuracoes.ejs     → Configuracoes do sistema
-        gerenciar-mapa.ejs    → CRUD de pontos no mapa
-        mapa.ejs              → Mapa administrativo
-        tags.ejs              → Gerenciar tags NFC
-        gerar-tags.ejs        → Gerar lote de tags
-        lotes.ejs             → Historico de lotes
-      partials/
-        header.ejs            → Head HTML + meta tags
-        nav.ejs               → Barra de navegacao (com link Explorar)
-        footer.ejs            → Rodape
-        flash.ejs             → Mensagens de sucesso/erro
-        erro.ejs              → Pagina de erro generica
-      layouts/
-        main.ejs              → Layout principal
-    
-    public/              ← Arquivos estaticos
-      css/output.css          → CSS compilado
-      images/
-        pets/               → Fotos de perfil dos pets
-        diario/             → Fotos do diario (separado dos pets)
-        chat/               → Fotos do chat
-        icons/              → Icones PWA (192px, 512px)
-      js/
-        app.js              → Logica geral + compartilharWhatsApp()
-        mapa.js             → Interacao com Leaflet + lazy loading
-        pwa.js              → Registro do Service Worker + push
-        permissions.js      → Modals de permissao (camera, GPS, notificacao)
-      manifest.json           → Configuracao PWA
-      sw.js                   → Service Worker (cache offline)
-      offline.html            → Pagina offline
-    
-    utils/               ← Funcoes auxiliares
-      helpers.js              → Geracao de codigos, formatacao
-      logger.js               → Sistema de log com timestamp
-      geolocation.js          → Helpers PostGIS
-      upload.js               → Configuracao centralizada do multer
-```
+usuarios ──1:N──> pets ──1:N──> vacinas
+                  │              registros_saude
+                  │              diario_pet
+                  │              localizacoes
+                  │
+                  ├──1:N──> nfc_tags ──1:N──> tag_scans
+                  │           └── via tag_batches
+                  │
+                  └──1:N──> pets_perdidos ──1:N──> conversas ──1:N──> mensagens_chat
 
-### Como o codigo se conecta (MVC)
-
-```
-Usuario clica em algo no navegador
-        ↓
-    ROTA (routes/) define qual controller chamar
-        ↓
-    MIDDLEWARE (middlewares/) verifica auth, rate limit, validacao
-        ↓
-    CONTROLLER (controllers/) recebe a requisicao
-        ↓
-    SERVICE (services/) executa a logica de negocio
-        ↓
-    MODEL (models/) faz a query no banco de dados
-        ↓
-    CONTROLLER recebe o resultado
-        ↓
-    VIEW (views/) renderiza a pagina HTML
-        ↓
-    Pagina aparece pro usuario
+usuarios ──1:N──> notificacoes
+           1:N──> push_subscriptions
+           1:N──> publicacoes ──1:N──> curtidas
+                                1:N──> comentarios
+                                1:N──> reposts
+           M:N──> seguidores (auto-referenciamento)
+           1:N──> agenda_petshop ←── petshops
+                                      pontos_mapa
 ```
 
 ---
 
-## 4. Banco de dados
+## 32. Rotas e endpoints
 
-O sistema usa **19 tabelas** no PostgreSQL com extensao PostGIS (para dados geograficos).
+Todas as rotas sao montadas em `src/routes/index.js` com sub-routers.
 
-### Tabelas e o que guardam
+### Rotas publicas (sem autenticacao)
 
-| Tabela | O que guarda | Campos principais |
-|--------|-------------|-------------------|
-| **usuarios** | Donos de pets e admins | nome, email, senha_hash, role, cor_perfil, ultima_localizacao, ultima_lat/lng |
-| **pets** | Os animais cadastrados | nome, foto, descricao_emocional, raca, tipo, peso, status, data_nascimento |
-| **tag_batches** | Lotes de tags fabricadas | codigo_lote, quantidade, fabricante |
-| **nfc_tags** | Tags NFC individuais | tag_code, activation_code, status, user_id, pet_id, qr_code |
-| **tag_scans** | Log de todo scan NFC | tag_code, latitude, longitude, cidade, ip, user_agent |
-| **petshops** | Petshops parceiros | nome, endereco, lat/lng, servicos, horario, galeria |
-| **pontos_mapa** | Pontos no mapa (vet, abrigo...) | nome, categoria, lat/lng, telefone, whatsapp, servicos |
-| **pets_perdidos** | Alertas de desaparecimento | pet_id, ultima_localizacao, status, nivel_alerta, recompensa, cidade |
-| **localizacoes** | Avistamentos de pets | pet_id, lat/lng, ponto (geography), cidade, ip, origem |
-| **notificacoes** | Alertas para usuarios | usuario_id, tipo, mensagem, lida, link |
-| **agenda_petshop** | Agendamentos de servicos | petshop_id, pet_id, usuario_id, servico, data, status |
-| **conversas** | Sessoes de chat | pet_perdido_id, iniciador_id, tutor_id, status |
-| **mensagens_chat** | Mensagens do chat | conversa_id, remetente, conteudo, tipo, status_moderacao, moderado_por |
-| **vacinas** | Carteira de vacinacao | pet_id, nome_vacina, data_aplicacao, data_proxima, veterinario, clinica |
-| **registros_saude** | Consultas, exames, etc. | pet_id, tipo, descricao, data_registro, veterinario, clinica |
-| **diario_pet** | Diario diario do pet | pet_id, usuario_id, tipo, descricao, valor_numerico, foto |
-| **config_sistema** | Configuracoes globais | chave, valor (ex: raio_alerta_nivel1_km = 1) |
-| **push_subscriptions** | Inscricoes Web Push | usuario_id, endpoint, keys_p256dh, keys_auth |
-| **racas** | Catalogo de racas | nome, tipo (cachorro/gato), popular |
-| **user_sessions** | Sessoes ativas (automatica) | sid, sess, expire |
+| Metodo | Path | Descricao |
+|---|---|---|
+| GET | `/` | Home page (redireciona para `/explorar` se logado) |
+| GET | `/termos` | Termos de uso |
+| GET | `/privacidade` | Politica de privacidade |
+| GET | `/auth/login` | Formulario de login |
+| POST | `/auth/login` | Processar login (rate limited) |
+| GET | `/auth/registro` | Formulario de registro |
+| POST | `/auth/registro` | Processar registro (rate limited) |
+| GET | `/auth/esqueci-senha` | Formulario de recuperacao de senha |
+| POST | `/auth/esqueci-senha` | Gerar token de recuperacao |
+| GET | `/auth/redefinir-senha/:token` | Formulario de nova senha |
+| POST | `/auth/redefinir-senha/:token` | Salvar nova senha |
+| GET | `/auth/logout` | Encerrar sessao |
+| GET | `/tag/:tag_code` | Processar scan NFC (tela baseada no status da tag) |
+| GET | `/tag/:tag_code/encontrei` | Formulario "encontrei este pet" |
+| POST | `/tag/:tag_code/encontrei` | Processar formulario com localizacao e foto |
+| GET | `/tag/:tag_code/enviar-foto` | Formulario para enviar foto |
+| POST | `/tag/:tag_code/enviar-foto` | Upload de foto do pet encontrado |
+| GET | `/petshops` | Lista de petshops ativos |
+| GET | `/petshops/:id` | Detalhes de um petshop |
+| GET | `/mapa` | Pagina do mapa interativo |
+| GET | `/mapa/api/pins` | API GeoJSON — pins por bounding box |
+| GET | `/api/racas` | API — buscar racas por tipo/nome (autocomplete) |
 
-### Status possiveis
+### Rotas autenticadas (usuario logado)
 
-| Tabela | Campo | Valores |
-|--------|-------|---------|
-| nfc_tags | status | stock, reserved, sent, active, blocked |
-| pets_perdidos | status | pendente, aprovado, rejeitado, resolvido |
-| pets_perdidos | nivel_alerta | 1, 2, 3 |
-| agenda_petshop | status | agendado, confirmado, cancelado, concluido |
-| mensagens_chat | status_moderacao | pendente, aprovada, rejeitada |
-| conversas | status | ativa, encerrada |
-| pets | status | seguro, perdido |
+| Metodo | Path | Descricao |
+|---|---|---|
+| GET | `/pets` | Listar pets do usuario |
+| GET | `/pets/cadastro` | Formulario de cadastro |
+| POST | `/pets/cadastro` | Criar pet (com upload de foto) |
+| GET | `/pets/:id` | Perfil completo do pet |
+| GET | `/pets/:id/editar` | Formulario de edicao |
+| POST | `/pets/:id/editar` | Atualizar dados do pet |
+| PUT | `/pets/:id` | Atualizar via method-override |
+| GET | `/pets/:id/saude` | Carteira de saude |
+| POST | `/saude/:pet_id/vacinas` | Adicionar vacina |
+| DELETE | `/saude/vacinas/:id` | Remover vacina |
+| POST | `/saude/:pet_id/registros` | Adicionar registro de saude |
+| DELETE | `/saude/registros/:id` | Remover registro de saude |
+| GET | `/diario/:pet_id` | Exibir diario do pet |
+| POST | `/diario/:pet_id` | Adicionar entrada no diario |
+| DELETE | `/diario/:id` | Remover entrada |
+| GET | `/tags/:tag_code/ativar` | Formulario de ativacao NFC |
+| POST | `/tags/:tag_code/ativar` | Ativar tag (3 fatores) |
+| GET | `/tags/:tag_code/escolher-pet` | Escolher pet para vincular |
+| POST | `/tags/:tag_code/vincular-pet` | Vincular tag ao pet |
+| GET | `/perdidos/:pet_id/formulario` | Formulario de reporte |
+| POST | `/perdidos/:pet_id/reportar` | Criar alerta de pet perdido |
+| GET | `/perdidos/:pet_id/encontrado` | Formulario "meu pet foi encontrado" |
+| POST | `/perdidos/:pet_id/encontrado` | Resolver alerta |
+| GET | `/perdidos/:pet_id/confirmacao` | Tela de celebracao |
+| POST | `/perdidos/:id/resolver` | Redireciona para fluxo de encontrado |
+| GET | `/explorar` | Feed social (tabs: para-voce, seguindo) |
+| POST | `/explorar/post` | Criar publicacao (com foto) |
+| POST | `/explorar/post/:id/curtir` | Curtir publicacao |
+| DELETE | `/explorar/post/:id/curtir` | Descurtir |
+| GET | `/explorar/post/:id/comentarios` | Listar comentarios (JSON) |
+| POST | `/explorar/post/:id/comentar` | Comentar |
+| DELETE | `/explorar/comentario/:id` | Deletar comentario |
+| POST | `/explorar/post/:id/fixar` | Fixar publicacao |
+| DELETE | `/explorar/post/:id/fixar` | Desafixar |
+| DELETE | `/explorar/post/:id` | Deletar publicacao |
+| POST | `/explorar/seguir/:id` | Seguir usuario |
+| DELETE | `/explorar/seguir/:id` | Deixar de seguir |
+| GET | `/explorar/perfil/:id` | Perfil publico do usuario |
+| GET | `/chat` | Lista de conversas |
+| POST | `/chat/iniciar` | Iniciar/reabrir conversa |
+| GET | `/chat/:conversaId` | Exibir conversa |
+| GET | `/notificacoes` | Lista de notificacoes |
+| GET | `/notificacoes/api/count` | API — contar nao lidas |
+| POST | `/notificacoes/:id/lida` | Marcar como lida |
+| POST | `/notificacoes/push/subscribe` | Salvar push subscription |
+| POST | `/notificacoes/push/unsubscribe` | Remover push subscription |
+| GET | `/agenda` | Listar agendamentos |
+| POST | `/agenda` | Criar agendamento |
+| POST | `/agenda/:id/cancelar` | Cancelar agendamento |
+| POST | `/agenda/:id/confirmar` | Confirmar agendamento (admin) |
+| GET | `/perfil` | Pagina de perfil do usuario |
+| PUT | `/perfil` | Atualizar perfil |
+| POST | `/api/localizacao` | Registrar localizacao de pet |
+| GET | `/api/localizacao/:pet_id` | Historico de localizacoes |
 
-### As tabelas sao criadas automaticamente
+### Rotas administrativas (admin)
 
-Toda vez que o servidor inicia, o arquivo `src/config/migrate.js` verifica se cada tabela existe. Se nao existir, cria. Voce nunca precisa rodar SQL manualmente.
-
----
-
-## 5. Fluxos principais
-
-### 5.1 Fluxo do scan NFC (o mais importante do sistema)
-
-```
-Alguem encontra um pet com tag NFC
-        ↓
-Encosta o celular na tag
-        ↓
-Celular abre: http://seusite.com/tag/PET-82KJ91
-        ↓
-Sistema verifica o status da tag:
-
-  ┌─ manufactured   → Pagina "Tag nao ativada"
-  ├─ sent/reserved  → Pagina "Ativar sua tag" (para o comprador)
-  ├─ active         → Pagina "PET ENCONTRADO" (para quem encontrou)
-  └─ blocked        → Pagina "Tag bloqueada"
-
-Se a tag esta ATIVA:
-  1. Sistema salva automaticamente: quem escaneou, onde, quando, IP
-  2. Notifica o dono: "Alguem escaneou a tag do Thor!"
-  3. Mostra a pagina intermediaria com botoes de acao:
-     - Ligar para o dono
-     - Enviar localizacao
-     - "Encontrei este pet" (formulario com nome, telefone, mensagem, foto)
-     - "Enviar foto" (upload direto)
-     - Conversar com o dono (chat moderado, se pet perdido)
-```
-
-### 5.2 Fluxo de ativacao da tag (3 fatores)
-
-```
-Cliente compra a tag → recebe uma caixa com:
-  - Tag NFC fisica
-  - Codigo de ativacao impresso (ex: AX9P-72KQ)
-
-Para ativar, precisa dos 3 ao mesmo tempo:
-  1. Tag fisica (encostar no celular → abre a URL)
-  2. Estar logado na conta (prova que e o dono)
-  3. Digitar o codigo da caixa (prova que recebeu o produto)
-
-Se faltar qualquer um → nao ativa.
-```
-
-### 5.3 Fluxo de pet perdido (com escalamento automatico)
-
-```
-Dono marca pet como perdido (formulario com descricao, localizacao, recompensa)
-        ↓
-Status: PENDENTE (vai pro admin)
-        ↓
-Admin analisa e APROVA ou REJEITA
-        ↓
-
-Se APROVADO:
-  Status: APROVADO, nivel_alerta = 1
-        ↓
-  Sistema notifica usuarios proximos (nivel 1: raio 1km via PostGIS)
-        ↓
-  [AUTOMATICO] Se ninguem encontrar em 6h → nivel 2: raio 3km
-        ↓
-  [AUTOMATICO] Se ninguem encontrar em 24h → nivel 3: cidade inteira
-        ↓
-  A cada escalamento, novas notificacoes sao disparadas
-        ↓
-  Alguem encontra e escaneia a tag
-        ↓
-  Pet aparece como "PERDIDO" com botoes extras:
-    - Chat moderado com o dono
-    - Enviar foto
-    - Formulario "encontrei"
-    - Banner de recompensa (se configurado)
-        ↓
-  Dono marca como resolvido → status: RESOLVIDO
-
-Se REJEITADO:
-  Dono e notificado: "Alerta rejeitado, verifique os dados"
-  Pode tentar novamente
-```
-
-### 5.4 Fluxo do chat moderado
-
-```
-Quem encontrou o pet → clica "Conversar"
-        ↓
-Envia mensagem ou foto
-        ↓
-Mensagem fica PENDENTE (nao chega ao dono ainda)
-        ↓
-Admin ve a mensagem no painel de moderacao
-        ↓
-Admin APROVA → mensagem entregue ao dono em tempo real (Socket.IO + push)
-   ou
-Admin REJEITA → mensagem nao entregue
-```
-
-### 5.5 Fluxo de recuperacao de senha
-
-```
-Usuario clica "Esqueci minha senha" no login
-        ↓
-Digita o email cadastrado
-        ↓
-Sistema gera um token unico (expira em 1 hora)
-        ↓
-Link de redefinicao aparece nos logs (em dev) ou seria enviado por email (producao)
-        ↓
-Usuario acessa o link → formulario de nova senha
-        ↓
-Digita nova senha + confirmacao → senha atualizada com bcrypt
-        ↓
-Redirecionado para login com mensagem de sucesso
-```
-
-### 5.6 Fluxo "Encontrei este pet" (via NFC)
-
-```
-Pessoa escaneia tag NFC de um pet ativo
-        ↓
-Ve a pagina intermediaria com dados do pet
-        ↓
-Clica "Encontrei este pet"
-        ↓
-Preenche formulario (tudo opcional):
-  - Nome
-  - Telefone
-  - Mensagem
-  - Foto
-  - Localizacao (automatica via GPS)
-        ↓
-Dados enviados → localizacao registrada + dono notificado
-        ↓
-Tela de agradecimento
-```
+| Metodo | Path | Descricao |
+|---|---|---|
+| GET | `/admin/login` | Pagina de login admin |
+| POST | `/admin/login` | Processar login admin |
+| GET | `/admin/logout` | Logout admin |
+| GET | `/admin` | Dashboard com metricas |
+| GET | `/admin/usuarios` | Lista de usuarios |
+| POST | `/admin/usuarios/:id/role` | Alterar role do usuario |
+| GET | `/admin/pets` | Lista de todos os pets |
+| GET | `/admin/petshops` | Lista de petshops |
+| GET | `/admin/pets-perdidos` | Lista de alertas |
+| POST | `/admin/pets-perdidos/:id/aprovar` | Aprovar alerta + notificar |
+| POST | `/admin/pets-perdidos/:id/rejeitar` | Rejeitar alerta |
+| POST | `/admin/pets-perdidos/:id/escalar` | Escalar nivel do alerta |
+| GET | `/admin/moderacao` | Fila de moderacao do chat |
+| POST | `/admin/moderacao/:id/aprovar` | Aprovar mensagem |
+| POST | `/admin/moderacao/:id/rejeitar` | Rejeitar mensagem |
+| GET | `/admin/configuracoes` | Configuracoes do sistema |
+| POST | `/admin/configuracoes` | Salvar configuracoes |
+| GET | `/admin/gerenciar-mapa` | CRUD de pontos no mapa |
+| GET | `/admin/mapa` | Mapa administrativo |
+| POST | `/admin/pontos-mapa` | Criar ponto |
+| PUT | `/admin/pontos-mapa/:id` | Atualizar ponto |
+| POST | `/admin/pontos-mapa/:id/toggle` | Ativar/desativar ponto |
+| DELETE | `/admin/pontos-mapa/:id` | Deletar ponto |
+| GET | `/tags/admin/lista` | Lista de tags NFC |
+| GET | `/tags/admin/lotes` | Lista de lotes |
+| POST | `/tags/admin/gerar` | Gerar lote de tags |
+| POST | `/tags/admin/:id/reservar` | Reservar tag |
+| POST | `/tags/admin/:id/enviar` | Marcar como enviada |
+| POST | `/tags/admin/:id/bloquear` | Bloquear tag |
 
 ---
 
-## 6. Todas as paginas e o que cada botao faz
+## 33. Controllers
 
-### Paginas publicas (qualquer pessoa acessa)
+Cada controller recebe a request do router, orquestra a logica (chamando services/models) e retorna a response (render ou redirect).
 
-#### Pagina inicial (`/`)
-- Se nao logado: pagina de boas-vindas com:
-  - Hero com botoes "Criar Conta" e "Entrar"
-  - Secao "Como funciona" (3 passos)
-  - Secao "Tudo que voce precisa" (features)
-  - **Estatisticas da comunidade**: total de pets, tutores e pontos no mapa (dinamico do banco)
-  - **Pets perdidos recentes**: ultimos 3 alertas aprovados com foto e link
-  - Botao "Explorar" para o mural da comunidade
-- Se logado: redireciona para `/pets` (meus pets)
+### authController.js
 
-#### Explorar / Mural da comunidade (`/explorar`)
-- **Pets perdidos**: grid de cards com foto, nome, raca, cidade, botao "Ajudar a encontrar"
-- **Petshops e clinicas**: cards com nome, endereco, telefone, icone por categoria
-- **Pets recentes**: galeria de pets cadastrados na comunidade
-- Estado vazio com mensagem amigavel se nao houver dados
+| Funcao | Descricao |
+|---|---|
+| `mostrarLogin` | Renderiza a pagina de login |
+| `login` | Valida credenciais, cria sessao + cookie JWT, redireciona para `/explorar` |
+| `mostrarRegistro` | Renderiza a pagina de registro |
+| `registrar` | Cria usuario via authService, inicia sessao, redireciona para `/explorar` |
+| `mostrarEsqueciSenha` | Renderiza formulario de recuperacao |
+| `esqueciSenha` | Gera token de reset (1h validade), armazena in-memory |
+| `mostrarRedefinirSenha` | Renderiza formulario de nova senha (valida token) |
+| `redefinirSenha` | Hash da nova senha com bcrypt, salva no banco |
+| `logout` | Destroi sessao, limpa cookies JWT e session |
 
-#### Login (`/auth/login`)
-- **Campo email**: seu email cadastrado
-- **Campo senha**: sua senha
-- **Botao "Entrar"**: valida email/senha, cria sessao, redireciona para /pets
-- **Link "Criar conta"**: vai para a pagina de registro
-- **Link "Esqueci minha senha"**: vai para `/auth/esqueci-senha`
+### petController.js
 
-#### Registro (`/auth/registro`)
-- **Campo nome**: seu nome completo
-- **Campo email**: email (unico, sera usado para login)
-- **Campo telefone**: telefone de contato
-- **Campo senha**: minimo 6 caracteres
-- **Campo confirmar senha**: deve ser igual
-- **Botao "Criar conta"**: cria usuario, faz login automatico, redireciona para /pets
-- **Links**: "Termos de Uso" e "Politica de Privacidade"
+| Funcao | Descricao |
+|---|---|
+| `listar` | Lista pets do usuario logado |
+| `mostrarCadastro` | Renderiza wizard de 8 passos |
+| `criar` | Cria pet com upload de foto (multer, max 5MB) |
+| `mostrarPerfil` | Perfil completo: idade humana, peso ideal, calendario, scans NFC |
+| `mostrarEditar` | Formulario de edicao (verifica propriedade) |
+| `atualizar` | Atualiza dados + foto do pet |
+| `mostrarSaude` | Renderiza carteira de saude (vacinas + registros) |
 
-#### Esqueci Senha (`/auth/esqueci-senha`)
-- **Campo email**: email cadastrado
-- **Botao "Enviar link de recuperacao"**: gera token e mostra link nos logs (dev)
-- **Link "Voltar ao login"**: retorna ao login
+### nfcController.js
 
-#### Redefinir Senha (`/auth/redefinir-senha/:token`)
-- **Campo nova senha**: minimo 6 caracteres
-- **Campo confirmar senha**: deve ser igual
-- **Botao "Redefinir Senha"**: atualiza com bcrypt e redireciona para login
+| Funcao | Descricao |
+|---|---|
+| `processarScan` | Rota principal do NFC — decide qual tela exibir baseado no status da tag |
+| `mostrarEncontrei` | Formulario "encontrei este pet" |
+| `processarEncontrei` | Salva dados do encontrador (nome, telefone, localizacao, foto), notifica dono |
+| `mostrarEnviarFoto` | Formulario para enviar foto |
+| `processarEnviarFoto` | Upload de foto, notificacao ao dono |
 
-#### Termos de Uso (`/termos`)
-- Pagina completa com 11 secoes: aceitacao, descricao do servico, cadastro, tags NFC, responsabilidades, petshops, privacidade, propriedade intelectual, limitacao de responsabilidade, alteracoes, contato
+### tagController.js
 
-#### Politica de Privacidade (`/privacidade`)
-- 10 secoes incluindo dados coletados, localizacao, compartilhamento, seguranca, LGPD (direitos do titular), cookies, retencao, contato
+| Funcao | Descricao |
+|---|---|
+| `listarTags` | Lista todas as tags (admin, com filtro por status) |
+| `listarLotes` | Lista lotes de fabricacao |
+| `gerarLote` | Gera lote de N tags com codigos unicos (transacao atomica) |
+| `reservar` | Reserva tag para usuario |
+| `enviar` | Marca tag como enviada |
+| `bloquear` | Bloqueia tag |
+| `mostrarAtivacao` | Formulario de ativacao (usuario) |
+| `ativar` | Ativa tag com 3 fatores |
+| `escolherPet` | Lista pets para vincular |
+| `vincularPet` | Vincula tag ao pet (status → active) |
 
-#### Scan NFC — Pagina Intermediaria (`/tag/:codigo`)
-Essa e a pagina que abre quando alguem escaneia a tag NFC de um pet ativo.
+### explorarController.js
 
-- **Foto do pet**: grande, circular, no topo
-- **Nome do pet**: em destaque
-- **Descricao emocional**: "Sou docil, tenho medo de motos"
-- **Botao "Ligar para o dono"**: abre o discador do celular
-- **Botao "Enviar minha localizacao"**: captura GPS e envia ao sistema
-- **Botao "Encontrei este pet"**: vai para `/tag/:codigo/encontrei`
-- **Botao "Enviar foto"**: vai para `/tag/:codigo/enviar-foto`
-- **Botao "Levar ao petshop parceiro"**: mostra petshop vinculado
+| Funcao | Descricao |
+|---|---|
+| `feed` | Feed social paginado (tabs: para-voce, seguindo) |
+| `criarPost` | Cria publicacao com foto (max 10MB) e pet opcional |
+| `curtir` | Curtir publicacao (toggle) |
+| `descurtir` | Remover curtida |
+| `comentarios` | Listar comentarios de uma publicacao (JSON) |
+| `comentar` | Adicionar comentario (com extracao de mencoes) |
+| `deletarComentario` | Deletar comentario (apenas autor) |
+| `fixar` | Fixar publicacao (max 2 fixadas) |
+| `desafixar` | Remover fixacao |
+| `deletarPost` | Deletar publicacao e foto associada |
+| `seguir` | Seguir usuario |
+| `deixarDeSeguir` | Deixar de seguir |
+| `perfilPublico` | Perfil publico com posts, pets, seguidores |
 
-Se o pet esta perdido, aparecem botoes extras:
-- **Botao "Conversar com o dono"**: abre chat moderado
-- **Banner de recompensa**: se o dono ofereceu recompensa
+### adminController.js
 
-#### Encontrei Este Pet (`/tag/:codigo/encontrei`)
-- Foto e nome do pet no topo
-- **Campo nome** (opcional): nome de quem encontrou
-- **Campo telefone** (opcional): telefone para contato
-- **Campo mensagem** (opcional): descricao
-- **Upload de foto** (opcional): foto do pet encontrado com preview
-- **Botao "Enviar"**: registra localizacao + notifica dono
-- Mensagem: "Quase tudo e opcional. Se preferir, apenas envie sua localizacao."
+| Funcao | Descricao |
+|---|---|
+| `dashboard` | Metricas em paralelo (Promise.all) |
+| `listarUsuarios` | Tabela de todos os usuarios |
+| `atualizarRoleUsuario` | Alterna role usuario/admin |
+| `listarPets` | Todos os pets do sistema |
+| `listarPetshops` | Todos os petshops |
+| `listarPerdidos` | Alertas de pets perdidos |
+| `aprovarPerdido` | Aprova alerta + notifica proximos via PostGIS |
+| `rejeitarPerdido` | Rejeita alerta + notifica tutor |
+| `escalarAlerta` | Escala nivel (1→2→3) + amplia raio de notificacao |
+| `mostrarModeracao` | Lista mensagens pendentes |
+| `aprovarMensagem` | Aprova e entrega mensagem via Socket.IO |
+| `rejeitarMensagem` | Rejeita mensagem (nao entregue) |
+| `mostrarConfiguracoes` | Exibe configs do sistema |
+| `salvarConfiguracoes` | Salva configs |
+| `mostrarGerenciarMapa` | CRUD de pontos no mapa |
+| `mostrarMapa` | Mapa admin completo |
 
-#### Enviar Foto (`/tag/:codigo/enviar-foto`)
-- Foto e nome do pet no topo
-- **Upload de foto** com preview e botao de remover
-- **Botao "Enviar Foto"**: envia e notifica o dono
-- Mensagem de agradecimento
+### Outros controllers
 
-#### Mapa (`/mapa`)
-- **Mapa interativo** com Leaflet + OpenStreetMap
-- **Botoes de filtro** no topo: petshops, pets perdidos, avistamentos, pontos de apoio
-- **Clicar num pin**: abre popup com nome, categoria, link para detalhes
-- **Botao "Minha localizacao"**: centraliza o mapa na sua posicao
-- Lazy loading: so busca pins da area visivel (PostGIS bounding box)
-- Clustering: pins proximos sao agrupados
-
-#### Petshops (`/petshops`)
-- **Lista de cards**: nome, endereco, telefone, distancia
-- **Badge "Ponto de Apoio"**: se o petshop e parceiro oficial
-- **Clicar no card**: abre detalhes completos
-
-#### Detalhes do Petshop (`/petshops/:id`)
-- Foto de capa, galeria, nome, endereco, telefone
-- **Botao WhatsApp**: abre conversa no WhatsApp
-- **Lista de servicos**: banho, tosa, consulta, etc.
-- **Horario de funcionamento**
-- **Mapa pequeno** com a localizacao
-- **Botao "Agendar servico"**: abre formulario de agendamento
-
----
-
-### Paginas do usuario logado
-
-#### Meus Pets (`/pets`)
-- **Grid de cards**: cada pet com foto, nome, tipo, raca, status
-- **Badge verde "Seguro"** / **Badge vermelho "Perdido"**
-- **Botao "Ver perfil"**: abre detalhes do pet
-- **Botao "+" (Cadastrar pet)**: inicia o wizard de cadastro
-
-#### Cadastrar Pet (`/pets/cadastro`) — Wizard
-Formulario em etapas (uma pergunta por tela):
-1. **Nome do pet**: "Qual o nome do seu pet?"
-2. **Tipo**: botoes grandes (cachorro, gato, passaro, outro)
-3. **Raca**: campo de texto com autocomplete ou "sem raca definida"
-4. **Foto**: upload de foto com preview
-5. **Idade e peso**: data de nascimento + peso em kg
-6. **Descricao emocional**: "Conte algo sobre seu pet"
-7. **Telefone de contato**: numero que aparece quando alguem escanear a tag
-
-#### Perfil do Pet (`/pets/:id`)
-- **Foto grande** do pet
-- **Nome** em destaque
-- **Descricao emocional** em italico
-- **Badge de status**: seguro (verde) ou perdido (vermelho)
-- **Contador de idade**: X anos, Y meses, Z dias (calculado automaticamente)
-- **Idade humana equivalente**: ~N anos humanos (formula diferente para cao/gato)
-- **Peso ideal**: comparacao com referencia por raca/porte (abaixo/ideal/acima)
-- **Calendario de cuidados**: proximos 5 eventos (vacinas vencendo, consultas)
-- **Botao WhatsApp** (se perdido): compartilhar alerta no WhatsApp
-- **Cards de info**: tipo, raca, peso, porte
-- **Botao "Editar"**: abre formulario de edicao
-- **Botao "Carteira de Saude"**: abre vacinas e registros
-- **Botao "Diario"**: abre diario do pet
-- **Botao "Pet Perdido" (vermelho)**: abre formulario de reporte
-- **Secao "Tags NFC"**: mostra tags vinculadas ao pet
-- **Secao "Localizacoes recentes"**: ultimos avistamentos
-
-#### Editar Pet (`/pets/:id/editar`)
-- Mesmos campos do cadastro, em pagina unica (sem wizard)
-- Valores ja preenchidos, upload de nova foto opcional
-- Validacao aplicada (mesmo que no POST do cadastro)
-
-#### Carteira de Saude (`/pets/:id/saude`)
-- **Secao Vacinas**: lista com nome, data, proxima dose, veterinario
-  - **Botao "Adicionar Vacina"**: abre formulario
-  - **Botao "X" (excluir)**: remove (com verificacao de ownership)
-- **Secao Registros**: consultas, exames, vermifugo, cirurgias
-  - **Botao "Adicionar Registro"**: formulario com tipo (consulta, exame, etc.)
-  - **Botao "X" (excluir)**: remove (com verificacao de ownership)
-- O sistema envia lembretes automaticos quando vacinas estao perto de vencer (7 dias)
-
-#### Diario do Pet (`/diario/:pet_id`)
-- **Entradas de hoje**: lista de registros do dia (peso, humor, refeicao, etc.)
-- **Historico**: ultimos 30 dias de entradas
-- **Formulario**: tipo, descricao, valor numerico, foto
-- **Upload de foto**: salvo em `/images/diario/` (separado das fotos de perfil)
-- **Excluir entrada**: com verificacao de ownership
-
-#### Lista de Conversas (`/chat`)
-- Cards de conversas com: foto do pet, nome, ultima mensagem, data, status
-- Se nao tem conversas: mensagem "Voce ainda nao tem conversas"
-- Link para cada conversa: `/chat/:id`
-
-#### Chat (`/chat/:id`)
-- **Header**: foto e nome do pet, botao voltar para lista
-- **Baloes de mensagem**: esquerda (encontrador) e direita (dono)
-- **Indicador "Aguardando moderacao"**: mensagem pendente
-- **Campo de texto + botao de foto + botao "Enviar"**
-- Apenas participantes (tutor, iniciador) e admins podem acessar
-
-#### Notificacoes (`/notificacoes`)
-- Lista de notificacoes com icone por tipo (scan, alerta, chat, sistema, encontrado)
-- **Clicar na notificacao**: marca como lida e redireciona
-- **Badge no menu**: quantidade de nao lidas (atualiza em tempo real)
-
-#### Agendamentos (`/agenda`)
-- Lista de agendamentos do usuario com status
-- **Botao "Cancelar"** (se status = agendado): cancela com verificacao de ownership
-- Admin pode **Confirmar** agendamentos
-
-#### Perfil (`/perfil`)
-- Nome, email, telefone, cor do perfil
-- **Botao "Salvar"**: atualiza via `Usuario.atualizarPerfil()` (sem query direta)
+| Controller | Descricao |
+|---|---|
+| `petPerdidoController.js` | Reportar pet perdido, marcar como encontrado, tela de celebracao |
+| `chatController.js` | Lista de conversas, iniciar conversa, exibir conversa (verifica participacao) |
+| `saudeController.js` | CRUD de vacinas e registros de saude (verifica propriedade do pet) |
+| `diarioController.js` | CRUD de entradas do diario (verifica propriedade do pet) |
+| `agendaController.js` | CRUD de agendamentos (cancelar verifica propriedade) |
+| `notificacaoController.js` | Listar, contar nao lidas, marcar lida, push subscribe/unsubscribe |
+| `mapaController.js` | API de pins por bounding box (GeoJSON) |
+| `petshopController.js` | Listar e detalhar petshops |
+| `perfilController.js` | Exibir e atualizar perfil, API de racas |
+| `pontoMapaController.js` | CRUD de pontos no mapa (usado pelo admin) |
+| `localizacaoController.js` | Registrar e consultar historico de localizacoes |
+| `usuarioController.js` | Operacoes complementares de usuario |
 
 ---
 
-## 7. Painel do administrador
+## 34. Models
 
-Acesse em `/admin`. Tem login separado usando credenciais do `.env`.
+Cada model encapsula as queries SQL parametrizadas para uma tabela. Todos usam o pool de conexoes de `src/config/database.js`.
 
-### Login Admin (`/admin/login`)
-- **Email e senha**: definidos em `ADMIN_EMAIL` e `ADMIN_PASSWORD_HASH` no .env
-- Senha comparada com **bcrypt** (nunca em texto puro)
-- Rate limiting aplicado (mesmas regras do login de usuario)
+### Padrao dos models
 
-### Dashboard (`/admin`)
-Cards com metricas do sistema:
-- **Total de usuarios**: quantas pessoas cadastradas
-- **Total de pets**: quantos pets cadastrados
-- **Pets perdidos ativos**: alertas em andamento
-- **Petshops parceiros**: quantos pontos no sistema
-- **Mensagens pendentes**: mensagens aguardando moderacao
-- **Alertas pendentes**: alertas aguardando aprovacao
+Todos os models seguem o mesmo padrao:
+- Metodos **estaticos** (nao instancia objetos)
+- Queries **parametrizadas** (`$1, $2...`) para prevenir SQL injection
+- Retornam `rows[0]` para busca unica ou `rows` para listas
+- Usam `RETURNING *` em INSERT/UPDATE para retornar o registro criado/atualizado
 
-### Gerenciar Usuarios (`/admin/usuarios`)
-- Tabela com todos os usuarios: ID, nome, email, telefone, role, data
-- Badge de role: admin (roxo), usuario (cinza)
-- **Botao "Promover/Rebaixar"**: `POST /admin/usuarios/:id/role` altera role entre 'usuario' e 'admin'
+### Metodos por model
 
-### Gerenciar Pets (`/admin/pets`)
-- Tabela com todos os pets e nome do dono
-- Status visivel (seguro/perdido)
-
-### Gerenciar Petshops (`/admin/petshops`)
-- Lista de petshops com status ativo/inativo
-
-### Aprovar Pets Perdidos (`/admin/pets-perdidos`)
-Esse e um dos paineis mais importantes.
-
-- **Cards de alertas pendentes** (amarelo): foto do pet, nome, descricao
-  - **Botao "Aprovar e Notificar"**: aprova o alerta, dispara notificacoes por proximidade (PostGIS) e notifica o tutor
-  - **Botao "Rejeitar"**: rejeita o alerta e notifica o tutor com motivo
-  
-- **Cards de alertas aprovados** (vermelho):
-  - **Botao "Escalar Alerta"**: expande o raio de notificacao (1km → 3km → cidade inteira), disparando novas notificacoes a cada escalamento
-  
-- **Cards resolvidos** (verde): apenas informativo
-
-**Escalamento automatico**: o scheduler verifica a cada 30 minutos e escala automaticamente (6h → nivel 2, 24h → nivel 3) com notificacoes.
-
-### Moderar Mensagens (`/admin/moderacao`)
-Fila de mensagens do chat aguardando aprovacao.
-
-- Cada mensagem mostra: remetente, conteudo, horario
-- **Botao "Aprovar" (verde)**: `POST /admin/moderacao/:id/aprovar` — libera a mensagem
-- **Botao "Rejeitar" (vermelho)**: `POST /admin/moderacao/:id/rejeitar` — bloqueia a mensagem
-- Atualiza em tempo real via Socket.IO
-
-### Gerenciar Tags NFC (`/tags/admin/lista`)
-**Filtros**: Todas | Stock | Reserved | Sent | Active | Blocked
-
-**Tabela**: codigo da tag, codigo de ativacao (parcialmente oculto), status, usuario, pet
-
-**Acoes por status:**
-- **Stock**: botao "Reservar"
-- **Reserved**: botao "Marcar como Enviada"
-- **Sent**: aguardando ativacao pelo cliente
-- **Active**: botao "Bloquear"
-- **Blocked**: botao "Desbloquear"
-
-### Gerar Lote de Tags
-- Quantidade, fabricante, observacoes
-- **Botao "Gerar Lote"**: cria N tags com codigos unicos (PET-XXXXXX + XXXX-XXXX)
-
-### Gerenciar Mapa (`/admin/gerenciar-mapa`)
-- **Mapa Leaflet** para selecionar coordenadas
-- **Formulario**: nome, categoria, endereco, lat/lng, telefone, whatsapp, servicos
-- **Lista de pontos**: editar, ativar/desativar, deletar (usa `PontoMapa.deletar()`)
-
-### Configuracoes (`/admin/configuracoes`)
-| Configuracao | Padrao | O que faz |
-|-------------|--------|-----------|
-| raio_alerta_nivel1_km | 1 | Raio inicial de notificacao ao aprovar |
-| raio_alerta_nivel2_km | 3 | Raio expandido apos X horas |
-| raio_alerta_nivel3_km | 0 | 0 = notifica a cidade inteira |
-| horas_para_nivel2 | 6 | Horas ate escalar automaticamente para nivel 2 |
-| horas_para_nivel3 | 24 | Horas ate escalar automaticamente para nivel 3 |
+| Model | Metodos principais |
+|---|---|
+| `Usuario` | criar, buscarPorEmail, buscarPorId, listarTodos, atualizarLocalizacao (PostGIS), contarTotal, atualizarPerfil, atualizarRole, deletar |
+| `Pet` | criar, buscarPorId (JOIN usuarios), buscarPorUsuario, listarTodos, atualizar, atualizarStatus, atualizarFoto, deletar, contarTotal, contarPerdidos |
+| `NfcTag` | criarLote (transacao), buscarPorTagCode (JOIN pets+usuarios), listarTodas, reservar, marcarEnviada, ativar, bloquear, vincularPet, contarPorStatus |
+| `TagBatch` | criar, buscarPorId, listarTodos, buscarPorCodigo |
+| `TagScan` | registrar, buscarPorTag, buscarPorPet (JOIN nfc_tags), ultimoScanPet, listarRecentes |
+| `Petshop` | criar, buscarPorId, listarAtivos, listarTodos, atualizar, deletar, buscarProximos (ST_DWithin), contarTotal |
+| `PontoMapa` | criar, buscarPorId, listarAtivos, buscarPorBoundingBox (ST_MakeEnvelope), atualizar, ativarDesativar, deletar |
+| `PetPerdido` | criar, buscarPorId (JOIN pets+usuarios), listarPendentes, listarAprovados, aprovar, rejeitar, resolver, atualizarNivel, contarAtivos |
+| `Localizacao` | registrar (PostGIS), buscarPorPet, buscarRecentes |
+| `Conversa` | criar, buscarPorId (JOIN multiplos), buscarPorUsuario, encerrar |
+| `MensagemChat` | criar, buscarPorConversa (so aprovadas), buscarPendentes, aprovar, rejeitar, deletarPorConversa, contarPendentes |
+| `Notificacao` | criar, criarParaMultiplos (unnest), buscarPorUsuario, marcarComoLida, contarNaoLidas |
+| `Vacina` | criar, buscarPorPet, atualizar, deletar, buscarVencendo (JOIN pets) |
+| `RegistroSaude` | criar, buscarPorPet, buscarPorTipo, atualizar, deletar |
+| `DiarioPet` | criar, buscarPorPetEData, buscarPorPet, deletar |
+| `AgendaPetshop` | criar, buscarPorId (JOIN multiplos), buscarPorUsuario, cancelar, confirmar, concluir |
+| `ConfigSistema` | buscarPorChave, atualizar, listarTodas |
+| `PushSubscription` | salvar (upsert), remover, buscarPorUsuario, buscarPorUsuarios, buscarTodas |
+| `Publicacao` | criar, buscarPorId, feedGeral, feedSeguindo, buscarPorUsuario, fixar, desafixar, contarFixadas, contarAtivas, deletar |
+| `Curtida` | curtir (ON CONFLICT DO NOTHING), descurtir, verificar, contar |
+| `Comentario` | criar, buscarPorPublicacao (JOIN usuarios), deletar, contar, extrairMencoes, resolverMencoes |
+| `Repost` | repostar (ON CONFLICT DO NOTHING), remover, verificar, contar |
+| `Seguidor` | seguir, deixarDeSeguir, estaSeguindo, contarSeguidores, contarSeguindo |
 
 ---
 
-## 8. Sistema de tags NFC
+## 35. Services
 
-### Ciclo de vida de uma tag
+Services contem a logica de negocio que nao pertence aos controllers nem aos models.
 
-```
-STOCK → RESERVED → SENT → ACTIVE → (BLOCKED)
+### authService.js
 
-Stock:      Tag gerada pelo admin, guardada no estoque
-Reserved:   Admin vinculou a um usuario (cliente comprou)
-Sent:       Admin marcou como enviada (caixa saiu pra entrega)
-Active:     Cliente ativou com 3 fatores (tag funcionando)
-Blocked:    Admin bloqueou (fraude, defeito, etc.)
-```
+| Funcao | Descricao |
+|---|---|
+| `registrar` | Hash da senha com bcrypt (12 rounds), verifica email duplicado, cria usuario |
+| `login` | Busca por email, compara bcrypt, gera JWT (7 dias, payload: id/email/role) |
+| `verificarToken` | Decodifica e valida JWT |
 
-### Codigos da tag
+### nfcService.js
 
-Cada tag tem dois codigos:
+| Funcao | Descricao |
+|---|---|
+| `processarScan` | Decide qual tela exibir baseado no status da tag (nao-ativada, ativar, intermediaria, bloqueada). Para tags ativas: registra scan, verifica se pet esta perdido, monta dados para a view |
 
-1. **tag_code** (ex: `PET-82KJ91`): impresso na tag fisica, usado na URL
-2. **activation_code** (ex: `AX9P-72KQ`): impresso na caixa, usado para ativar
+### tagService.js
 
-A URL da tag e: `http://seusite.com/tag/PET-82KJ91`
+| Funcao | Descricao |
+|---|---|
+| `gerarLote` | Cria batch + N tags com codigos unicos (PET-XXXXXX) em transacao atomica |
+| `ativar` | Ativacao com 3 fatores: tag_code + usuario autenticado + activation_code |
+| `reservar/enviar/vincular` | Gerencia transicoes de estado no ciclo de vida |
 
-### QR Code
+### notificacaoService.js
 
-Alem do NFC, cada tag tambem tem um QR Code (campo `qr_code` no banco) que aponta para a mesma URL. Alternativa para celulares sem NFC.
+| Funcao | Descricao |
+|---|---|
+| `criarNotificacao` | Cria notificacao + envia push + emite via Socket.IO |
+| `notificarProximos` | Usa PostGIS ST_DWithin para encontrar usuarios no raio, cria notificacoes em massa via unnest, envia push para todos |
 
-### Auditoria
+### pushService.js
 
-Todo scan e registrado na tabela `tag_scans`, mesmo antes da ativacao. Rastreia:
-- Onde a tag foi escaneada (lat/lng)
-- Quando
-- IP e user agent do navegador
+| Funcao | Descricao |
+|---|---|
+| `enviarParaUsuario` | Envia push para um usuario (busca subscriptions) |
+| `enviarParaMultiplos` | Envia push em massa para lista de usuarios |
+| `enviarNotificacao` | Envia para endpoint especifico (com cleanup de subscriptions expiradas) |
 
----
+### schedulerService.js
 
-## 9. Sistema de mapas
+| Job | Intervalo | Descricao |
+|---|---|---|
+| Escalar alertas | 30 minutos | Busca alertas aprovados, escala nivel conforme horas configuradas |
+| Lembretes de vacinas | 6 horas | Busca vacinas vencendo em 7 dias, notifica tutores |
+| Limpeza de posts | 1 hora | Remove publicacoes expiradas e seus arquivos de foto |
 
-### Como funciona o lazy loading
+### Outros services
 
-O mapa NAO carrega todos os pins de uma vez (isso travaria com milhares de pontos).
-
-1. Ao abrir o mapa, o sistema detecta a area visivel (bounding box)
-2. Envia para a API: "me de os pins dentro desta area"
-3. A API faz uma query PostGIS com `ST_MakeEnvelope` e `ST_Within`
-4. Retorna apenas os pins visiveis como GeoJSON
-5. Ao mover/dar zoom, busca novos pins da nova area
-6. Pins ja carregados ficam em cache local (nao sao re-buscados)
-
-### Tipos de pin no mapa
-
-| Tipo | Icone | Quem cria |
-|------|-------|-----------|
-| Petshop | Loja (azul) | Admin |
-| Veterinario | Cruz (verde) | Admin |
-| Clinica | Estetoscopio (verde) | Admin |
-| Abrigo | Coracao (rosa) | Admin |
-| Hospital Pet | Hospital (vermelho) | Admin |
-| Ponto de apoio | Escudo (roxo) | Admin |
-| Pet perdido | Triangulo (vermelho) | Automatico (quando aprovado) |
-| Avistamento | Ponto (laranja) | Automatico (quando alguem escaneia tag) |
-
-### Clustering
-
-Quando existem muitos pins proximos, sao agrupados em um circulo com numero. Ao dar zoom, os pins se separam. Usa `Leaflet.markercluster`.
+| Service | Descricao |
+|---|---|
+| `chatService.js` | Chat moderado: toda mensagem fica pendente ate aprovacao. Limpa dados de conversa ao resolver alerta (LGPD) |
+| `mapaService.js` | 4 queries paralelas por bounding box (petshops, pontos, perdidos, localizacoes). Retorna GeoJSON RFC 7946, max 200 features |
+| `proximidadeService.js` | Sistema de escalacao com 3 niveis (raios configuraveis). Busca usuarios via ST_DWithin |
+| `saudeService.js` | CRUD de vacinas/registros. Busca vacinas vencendo para notificacoes proativas |
+| `petService.js` | Regras de negocio de pets (cadastro, atualizacao, verificacao de propriedade) |
+| `localizacaoService.js` | Registro de localizacoes com ponto PostGIS (origem: nfc/gps/manual) |
 
 ---
 
-## 10. Chat moderado
+## 36. Middlewares
 
-### Por que e moderado?
+### authMiddleware.js
 
-Para seguranca. O sistema e usado por desconhecidos encontrando pets. Sem moderacao:
-- Alguem poderia enviar conteudo inadequado
-- Dados sensiveis poderiam ser compartilhados (endereco, CPF)
-- Golpes poderiam acontecer
+| Middleware | Descricao |
+|---|---|
+| `estaAutenticado` | Protege rotas web. Verifica sessao, fallback via JWT cookie. Se nao autenticado, redireciona para `/auth/login` |
+| `estaAutenticadoAPI` | Mesmo fluxo, mas retorna JSON 401 ao inves de redirect |
 
-### Como funciona
+### adminMiddleware.js
 
-1. Quem encontrou o pet clica "Conversar" na pagina do scan
-2. Digita uma mensagem ou envia foto
-3. A mensagem fica PENDENTE (status_moderacao = 'pendente')
-4. O admin ve a mensagem no painel de moderacao (em tempo real via Socket.IO)
-5. Admin clica "Aprovar" → mensagem entregue ao dono instantaneamente
-6. Admin clica "Rejeitar" → mensagem nao entregue
-7. Quando o pet e encontrado e o caso resolvido, mensagens podem ser apagadas
+| Middleware | Descricao |
+|---|---|
+| `apenasAdmin` | Verifica `req.session.admin`. Se nao for admin, redireciona para login admin |
 
-### Lista de conversas
+### rateLimiter.js
 
-O usuario pode acessar `/chat` para ver todas as suas conversas (como tutor ou como encontrador), com preview da ultima mensagem aprovada.
+| Limiter | Config | Descricao |
+|---|---|---|
+| `limiterGeral` | 500 req/15min | Limite geral (pula em dev e arquivos estaticos) |
+| `limiterAuth` | 20 req/15min | Login e registro |
+| `limiterAtivacao` | 10 req/15min | Ativacao de tags NFC |
 
-### Tecnologia
+### validator.js
 
-Usa **Socket.IO** para comunicacao em tempo real. Canais:
-- `/chat`: canal entre encontrador e dono do pet
-- `/admin` ou `/notificacoes`: canal para admin e notificacoes em tempo real
-
----
-
-## 11. Sistema de notificacoes e push
-
-### Tipos de notificacao
-
-| Tipo | Quando dispara | Exemplo |
-|------|---------------|---------|
-| **scan** | Alguem escaneia a tag do pet | "Alguem escaneou a tag do Thor!" |
-| **alerta** | Pet perdido na regiao (via PostGIS) | "Pet perdido na sua regiao! Rex foi visto..." |
-| **chat** | Nova mensagem aprovada no chat | "Nova mensagem sobre Thor" |
-| **sistema** | Vacina vencendo, alerta rejeitado, etc. | "Vacina V10 de Thor vence em 3 dias" |
-| **encontrado** | Pet encontrado/resolvido | "Thor foi encontrado!" |
-
-### Notificacao por proximidade (PostGIS)
-
-Quando um alerta de pet perdido e aprovado ou escalado:
-1. Sistema busca a localizacao do alerta (lat/lng)
-2. Converte o raio de km para metros
-3. Executa query PostGIS: `ST_DWithin(ultima_localizacao, ST_MakePoint(lng, lat), raio_metros)`
-4. Encontra todos os usuarios dentro do raio
-5. Cria notificacoes em massa via `Notificacao.criarParaMultiplos()`
-6. Envia Web Push para todos (se inscrito)
-7. Emite via Socket.IO para atualizacao em tempo real
-
-### Web Push
-
-- Usa a biblioteca `web-push` com chaves VAPID
-- Inscricoes salvas na tabela `push_subscriptions`
-- O frontend pede permissao via modal amigavel (`permissions.js`)
-- Service Worker recebe e exibe a notificacao nativa
+| Validador | Campos |
+|---|---|
+| `validarRegistro` | nome (min 2), email (formato valido), senha (min 6), telefone (min 10 digitos) |
+| `validarLogin` | email (formato valido), senha (nao vazia) |
+| `validarPet` | nome (obrigatorio) |
+| `validarResultado` | Coleta erros dos validadores anteriores, retorna via flash (HTML) ou JSON 422 |
 
 ---
 
-## 12. PWA
+## 37. WebSockets — tempo real
 
-O sistema funciona como aplicativo no celular (PWA = Progressive Web App).
+O Socket.IO e inicializado em `src/sockets/index.js` com 3 namespaces:
 
-### O que significa na pratica
+### Namespace: `/chat`
 
-- O usuario pode "instalar" o site no celular como se fosse um app
-- Aparece na tela inicial com icone proprio
-- Abre em tela cheia (sem barra do navegador)
-- Funciona parcialmente offline (paginas em cache)
-- Recebe notificacoes push nativas
+Arquivo: `src/sockets/chatSocket.js`
 
-### Arquivos envolvidos
+Eventos:
+- **`connection`**: usuario entra na room da conversa (`conversa_${id}`)
+- **`mensagem`**: nova mensagem enviada (fica pendente ate aprovacao)
+- **`mensagem_aprovada`**: admin aprovou — entrega ao destinatario em tempo real
+- **`disconnect`**: usuario sai da room
 
-- `manifest.json`: nome, icones, cores, orientacao
-- `sw.js` (Service Worker): cache de assets, estrategia offline, push listener
-- `pwa.js`: registra o service worker, mostra botao de instalacao, inscreve push
-- `permissions.js`: modals de permissao (camera, GPS, notificacao)
-- `offline.html`: pagina exibida quando sem internet
+### Namespace: `/admin`
 
-### Para instalar
+Arquivo: `src/sockets/adminSocket.js`
 
-No celular (Chrome/Safari), ao acessar o site:
-1. Aparece um banner "Adicionar a tela inicial" (ou popup do navegador)
-2. Clicar em "Instalar"
-3. Icone do AIRPET aparece na tela inicial
+Eventos:
+- **`connection`**: admin se conecta
+- **`novo_alerta`**: novo alerta de pet perdido criado
+- **`nova_mensagem_pendente`**: nova mensagem aguardando moderacao
+- **`atualizacao_metricas`**: metricas do dashboard atualizadas
+
+### Namespace: `/notificacoes`
+
+Arquivo: `src/sockets/notificacaoSocket.js`
+
+Eventos:
+- **`connection`**: usuario entra na room `user_${id}`
+- **`nova_notificacao`**: notificacao entregue em tempo real
+- **`disconnect`**: usuario sai da room
 
 ---
 
-## 13. Scheduler — Jobs automaticos
+## 38. Upload de arquivos
 
-O `schedulerService.js` roda jobs em intervalos automaticos assim que o servidor inicia.
+Upload centralizado via **multer** em `src/utils/upload.js` (factory por diretorio).
 
-### Jobs ativos
+### Destinos e limites
+
+| Destino | Uso | Limite | Formatos |
+|---|---|---|---|
+| `/images/pets/` | Fotos de perfil dos pets, fotos do "encontrei" e "enviar foto" | 5 MB | jpeg, jpg, png, gif, webp |
+| `/images/diario/` | Fotos do diario do pet | 5 MB | jpeg, jpg, png, gif, webp |
+| `/images/chat/` | Fotos enviadas no chat | 5 MB | jpeg, jpg, png, gif, webp |
+| `/images/posts/` | Fotos do feed social (Explorar) | 10 MB | jpeg, jpg, png, gif, webp |
+
+### Seguranca
+
+- Nomes de arquivo randomizados via `crypto.randomBytes(16)` (previne colisao e path traversal)
+- Filtro de tipo MIME (apenas imagens)
+- Limite de tamanho por multer (rejeita uploads maiores)
+- Diretorio de uploads no `.gitignore` (nao versionado)
+
+---
+
+## 39. Scheduler — jobs automaticos
+
+O scheduler e inicializado no boot do servidor via `src/services/schedulerService.js` usando `setInterval`.
+
+### Jobs configurados
 
 | Job | Intervalo | O que faz |
-|-----|-----------|-----------|
-| **Escalar alertas** | A cada 30 min | Verifica alertas aprovados. Se passaram 6h → nivel 2. Se passaram 24h → nivel 3. Dispara notificacoes por proximidade a cada escalamento. |
-| **Lembrete de vacinas** | A cada 6 horas | Busca vacinas com `data_proxima` nos proximos 7 dias. Cria notificacao para o tutor. |
+|---|---|---|
+| Escalar alertas | 30 minutos | Busca alertas aprovados com mais de N horas. Se `horas_para_nivel2` atingido → escala para nivel 2. Se `horas_para_nivel3` atingido → escala para nivel 3. Cada escalamento amplia o raio de notificacao e notifica novos usuarios |
+| Lembretes de vacinas | 6 horas | Busca vacinas com `data_proxima` dentro dos proximos 7 dias. Cria notificacao para o tutor com link para a carteira de saude |
+| Limpeza de posts | 1 hora | Remove publicacoes expiradas (se houver regra de expiracao) e deleta os arquivos de foto associados do servidor |
 
-### Configuracao
+### Como os raios sao calculados
 
-Os parametros (horas para escalar, raio por nivel) sao lidos da tabela `config_sistema` e podem ser editados em `/admin/configuracoes`.
+Os raios sao lidos da tabela `config_sistema`:
+- Nivel 1: `raio_alerta_nivel1_km` (padrao: 1 km)
+- Nivel 2: `raio_alerta_nivel2_km` (padrao: 3 km)
+- Nivel 3: `raio_alerta_nivel3_km` (padrao: 0 = todos os usuarios)
 
-### Primeira execucao
-
-- Escalar alertas roda 10s apos o boot
-- Lembretes de vacinas roda 30s apos o boot
-- Depois seguem nos intervalos normais
-
----
-
-## 14. Seguranca
-
-| Protecao | Como funciona |
-|----------|--------------|
-| **Senhas** | Hash com bcrypt (12 rounds de salt). A senha real nunca e armazenada. |
-| **Senha admin** | Comparada com `bcrypt.compare()` (nunca em texto puro). Rate limiting no login. |
-| **Autenticacao** | Session no servidor + JWT em cookie httpOnly como fallback |
-| **Headers HTTP** | Helmet configura headers de seguranca (XSS, clickjacking, HSTS, etc.) |
-| **Rate limiting** | 100 req/15min (geral), 10 req/15min (login/admin), 5 req/15min (ativacao tag) |
-| **SQL injection** | Queries 100% parametrizadas ($1, $2...). Nenhum dado concatenado no SQL. |
-| **Validacao** | express-validator em formularios (email valido, senha minima, etc.). Validacao no PUT tambem. |
-| **Credenciais** | Tudo no .env. Nunca no codigo. .env no .gitignore. |
-| **Upload** | Multer com filtro (so imagens jpeg/jpg/png/gif/webp), limite 5MB, nome randomizado (crypto). |
-| **Upload centralizado** | `utils/upload.js` evita duplicacao de configuracao multer. |
-| **Fotos separadas** | Fotos do diario vao para `/images/diario/`, fotos de pets para `/images/pets/`. |
-| **Tag NFC** | Ativacao exige 3 fatores simultaneos. Rate limit especifico na rota. |
-| **Chat** | Toda mensagem passa pelo admin antes de ser entregue |
-| **Admin** | Rotas protegidas por middleware `apenasAdmin` |
-| **Ownership** | DELETE de vacinas, registros de saude e entradas do diario verifica se o recurso pertence ao usuario logado antes de deletar. |
-| **Localizacao** | API `/api/localizacao` protegida com `estaAutenticado` — nao e mais publica. |
-| **Chat protegido** | `GET /chat/:id` exige autenticacao. Apenas participantes (tutor/iniciador) e admins podem acessar. |
-| **Recuperacao de senha** | Token unico com expiracao de 1h. Senha atualizada com bcrypt. |
-| **MVC consistente** | Controllers usam models (sem queries SQL diretas). `perfilController` e `pontoMapaController` corrigidos. |
+Se o valor for 0 no nivel 3, **todos os usuarios do sistema** sao notificados.
 
 ---
 
-## 15. API endpoints
+## 40. Seguranca
 
-Para integrar com outros sistemas (app mobile nativo, automacoes, etc.):
+### Autenticacao
 
-### Localizacao (requer autenticacao)
+- **Sessoes**: `express-session` com store no PostgreSQL (`connect-pg-simple`)
+- **JWT**: cookie httpOnly como fallback (7 dias de validade)
+- **Autenticacao dupla**: middleware verifica sessao primeiro, depois tenta JWT
 
-```
-POST /api/localizacao
-Headers: Cookie: connect.sid=...
-Body: { pet_id, latitude, longitude, cidade, ip }
-Resposta: { sucesso: true, localizacao: {...} }
+### Senhas
 
-GET /api/localizacao/:petId
-Headers: Cookie: connect.sid=...
-Resposta: { sucesso: true, localizacoes: [{lat, lng, cidade, data}...] }
-```
+- Hash com **bcrypt** (12 rounds) — resistente a ataques de forca bruta
+- Senha admin tambem em bcrypt (via `ADMIN_PASSWORD_HASH` no `.env`)
 
-### Mapa (GeoJSON)
+### Rate limiting
 
-```
-GET /api/mapa/pins?swLat=-15.8&swLng=-46.7&neLat=-15.7&neLng=-46.6&categorias=petshop,perdido
-Resposta: GeoJSON FeatureCollection
+- Geral: 500 requisicoes por 15 minutos
+- Login/registro: 20 por 15 minutos
+- Ativacao NFC: 10 por 15 minutos
+
+### Headers HTTP
+
+- **helmet**: configura headers de seguranca (Content-Security-Policy, X-Frame-Options, etc.)
+
+### Validacao de entrada
+
+- **express-validator**: valida todos os inputs de formularios
+- Queries **parametrizadas**: previne SQL injection em todos os models
+
+### Verificacao de propriedade (ownership)
+
+Todas as operacoes de edicao/exclusao verificam se o recurso pertence ao usuario logado:
+- Editar/deletar pet → verifica `pet.usuario_id === req.session.usuario.id`
+- Deletar vacina/registro → JOIN com pet para verificar dono
+- Deletar entrada do diario → verifica propriedade
+- Cancelar agendamento → verifica `agenda.usuario_id`
+- Deletar comentario → verifica `comentario.usuario_id`
+- Deletar publicacao → verifica `publicacao.usuario_id`
+
+### LGPD
+
+- Ao resolver alerta de pet perdido, mensagens de chat sao **deletadas** e conversas **encerradas**
+- Dados de localizacao associados ao encontrador sao tratados conforme necessidade
+
+### Tags NFC — 3 fatores de ativacao
+
+1. Posse fisica da tag (URL unica nao adivinhadavel)
+2. Conta autenticada no sistema
+3. Codigo de ativacao impresso na embalagem (nao gravado na tag)
+
+---
+
+## 41. PWA e Service Worker
+
+### manifest.json
+
+```json
 {
-  type: "FeatureCollection",
-  features: [
-    {
-      type: "Feature",
-      geometry: { type: "Point", coordinates: [-46.65, -15.75] },
-      properties: { id: 1, nome: "Pet Shop Amigo", categoria: "petshop", icone: "store" }
-    }
+  "name": "AIRPET",
+  "short_name": "AIRPET",
+  "theme_color": "#ec5a1c",
+  "background_color": "#ffffff",
+  "display": "standalone",
+  "start_url": "/",
+  "icons": [
+    { "src": "/images/icons/icon-192.svg", "sizes": "192x192" },
+    { "src": "/images/icons/icon-512.svg", "sizes": "512x512" }
+  ],
+  "shortcuts": [
+    { "name": "Meus Pets", "url": "/pets" },
+    { "name": "Mapa", "url": "/mapa" }
   ]
 }
 ```
 
-### Notificacoes
+### Service Worker (sw.js)
 
-```
-GET /notificacoes (HTML ou JSON dependendo do Accept header)
-POST /notificacoes/:id/lida → { sucesso: true }
-```
+- **Cache offline**: paginas visitadas sao armazenadas em cache
+- **Fallback**: quando offline, exibe `offline.html` com mensagem amigavel
+- **Push**: recebe notificacoes push mesmo com a pagina fechada
 
-### Chat
+### Registro (pwa.js)
 
-```
-GET /chat (lista de conversas do usuario — requer auth)
-GET /chat/:id (tela de conversa — requer auth + ser participante)
-POST /chat/iniciar (inicia conversa — requer auth, body: { pet_perdido_id })
-```
-
-### Agendamentos
-
-```
-GET /agenda (listar agendamentos do usuario)
-POST /agenda (criar agendamento)
-POST /agenda/:id/cancelar (cancelar — verifica ownership)
-POST /agenda/:id/confirmar (confirmar — apenas admin)
-```
-
-### Admin
-
-```
-POST /admin/pets-perdidos/:id/aprovar (aprova alerta + notifica proximos)
-POST /admin/pets-perdidos/:id/rejeitar (rejeita alerta + notifica tutor)
-POST /admin/pets-perdidos/:id/escalar (escala nivel + notifica novo raio)
-POST /admin/moderacao/:id/aprovar (aprova mensagem do chat)
-POST /admin/moderacao/:id/rejeitar (rejeita mensagem do chat)
-POST /admin/usuarios/:id/role (altera role: body { role: 'admin' ou 'usuario' })
-```
-
-### NFC
-
-```
-GET /tag/:tag_code (processamento do scan — publico)
-GET /tag/:tag_code/encontrei (formulario "encontrei" — publico)
-POST /tag/:tag_code/encontrei (envia dados + foto — publico)
-GET /tag/:tag_code/enviar-foto (formulario de foto — publico)
-POST /tag/:tag_code/enviar-foto (upload da foto — publico)
-```
-
-### Auth
-
-```
-POST /auth/registro (criar conta)
-POST /auth/login (fazer login)
-GET /auth/logout (encerrar sessao)
-POST /auth/esqueci-senha (gerar token de recuperacao)
-GET /auth/redefinir-senha/:token (formulario de nova senha)
-POST /auth/redefinir-senha/:token (salvar nova senha)
-```
+- Registra o Service Worker no carregamento da pagina
+- Solicita permissao de notificacao push
+- Salva subscription no servidor via API `/notificacoes/push/subscribe`
 
 ---
 
-## 16. Como integrar
-
-### Com um app mobile nativo
-
-O AIRPET funciona como backend API. Para um app React Native ou Flutter:
-
-1. Use os endpoints `/api/*` para dados
-2. Autenticacao via JWT (envie o token no header `Authorization: Bearer <token>`)
-3. Socket.IO para chat e notificacoes em tempo real
-4. A pagina NFC (`/tag/:codigo`) funciona diretamente no browser do celular
-
-### Com petshops existentes
-
-1. Admin cria o petshop no painel (`/admin/gerenciar-mapa`)
-2. Petshop aparece no mapa e na pagina Explorar
-3. Clientes do petshop compram tags NFC
-4. Petshop funciona como ponto de apoio para pets encontrados
-
-### Com servicos de email (producao)
-
-A recuperacao de senha atualmente loga o link no servidor (dev). Para producao:
-1. Integre com um servico SMTP (Nodemailer + Gmail/SendGrid/Mailgun)
-2. No `authController.esqueciSenha`, substitua o `logger.info` por envio de email
-3. O template do email ja pode usar o link gerado
-
-### Com WhatsApp
-
-Botao de compartilhamento ja implementado no perfil do pet perdido. A funcao `compartilharWhatsApp()` esta em `app.js`. Para automatizar:
-1. Use a API do WhatsApp Business
-2. Ao aprovar pet perdido, envie mensagem automatica para petshops proximos
+# PARTE 5 — REFERENCIA RAPIDA
 
 ---
 
-## 17. Tecnologias usadas
+## 42. Tabela de referencia rapida
 
-### Backend
-| Tecnologia | Versao | Para que serve |
-|-----------|--------|----------------|
-| Node.js | 18+ | Runtime JavaScript no servidor |
-| Express | 5.x | Framework web (rotas, middlewares) |
-| PostgreSQL | 14+ | Banco de dados relacional |
-| PostGIS | 3.x | Extensao geografica (mapas, proximidade, ST_DWithin) |
-| Socket.IO | 4.x | WebSocket para chat e notificacoes em tempo real |
-| bcrypt | 6.x | Hash de senhas (12 rounds) |
-| jsonwebtoken | 9.x | Tokens JWT para autenticacao |
-| express-session | 1.x | Gerenciamento de sessoes |
-| connect-pg-simple | 10.x | Armazenamento de sessoes no PostgreSQL |
-| helmet | 8.x | Seguranca de headers HTTP |
-| express-rate-limit | 8.x | Limitacao de requisicoes |
-| express-validator | 7.x | Validacao de inputs |
-| multer | 2.x | Upload de arquivos |
-| web-push | 3.x | Web Push notifications (VAPID) |
-| dotenv | 17.x | Variaveis de ambiente |
-
-### Frontend
-| Tecnologia | Para que serve |
-|-----------|----------------|
-| EJS | Templates HTML renderizados no servidor |
-| TailwindCSS 3 | Estilizacao (classes utilitarias) |
-| Leaflet | Mapas interativos |
-| OpenStreetMap | Tiles/imagens do mapa (gratis) |
-| Leaflet.markercluster | Agrupamento de pins no mapa |
-| Socket.IO Client | Chat e notificacoes em tempo real no navegador |
-| Font Awesome 6 | Icones |
-| Service Worker | Cache offline, PWA e push notifications |
-
-### Infraestrutura
-| Item | Detalhes |
-|------|---------|
-| Arquitetura | MVC (Model-View-Controller) |
-| Template engine | EJS (server-side rendering) |
-| Comunicacao real-time | WebSocket via Socket.IO |
-| Dados geograficos | PostGIS (ST_DWithin, ST_MakeEnvelope, ST_MakePoint) |
-| Autenticacao | Session + JWT (dupla camada) |
-| PWA | manifest.json + Service Worker + Web Push |
-| Jobs automaticos | schedulerService.js (setInterval — escalar alertas, lembretes vacinas) |
-| Upload centralizado | utils/upload.js (factory de multer por diretorio) |
-
----
-
-## Resumo rapido
+### Acoes de usuario
 
 | Voce quer... | Faca isso |
-|-------------|-----------|
-| Criar conta | Acesse /auth/registro |
-| Recuperar senha | Acesse /auth/esqueci-senha |
-| Cadastrar pet | Acesse /pets/cadastro (precisa estar logado) |
-| Ver perfil do pet | Acesse /pets/:id (ve idade, peso ideal, calendario) |
-| Ver saude do pet | Acesse /pets/:id/saude |
-| Ver diario do pet | Acesse /diario/:pet_id |
-| Ver o mapa | Acesse /mapa |
-| Explorar a comunidade | Acesse /explorar |
-| Ver minhas conversas | Acesse /chat |
-| Ativar uma tag NFC | Escaneie a tag → siga as instrucoes na tela |
-| Reportar pet perdido | No perfil do pet → botao "Pet Perdido" |
-| Compartilhar pet perdido | No perfil do pet perdido → botao WhatsApp |
-| Agendar servico | Na pagina do petshop → "Agendar" |
-| Cancelar agendamento | POST /agenda/:id/cancelar |
-| Acessar o admin | Acesse /admin/login (usa credenciais do .env) |
-| Gerar tags NFC | Admin → /tags/admin/lista → "Gerar Lote" |
-| Aprovar pet perdido | Admin → /admin/pets-perdidos → "Aprovar e Notificar" |
-| Rejeitar pet perdido | Admin → /admin/pets-perdidos → "Rejeitar" |
-| Escalar alerta | Admin → /admin/pets-perdidos → "Escalar" (ou esperar automatico) |
-| Moderar mensagens | Admin → /admin/moderacao → Aprovar/Rejeitar |
-| Alterar role de usuario | Admin → /admin/usuarios → alterar role |
-| Adicionar ponto no mapa | Admin → /admin/gerenciar-mapa |
-| Mudar raio de notificacao | Admin → /admin/configuracoes |
-| Ver termos de uso | Acesse /termos |
-| Ver politica de privacidade | Acesse /privacidade |
+|---|---|
+| Criar conta | Acesse `/auth/registro` e preencha o formulario |
+| Fazer login | Acesse `/auth/login` com email e senha |
+| Recuperar senha | Acesse `/auth/esqueci-senha` e informe seu email |
+| Cadastrar pet | Menu → Meus Pets → Cadastrar Pet (ou `/pets/cadastro`) |
+| Ver perfil do pet | Menu → Meus Pets → clique no pet (ou `/pets/:id`) |
+| Editar pet | Perfil do pet → botao Editar |
+| Ver carteira de saude | Perfil do pet → botao Saude (ou `/pets/:id/saude`) |
+| Adicionar vacina | Saude → aba Vacinas → Adicionar Vacina |
+| Adicionar registro medico | Saude → aba Registros → Adicionar Registro |
+| Ver diario do pet | Perfil do pet → botao Diario (ou `/diario/:pet_id`) |
+| Adicionar entrada no diario | Diario → Adicionar Entrada |
+| Ativar tag NFC | Escaneie a tag → siga as instrucoes na tela |
+| Vincular tag a um pet | Apos ativar → Escolher Pet → selecione |
+| Reportar pet perdido | Perfil do pet → botao "Reportar como Perdido" |
+| Marcar pet como encontrado | Perfil do pet → botao "Meu Pet Foi Encontrado" |
+| Compartilhar pet perdido | Perfil do pet perdido → botao WhatsApp |
+| Criar publicacao | Feed (Explorar) → area de criacao no topo |
+| Curtir publicacao | Clique no coracao do post |
+| Comentar em publicacao | Clique no icone de comentario → digite → Enviar |
+| Repostar | Clique no icone de repost |
+| Fixar publicacao | Opcoes do post → Fixar (max 2) |
+| Seguir usuario | Perfil do usuario → botao Seguir |
+| Ver perfil publico | Clique no nome de um usuario ou `/explorar/perfil/:id` |
+| Ver o mapa | Menu → Mapa (ou `/mapa`) |
+| Agendar servico em petshop | Pagina do petshop → botao Agendar |
+| Cancelar agendamento | Menu → Agenda → botao Cancelar |
+| Ver notificacoes | Clique no sino no menu (ou `/notificacoes`) |
+| Ativar push no celular | Aceite a permissao de notificacoes quando solicitado |
+| Editar perfil | Menu → Perfil (ou `/perfil`) |
+| Instalar como app (Android) | Chrome → banner "Adicionar a tela inicial" |
+| Instalar como app (iPhone) | Safari → Compartilhar → Adicionar a Tela de Inicio |
+| Ver termos de uso | Acesse `/termos` |
+| Ver politica de privacidade | Acesse `/privacidade` |
 
----
+### Acoes de administrador
 
-## Changelog — Ultimas alteracoes
+| Voce quer... | Faca isso |
+|---|---|
+| Acessar o painel admin | Acesse `/admin/login` com credenciais do `.env` |
+| Ver metricas do sistema | Admin → Dashboard (`/admin`) |
+| Listar usuarios | Admin → Usuarios (`/admin/usuarios`) |
+| Promover usuario a admin | Admin → Usuarios → botao de alterar role |
+| Listar todos os pets | Admin → Pets (`/admin/pets`) |
+| Listar petshops | Admin → Petshops (`/admin/petshops`) |
+| Aprovar alerta de pet perdido | Admin → Pets Perdidos → botao "Aprovar e Notificar" |
+| Rejeitar alerta | Admin → Pets Perdidos → botao "Rejeitar" |
+| Escalar alerta manualmente | Admin → Pets Perdidos → botao "Escalar" |
+| Moderar mensagens do chat | Admin → Moderacao (`/admin/moderacao`) → Aprovar ou Rejeitar |
+| Gerar lote de tags NFC | Admin → Tags → Gerar Lote (`/tags/admin/gerar`) |
+| Listar tags NFC | Admin → Tags → Lista (`/tags/admin/lista`) |
+| Ver lotes de tags | Admin → Tags → Lotes (`/tags/admin/lotes`) |
+| Reservar tag para usuario | Admin → Tags → botao Reservar na tag |
+| Enviar tag | Admin → Tags → botao Enviar na tag |
+| Bloquear tag | Admin → Tags → botao Bloquear na tag |
+| Adicionar ponto no mapa | Admin → Gerenciar Mapa → Adicionar Ponto |
+| Editar ponto no mapa | Admin → Gerenciar Mapa → botao Editar no ponto |
+| Ativar/desativar ponto | Admin → Gerenciar Mapa → botao Toggle no ponto |
+| Alterar raios de alerta | Admin → Configuracoes (`/admin/configuracoes`) |
+| Alterar tempo de escalamento | Admin → Configuracoes → campo de horas |
 
-### Seguranca
-- **Senha admin com bcrypt**: login em `/admin/login` agora usa `bcrypt.compare()` ao inves de comparacao em texto puro. Suporta `ADMIN_PASSWORD_HASH` (bcrypt hash) no .env.
-- **API localizacao protegida**: `/api/localizacao` agora exige autenticacao (middleware `estaAutenticado`).
-- **Chat protegido**: `GET /chat/:conversaId` agora exige autenticacao. Apenas participantes e admins podem acessar.
-- **Ownership em DELETE**: `deletarVacina`, `deletarRegistro` (saudeController) e `deletarEntrada` (diarioController) verificam se o recurso pertence ao pet do usuario antes de deletar.
-- **Validacao no PUT**: `PUT /pets/:id` agora aplica `validarPet` e `validarResultado`.
+### Referencia para programadores
 
-### Rotas criadas
-- `/termos` e `/privacidade` — paginas estaticas completas
-- `/auth/esqueci-senha` e `/auth/redefinir-senha/:token` — fluxo completo de recuperacao
-- `/tag/:codigo/encontrei` e `/tag/:codigo/enviar-foto` — formularios para quem encontrou o pet
-- `/chat` — lista de conversas do usuario
-- `/explorar` — mural da comunidade
-
-### Inconsistencias corrigidas
-- `perfilController.atualizar` agora usa `Usuario.atualizarPerfil()` (sem query SQL direta)
-- `pontoMapaController.deletar` agora usa `PontoMapa.deletar()` (sem query SQL direta)
-- `diarioController` agora usa `logger` ao inves de `console.error`
-- Fotos do diario salvas em `/images/diario/` (separado de `/images/pets/`)
-- Upload centralizado em `utils/upload.js`
-- Adicionado metodo `deletar()` no model `PontoMapa`
-- Adicionados metodos `atualizarPerfil()` e `atualizarRole()` no model `Usuario`
-
-### Features novas
-- **Notificacao por proximidade**: ao aprovar ou escalar alerta, sistema busca usuarios no raio via PostGIS e notifica em massa (push + Socket.IO)
-- **Escalamento automatico**: scheduler roda a cada 30min, escala alertas (6h→nivel2, 24h→nivel3)
-- **Lembretes de vacinas**: scheduler roda a cada 6h, notifica tutores sobre vacinas vencendo em 7 dias
-- **Rejeitar alerta**: admin pode rejeitar alerta de pet perdido (notifica o tutor)
-- **Moderar mensagens do admin**: rotas `POST /admin/moderacao/:id/aprovar` e `/rejeitar`
-- **Alterar role de usuario**: rota `POST /admin/usuarios/:id/role`
-- **Agendamento completo**: cancelar e confirmar agendamentos com verificacao de ownership
-- **Contador de idade**: calcula anos/meses/dias + idade humana equivalente (formula diferente para cao/gato)
-- **Peso ideal**: referencia por raca/porte, compara com peso atual (abaixo/ideal/acima)
-- **Calendario de cuidados**: proximos 5 eventos (vacinas e consultas futuras)
-- **Compartilhar WhatsApp**: botao no perfil do pet perdido + funcao global `compartilharWhatsApp()`
-- **Home dinamica**: estatisticas da comunidade + ultimos pets perdidos na landing page
-- **Pagina Explorar**: mural com pets perdidos, petshops/clinicas em destaque, pets recentes
-- **Link Explorar no nav**: adicionado ao menu de navegacao
+| Voce quer... | Onde encontrar |
+|---|---|
+| Entender a arquitetura | [Secao 28 — Arquitetura](#28-arquitetura-do-sistema) |
+| Ver todas as pastas | [Secao 29 — Estrutura de pastas](#29-estrutura-de-pastas) |
+| Instalar o projeto | [Secao 30 — Como instalar e rodar](#30-como-instalar-e-rodar) |
+| Ver tabelas do banco | [Secao 31 — Banco de dados](#31-banco-de-dados) |
+| Ver todos os endpoints | [Secao 32 — Rotas e endpoints](#32-rotas-e-endpoints) |
+| Entender um controller | [Secao 33 — Controllers](#33-controllers) |
+| Ver metodos de um model | [Secao 34 — Models](#34-models) |
+| Entender a logica de negocio | [Secao 35 — Services](#35-services) |
+| Ver middlewares | [Secao 36 — Middlewares](#36-middlewares) |
+| Entender WebSockets | [Secao 37 — WebSockets](#37-websockets--tempo-real) |
+| Ver config de upload | [Secao 38 — Upload de arquivos](#38-upload-de-arquivos) |
+| Entender jobs automaticos | [Secao 39 — Scheduler](#39-scheduler--jobs-automaticos) |
+| Entender seguranca | [Secao 40 — Seguranca](#40-seguranca) |
+| Entender PWA | [Secao 41 — PWA e Service Worker](#41-pwa-e-service-worker) |
+| Adicionar nova rota | Crie em `src/routes/`, registre em `src/routes/index.js` |
+| Adicionar novo model | Crie em `src/models/`, adicione tabela em `src/config/migrate.js` |
+| Adicionar novo controller | Crie em `src/controllers/`, conecte na rota |
+| Adicionar novo service | Crie em `src/services/`, use no controller |
+| Gerar chaves VAPID | `npx web-push generate-vapid-keys` |
+| Gerar hash bcrypt | `node -e "require('bcrypt').hash('senha', 12).then(console.log)"` |
+| Compilar CSS | `npx tailwindcss -i src/public/css/input.css -o src/public/css/output.css` |
+| Rodar em dev | `npm run dev` (nodemon com auto-restart) |
+| Rodar em producao | `npm start` |

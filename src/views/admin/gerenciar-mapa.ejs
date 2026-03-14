@@ -34,13 +34,13 @@
 <header class="bg-gray-900 text-white sticky top-0 z-50">
   <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
     <div class="flex items-center gap-3">
-      <a href="/admin" class="flex items-center gap-2 text-gray-300 hover:text-white transition-colors text-sm">
+      <a href="<%= adminPath %>" class="flex items-center gap-2 text-gray-300 hover:text-white transition-colors text-sm">
         <i class="fa-solid fa-arrow-left text-xs"></i> Dashboard
       </a>
       <span class="text-gray-600">|</span>
       <h1 class="text-base font-bold"><i class="fa-solid fa-map-location-dot text-[#ec5a1c] mr-1"></i> Gerenciar Mapa</h1>
     </div>
-    <a href="/admin/logout" class="text-xs text-gray-400 hover:text-red-400 transition-colors">
+    <a href="<%= adminPath %>/logout" class="text-xs text-gray-400 hover:text-red-400 transition-colors">
       <i class="fa-solid fa-right-from-bracket mr-1"></i>Sair
     </a>
   </div>
@@ -95,7 +95,7 @@
       <h2 class="text-sm font-bold text-gray-900 mb-0.5" id="formTitle">Novo Ponto</h2>
       <p class="text-xs text-gray-400 mb-3" id="formSubtitle">Clique no mapa para definir a localizacao</p>
 
-      <form action="/admin/pontos-mapa" method="POST" id="pontoForm" class="space-y-3">
+      <form action="<%= adminPath %>/pontos-mapa" method="POST" id="pontoForm" class="space-y-3">
         <input type="hidden" name="id" id="pontoId">
 
         <div>
@@ -192,14 +192,14 @@
                       data-ponto="<%= encodeURIComponent(JSON.stringify(pt)) %>">
                 <i class="fa-solid fa-pen mr-0.5"></i> Editar
               </button>
-              <form action="/admin/pontos-mapa/<%= pt.id %>/toggle" method="POST" class="flex-1">
+              <form action="<%= adminPath %>/pontos-mapa/<%= pt.id %>/toggle" method="POST" class="flex-1">
                 <button type="submit"
                         class="w-full px-2 py-1.5 text-[11px] font-semibold rounded-lg transition-colors
                           <%= pt.ativo !== false ? 'text-red-600 bg-red-50 hover:bg-red-100' : 'text-emerald-600 bg-emerald-50 hover:bg-emerald-100' %>">
                   <%= pt.ativo !== false ? 'Desativar' : 'Ativar' %>
                 </button>
               </form>
-              <form action="/admin/pontos-mapa/<%= pt.id %>" method="POST"
+              <form action="<%= adminPath %>/pontos-mapa/<%= pt.id %>" method="POST"
                     onsubmit="return confirm('Deletar?')">
                 <input type="hidden" name="_method" value="DELETE">
                 <button type="submit" class="px-2 py-1.5 text-[11px] font-semibold text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors">
@@ -322,7 +322,7 @@
     document.getElementById('formBtnLabel').textContent = 'Atualizar';
     document.getElementById('enderecoStatus').textContent = '';
     var f = document.getElementById('pontoForm');
-    f.action = '/admin/pontos-mapa/' + pt.id;
+    f.action = '<%= adminPath %>/pontos-mapa/' + pt.id;
     var m = f.querySelector('input[name="_method"]');
     if (!m) { m = document.createElement('input'); m.type = 'hidden'; m.name = '_method'; f.appendChild(m); }
     m.value = 'PUT';
@@ -341,7 +341,7 @@
     document.getElementById('formSubtitle').textContent = 'Clique no mapa';
     document.getElementById('formBtnLabel').textContent = 'Criar';
     document.getElementById('enderecoStatus').textContent = '';
-    var f = document.getElementById('pontoForm'); f.action = '/admin/pontos-mapa';
+    var f = document.getElementById('pontoForm'); f.action = '<%= adminPath %>/pontos-mapa';
     var m = f.querySelector('input[name="_method"]'); if (m) m.remove();
     if (activeMarker) { map.removeLayer(activeMarker); activeMarker = null; }
   });

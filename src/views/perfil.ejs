@@ -25,6 +25,9 @@
           <div class="pb-1">
             <h2 class="text-xl font-bold text-gray-900"><%= perfil.nome %></h2>
             <p class="text-sm text-gray-500"><%= perfil.email %></p>
+            <% if (perfil.cidade) { %>
+              <p class="text-xs text-gray-400 mt-0.5"><i class="fa-solid fa-location-dot mr-1"></i><%= perfil.bairro ? perfil.bairro + ', ' : '' %><%= perfil.cidade %><%= perfil.estado ? ' - ' + perfil.estado : '' %></p>
+            <% } %>
           </div>
         </div>
         <a href="/explorar/perfil/<%= perfil.id %>" class="mt-4 inline-flex items-center gap-2 text-sm text-primary-500 font-medium hover:underline">
@@ -71,16 +74,80 @@
         <input type="hidden" name="_method" value="PUT">
 
         <div class="space-y-5">
-          <div>
-            <label for="nome" class="block text-sm font-semibold text-gray-700 mb-1.5">Nome</label>
-            <input type="text" id="nome" name="nome" value="<%= perfil.nome %>" required class="input-field">
+
+          <!-- Dados pessoais -->
+          <div class="pb-2 border-b border-gray-100">
+            <h3 class="text-sm font-bold text-gray-500 uppercase tracking-wider mb-4"><i class="fa-solid fa-user mr-1.5"></i>Dados Pessoais</h3>
+
+            <div class="space-y-4">
+              <div>
+                <label for="nome" class="block text-sm font-semibold text-gray-700 mb-1.5">Nome</label>
+                <input type="text" id="nome" name="nome" value="<%= perfil.nome %>" required class="input-field">
+              </div>
+
+              <div>
+                <label for="telefone" class="block text-sm font-semibold text-gray-700 mb-1.5">Telefone</label>
+                <input type="tel" id="telefone" name="telefone" value="<%= perfil.telefone || '' %>" placeholder="(00) 00000-0000" class="input-field">
+              </div>
+
+              <div>
+                <label for="bio" class="block text-sm font-semibold text-gray-700 mb-1.5">Bio</label>
+                <textarea id="bio" name="bio" maxlength="160" rows="2" placeholder="Conte sobre você e seus pets..." class="input-field resize-none"><%= perfil.bio || '' %></textarea>
+                <p class="text-xs text-gray-400 mt-1"><span id="bioCount"><%= (perfil.bio || '').length %></span>/160</p>
+              </div>
+            </div>
           </div>
 
-          <div>
-            <label for="telefone" class="block text-sm font-semibold text-gray-700 mb-1.5">Telefone</label>
-            <input type="tel" id="telefone" name="telefone" value="<%= perfil.telefone || '' %>" placeholder="(00) 00000-0000" class="input-field">
+          <!-- Endereço -->
+          <div class="pb-2 border-b border-gray-100">
+            <h3 class="text-sm font-bold text-gray-500 uppercase tracking-wider mb-1"><i class="fa-solid fa-location-dot mr-1.5"></i>Endereço / Região</h3>
+            <p class="text-xs text-gray-400 mb-4">Usado para recomendar tutores e pets próximos a você</p>
+
+            <div class="space-y-4">
+              <div>
+                <label for="cep" class="block text-sm font-semibold text-gray-700 mb-1.5">CEP</label>
+                <div class="relative">
+                  <input type="text" id="cep" name="cep" value="<%= perfil.cep || '' %>" placeholder="00000-000" maxlength="9" class="input-field pr-10">
+                  <button type="button" id="btnBuscarCep" class="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-primary-500 hover:bg-primary-50 rounded-lg transition-colors" title="Buscar CEP">
+                    <i class="fa-solid fa-magnifying-glass text-sm"></i>
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label for="endereco" class="block text-sm font-semibold text-gray-700 mb-1.5">Endereço</label>
+                <input type="text" id="endereco" name="endereco" value="<%= perfil.endereco || '' %>" placeholder="Rua, número" class="input-field">
+              </div>
+
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label for="bairro" class="block text-sm font-semibold text-gray-700 mb-1.5">Bairro</label>
+                  <input type="text" id="bairro" name="bairro" value="<%= perfil.bairro || '' %>" placeholder="Bairro" class="input-field">
+                </div>
+                <div>
+                  <label for="cidade" class="block text-sm font-semibold text-gray-700 mb-1.5">Cidade</label>
+                  <input type="text" id="cidade" name="cidade" value="<%= perfil.cidade || '' %>" placeholder="Cidade" class="input-field">
+                </div>
+              </div>
+
+              <div>
+                <label for="estado" class="block text-sm font-semibold text-gray-700 mb-1.5">Estado</label>
+                <select id="estado" name="estado" class="input-field">
+                  <option value="">Selecione</option>
+                  <% var estados = [{s:'AC',n:'Acre'},{s:'AL',n:'Alagoas'},{s:'AP',n:'Amapá'},{s:'AM',n:'Amazonas'},{s:'BA',n:'Bahia'},{s:'CE',n:'Ceará'},{s:'DF',n:'Distrito Federal'},{s:'ES',n:'Espírito Santo'},{s:'GO',n:'Goiás'},{s:'MA',n:'Maranhão'},{s:'MT',n:'Mato Grosso'},{s:'MS',n:'Mato Grosso do Sul'},{s:'MG',n:'Minas Gerais'},{s:'PA',n:'Pará'},{s:'PB',n:'Paraíba'},{s:'PR',n:'Paraná'},{s:'PE',n:'Pernambuco'},{s:'PI',n:'Piauí'},{s:'RJ',n:'Rio de Janeiro'},{s:'RN',n:'Rio Grande do Norte'},{s:'RS',n:'Rio Grande do Sul'},{s:'RO',n:'Rondônia'},{s:'RR',n:'Roraima'},{s:'SC',n:'Santa Catarina'},{s:'SP',n:'São Paulo'},{s:'SE',n:'Sergipe'},{s:'TO',n:'Tocantins'}]; %>
+                  <% estados.forEach(function(e) { %>
+                    <option value="<%= e.s %>" <%= (perfil.estado || '') === e.s ? 'selected' : '' %>><%= e.n %></option>
+                  <% }) %>
+                </select>
+              </div>
+
+              <button type="button" id="btnGeolocalizacao" class="w-full flex items-center justify-center gap-2 py-2.5 px-4 border-2 border-dashed border-primary-200 rounded-2xl text-sm font-semibold text-primary-500 hover:bg-primary-50 hover:border-primary-300 transition-all">
+                <i class="fa-solid fa-crosshairs"></i> Usar minha localização atual
+              </button>
+            </div>
           </div>
 
+          <!-- Cor do Perfil -->
           <div>
             <label class="block text-sm font-semibold text-gray-700 mb-2">Cor do Perfil</label>
             <div class="flex flex-wrap gap-2" id="colorPicker">
@@ -96,7 +163,7 @@
           </div>
 
           <div class="pt-1">
-            <button type="submit" class="btn-primary">
+            <button type="submit" class="btn-primary w-full">
               <i class="fa-solid fa-check mr-2"></i>Salvar Alterações
             </button>
           </div>
@@ -127,6 +194,84 @@ function selecionarCor(cor) {
     btn.classList.add('border-gray-900', 'ring-2', 'ring-offset-2', 'ring-gray-400', 'scale-110');
   }
 }
+
+var bioEl = document.getElementById('bio');
+var bioCount = document.getElementById('bioCount');
+if (bioEl) {
+  bioEl.addEventListener('input', function() {
+    bioCount.textContent = this.value.length;
+  });
+}
+
+var cepInput = document.getElementById('cep');
+if (cepInput) {
+  cepInput.addEventListener('input', function() {
+    var v = this.value.replace(/\D/g, '');
+    if (v.length > 5) v = v.slice(0,5) + '-' + v.slice(5,8);
+    this.value = v;
+  });
+}
+
+document.getElementById('btnBuscarCep').addEventListener('click', function() {
+  var cep = cepInput.value.replace(/\D/g, '');
+  if (cep.length !== 8) return;
+  var btn = this;
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-sm"></i>';
+  fetch('https://viacep.com.br/ws/' + cep + '/json/')
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      if (d.erro) { alert('CEP não encontrado.'); return; }
+      if (d.logradouro) document.getElementById('endereco').value = d.logradouro;
+      if (d.bairro) document.getElementById('bairro').value = d.bairro;
+      if (d.localidade) document.getElementById('cidade').value = d.localidade;
+      if (d.uf) document.getElementById('estado').value = d.uf;
+    })
+    .catch(function() { alert('Erro ao buscar CEP.'); })
+    .finally(function() { btn.innerHTML = '<i class="fa-solid fa-magnifying-glass text-sm"></i>'; });
+});
+
+document.getElementById('btnGeolocalizacao').addEventListener('click', function() {
+  var btn = this;
+  if (!navigator.geolocation) { alert('Geolocalização não suportada.'); return; }
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Obtendo localização...';
+  btn.disabled = true;
+  navigator.geolocation.getCurrentPosition(
+    function(pos) {
+      var lat = pos.coords.latitude;
+      var lng = pos.coords.longitude;
+      fetch('/api/localizacao/atualizar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ latitude: lat, longitude: lng })
+      }).then(function() {
+        fetch('https://nominatim.openstreetmap.org/reverse?lat=' + lat + '&lon=' + lng + '&format=json&accept-language=pt-BR')
+          .then(function(r) { return r.json(); })
+          .then(function(d) {
+            var a = d.address || {};
+            if (a.road) document.getElementById('endereco').value = a.road + (a.house_number ? ', ' + a.house_number : '');
+            if (a.suburb || a.neighbourhood) document.getElementById('bairro').value = a.suburb || a.neighbourhood;
+            if (a.city || a.town || a.municipality) document.getElementById('cidade').value = a.city || a.town || a.municipality;
+            var ufMap = {'São Paulo':'SP','Rio de Janeiro':'RJ','Minas Gerais':'MG','Bahia':'BA','Paraná':'PR','Rio Grande do Sul':'RS','Pernambuco':'PE','Ceará':'CE','Pará':'PA','Maranhão':'MA','Santa Catarina':'SC','Goiás':'GO','Paraíba':'PB','Espírito Santo':'ES','Amazonas':'AM','Rio Grande do Norte':'RN','Alagoas':'AL','Piauí':'PI','Mato Grosso':'MT','Distrito Federal':'DF','Mato Grosso do Sul':'MS','Sergipe':'SE','Rondônia':'RO','Tocantins':'TO','Acre':'AC','Amapá':'AP','Roraima':'RR'};
+            if (a.state && ufMap[a.state]) document.getElementById('estado').value = ufMap[a.state];
+            if (a.postcode) {
+              var cepVal = a.postcode.replace(/\D/g, '');
+              if (cepVal.length >= 8) {
+                cepInput.value = cepVal.slice(0,5) + '-' + cepVal.slice(5,8);
+              }
+            }
+            btn.innerHTML = '<i class="fa-solid fa-check text-green-500 mr-2"></i> Localização obtida!';
+            setTimeout(function() { btn.innerHTML = '<i class="fa-solid fa-crosshairs"></i> Usar minha localização atual'; btn.disabled = false; }, 2000);
+          });
+      });
+    },
+    function() {
+      alert('Não foi possível obter sua localização.');
+      btn.innerHTML = '<i class="fa-solid fa-crosshairs"></i> Usar minha localização atual';
+      btn.disabled = false;
+    },
+    { enableHighAccuracy: true, timeout: 10000 }
+  );
+});
 </script>
 
 <%- include('partials/footer') %>

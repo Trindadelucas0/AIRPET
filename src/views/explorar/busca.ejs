@@ -1,0 +1,260 @@
+<% locals.titulo = 'Buscar' %>
+<% locals.extraHead = `
+<style>
+  .search-card { animation: slideUp .4s ease-out both; }
+  @keyframes slideUp { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+  .follow-btn { transition: all .25s ease; }
+  .follow-btn.seguindo { background: transparent; border-color: #d1d5db; color: #6b7280; }
+  .follow-btn.seguindo:hover { border-color: #ef4444; color: #ef4444; }
+</style>
+` %>
+<%- include('../partials/header') %>
+<%- include('../partials/flash') %>
+
+<main class="flex-1 pb-24 md:pb-6">
+  <div class="max-w-2xl mx-auto px-4 py-6">
+
+    <!-- Search bar -->
+    <form action="/explorar/busca" method="GET" class="relative mb-6">
+      <input type="text" name="q" value="<%= q %>" placeholder="Buscar por nome do pet ou pessoa..."
+             class="w-full pl-12 pr-4 py-3.5 text-sm bg-white border border-gray-200 rounded-2xl shadow-sm focus:ring-2 focus:ring-primary-500/20 focus:border-primary-400 outline-none transition-all"
+             autofocus>
+      <i class="fa-solid fa-magnifying-glass absolute left-4.5 top-1/2 -translate-y-1/2 text-gray-400"></i>
+      <% if (q) { %>
+        <a href="/explorar/busca" class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+          <i class="fa-solid fa-xmark"></i>
+        </a>
+      <% } %>
+    </form>
+
+    <% if (q && q.length >= 2) { %>
+
+      <!-- Resultados de Pessoas -->
+      <% if (resultadosUsuarios.length > 0) { %>
+        <h2 class="text-lg font-bold text-gray-900 mb-3"><i class="fa-solid fa-users mr-2 text-primary-500"></i>Pessoas</h2>
+        <div class="space-y-2 mb-8">
+          <% resultadosUsuarios.forEach(function(u, i) { %>
+            <div class="search-card flex items-center gap-3 bg-white rounded-2xl border border-gray-100 shadow-sm p-4 hover:shadow-md transition-shadow"
+                 style="animation-delay:<%= i * 50 %>ms">
+              <a href="/explorar/perfil/<%= u.id %>" class="shrink-0">
+                <% if (u.foto_perfil) { %>
+                  <img src="<%= u.foto_perfil %>" alt="" class="w-12 h-12 rounded-full object-cover ring-2 ring-gray-100">
+                <% } else { %>
+                  <span class="w-12 h-12 rounded-full flex items-center justify-center text-base font-bold text-white"
+                        style="background:<%= u.cor_perfil || '#ec5a1c' %>">
+                    <%= u.nome ? u.nome.charAt(0).toUpperCase() : 'U' %>
+                  </span>
+                <% } %>
+              </a>
+              <div class="flex-1 min-w-0">
+                <a href="/explorar/perfil/<%= u.id %>" class="font-bold text-sm text-gray-900 hover:underline truncate block"><%= u.nome %></a>
+                <p class="text-xs text-gray-400 truncate">
+                  <% if (u.bairro || u.cidade) { %>
+                    <i class="fa-solid fa-location-dot mr-0.5"></i><%= u.bairro ? u.bairro + ', ' : '' %><%= u.cidade || '' %>
+                  <% } %>
+                  · <%= u.total_seguidores %> seguidor<%= u.total_seguidores !== 1 ? 'es' : '' %>
+                </p>
+                <% if (u.bio) { %>
+                  <p class="text-xs text-gray-500 mt-0.5 line-clamp-1"><%= u.bio %></p>
+                <% } %>
+              </div>
+              <% if (typeof usuario !== 'undefined' && usuario && usuario.id !== u.id) { %>
+                <button class="follow-btn shrink-0 px-4 py-2 text-xs font-bold rounded-full border-2 transition-all
+                               <%= u.seguindo ? 'seguindo border-gray-300 text-gray-500' : 'border-gray-900 bg-gray-900 text-white hover:bg-gray-700' %>"
+                        data-user-id="<%= u.id %>" data-seguindo="<%= u.seguindo ? 'true' : 'false' %>">
+                  <%= u.seguindo ? 'Seguindo' : 'Seguir' %>
+                </button>
+              <% } %>
+            </div>
+          <% }) %>
+        </div>
+      <% } %>
+
+      <!-- Resultados de Pets -->
+      <% if (resultadosPets.length > 0) { %>
+        <h2 class="text-lg font-bold text-gray-900 mb-3"><i class="fa-solid fa-paw mr-2 text-primary-500"></i>Pets</h2>
+        <div class="space-y-2 mb-8">
+          <% resultadosPets.forEach(function(pet, i) { %>
+            <div class="search-card flex items-center gap-3 bg-white rounded-2xl border border-gray-100 shadow-sm p-4 hover:shadow-md transition-shadow"
+                 style="animation-delay:<%= (resultadosUsuarios.length + i) * 50 %>ms">
+              <a href="/pets/<%= pet.id %>" class="shrink-0">
+                <% if (pet.foto) { %>
+                  <img src="<%= pet.foto %>" alt="<%= pet.nome %>" class="w-12 h-12 rounded-full object-cover ring-2 ring-primary-100">
+                <% } else { %>
+                  <div class="w-12 h-12 rounded-full bg-primary-50 flex items-center justify-center">
+                    <i class="fa-solid fa-paw text-primary-400"></i>
+                  </div>
+                <% } %>
+              </a>
+              <div class="flex-1 min-w-0">
+                <a href="/pets/<%= pet.id %>" class="font-bold text-sm text-gray-900 hover:underline truncate block"><%= pet.nome %></a>
+                <p class="text-xs text-gray-400 truncate">
+                  <%= pet.raca || pet.tipo || '' %>
+                  · Dono: <a href="/explorar/perfil/<%= pet.dono_id %>" class="text-primary-500 hover:underline"><%= pet.dono_nome %></a>
+                  · <%= pet.total_seguidores %> seguidor<%= pet.total_seguidores !== 1 ? 'es' : '' %>
+                </p>
+              </div>
+              <% if (typeof usuario !== 'undefined' && usuario) { %>
+                <button class="follow-pet-btn shrink-0 px-4 py-2 text-xs font-bold rounded-full border-2 transition-all
+                               <%= pet.seguindo ? 'seguindo border-primary-200 bg-primary-50 text-primary-500' : 'border-primary-500 text-primary-500 hover:bg-primary-500 hover:text-white' %>"
+                        data-pet-id="<%= pet.id %>" data-seguindo="<%= pet.seguindo ? 'true' : 'false' %>">
+                  <%= pet.seguindo ? 'Seguindo' : 'Seguir' %>
+                </button>
+              <% } %>
+            </div>
+          <% }) %>
+        </div>
+      <% } %>
+
+      <% if (resultadosUsuarios.length === 0 && resultadosPets.length === 0) { %>
+        <div class="text-center py-16">
+          <div class="w-20 h-20 rounded-full bg-gray-50 flex items-center justify-center mx-auto mb-4">
+            <i class="fa-solid fa-magnifying-glass text-3xl text-gray-300"></i>
+          </div>
+          <h3 class="font-bold text-gray-700 text-lg mb-1">Nenhum resultado</h3>
+          <p class="text-sm text-gray-400">Tente buscar por outro nome de pet ou pessoa.</p>
+        </div>
+      <% } %>
+
+    <% } else { %>
+
+      <!-- Estado sem busca: mostra recomendações -->
+
+      <% if (typeof recomendacoes !== 'undefined' && recomendacoes.length > 0) { %>
+      <div class="mb-8">
+        <h2 class="text-lg font-bold text-gray-900 mb-1"><i class="fa-solid fa-user-plus mr-2 text-primary-500"></i>Sugestões para você</h2>
+        <p class="text-xs text-gray-400 mb-4">Tutores próximos da sua região</p>
+        <div class="space-y-2">
+          <% recomendacoes.forEach(function(rec, i) { %>
+            <div class="search-card flex items-center gap-3 bg-white rounded-2xl border border-gray-100 shadow-sm p-4 hover:shadow-md transition-shadow"
+                 style="animation-delay:<%= i * 60 %>ms">
+              <a href="/explorar/perfil/<%= rec.id %>" class="shrink-0">
+                <% if (rec.foto_perfil) { %>
+                  <img src="<%= rec.foto_perfil %>" alt="" class="w-12 h-12 rounded-full object-cover ring-2 ring-gray-100">
+                <% } else { %>
+                  <span class="w-12 h-12 rounded-full flex items-center justify-center text-base font-bold text-white"
+                        style="background:<%= rec.cor_perfil || '#ec5a1c' %>">
+                    <%= rec.nome ? rec.nome.charAt(0).toUpperCase() : 'U' %>
+                  </span>
+                <% } %>
+              </a>
+              <div class="flex-1 min-w-0">
+                <a href="/explorar/perfil/<%= rec.id %>" class="font-bold text-sm text-gray-900 hover:underline truncate block"><%= rec.nome %></a>
+                <p class="text-xs text-gray-400 truncate">
+                  <% if (rec.bairro || rec.cidade) { %>
+                    <i class="fa-solid fa-location-dot mr-0.5"></i><%= rec.bairro ? rec.bairro + ', ' : '' %><%= rec.cidade || '' %>
+                    <% if (rec.distancia_km) { %> · <%= rec.distancia_km %>km<% } %>
+                  <% } %>
+                  · <%= rec.total_seguidores %> seguidor<%= rec.total_seguidores !== 1 ? 'es' : '' %>
+                </p>
+              </div>
+              <button class="follow-btn shrink-0 px-4 py-2 text-xs font-bold rounded-full border-2 border-gray-900 bg-gray-900 text-white hover:bg-gray-700 transition-all"
+                      data-user-id="<%= rec.id %>" data-seguindo="false">
+                Seguir
+              </button>
+            </div>
+          <% }) %>
+        </div>
+      </div>
+      <% } %>
+
+      <% if (typeof petsRecomendados !== 'undefined' && petsRecomendados.length > 0) { %>
+      <div class="mb-8">
+        <h2 class="text-lg font-bold text-gray-900 mb-1"><i class="fa-solid fa-paw mr-2 text-primary-500"></i>Pets populares</h2>
+        <p class="text-xs text-gray-400 mb-4">Conheça pets da comunidade</p>
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          <% petsRecomendados.forEach(function(pet, i) { %>
+            <div class="search-card bg-white rounded-2xl border border-gray-100 shadow-sm p-4 text-center hover:shadow-md transition-shadow"
+                 style="animation-delay:<%= i * 60 %>ms">
+              <a href="/pets/<%= pet.id %>" class="block mb-3">
+                <% if (pet.foto) { %>
+                  <img src="<%= pet.foto %>" alt="<%= pet.nome %>" class="w-16 h-16 rounded-full object-cover mx-auto ring-2 ring-primary-100">
+                <% } else { %>
+                  <div class="w-16 h-16 rounded-full bg-primary-50 flex items-center justify-center mx-auto">
+                    <i class="fa-solid fa-paw text-primary-400 text-xl"></i>
+                  </div>
+                <% } %>
+              </a>
+              <a href="/pets/<%= pet.id %>" class="font-bold text-sm text-gray-900 hover:underline block truncate"><%= pet.nome %></a>
+              <p class="text-xs text-gray-400 truncate mt-0.5"><%= pet.raca || pet.tipo || '' %></p>
+              <p class="text-xs text-gray-300 mt-1"><%= pet.total_seguidores %> seguidor<%= pet.total_seguidores !== 1 ? 'es' : '' %></p>
+              <button class="follow-pet-btn mt-2 w-full px-3 py-1.5 text-xs font-bold rounded-full border-2 transition-all
+                             <%= pet.seguindo ? 'seguindo border-primary-200 bg-primary-50 text-primary-500' : 'border-primary-500 text-primary-500 hover:bg-primary-500 hover:text-white' %>"
+                      data-pet-id="<%= pet.id %>" data-seguindo="<%= pet.seguindo ? 'true' : 'false' %>">
+                <%= pet.seguindo ? 'Seguindo' : 'Seguir' %>
+              </button>
+            </div>
+          <% }) %>
+        </div>
+      </div>
+      <% } %>
+
+      <% if ((!recomendacoes || recomendacoes.length === 0) && (!petsRecomendados || petsRecomendados.length === 0)) { %>
+        <div class="text-center py-16">
+          <div class="w-20 h-20 rounded-full bg-primary-50 flex items-center justify-center mx-auto mb-4">
+            <i class="fa-solid fa-compass text-3xl text-primary-400"></i>
+          </div>
+          <h3 class="font-bold text-gray-700 text-lg mb-1">Descubra a comunidade</h3>
+          <p class="text-sm text-gray-400 max-w-xs mx-auto">Busque por nome de pets ou pessoas para encontrar quem seguir.</p>
+          <p class="text-xs text-gray-300 mt-3">Dica: preencha seu endereço nas <a href="/perfil" class="text-primary-500 hover:underline font-semibold">configurações</a> para ver sugestões próximas.</p>
+        </div>
+      <% } %>
+
+    <% } %>
+
+  </div>
+</main>
+
+<script>
+(function() {
+  document.querySelectorAll('.follow-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var userId = this.getAttribute('data-user-id');
+      var seguindo = this.getAttribute('data-seguindo') === 'true';
+      var el = this;
+      var method = seguindo ? 'DELETE' : 'POST';
+      fetch('/explorar/seguir/' + userId, { method: method, headers: { 'Content-Type': 'application/json' } })
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+          if (d.sucesso) {
+            el.setAttribute('data-seguindo', d.seguindo ? 'true' : 'false');
+            if (d.seguindo) {
+              el.textContent = 'Seguindo';
+              el.classList.add('seguindo');
+              el.classList.remove('bg-gray-900', 'text-white', 'hover:bg-gray-700');
+            } else {
+              el.textContent = 'Seguir';
+              el.classList.remove('seguindo');
+              el.classList.add('bg-gray-900', 'text-white', 'hover:bg-gray-700');
+            }
+          }
+        });
+    });
+  });
+
+  document.querySelectorAll('.follow-pet-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var petId = this.getAttribute('data-pet-id');
+      var seguindo = this.getAttribute('data-seguindo') === 'true';
+      var el = this;
+      var method = seguindo ? 'DELETE' : 'POST';
+      fetch('/explorar/pet/' + petId + '/seguir', { method: method, headers: { 'Content-Type': 'application/json' } })
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+          if (d.sucesso) {
+            el.setAttribute('data-seguindo', d.seguindo ? 'true' : 'false');
+            if (d.seguindo) {
+              el.textContent = 'Seguindo';
+              el.classList.add('seguindo');
+            } else {
+              el.textContent = 'Seguir';
+              el.classList.remove('seguindo');
+            }
+          }
+        });
+    });
+  });
+})();
+</script>
+
+<%- include('../partials/footer') %>

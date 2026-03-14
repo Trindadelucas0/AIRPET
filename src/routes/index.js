@@ -59,6 +59,7 @@ router.get('/privacidade', (req, res) => res.render('privacidade', { titulo: 'Po
 // Rotas públicas
 router.use('/auth', authRoutes);
 router.use('/tag', nfcRoutes);
+router.use('/t', nfcRoutes);
 router.use('/tags', tagRoutes);
 router.use('/petshops', petshopRoutes);
 router.use('/mapa', mapaRoutes);

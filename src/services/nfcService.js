@@ -33,9 +33,11 @@
 
 const NfcTag = require('../models/NfcTag');
 const TagScan = require('../models/TagScan');
+const Pet = require('../models/Pet');
 const Localizacao = require('../models/Localizacao');
 const Notificacao = require('../models/Notificacao');
 const PetPerdido = require('../models/PetPerdido');
+const { query } = require('../config/database');
 const logger = require('../utils/logger');
 
 const nfcService = {
@@ -126,12 +128,15 @@ const nfcService = {
     let tela;
     let petPerdido = false;
     let dadosPet = null;
+    let dadosDono = null;
+    let alertaAtivo = null;
 
     switch (tag.status) {
       /**
        * Tags em estoque ou reservadas — não foram enviadas ainda.
        * Exibe uma tela informativa dizendo que a tag não está ativa.
        */
+      case 'stock':
       case 'manufactured':
       case 'reserved':
         tela = 'nao-ativada';
@@ -152,20 +157,16 @@ const nfcService = {
       case 'active':
         tela = 'intermediaria';
 
-        /**
-         * Monta um objeto com os dados do pet para a tela.
-         * Os campos vêm do LEFT JOIN feito no buscarPorTagCode.
-         */
         if (tag.pet_id) {
-          dadosPet = {
-            id: tag.pet_id,
-            nome: tag.pet_nome,
-            especie: tag.pet_especie,
-            raca: tag.pet_raca,
-            foto: tag.pet_foto,
-            dono_nome: tag.dono_nome,
-            dono_telefone: tag.dono_telefone,
-          };
+          dadosPet = await Pet.buscarPorId(tag.pet_id);
+
+          if (dadosPet) {
+            const donoResult = await query(
+              'SELECT id, nome, telefone, email FROM usuarios WHERE id = $1',
+              [dadosPet.usuario_id]
+            );
+            dadosDono = donoResult.rows[0] || null;
+          }
         }
 
         /**
@@ -191,12 +192,7 @@ const nfcService = {
          */
         if (tag.pet_id) {
           const alertas = await PetPerdido.buscarPorPet(tag.pet_id);
-
-          /**
-           * Verifica se existe algum alerta com status 'aprovado' (ativo).
-           * Um pet pode ter alertas antigos resolvidos — só o ativo importa.
-           */
-          const alertaAtivo = alertas.find(a => a.status === 'aprovado');
+          alertaAtivo = alertas.find(a => a.status === 'aprovado') || null;
 
           if (alertaAtivo) {
             petPerdido = true;
@@ -249,8 +245,10 @@ const nfcService = {
     return {
       tag,
       pet: dadosPet,
+      dono: dadosDono,
       tela,
       petPerdido,
+      petPerdidoAlerta: alertaAtivo,
     };
   },
 };

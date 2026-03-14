@@ -1,10 +1,47 @@
+const fs = require('fs');
+const path = require('path');
 const Publicacao = require('../models/Publicacao');
 const Curtida = require('../models/Curtida');
 const Comentario = require('../models/Comentario');
 const Seguidor = require('../models/Seguidor');
+const Repost = require('../models/Repost');
 const Pet = require('../models/Pet');
 const Usuario = require('../models/Usuario');
+const SeguidorPet = require('../models/SeguidorPet');
+const recomendacaoService = require('../services/recomendacaoService');
 const logger = require('../utils/logger');
+
+function getNotificacaoService() {
+  try { return require('../services/notificacaoService'); } catch (_) { return null; }
+}
+
+async function notificarMencoes(texto, autorId, publicacaoId) {
+  const nomes = Comentario.extrairMencoes(texto);
+  if (!nomes.length) return;
+  const usuarios = await Comentario.resolverMencoes(nomes);
+  const svc = getNotificacaoService();
+  if (!svc) return;
+  const autor = await Usuario.buscarPorId(autorId);
+  for (const u of usuarios) {
+    if (u.id === autorId) continue;
+    try {
+      await svc.criar(u.id, 'mencao', `${autor.nome} mencionou você em um comentário.`, `/explorar#post-${publicacaoId}`);
+    } catch (_) {}
+  }
+}
+
+async function autoDeleteSeNecessario(usuarioId) {
+  const total = await Publicacao.contarAtivas(usuarioId);
+  if (total < Publicacao.MAX_POSTS) return null;
+  const antiga = await Publicacao.buscarMaisAntigaNaoFixada(usuarioId);
+  if (!antiga) return null;
+  await Publicacao.deletar(antiga.id);
+  if (antiga.foto) {
+    const caminho = path.join(__dirname, '..', 'public', antiga.foto);
+    fs.unlink(caminho, () => {});
+  }
+  return antiga;
+}
 
 const explorarController = {
 
@@ -23,10 +60,16 @@ const explorarController = {
         posts = await Publicacao.feedGeral(limite, offset, uid);
       }
 
-      const pets = await Pet.buscarPorUsuario(uid);
+      const [pets, totalPosts, totalFixadas, recomendacoes, petsRecomendados] = await Promise.all([
+        Pet.buscarPorUsuario(uid),
+        Publicacao.contarAtivas(uid),
+        Publicacao.contarFixadas(uid),
+        page === 1 ? recomendacaoService.recomendarPessoas(uid, 6).catch(() => []) : [],
+        page === 1 ? recomendacaoService.petsRecomendados(uid, 8).catch(() => []) : [],
+      ]);
 
       if (req.headers.accept && req.headers.accept.includes('application/json')) {
-        return res.json({ sucesso: true, posts });
+        return res.json({ sucesso: true, posts, totalPosts, totalFixadas });
       }
 
       res.render('explorar', {
@@ -35,7 +78,11 @@ const explorarController = {
         tab,
         page,
         pets,
+        totalPosts,
+        totalFixadas,
         temMais: posts.length === limite,
+        recomendacoes,
+        petsRecomendados,
       });
     } catch (err) {
       logger.error('EXPLORAR', 'Erro no feed', err);
@@ -47,20 +94,62 @@ const explorarController = {
   async criarPost(req, res) {
     try {
       const uid = req.session.usuario.id;
-      const { legenda, pet_id } = req.body;
+      const { texto, pet_id } = req.body;
       const foto = req.file ? `/images/posts/${req.file.filename}` : null;
 
       if (!foto) {
         return res.status(400).json({ sucesso: false, mensagem: 'Envie uma foto.' });
       }
+      if (!texto || !texto.trim()) {
+        return res.status(400).json({ sucesso: false, mensagem: 'Escreva uma legenda.' });
+      }
 
-      const post = await Publicacao.criar({ usuario_id: uid, pet_id: pet_id || null, foto, legenda });
-      const completo = await Publicacao.buscarPorId(post.id);
+      const removido = await autoDeleteSeNecessario(uid);
 
-      res.json({ sucesso: true, post: completo });
+      const post = await Publicacao.criar({
+        usuario_id: uid, pet_id: pet_id || null, foto, legenda: texto.trim(), texto: texto.trim(),
+      });
+      const completo = await Publicacao.buscarPorId(post.id, uid);
+      const totalPosts = await Publicacao.contarAtivas(uid);
+
+      res.json({ sucesso: true, post: completo, totalPosts, removido: removido ? removido.id : null });
     } catch (err) {
       logger.error('EXPLORAR', 'Erro ao criar post', err);
       res.status(500).json({ sucesso: false, mensagem: 'Erro ao publicar.' });
+    }
+  },
+
+  async repostar(req, res) {
+    try {
+      const uid = req.session.usuario.id;
+      const { id } = req.params;
+      const { texto } = req.body;
+
+      if (!texto || !texto.trim()) {
+        return res.status(400).json({ sucesso: false, mensagem: 'Escreva algo ao repostar.' });
+      }
+
+      const original = await Publicacao.buscarPorId(id);
+      if (!original) {
+        return res.status(404).json({ sucesso: false, mensagem: 'Post não encontrado.' });
+      }
+
+      await Repost.repostar(uid, id);
+
+      const removido = await autoDeleteSeNecessario(uid);
+
+      const post = await Publicacao.criar({
+        usuario_id: uid, repost_id: parseInt(id), tipo: 'repost',
+        texto: texto.trim(), legenda: texto.trim(),
+      });
+
+      const completo = await Publicacao.buscarPorId(post.id, uid);
+      const totalReposts = await Repost.contar(id);
+
+      res.json({ sucesso: true, post: completo, totalReposts, removido: removido ? removido.id : null });
+    } catch (err) {
+      logger.error('EXPLORAR', 'Erro ao repostar', err);
+      res.status(500).json({ sucesso: false });
     }
   },
 
@@ -112,9 +201,11 @@ const explorarController = {
       }
 
       await Comentario.criar({ usuario_id: uid, publicacao_id: id, texto: texto.trim() });
+
+      notificarMencoes(texto.trim(), uid, id).catch(() => {});
+
       const lista = await Comentario.buscarPorPublicacao(id);
-      const total = lista.length;
-      res.json({ sucesso: true, comentarios: lista, total });
+      res.json({ sucesso: true, comentarios: lista, total: lista.length });
     } catch (err) {
       logger.error('EXPLORAR', 'Erro ao comentar', err);
       res.status(500).json({ sucesso: false });
@@ -149,8 +240,8 @@ const explorarController = {
       }
 
       const fixadas = await Publicacao.contarFixadas(uid);
-      if (fixadas >= 2) {
-        return res.status(400).json({ sucesso: false, mensagem: 'Você já tem 2 posts fixados. Desafixe um antes.' });
+      if (fixadas >= Publicacao.MAX_FIXADAS) {
+        return res.status(400).json({ sucesso: false, mensagem: `Você já tem ${Publicacao.MAX_FIXADAS} posts fixados. Desafixe um antes.` });
       }
 
       await Publicacao.fixar(id);
@@ -190,6 +281,10 @@ const explorarController = {
       }
 
       await Publicacao.deletar(id);
+      if (post.foto) {
+        const caminho = path.join(__dirname, '..', 'public', post.foto);
+        fs.unlink(caminho, () => {});
+      }
       res.json({ sucesso: true });
     } catch (err) {
       logger.error('EXPLORAR', 'Erro ao deletar post', err);
@@ -230,6 +325,7 @@ const explorarController = {
     try {
       const { id } = req.params;
       const uid = req.session.usuario ? req.session.usuario.id : null;
+      const perfilTab = req.query.tab || 'posts';
       const usuario = await Usuario.buscarPorId(id);
 
       if (!usuario) {
@@ -237,12 +333,22 @@ const explorarController = {
         return res.redirect('/explorar');
       }
 
-      const [posts, pets, seguidores, seguindo, estaSeguindo] = await Promise.all([
-        Publicacao.buscarPorUsuario(id, uid),
+      let posts;
+      if (perfilTab === 'reposts') {
+        posts = await Publicacao.buscarRepostsPorUsuario(id, uid);
+      } else if (perfilTab === 'curtidas') {
+        posts = await Publicacao.buscarCurtidasPorUsuario(id);
+      } else {
+        posts = await Publicacao.buscarPorUsuario(id, uid);
+      }
+
+      const [pets, seguidores, seguindo, estaSeguindo, totalPosts, totalFixadas] = await Promise.all([
         Pet.buscarPorUsuario(id),
         Seguidor.contarSeguidores(id),
         Seguidor.contarSeguindo(id),
         uid ? Seguidor.estaSeguindo(uid, id) : false,
+        Publicacao.contarAtivas(id),
+        Publicacao.contarFixadas(id),
       ]);
 
       res.render('explorar/perfil', {
@@ -254,10 +360,111 @@ const explorarController = {
         seguindo,
         estaSeguindo,
         eMeuPerfil: uid === parseInt(id),
+        perfilTab,
+        totalPosts,
+        totalFixadas,
       });
     } catch (err) {
       logger.error('EXPLORAR', 'Erro no perfil público', err);
       req.session.flash = { tipo: 'erro', mensagem: 'Erro ao carregar perfil.' };
+      res.redirect('/explorar');
+    }
+  },
+
+  async buscarUsuarios(req, res) {
+    try {
+      const { q } = req.query;
+      if (!q || q.length < 2) return res.json([]);
+      const { query: dbQuery } = require('../config/database');
+      const resultado = await dbQuery(
+        `SELECT id, nome, cor_perfil, foto_perfil FROM usuarios WHERE LOWER(nome) LIKE $1 ORDER BY nome LIMIT 10`,
+        ['%' + q.toLowerCase() + '%']
+      );
+      res.json(resultado.rows);
+    } catch (err) {
+      logger.error('EXPLORAR', 'Erro ao buscar usuários', err);
+      res.json([]);
+    }
+  },
+
+  async seguirPet(req, res) {
+    try {
+      const uid = req.session.usuario.id;
+      const { id } = req.params;
+      await SeguidorPet.seguir(uid, id);
+      const total = await SeguidorPet.contarSeguidores(id);
+      res.json({ sucesso: true, seguindo: true, totalSeguidores: total });
+    } catch (err) {
+      logger.error('EXPLORAR', 'Erro ao seguir pet', err);
+      res.status(500).json({ sucesso: false });
+    }
+  },
+
+  async deixarDeSeguirPet(req, res) {
+    try {
+      const uid = req.session.usuario.id;
+      const { id } = req.params;
+      await SeguidorPet.deixarDeSeguir(uid, id);
+      const total = await SeguidorPet.contarSeguidores(id);
+      res.json({ sucesso: true, seguindo: false, totalSeguidores: total });
+    } catch (err) {
+      logger.error('EXPLORAR', 'Erro ao deixar de seguir pet', err);
+      res.status(500).json({ sucesso: false });
+    }
+  },
+
+  async buscarPets(req, res) {
+    try {
+      const uid = req.session.usuario.id;
+      const { q } = req.query;
+      if (!q || q.length < 2) return res.json([]);
+      const resultados = await recomendacaoService.buscarPets(q, uid, 20);
+      res.json(resultados);
+    } catch (err) {
+      logger.error('EXPLORAR', 'Erro ao buscar pets', err);
+      res.json([]);
+    }
+  },
+
+  async paginaBusca(req, res) {
+    try {
+      const uid = req.session.usuario.id;
+      const q = req.query.q || '';
+      let resultadosPets = [];
+      let resultadosUsuarios = [];
+
+      if (q.length >= 2) {
+        const { query: dbQuery } = require('../config/database');
+        const [petsR, usersR] = await Promise.all([
+          recomendacaoService.buscarPets(q, uid, 20),
+          dbQuery(
+            `SELECT u.id, u.nome, u.cor_perfil, u.foto_perfil, u.bio, u.cidade, u.bairro,
+                    (SELECT COUNT(*)::int FROM seguidores WHERE seguido_id = u.id) AS total_seguidores,
+                    (SELECT COUNT(*)::int FROM seguidores WHERE seguidor_id = $2 AND seguido_id = u.id) > 0 AS seguindo
+             FROM usuarios u WHERE LOWER(u.nome) LIKE $1 ORDER BY u.nome LIMIT 20`,
+            ['%' + q.toLowerCase() + '%', uid]
+          ),
+        ]);
+        resultadosPets = petsR;
+        resultadosUsuarios = usersR.rows;
+      }
+
+      const [recomendacoes, petsRecomendados] = await Promise.all([
+        recomendacaoService.recomendarPessoas(uid, 8).catch(() => []),
+        recomendacaoService.petsRecomendados(uid, 8).catch(() => []),
+      ]);
+
+      res.render('explorar/busca', {
+        titulo: 'Buscar',
+        q,
+        resultadosPets,
+        resultadosUsuarios,
+        recomendacoes,
+        petsRecomendados,
+      });
+    } catch (err) {
+      logger.error('EXPLORAR', 'Erro na busca', err);
+      req.session.flash = { tipo: 'erro', mensagem: 'Erro ao buscar.' };
       res.redirect('/explorar');
     }
   },

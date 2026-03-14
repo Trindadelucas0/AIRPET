@@ -21,6 +21,7 @@ const upload = multer({
 
 router.get('/', explorarController.feed);
 router.post('/post', upload.single('foto'), explorarController.criarPost);
+router.post('/post/:id/repost', explorarController.repostar);
 
 router.post('/post/:id/curtir', explorarController.curtir);
 router.delete('/post/:id/curtir', explorarController.descurtir);
@@ -38,5 +39,13 @@ router.post('/seguir/:id', explorarController.seguir);
 router.delete('/seguir/:id', explorarController.deixarDeSeguir);
 
 router.get('/perfil/:id', explorarController.perfilPublico);
+
+router.get('/api/usuarios', explorarController.buscarUsuarios);
+router.get('/api/pets', explorarController.buscarPets);
+
+router.post('/pet/:id/seguir', explorarController.seguirPet);
+router.delete('/pet/:id/seguir', explorarController.deixarDeSeguirPet);
+
+router.get('/busca', explorarController.paginaBusca);
 
 module.exports = router;

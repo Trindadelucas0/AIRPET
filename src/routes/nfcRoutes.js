@@ -20,6 +20,7 @@ const upload = multer({
 });
 
 router.get('/:tag_code', nfcController.processarScan);
+router.post('/:tag_code/localizacao', nfcController.registrarLocalizacaoPublica);
 router.get('/:tag_code/encontrei', nfcController.mostrarEncontrei);
 router.post('/:tag_code/encontrei', upload.single('foto'), nfcController.processarEncontrei);
 router.get('/:tag_code/enviar-foto', nfcController.mostrarEnviarFoto);

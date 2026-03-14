@@ -298,6 +298,40 @@ const NfcTag = {
 
     return resultado.rows;
   },
+
+  async incrementarTentativas(id) {
+    const resultado = await query(
+      `UPDATE nfc_tags
+       SET tentativas_ativacao = COALESCE(tentativas_ativacao, 0) + 1
+       WHERE id = $1
+       RETURNING *`,
+      [id]
+    );
+    return resultado.rows[0];
+  },
+
+  async bloquearTemporariamente(id, minutos) {
+    const resultado = await query(
+      `UPDATE nfc_tags
+       SET bloqueada_ate = NOW() + ($2 || ' minutes')::INTERVAL
+       WHERE id = $1
+       RETURNING *`,
+      [id, minutos.toString()]
+    );
+    return resultado.rows[0];
+  },
+
+  async resetarTentativas(id) {
+    const resultado = await query(
+      `UPDATE nfc_tags
+       SET tentativas_ativacao = 0,
+           bloqueada_ate = NULL
+       WHERE id = $1
+       RETURNING *`,
+      [id]
+    );
+    return resultado.rows[0];
+  },
 };
 
 module.exports = NfcTag;

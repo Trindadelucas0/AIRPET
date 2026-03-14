@@ -27,18 +27,36 @@ const Comentario = {
 
   async deletar(id) {
     const resultado = await query(
-      `DELETE FROM comentarios WHERE id = $1 RETURNING *`,
-      [id]
+      `DELETE FROM comentarios WHERE id = $1 RETURNING *`, [id]
     );
     return resultado.rows[0];
   },
 
   async contar(publicacaoId) {
     const resultado = await query(
-      `SELECT COUNT(*) AS total FROM comentarios WHERE publicacao_id = $1`,
-      [publicacaoId]
+      `SELECT COUNT(*)::int AS total FROM comentarios WHERE publicacao_id = $1`, [publicacaoId]
     );
-    return parseInt(resultado.rows[0].total);
+    return resultado.rows[0].total;
+  },
+
+  extrairMencoes(texto) {
+    const regex = /@([\w\s]+?)(?=\s@|\s*$|[.,!?;])/g;
+    const mencoes = [];
+    let match;
+    while ((match = regex.exec(texto)) !== null) {
+      mencoes.push(match[1].trim());
+    }
+    return [...new Set(mencoes)];
+  },
+
+  async resolverMencoes(nomes) {
+    if (!nomes.length) return [];
+    const placeholders = nomes.map((_, i) => `$${i + 1}`).join(', ');
+    const resultado = await query(
+      `SELECT id, nome FROM usuarios WHERE LOWER(nome) IN (${placeholders})`,
+      nomes.map(n => n.toLowerCase())
+    );
+    return resultado.rows;
   },
 };
 

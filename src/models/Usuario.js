@@ -160,10 +160,14 @@ const Usuario = {
    * @returns {Promise<object|undefined>} O registro removido ou undefined
    */
   async atualizarPerfil(id, dados) {
-    const { nome, telefone, cor_perfil } = dados;
+    const { nome, telefone, cor_perfil, bio, endereco, bairro, cidade, estado, cep } = dados;
     const resultado = await query(
-      `UPDATE usuarios SET nome = $2, telefone = $3, cor_perfil = $4, data_atualizacao = NOW() WHERE id = $1 RETURNING *`,
-      [id, nome, telefone, cor_perfil || '#ec5a1c']
+      `UPDATE usuarios
+       SET nome = $2, telefone = $3, cor_perfil = $4, bio = $5,
+           endereco = $6, bairro = $7, cidade = $8, estado = $9, cep = $10,
+           data_atualizacao = NOW()
+       WHERE id = $1 RETURNING *`,
+      [id, nome, telefone, cor_perfil || '#ec5a1c', bio || null, endereco || null, bairro || null, cidade || null, estado || null, cep || null]
     );
     return resultado.rows[0];
   },
