@@ -15,12 +15,12 @@ const Notificacao = {
     return resultado.rows[0];
   },
 
-  async criarParaMultiplos(usuarioIds, tipo, mensagem, link) {
+  async criarParaMultiplos(usuarioIds, tipo, mensagem, link, petId = null) {
     const resultado = await query(
-      `INSERT INTO notificacoes (usuario_id, tipo, mensagem, link, data_criacao)
-       SELECT unnest($1::integer[]), $2, $3, $4, NOW()
+      `INSERT INTO notificacoes (usuario_id, tipo, mensagem, link, pet_id, data_criacao)
+       SELECT unnest($1::integer[]), $2, $3, $4, $5, NOW()
        RETURNING *`,
-      [usuarioIds, tipo, mensagem, link]
+      [usuarioIds, tipo, mensagem, link, petId || null]
     );
 
     return resultado.rows;

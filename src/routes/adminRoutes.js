@@ -114,6 +114,10 @@ router.post('/configuracoes', apenasAdmin, adminController.salvarConfiguracoes);
 router.get('/aparencia', apenasAdmin, adminController.mostrarAparencia);
 router.post('/aparencia', apenasAdmin, uploadPwa.fields([{ name: 'icon_192', maxCount: 1 }, { name: 'icon_512', maxCount: 1 }]), adminController.salvarAparencia);
 
+router.get('/notificacoes/enviar/preview', apenasAdmin, adminController.previewEnviarNotificacao);
+router.get('/notificacoes/enviar', apenasAdmin, adminController.mostrarEnviarNotificacao);
+router.post('/notificacoes/enviar', apenasAdmin, adminController.enviarNotificacaoRegiao);
+
 router.get('/gerenciar-mapa', apenasAdmin, adminController.mostrarGerenciarMapa);
 router.get('/mapa', apenasAdmin, adminController.mostrarMapa);
 router.post('/pontos-mapa', apenasAdmin, pontoMapaController.criar);

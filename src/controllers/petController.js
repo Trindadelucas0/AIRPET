@@ -22,6 +22,7 @@
  */
 
 const Pet = require('../models/Pet');
+const PetPerdido = require('../models/PetPerdido');
 const Vacina = require('../models/Vacina');
 const RegistroSaude = require('../models/RegistroSaude');
 const TagScan = require('../models/TagScan');
@@ -564,6 +565,37 @@ const PESO_IDEAL = {
     'Persa': { min: 3, max: 5.5 },
     'Siamês': { min: 3, max: 5 },
     'Maine Coon': { min: 5, max: 11 },
+  },
+
+  /**
+   * API: dados do alerta ativo de um pet (para modal de notificação de pet perdido).
+   * Rota: GET /api/pets/:id/alerta-ativo
+   *
+   * @param {object} req - req.params.id = pet_id
+   * @param {object} res - JSON { pet_nome, pet_foto, recompensa, descricao, pet_id } ou 404
+   */
+  async alertaAtivo(req, res) {
+    try {
+      const petId = parseInt(req.params.id, 10);
+      if (!petId) {
+        return res.status(400).json({ ativo: false, mensagem: 'ID do pet inválido.' });
+      }
+      const alerta = await PetPerdido.buscarAtivoPorPet(petId);
+      if (!alerta) {
+        return res.status(404).json({ ativo: false, mensagem: 'Nenhum alerta ativo para este pet.' });
+      }
+      return res.json({
+        ativo: true,
+        pet_id: alerta.pet_id,
+        pet_nome: alerta.pet_nome,
+        pet_foto: alerta.pet_foto,
+        recompensa: alerta.recompensa || null,
+        descricao: alerta.descricao || null,
+      });
+    } catch (erro) {
+      logger.error('PET_CTRL', 'Erro ao buscar alerta ativo', erro);
+      return res.status(500).json({ ativo: false, mensagem: 'Erro ao carregar dados do alerta.' });
+    }
   },
 };
 

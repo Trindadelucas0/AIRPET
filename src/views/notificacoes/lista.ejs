@@ -165,11 +165,13 @@
               <div class="space-y-1.5">
                 <% secao.items.forEach(function(n) { %>
                   <% var cfg = tipoConfig[n.tipo] || tipoDefault; %>
+                  <% var isAlerta = n.tipo === 'alerta' && n.pet_id; %>
                   <div class="notif-card relative group" data-notif-id="<%= n.id %>">
                     <a href="<%= n.link || '#' %>"
                        class="flex items-start gap-3 p-3.5 rounded-2xl transition-all duration-200
                          <%= !n.lida ? 'bg-primary-50/40 hover:bg-primary-50/70' : 'bg-white hover:bg-gray-50' %>
                          border <%= !n.lida ? 'border-primary-100/50' : 'border-gray-100/80' %>"
+                       <%= isAlerta ? ' data-tipo="alerta" data-pet-id="' + n.pet_id + '" data-link="' + (n.link || '') + '" data-notif-id="' + n.id + '"' : '' %>
                        onclick="<%= !n.lida ? 'marcarLidaNav(' + n.id + ', event)' : '' %>">
 
                       <!-- Avatar ou Icone -->
@@ -253,6 +255,26 @@
 
   </div>
 </main>
+
+<!-- Modal: pet perdido (alerta) -->
+<div id="modalAlertaPerdido" class="fixed inset-0 z-[9999] hidden items-center justify-center p-4 bg-black/50" aria-hidden="true">
+  <div class="bg-white rounded-3xl shadow-2xl max-w-sm w-full overflow-hidden animate-scaleIn" role="dialog" aria-labelledby="modalAlertaTitulo">
+    <div id="modalAlertaFoto" class="h-48 bg-gray-100 flex items-center justify-center">
+      <i class="fa-solid fa-paw text-5xl text-gray-300"></i>
+    </div>
+    <div class="p-5">
+      <h2 id="modalAlertaTitulo" class="text-lg font-bold text-gray-900 mb-1">Pet perdido</h2>
+      <p id="modalAlertaNome" class="text-gray-600 font-medium mb-2"></p>
+      <p id="modalAlertaTexto" class="text-sm text-gray-600 mb-3">Este pet está perdido. Qualquer informação pode ajudar a reunir o pet com o tutor.</p>
+      <p id="modalAlertaRecompensa" class="text-sm font-semibold text-amber-600 mb-4 hidden"></p>
+      <p id="modalAlertaDescricao" class="text-xs text-gray-500 mb-4 hidden"></p>
+      <div class="flex gap-3">
+        <button type="button" id="modalAlertaFechar" class="flex-1 py-3 rounded-xl font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors">Fechar</button>
+        <a id="modalAlertaVerPerfil" href="#" class="flex-1 py-3 rounded-xl font-bold text-white bg-[#ec5a1c] hover:bg-[#d4500f] text-center transition-colors">Ver perfil</a>
+      </div>
+    </div>
+  </div>
+</div>
 
 <script>
 (function () {
@@ -362,6 +384,72 @@
     })
     .catch(function () {});
   }
+
+  var modalAlerta = document.getElementById('modalAlertaPerdido');
+  var modalAlertaFoto = document.getElementById('modalAlertaFoto');
+  var modalAlertaNome = document.getElementById('modalAlertaNome');
+  var modalAlertaRecompensa = document.getElementById('modalAlertaRecompensa');
+  var modalAlertaDescricao = document.getElementById('modalAlertaDescricao');
+  var modalAlertaVerPerfil = document.getElementById('modalAlertaVerPerfil');
+  var modalAlertaFechar = document.getElementById('modalAlertaFechar');
+
+  function abrirModalAlerta(dados, link) {
+    modalAlertaNome.textContent = dados.pet_nome || 'Pet';
+    if (dados.pet_foto) {
+      modalAlertaFoto.innerHTML = '<img src="' + dados.pet_foto + '" alt="" class="w-full h-full object-cover">';
+    } else {
+      modalAlertaFoto.innerHTML = '<i class="fa-solid fa-paw text-5xl text-gray-300"></i>';
+    }
+    if (dados.recompensa != null && String(dados.recompensa).trim() !== '') {
+      var val = String(dados.recompensa).trim();
+      modalAlertaRecompensa.textContent = /^\d+(\.\d+)?$/.test(val)
+        ? 'Recompensa: R$ ' + parseFloat(val).toFixed(2).replace('.', ',')
+        : 'Recompensa: ' + val;
+      modalAlertaRecompensa.classList.remove('hidden');
+    } else {
+      modalAlertaRecompensa.classList.add('hidden');
+    }
+    if (dados.descricao != null && String(dados.descricao).trim() !== '') {
+      modalAlertaDescricao.textContent = dados.descricao;
+      modalAlertaDescricao.classList.remove('hidden');
+    } else {
+      modalAlertaDescricao.classList.add('hidden');
+    }
+    modalAlertaVerPerfil.href = link || ('/pets/' + dados.pet_id);
+    modalAlerta.classList.remove('hidden');
+    modalAlerta.classList.add('flex');
+  }
+
+  function fecharModalAlerta() {
+    modalAlerta.classList.add('hidden');
+    modalAlerta.classList.remove('flex');
+  }
+
+  if (modalAlertaFechar) modalAlertaFechar.addEventListener('click', fecharModalAlerta);
+  modalAlerta.addEventListener('click', function (e) {
+    if (e.target === modalAlerta) fecharModalAlerta();
+  });
+
+  document.body.addEventListener('click', function (e) {
+    var a = e.target.closest('a[data-tipo="alerta"]');
+    if (!a) return;
+    e.preventDefault();
+    var petId = a.getAttribute('data-pet-id');
+    var link = a.getAttribute('data-link') || ('/pets/' + petId);
+    var notifId = a.getAttribute('data-notif-id');
+    if (!petId) return;
+    fetch('/api/pets/' + petId + '/alerta-ativo', { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (data.ativo && data.pet_nome != null) {
+          if (notifId && typeof marcarLida === 'function') marcarLida(parseInt(notifId, 10));
+          abrirModalAlerta(data, link);
+        } else {
+          window.location.href = link;
+        }
+      })
+      .catch(function () { window.location.href = link; });
+  });
 })();
 </script>
 

@@ -342,15 +342,7 @@ async function escalarAlerta(req, res) {
     await PetPerdido.atualizarNivel(id, nivelNumero);
 
     try {
-      const configs = await ConfigSistema.listarTodas();
-      const raioKey = `raio_alerta_nivel${nivelNumero}_km`;
-      const raioConfig = configs.find(c => c.chave === raioKey);
-      const raioKm = raioConfig ? parseFloat(raioConfig.valor) : (nivelNumero === 1 ? 1 : nivelNumero === 2 ? 3 : 0);
-      if (alerta.latitude && alerta.longitude && raioKm > 0) {
-        await notificacaoService.notificarProximos(id, raioKm);
-      } else if (raioKm === 0) {
-        await notificacaoService.notificarProximos(id, 999);
-      }
+      await notificacaoService.notificarTodos(id);
     } catch (e) { logger.error('AdminController', 'Erro notificação escalar', e); }
 
     logger.info('AdminController', `Alerta ${id} escalado para nível ${nivelNumero}`);
@@ -740,6 +732,101 @@ async function excluirUsuario(req, res) {
   }
 }
 
+/**
+ * mostrarEnviarNotificacao — Exibe o formulário para enviar notificação por região
+ *
+ * Rota: GET /admin/notificacoes/enviar
+ * View: admin/enviar-notificacao
+ */
+async function mostrarEnviarNotificacao(req, res) {
+  try {
+    return res.render('admin/enviar-notificacao', {
+      titulo: 'Enviar notificação por região - AIRPET Admin',
+    });
+  } catch (erro) {
+    logger.error('AdminController', 'Erro ao exibir formulário de notificação', erro);
+    req.session.flash = { tipo: 'erro', mensagem: 'Erro ao carregar a página.' };
+    return res.redirect(getAdminPath());
+  }
+}
+
+/**
+ * previewEnviarNotificacao — Retorna quantos usuários receberão a notificação (sem enviar)
+ *
+ * Rota: GET /admin/notificacoes/enviar/preview?lat=...&lng=...&raio_km=...
+ */
+async function previewEnviarNotificacao(req, res) {
+  try {
+    const lat = parseFloat(req.query.lat);
+    const lng = parseFloat(req.query.lng);
+    const raioKm = parseFloat(req.query.raio_km);
+
+    if (isNaN(lat) || isNaN(lng) || isNaN(raioKm) || raioKm <= 0) {
+      return res.status(400).json({ sucesso: false, total: 0, mensagem: 'Parâmetros inválidos (lat, lng, raio_km).' });
+    }
+    if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+      return res.status(400).json({ sucesso: false, total: 0, mensagem: 'Latitude ou longitude fora do intervalo válido.' });
+    }
+
+    const total = await notificacaoService.contarUsuariosNaRegiao(lat, lng, raioKm);
+    return res.json({ sucesso: true, total });
+  } catch (erro) {
+    logger.error('AdminController', 'Erro no preview de notificação', erro);
+    return res.status(500).json({ sucesso: false, total: 0, mensagem: 'Erro ao consultar região.' });
+  }
+}
+
+/**
+ * enviarNotificacaoRegiao — Envia notificação para usuários dentro do raio
+ *
+ * Rota: POST /admin/notificacoes/enviar
+ * Body: latitude, longitude, raio_km, titulo, mensagem, link (opcional)
+ */
+async function enviarNotificacaoRegiao(req, res) {
+  const adminPath = getAdminPath();
+  try {
+    const latitude = parseFloat(req.body.latitude);
+    const longitude = parseFloat(req.body.longitude);
+    const raioKm = parseFloat(req.body.raio_km);
+    const titulo = (req.body.titulo || '').trim() || 'AIRPET';
+    const mensagem = (req.body.mensagem || '').trim();
+    const link = (req.body.link || '').trim() || null;
+
+    if (isNaN(latitude) || isNaN(longitude) || isNaN(raioKm) || raioKm <= 0) {
+      req.session.flash = { tipo: 'erro', mensagem: 'Informe latitude, longitude e raio (km) válidos.' };
+      return res.redirect(adminPath + '/notificacoes/enviar');
+    }
+    if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
+      req.session.flash = { tipo: 'erro', mensagem: 'Latitude ou longitude fora do intervalo válido.' };
+      return res.redirect(adminPath + '/notificacoes/enviar');
+    }
+    if (!mensagem) {
+      req.session.flash = { tipo: 'erro', mensagem: 'A mensagem é obrigatória.' };
+      return res.redirect(adminPath + '/notificacoes/enviar');
+    }
+
+    const notificacoes = await notificacaoService.notificarPorRegiao(
+      latitude,
+      longitude,
+      raioKm,
+      titulo,
+      mensagem,
+      link
+    );
+
+    if (notificacoes.length === 0) {
+      req.session.flash = { tipo: 'aviso', mensagem: 'Nenhum usuário encontrado na região com localização ativa.' };
+    } else {
+      req.session.flash = { tipo: 'sucesso', mensagem: `Notificação enviada para ${notificacoes.length} usuário(s).` };
+    }
+    return res.redirect(adminPath + '/notificacoes/enviar');
+  } catch (erro) {
+    logger.error('AdminController', 'Erro ao enviar notificação por região', erro);
+    req.session.flash = { tipo: 'erro', mensagem: 'Erro ao enviar notificações. Tente novamente.' };
+    return res.redirect(adminPath + '/notificacoes/enviar');
+  }
+}
+
 module.exports = {
   dashboard,
   listarUsuarios,
@@ -761,4 +848,7 @@ module.exports = {
   mostrarMapa,
   atualizarRoleUsuario,
   toggleBloqueioUsuario,
+  mostrarEnviarNotificacao,
+  previewEnviarNotificacao,
+  enviarNotificacaoRegiao,
 };

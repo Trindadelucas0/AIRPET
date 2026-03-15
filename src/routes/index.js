@@ -125,6 +125,8 @@ router.get('/api/racas', require('../controllers/perfilController').buscarRacas)
 
 // Rotas de API (protegidas)
 router.use('/api/localizacao', estaAutenticado, localizacaoRoutes);
+const petController = require('../controllers/petController');
+router.get('/api/pets/:id/alerta-ativo', estaAutenticado, petController.alertaAtivo.bind(petController));
 
 // Painel administrativo — rota secreta via .env (usuarios nao sabem que existe)
 const adminPath = process.env.ADMIN_PATH || '/admin';
