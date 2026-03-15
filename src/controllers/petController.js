@@ -93,7 +93,9 @@ const petController = {
    */
   async criar(req, res) {
     try {
-      const { nome, tipo, tipo_custom, raca, cor, porte, sexo, dataNascimento, peso, descricao, telefoneContato } = req.body;
+      const { nome, tipo, tipo_custom, raca, cor, porte, sexo, dataNascimento, peso, descricao, telefoneContato,
+        microchip, castrado: castradoBody, alergias_medicacoes, veterinario_nome, veterinario_telefone, observacoes } = req.body;
+      const castrado = castradoBody === 'sim' || castradoBody === 'on' ? true : (castradoBody === 'nao' ? false : null);
 
       const foto = req.file ? `/images/pets/${req.file.filename}` : null;
 
@@ -111,6 +113,12 @@ const petController = {
         foto,
         descricao_emocional: descricao,
         telefone_contato: telefoneContato,
+        microchip,
+        castrado,
+        alergias_medicacoes,
+        veterinario_nome,
+        veterinario_telefone,
+        observacoes,
       };
 
       const novoPet = await Pet.criar(dadosPet);
@@ -323,7 +331,9 @@ const petController = {
         return res.redirect('/pets');
       }
 
-      const { nome, tipo, tipo_custom, raca, cor, porte, sexo, dataNascimento, peso, descricao, telefoneContato } = req.body;
+      const { nome, tipo, tipo_custom, raca, cor, porte, sexo, dataNascimento, peso, descricao, telefoneContato,
+        microchip, castrado: castradoBody, alergias_medicacoes, veterinario_nome, veterinario_telefone, observacoes } = req.body;
+      const castrado = castradoBody === 'sim' || castradoBody === 'on' ? true : (castradoBody === 'nao' ? false : null);
 
       await Pet.atualizar(id, {
         nome,
@@ -337,11 +347,23 @@ const petController = {
         peso: peso ? parseFloat(peso) : null,
         descricao_emocional: descricao,
         telefone_contato: telefoneContato,
+        microchip,
+        castrado,
+        alergias_medicacoes,
+        veterinario_nome,
+        veterinario_telefone,
+        observacoes,
       });
 
       /* Se uma nova foto foi enviada via multer, atualiza a foto separadamente */
       if (req.file) {
-        await Pet.atualizarFoto(id, `/images/pets/${req.file.filename}`);
+        try {
+          await Pet.atualizarFoto(id, `/images/pets/${req.file.filename}`);
+        } catch (errFoto) {
+          logger.error('PET_CTRL', 'Erro ao atualizar foto do pet', errFoto);
+          req.session.flash = { tipo: 'aviso', mensagem: 'Dados salvos, mas não foi possível atualizar a foto.' };
+          return res.redirect(`/pets/${id}`);
+        }
       }
 
       logger.info('PET_CTRL', `Pet atualizado: ${nome} (ID: ${id})`);

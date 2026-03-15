@@ -1,8 +1,25 @@
 const express = require('express');
 const router = express.Router();
+const path = require('path');
+const crypto = require('crypto');
+const multer = require('multer');
 
 const { estaAutenticado } = require('../middlewares/authMiddleware');
 const { limiterGeral } = require('../middlewares/rateLimiter');
+
+const storagePerfil = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, path.join(__dirname, '..', 'public', 'images', 'perfil')),
+  filename: (req, file, cb) => cb(null, crypto.randomBytes(16).toString('hex') + path.extname(file.originalname || '.jpg')),
+});
+const uploadPerfil = multer({
+  storage: storagePerfil,
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const allowed = /jpeg|jpg|png|gif|webp/;
+    const ext = path.extname(file.originalname || '').toLowerCase();
+    cb(null, allowed.test(ext) && (file.mimetype && allowed.test(file.mimetype)));
+  },
+});
 
 // Sub-rotas
 const authRoutes = require('./authRoutes');
@@ -76,8 +93,10 @@ router.use('/explorar', estaAutenticado, explorarRoutes);
 router.get('/feed', estaAutenticado, require('../controllers/explorarController').feedSeguidos);
 
 // Perfil do usuario
-router.get('/perfil', estaAutenticado, require('../controllers/perfilController').mostrarPerfil);
-router.put('/perfil', estaAutenticado, require('../controllers/perfilController').atualizar);
+const perfilController = require('../controllers/perfilController');
+const { validarPerfil, validarResultado } = require('../middlewares/validator');
+router.get('/perfil', estaAutenticado, perfilController.mostrarPerfil);
+router.put('/perfil', estaAutenticado, uploadPerfil.single('foto_perfil'), validarPerfil, validarResultado, perfilController.atualizar);
 
 // API publica de racas (usada pelo autocomplete no cadastro de pet)
 router.get('/api/racas', require('../controllers/perfilController').buscarRacas);

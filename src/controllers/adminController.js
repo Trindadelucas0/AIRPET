@@ -113,10 +113,12 @@ async function dashboard(req, res) {
 async function listarUsuarios(req, res) {
   try {
     const usuarios = await Usuario.listarTodos();
+    const adminEmail = process.env.ADMIN_EMAIL || '';
 
     return res.render('admin/usuarios', {
       titulo: 'Usuários - AIRPET',
       usuarios,
+      adminEmail,
     });
   } catch (erro) {
     logger.error('AdminController', 'Erro ao listar usuários', erro);
@@ -528,6 +530,30 @@ async function atualizarRoleUsuario(req, res) {
   }
 }
 
+async function toggleBloqueioUsuario(req, res) {
+  try {
+    const { id } = req.params;
+    const usuario = await Usuario.buscarPorId(id);
+    if (!usuario) {
+      req.session.flash = { tipo: 'erro', mensagem: 'Usuário não encontrado.' };
+      return res.redirect('/admin/usuarios');
+    }
+    const adminEmail = process.env.ADMIN_EMAIL || '';
+    if (adminEmail && usuario.email === adminEmail) {
+      req.session.flash = { tipo: 'erro', mensagem: 'Não é possível bloquear o usuário administrador.' };
+      return res.redirect('/admin/usuarios');
+    }
+    const novoEstado = !usuario.bloqueado;
+    await Usuario.atualizarBloqueado(id, novoEstado);
+    req.session.flash = { tipo: 'sucesso', mensagem: novoEstado ? 'Usuário bloqueado.' : 'Usuário desbloqueado.' };
+    return res.redirect('/admin/usuarios');
+  } catch (erro) {
+    logger.error('AdminController', 'Erro ao bloquear/desbloquear usuário', erro);
+    req.session.flash = { tipo: 'erro', mensagem: 'Erro ao atualizar status do usuário.' };
+    return res.redirect('/admin/usuarios');
+  }
+}
+
 async function aprovarMensagem(req, res) {
   try {
     const { id } = req.params;
@@ -573,4 +599,5 @@ module.exports = {
   mostrarGerenciarMapa,
   mostrarMapa,
   atualizarRoleUsuario,
+  toggleBloqueioUsuario,
 };

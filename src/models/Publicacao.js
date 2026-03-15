@@ -72,6 +72,18 @@ const Publicacao = {
     return resultado.rows;
   },
 
+  async feedSeguindoPets(usuarioId, limite = 20, offset = 0) {
+    const resultado = await query(
+      `SELECT ${SELECT_COLS} ${curtiuCol(usuarioId)} ${repostouCol(usuarioId)} ${FROM_JOINS}
+       WHERE (p.pet_id IS NOT NULL AND p.pet_id IN (SELECT pet_id FROM seguidores_pets WHERE usuario_id = $1))
+          OR p.usuario_id = $1
+       ORDER BY p.fixada DESC, p.criado_em DESC
+       LIMIT $2 OFFSET $3`,
+      [usuarioId, limite, offset]
+    );
+    return resultado.rows;
+  },
+
   async feedRegional(usuarioId, limite = 20, offset = 0) {
     const resultado = await query(
       `SELECT ${SELECT_COLS} ${curtiuCol(usuarioId)} ${repostouCol(usuarioId)} ${FROM_JOINS}
@@ -109,6 +121,17 @@ const Publicacao = {
        ORDER BY p.fixada DESC, p.criado_em DESC
        LIMIT $2`,
       [usuarioId, limite]
+    );
+    return resultado.rows;
+  },
+
+  async buscarPorPet(petId, usuarioAtualId = null, limite = 50) {
+    const resultado = await query(
+      `SELECT ${SELECT_COLS} ${curtiuCol(usuarioAtualId)} ${repostouCol(usuarioAtualId)} ${FROM_JOINS}
+       WHERE p.pet_id = $1
+       ORDER BY p.fixada DESC, p.criado_em DESC
+       LIMIT $2`,
+      [petId, limite]
     );
     return resultado.rows;
   },

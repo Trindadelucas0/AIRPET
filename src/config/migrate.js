@@ -742,6 +742,41 @@ const migrations = [
     END IF;
   END $$;`,
 
+  // data_nascimento e contato_extra no perfil do usuario
+  `DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='usuarios' AND column_name='data_nascimento') THEN
+      ALTER TABLE usuarios ADD COLUMN data_nascimento DATE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='usuarios' AND column_name='contato_extra') THEN
+      ALTER TABLE usuarios ADD COLUMN contato_extra VARCHAR(200);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='usuarios' AND column_name='bloqueado') THEN
+      ALTER TABLE usuarios ADD COLUMN bloqueado BOOLEAN DEFAULT false;
+    END IF;
+  END $$;`,
+
+  // Campos extras em pets: microchip, castrado, alergias, veterinario, observacoes
+  `DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='pets' AND column_name='microchip') THEN
+      ALTER TABLE pets ADD COLUMN microchip VARCHAR(100);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='pets' AND column_name='castrado') THEN
+      ALTER TABLE pets ADD COLUMN castrado BOOLEAN;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='pets' AND column_name='alergias_medicacoes') THEN
+      ALTER TABLE pets ADD COLUMN alergias_medicacoes TEXT;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='pets' AND column_name='veterinario_nome') THEN
+      ALTER TABLE pets ADD COLUMN veterinario_nome VARCHAR(150);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='pets' AND column_name='veterinario_telefone') THEN
+      ALTER TABLE pets ADD COLUMN veterinario_telefone VARCHAR(20);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='pets' AND column_name='observacoes') THEN
+      ALTER TABLE pets ADD COLUMN observacoes TEXT;
+    END IF;
+  END $$;`,
+
   // 27. Seguidores de pets
   `CREATE TABLE IF NOT EXISTS seguidores_pets (
     id SERIAL PRIMARY KEY,

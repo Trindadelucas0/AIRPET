@@ -76,6 +76,7 @@ router.post('/moderacao/:id/aprovar', apenasAdmin, adminController.aprovarMensag
 router.post('/moderacao/:id/rejeitar', apenasAdmin, adminController.rejeitarMensagem);
 
 router.post('/usuarios/:id/role', apenasAdmin, adminController.atualizarRoleUsuario);
+router.post('/usuarios/:id/bloquear', apenasAdmin, adminController.toggleBloqueioUsuario);
 
 router.get('/configuracoes', apenasAdmin, adminController.mostrarConfiguracoes);
 router.post('/configuracoes', apenasAdmin, adminController.salvarConfiguracoes);

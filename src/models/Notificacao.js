@@ -27,6 +27,9 @@ const Notificacao = {
   },
 
   async buscarPorUsuario(usuarioId, limite = 80, petId = null) {
+    const params = [usuarioId];
+    if (petId != null) params.push(petId);
+    params.push(limite);
     let sql = `SELECT n.*,
               COALESCE(n.data_criacao, n.data) AS data_criacao,
               r.nome AS remetente_nome,
@@ -37,18 +40,16 @@ const Notificacao = {
        LEFT JOIN usuarios r ON r.id = n.remetente_id
        LEFT JOIN pets pt ON pt.id = n.pet_id
        WHERE n.usuario_id = $1`;
-    const params = [usuarioId];
-    if (petId != null) {
-      sql += ` AND n.pet_id = $2`;
-      params.push(petId);
-    }
-    sql += ` ORDER BY COALESCE(n.data_criacao, n.data) DESC LIMIT $${params.length + 1}`;
-    params.push(limite);
+    if (petId != null) sql += ` AND n.pet_id = $2`;
+    sql += ` ORDER BY COALESCE(n.data_criacao, n.data) DESC LIMIT $${params.length}`;
     const resultado = await query(sql, params);
     return resultado.rows;
   },
 
   async buscarPorTipos(usuarioId, tipos, limite = 80, petId = null) {
+    const params = [usuarioId, tipos];
+    if (petId != null) params.push(petId);
+    params.push(limite);
     let sql = `SELECT n.*,
               COALESCE(n.data_criacao, n.data) AS data_criacao,
               r.nome AS remetente_nome,
@@ -59,13 +60,8 @@ const Notificacao = {
        LEFT JOIN usuarios r ON r.id = n.remetente_id
        LEFT JOIN pets pt ON pt.id = n.pet_id
        WHERE n.usuario_id = $1 AND n.tipo = ANY($2)`;
-    const params = [usuarioId, tipos];
-    if (petId != null) {
-      sql += ` AND n.pet_id = $3`;
-      params.push(petId);
-    }
-    sql += ` ORDER BY COALESCE(n.data_criacao, n.data) DESC LIMIT $${params.length + 1}`;
-    params.push(limite);
+    if (petId != null) sql += ` AND n.pet_id = $3`;
+    sql += ` ORDER BY COALESCE(n.data_criacao, n.data) DESC LIMIT $${params.length}`;
     const resultado = await query(sql, params);
     return resultado.rows;
   },

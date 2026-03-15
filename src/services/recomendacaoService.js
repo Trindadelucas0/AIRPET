@@ -108,6 +108,32 @@ const recomendacaoService = {
     );
     return resultado.rows;
   },
+
+  /**
+   * Pets cujos donos estao na mesma regiao que o usuario de referencia (ex.: autor do post).
+   * Usado na secao "Pets proximos" ao abrir uma publicacao no Explorar.
+   */
+  async petsProximos(usuarioIdReferencia, usuarioIdLogado, limite = 8) {
+    const resultado = await query(
+      `SELECT p.id, p.nome, p.foto, p.tipo, p.raca,
+              u.id AS dono_id, u.nome AS dono_nome, u.cor_perfil AS dono_cor_perfil,
+              (SELECT COUNT(*)::int FROM seguidores_pets WHERE pet_id = p.id) AS total_seguidores,
+              (SELECT COUNT(*)::int FROM seguidores_pets WHERE pet_id = p.id AND usuario_id = $2) > 0 AS seguindo
+       FROM pets p
+       JOIN usuarios u ON u.id = p.usuario_id
+       CROSS JOIN usuarios ref ON ref.id = $1
+       WHERE ref.ultima_localizacao IS NOT NULL
+         AND u.ultima_localizacao IS NOT NULL
+         AND u.id != $1
+         AND u.id != $2
+         AND ST_DWithin(u.ultima_localizacao, ref.ultima_localizacao, 50000)
+         AND p.id NOT IN (SELECT pet_id FROM seguidores_pets WHERE usuario_id = $2)
+       ORDER BY ST_Distance(u.ultima_localizacao, ref.ultima_localizacao) ASC
+       LIMIT $3`,
+      [usuarioIdReferencia, usuarioIdLogado, limite]
+    );
+    return resultado.rows;
+  },
 };
 
 module.exports = recomendacaoService;

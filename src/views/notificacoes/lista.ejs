@@ -6,6 +6,14 @@
   }
 
   var currentTab = typeof tab !== 'undefined' ? tab : 'todas';
+  var pets = typeof pets !== 'undefined' ? pets : [];
+  var petFiltro = typeof petFiltro !== 'undefined' ? petFiltro : null;
+  var temFiltroPet = pets.length > 1;
+  function urlNotif(t, p) {
+    var base = '/notificacoes?tab=' + (t || currentTab);
+    if (p !== undefined && p !== null && p !== '') base += '&pet=' + p;
+    return base;
+  }
 
   var tipoConfig = {
     curtida:    { icon: 'fa-heart',              iconColor: 'text-red-500',     bg: 'bg-red-50' },
@@ -116,12 +124,12 @@
     <!-- Tabs -->
     <div class="sticky top-14 z-40 bg-white/90 backdrop-blur-xl border-b border-gray-100 rounded-t-xl mb-4">
       <div class="flex relative">
-        <a href="/notificacoes?tab=todas"
+        <a href="<%= urlNotif('todas', petFiltro) %>"
            class="tab-notif <%= currentTab === 'todas' ? 'active' : '' %>"
            data-tab="todas">
           Todas
         </a>
-        <a href="/notificacoes?tab=mencoes"
+        <a href="<%= urlNotif('mencoes', petFiltro) %>"
            class="tab-notif <%= currentTab === 'mencoes' ? 'active' : '' %>"
            data-tab="mencoes">
           Menções
@@ -129,6 +137,21 @@
         <div class="tab-notif-indicator"
              style="left:<%= currentTab === 'mencoes' ? '50%' : '0' %>;width:50%"></div>
       </div>
+      <% if (temFiltroPet) { %>
+      <div class="flex flex-wrap gap-2 px-2 py-3 border-t border-gray-100">
+        <span class="text-xs font-semibold text-gray-500 self-center">Ver por pet:</span>
+        <a href="<%= urlNotif(currentTab, '') %>"
+           class="px-3 py-1.5 rounded-full text-xs font-semibold transition-colors <%= !petFiltro ? 'bg-primary-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200' %>">
+          Todas
+        </a>
+        <% pets.forEach(function(pet) { %>
+        <a href="<%= urlNotif(currentTab, pet.id) %>"
+           class="px-3 py-1.5 rounded-full text-xs font-semibold transition-colors <%= petFiltro === pet.id ? 'bg-primary-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200' %>">
+          <%= pet.nome %>
+        </a>
+        <% }); %>
+      </div>
+      <% } %>
     </div>
 
     <% if (typeof notificacoes !== 'undefined' && notificacoes.length > 0) { %>

@@ -131,8 +131,8 @@
                 <% if (entry.descricao) { %>
                   <p class="text-xs text-gray-500 mt-0.5 truncate"><%= entry.descricao %></p>
                 <% } %>
-                <% if (entry.valor) { %>
-                  <p class="text-xs text-[#ec5a1c] font-medium mt-0.5"><%= entry.valor %> kg</p>
+                <% if (entry.valor_numerico != null) { %>
+                  <p class="text-xs text-[#ec5a1c] font-medium mt-0.5"><%= entry.valor_numerico %> kg</p>
                 <% } %>
               </div>
               <span class="text-xs text-gray-400 flex-shrink-0">
@@ -183,8 +183,8 @@
                     <% if (entry.descricao) { %>
                       <p class="text-xs text-gray-400 truncate"><%= entry.descricao %></p>
                     <% } %>
-                    <% if (entry.valor) { %>
-                      <p class="text-xs text-[#ec5a1c] font-medium"><%= entry.valor %> kg</p>
+                    <% if (entry.valor_numerico != null) { %>
+                      <p class="text-xs text-[#ec5a1c] font-medium"><%= entry.valor_numerico %> kg</p>
                     <% } %>
                   </div>
                   <span class="text-xs text-gray-400 flex-shrink-0">

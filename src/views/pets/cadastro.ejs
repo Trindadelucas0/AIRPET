@@ -14,11 +14,11 @@
   <!-- Progress bar -->
   <div class="mb-8">
     <div class="flex items-center justify-between text-xs font-medium text-gray-400 mb-2">
-      <span id="stepLabel">Passo 1 de 8</span>
-      <span id="stepPercent">12%</span>
+      <span id="stepLabel">Passo 1 de 9</span>
+      <span id="stepPercent">11%</span>
     </div>
     <div class="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
-      <div id="progressBar" class="h-full bg-[#ec5a1c] rounded-full transition-all duration-500 ease-out" style="width: 12%"></div>
+      <div id="progressBar" class="h-full bg-[#ec5a1c] rounded-full transition-all duration-500 ease-out" style="width: 11%"></div>
     </div>
   </div>
 
@@ -285,6 +285,55 @@
         <button type="button" class="btn-outline flex-1" onclick="prevStep()">
           <i class="fa-solid fa-arrow-left mr-1"></i> Voltar
         </button>
+        <button type="button" class="btn-primary flex-1" onclick="nextStep()">
+          Continuar <i class="fa-solid fa-arrow-right ml-2"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Step 9: Saúde e identificação (opcional) -->
+    <div class="wizard-step card hidden" data-step="9">
+      <div class="text-center mb-6">
+        <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-orange-50 text-[#ec5a1c] mb-3">
+          <i class="fa-solid fa-heart-pulse text-2xl"></i>
+        </div>
+        <h2 class="text-xl font-bold text-gray-900">Saúde e identificação</h2>
+        <p class="text-sm text-gray-500 mt-1">Opcional — microchip, castração, veterinário</p>
+      </div>
+      <div class="space-y-4">
+        <div>
+          <label for="microchip" class="block text-sm font-medium text-gray-700 mb-1">Microchip</label>
+          <input type="text" name="microchip" id="microchip" placeholder="Número do microchip" class="input-field">
+        </div>
+        <div>
+          <label for="castrado" class="block text-sm font-medium text-gray-700 mb-1">Castrado</label>
+          <select name="castrado" id="castrado" class="input-field">
+            <option value="">Não informado</option>
+            <option value="sim">Sim</option>
+            <option value="nao">Não</option>
+          </select>
+        </div>
+        <div>
+          <label for="alergias_medicacoes" class="block text-sm font-medium text-gray-700 mb-1">Alergias / Medicações</label>
+          <textarea name="alergias_medicacoes" id="alergias_medicacoes" rows="2" class="input-field resize-none" placeholder="Alergias ou medicações em uso"></textarea>
+        </div>
+        <div>
+          <label for="veterinario_nome" class="block text-sm font-medium text-gray-700 mb-1">Veterinário (nome)</label>
+          <input type="text" name="veterinario_nome" id="veterinario_nome" placeholder="Nome do veterinário" class="input-field">
+        </div>
+        <div>
+          <label for="veterinario_telefone" class="block text-sm font-medium text-gray-700 mb-1">Veterinário (telefone)</label>
+          <input type="tel" name="veterinario_telefone" id="veterinario_telefone" placeholder="(00) 00000-0000" class="input-field">
+        </div>
+        <div>
+          <label for="observacoes" class="block text-sm font-medium text-gray-700 mb-1">Observações gerais</label>
+          <textarea name="observacoes" id="observacoes" rows="2" class="input-field resize-none" placeholder="Outras observações"></textarea>
+        </div>
+      </div>
+      <div class="flex gap-3 mt-6">
+        <button type="button" class="btn-outline flex-1" onclick="prevStep()">
+          <i class="fa-solid fa-arrow-left mr-1"></i> Voltar
+        </button>
         <button type="submit" class="btn-success flex-1">
           <i class="fa-solid fa-check mr-2"></i>Cadastrar
         </button>
@@ -298,7 +347,7 @@
 <script>
 (function () {
   var currentStep = 1;
-  var totalSteps = 8;
+  var totalSteps = 9;
   var steps = document.querySelectorAll('.wizard-step');
   var tipoAtual = '';
 

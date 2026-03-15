@@ -1,0 +1,355 @@
+<% locals.titulo = typeof titulo !== 'undefined' ? titulo : (pet && pet.nome) || 'Perfil do pet' %>
+<% locals.extraHead = `
+<style>
+  .profile-reveal { animation: profileReveal .5s ease-out both; }
+  @keyframes profileReveal { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes postEnter { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+  .post-enter { animation: postEnter .4s ease-out both; }
+  .follow-btn { transition: all .3s cubic-bezier(.4,0,.2,1); }
+  .menu-dropdown { transform-origin: top right; transition: opacity .15s, transform .15s; }
+  .menu-dropdown.hidden { opacity: 0; transform: scale(.95); pointer-events: none; }
+  .action-btn { transition: all .15s ease; }
+  .heart-pop { animation: heartPop .45s cubic-bezier(.17,.67,.35,1.5); }
+  @keyframes heartPop { 0% { transform: scale(1); } 30% { transform: scale(1.35); } 60% { transform: scale(0.9); } 100% { transform: scale(1); } }
+  .float-heart { animation: floatHeart .8s ease-out forwards; pointer-events: none; }
+  @keyframes floatHeart { 0% { opacity: 1; transform: translateY(0) scale(1); } 100% { opacity: 0; transform: translateY(-80px) scale(1.6); } }
+  .repost-quote { border-left: 3px solid #e5e7eb; }
+  .caption-expanded .line-clamp-3 { -webkit-line-clamp: unset !important; }
+</style>
+` %>
+<%- include('../partials/header') %>
+<%- include('../partials/flash') %>
+
+<main class="flex-1 pb-24 md:pb-6">
+  <div class="max-w-2xl mx-auto">
+    <div class="h-[120px] sm:h-[160px] bg-gradient-to-br from-primary-500 to-primary-700"></div>
+    <div class="px-4">
+      <div class="flex items-end justify-between -mt-12 sm:-mt-14 mb-3 profile-reveal">
+        <div class="flex-shrink-0">
+          <% if (pet.foto) { %>
+            <img src="<%= pet.foto %>" alt="<%= pet.nome %>" class="w-24 h-24 sm:w-28 sm:h-28 rounded-full object-cover ring-4 ring-white shadow-xl">
+          <% } else { %>
+            <span class="w-24 h-24 sm:w-28 sm:h-28 rounded-full flex items-center justify-center text-3xl font-black text-white shadow-xl ring-4 ring-white bg-primary-500">
+              <i class="fa-solid fa-paw"></i>
+            </span>
+          <% } %>
+        </div>
+        <% if (!eMeuPet) { %>
+        <div class="pb-1">
+          <button type="button" id="btnFollowPet" data-pet-id="<%= pet.id %>" data-following="<%= estaSeguindo ? 'true' : 'false' %>"
+                  class="follow-btn flex items-center gap-2 px-5 py-2 rounded-full text-sm font-bold
+                    <%= estaSeguindo ? 'bg-white border border-gray-300 text-gray-800 hover:border-red-300 hover:bg-red-50 hover:text-red-600' : 'bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-lg shadow-primary-500/20 hover:shadow-xl hover:-translate-y-0.5' %>">
+            <i class="fa-solid <%= estaSeguindo ? 'fa-paw' : 'fa-paw' %> text-xs"></i>
+            <span><%= estaSeguindo ? 'Seguindo' : 'Seguir' %></span>
+          </button>
+        </div>
+        <% } %>
+      </div>
+      <section class="profile-reveal" style="animation-delay: .05s">
+        <h1 class="text-2xl font-black text-gray-900 leading-tight"><%= pet.nome %></h1>
+        <% if (dono) { %>
+          <p class="text-sm text-gray-500 mt-0.5">
+            Tutor: <a href="/explorar/perfil/<%= dono.id %>" class="text-primary-500 hover:underline font-medium"><%= dono.nome %></a>
+          </p>
+        <% } %>
+        <div class="flex items-center gap-4 mt-3 text-sm text-gray-500">
+          <span><strong class="text-gray-900 font-black"><%= posts.length %></strong> posts</span>
+          <span class="cursor-pointer hover:text-primary-500 transition-colors" id="btnVerSeguidores" title="Ver seguidores">
+            <strong class="text-gray-900 font-black" id="seguidoresCount"><%= totalSeguidores %></strong> seguidores
+          </span>
+          <span class="cursor-pointer hover:text-primary-500 transition-colors" id="btnVerSeguindo" title="Ver seguindo">
+            <strong class="text-gray-900 font-black"><%= totalSeguindo %></strong> seguindo
+          </span>
+        </div>
+      </section>
+    </div>
+
+    <div class="px-4 pt-4" id="postsContainer">
+      <% if (posts.length === 0) { %>
+        <div class="text-center py-16 profile-reveal">
+          <div class="w-20 h-20 mx-auto mb-4 rounded-full bg-gray-50 flex items-center justify-center">
+            <i class="fa-solid fa-feather-pointed text-3xl text-gray-300"></i>
+          </div>
+          <h3 class="text-lg font-bold text-gray-800 mb-1">Nenhuma publicação ainda</h3>
+          <p class="text-sm text-gray-400"><%= pet.nome %> ainda não tem publicações.</p>
+        </div>
+      <% } %>
+
+      <% posts.forEach(function(post, idx) { %>
+        <article class="bg-white rounded-2xl shadow-sm border border-gray-100/80 mb-4 overflow-hidden post-enter"
+                 data-post-id="<%= post.id %>" data-author-id="<%= post.usuario_id %>"
+                 style="animation-delay: <%= (idx * 50) + 200 %>ms">
+          <% if (post.fixada) { %>
+            <div class="flex items-center gap-2 px-4 pt-3 pb-0 text-xs text-amber-500 font-semibold">
+              <i class="fa-solid fa-thumbtack text-[10px]"></i><span>Fixado</span>
+            </div>
+          <% } %>
+          <div class="flex items-center gap-3 px-4 pt-3 pb-2">
+            <a href="/explorar/perfil/<%= post.usuario_id %>" class="flex-shrink-0">
+              <% if (post.foto_perfil) { %>
+                <img src="<%= post.foto_perfil %>" alt="" class="w-10 h-10 rounded-full object-cover ring-2 ring-gray-100">
+              <% } else { %>
+                <span class="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white" style="background:<%= post.cor_perfil || '#ec5a1c' %>"><%= post.autor_nome ? post.autor_nome.charAt(0).toUpperCase() : 'U' %></span>
+              <% } %>
+            </a>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-1.5">
+                <a href="/explorar/perfil/<%= post.usuario_id %>" class="text-sm font-bold text-gray-900 hover:text-primary-600 truncate"><%= post.autor_nome %></a>
+                <span class="text-gray-300">·</span>
+                <span class="post-time text-xs text-gray-400" data-time="<%= post.criado_em %>"></span>
+              </div>
+              <% if (post.pet_nome) { %>
+                <span class="text-xs text-primary-400 font-medium"><i class="fa-solid fa-paw text-[9px] mr-0.5"></i><%= post.pet_nome %></span>
+              <% } %>
+            </div>
+          </div>
+          <% if (post.texto || post.legenda) { %>
+            <div class="px-4 pb-2 caption-area" data-post-id="<%= post.id %>">
+              <p class="text-[15px] text-gray-800 leading-relaxed"><span class="caption-text line-clamp-3"><%= post.texto || post.legenda %></span></p>
+              <button type="button" class="btn-ver-mais text-xs text-primary-500 font-semibold mt-1 hidden">ver mais</button>
+            </div>
+          <% } %>
+          <% if (post.foto) { %>
+            <div class="relative mx-4 mb-3 rounded-2xl overflow-hidden">
+              <img src="<%= post.foto %>" alt="" class="w-full rounded-2xl object-cover max-h-[500px]" loading="lazy" ondblclick="toggleLike(this, '<%= post.id %>')">
+              <div class="dbl-heart-overlay absolute inset-0 flex items-center justify-center pointer-events-none"></div>
+            </div>
+          <% } %>
+          <% if (post.orig_id) { %>
+            <div class="mx-4 mb-3 repost-quote rounded-xl border border-gray-100 overflow-hidden bg-gray-50/50 p-3">
+              <div class="flex items-center gap-2 mb-2">
+                <span class="text-xs font-bold text-gray-700"><%= post.orig_autor_nome %></span>
+                <% if (post.orig_pet_nome) { %><span class="text-[10px] text-primary-400"><i class="fa-solid fa-paw text-[8px]"></i> <%= post.orig_pet_nome %></span><% } %>
+              </div>
+              <% if (post.orig_texto || post.orig_legenda) { %><p class="text-sm text-gray-700 line-clamp-3 mb-2"><%= post.orig_texto || post.orig_legenda %></p><% } %>
+              <% if (post.orig_foto) { %><img src="<%= post.orig_foto %>" alt="" class="w-full rounded-lg object-cover max-h-[200px]" loading="lazy"><% } %>
+            </div>
+          <% } %>
+          <div class="px-4 pb-3">
+            <div class="flex items-center justify-between max-w-md">
+              <button type="button" class="btn-open-comments action-btn group flex items-center gap-1.5 text-gray-500 hover:text-accent-500" data-post-id="<%= post.id %>">
+                <div class="p-1.5 rounded-full group-hover:bg-blue-50"><i class="fa-regular fa-comment text-[15px]"></i></div>
+                <span class="text-xs"><%= post.total_comentarios || '' %></span>
+              </button>
+              <button type="button" class="btn-repost action-btn group flex items-center gap-1.5 <%= post.repostou ? 'text-green-500' : 'text-gray-500 hover:text-green-500' %>" data-post-id="<%= post.id %>" data-reposted="<%= post.repostou ? 'true' : 'false' %>">
+                <div class="p-1.5 rounded-full group-hover:bg-green-50"><i class="fa-solid fa-retweet text-[15px]"></i></div>
+                <span class="text-xs repost-count"><%= post.total_reposts || '' %></span>
+              </button>
+              <button type="button" class="btn-like action-btn group flex items-center gap-1.5 <%= post.curtiu ? 'text-red-500' : 'text-gray-500 hover:text-red-500' %>" data-post-id="<%= post.id %>" data-liked="<%= post.curtiu ? 'true' : 'false' %>">
+                <div class="p-1.5 rounded-full group-hover:bg-red-50"><i class="<%= post.curtiu ? 'fa-solid' : 'fa-regular' %> fa-heart text-[15px]"></i></div>
+                <span class="text-xs likes-count"><%= post.total_curtidas || '' %></span>
+              </button>
+            </div>
+          </div>
+        </article>
+      <% }); %>
+    </div>
+  </div>
+
+  <!-- Modal lista seguidores/seguindo -->
+  <div id="listaSegModal" class="fixed inset-0 z-[60] hidden">
+    <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" id="listaSegOverlay"></div>
+    <div class="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl max-h-[70vh] flex flex-col safe-bottom md:relative md:top-1/2 md:-translate-y-1/2 md:max-w-md md:mx-auto md:rounded-2xl md:max-h-[60vh]">
+      <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+        <h3 class="font-bold text-gray-900" id="listaSegTitulo">Seguidores</h3>
+        <button type="button" id="closeListaSeg" class="p-1 text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+      <div id="listaSegBody" class="flex-1 overflow-y-auto px-5 py-3 space-y-2"></div>
+    </div>
+  </div>
+
+  <!-- Modal comentários -->
+  <div id="commentsModal" class="fixed inset-0 z-[60] hidden">
+    <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" id="commentsOverlay"></div>
+    <div class="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl max-h-[75vh] flex flex-col safe-bottom md:relative md:top-1/2 md:-translate-y-1/2 md:max-w-lg md:mx-auto md:rounded-2xl md:max-h-[70vh]">
+      <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+        <h3 class="font-bold text-gray-900">Comentários</h3>
+        <button type="button" id="closeComments" class="p-1 text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+      <div id="commentsBody" class="flex-1 overflow-y-auto px-5 py-3 space-y-3"></div>
+      <form id="modalCommentForm" class="flex items-center gap-2 px-5 py-3 border-t border-gray-100">
+        <input type="text" id="modalCommentInput" placeholder="Escreva um comentário..." maxlength="300" class="flex-1 text-sm bg-gray-50 rounded-full px-4 py-2.5 border-0 outline-none focus:ring-2 focus:ring-primary-500/20">
+        <button type="submit" class="w-9 h-9 rounded-full bg-gradient-to-r from-primary-500 to-primary-600 text-white flex items-center justify-center"><i class="fa-solid fa-paper-plane text-xs"></i></button>
+      </form>
+    </div>
+  </div>
+</main>
+
+<script>
+(function () {
+  var petId = '<%= pet.id %>';
+  function tempoRelativo(dateStr) {
+    var d = new Date(dateStr);
+    var diff = Date.now() - d.getTime();
+    var seg = Math.floor(diff / 1000);
+    if (seg < 60) return 'agora';
+    var min = Math.floor(seg / 60);
+    if (min < 60) return min + 'min';
+    var hrs = Math.floor(min / 60);
+    if (hrs < 24) return hrs + 'h';
+    var dias = Math.floor(hrs / 24);
+    return dias + 'd';
+  }
+  document.querySelectorAll('.post-time[data-time]').forEach(function (el) { el.textContent = tempoRelativo(el.dataset.time); });
+  setInterval(function () {
+    document.querySelectorAll('.post-time[data-time]').forEach(function (el) { el.textContent = tempoRelativo(el.dataset.time); });
+  }, 30000);
+
+  document.querySelectorAll('.caption-area').forEach(function (area) {
+    var text = area.querySelector('.caption-text');
+    var btn = area.querySelector('.btn-ver-mais');
+    if (text && btn && text.scrollHeight > text.clientHeight + 2) {
+      btn.classList.remove('hidden');
+      btn.addEventListener('click', function () { text.classList.remove('line-clamp-3'); btn.classList.add('hidden'); });
+    }
+  });
+
+  var btnFollowPet = document.getElementById('btnFollowPet');
+  if (btnFollowPet) {
+    btnFollowPet.addEventListener('click', function () {
+      var following = btnFollowPet.dataset.following === 'true';
+      var method = following ? 'DELETE' : 'POST';
+      btnFollowPet.disabled = true;
+      fetch('/explorar/pet/' + petId + '/seguir', { method: method, headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          if (data.sucesso) {
+            btnFollowPet.dataset.following = data.seguindo ? 'true' : 'false';
+            btnFollowPet.querySelector('span').textContent = data.seguindo ? 'Seguindo' : 'Seguir';
+            btnFollowPet.className = 'follow-btn flex items-center gap-2 px-5 py-2 rounded-full text-sm font-bold ' +
+              (data.seguindo ? 'bg-white border border-gray-300 text-gray-800 hover:border-red-300 hover:bg-red-50 hover:text-red-600' : 'bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-lg shadow-primary-500/20');
+            if (data.totalSeguidores !== undefined) document.getElementById('seguidoresCount').textContent = data.totalSeguidores;
+          }
+          btnFollowPet.disabled = false;
+        })
+        .catch(function () { btnFollowPet.disabled = false; });
+    });
+  }
+
+  function doLike(postId, btn) {
+    var liked = btn.dataset.liked === 'true';
+    var method = liked ? 'DELETE' : 'POST';
+    var icon = btn.querySelector('i');
+    var countEl = btn.querySelector('.likes-count');
+    btn.dataset.liked = liked ? 'false' : 'true';
+    icon.className = (liked ? 'fa-regular' : 'fa-solid') + ' fa-heart text-[15px]';
+    btn.classList.toggle('text-red-500', !liked);
+    btn.classList.toggle('text-gray-500', liked);
+    if (!liked) btn.classList.add('heart-pop');
+    setTimeout(function () { btn.classList.remove('heart-pop'); }, 500);
+    fetch('/explorar/post/' + postId + '/curtir', { method: method, headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
+      .then(function (r) { return r.json(); })
+      .then(function (data) { if (data.sucesso && countEl) countEl.textContent = data.total || ''; });
+  }
+  document.addEventListener('click', function (e) {
+    var btn = e.target.closest('.btn-like');
+    if (btn) { e.preventDefault(); doLike(btn.dataset.postId, btn); }
+  });
+  window.toggleLike = function (img, postId) {
+    var article = img.closest('article');
+    if (!article) return;
+    var btn = article.querySelector('.btn-like[data-post-id="' + postId + '"]');
+    if (btn) doLike(postId, btn);
+    var overlay = article.querySelector('.dbl-heart-overlay');
+    if (overlay) {
+      var heart = document.createElement('i');
+      heart.className = 'fa-solid fa-heart text-white text-6xl float-heart drop-shadow-lg';
+      overlay.appendChild(heart);
+      setTimeout(function () { heart.remove(); }, 900);
+    }
+  };
+
+  var commentsModal = document.getElementById('commentsModal');
+  var commentsBody = document.getElementById('commentsBody');
+  var modalCommentInput = document.getElementById('modalCommentInput');
+  var currentPostId = null;
+  function openComments(postId) {
+    currentPostId = postId;
+    commentsModal.classList.remove('hidden');
+    commentsBody.innerHTML = '<div class="text-center py-6 text-gray-300"><i class="fa-solid fa-spinner fa-spin text-xl"></i></div>';
+    fetch('/explorar/post/' + postId + '/comentarios', { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (data.comentarios && data.comentarios.length) {
+          commentsBody.innerHTML = data.comentarios.map(function (c) {
+            return '<div class="flex gap-3"><div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0" style="background:#ec5a1c">' + (c.autor_nome ? c.autor_nome.charAt(0) : '') + '</div><div><p class="text-sm font-semibold text-gray-900">' + (c.autor_nome || '') + '</p><p class="text-sm text-gray-700">' + (c.texto || '').replace(/</g, '&lt;') + '</p></div></div>';
+          }).join('');
+        } else {
+          commentsBody.innerHTML = '<p class="text-sm text-gray-400 text-center py-4">Nenhum comentário ainda.</p>';
+        }
+      });
+  }
+  function closeComments() { commentsModal.classList.add('hidden'); currentPostId = null; }
+  document.querySelectorAll('.btn-open-comments').forEach(function (btn) {
+    btn.addEventListener('click', function () { openComments(btn.dataset.postId); });
+  });
+  document.getElementById('closeComments').addEventListener('click', closeComments);
+  document.getElementById('commentsOverlay').addEventListener('click', closeComments);
+  document.getElementById('modalCommentForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    if (!currentPostId || !modalCommentInput.value.trim()) return;
+    var texto = modalCommentInput.value.trim();
+    modalCommentInput.value = '';
+    fetch('/explorar/post/' + currentPostId + '/comentar', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      credentials: 'same-origin',
+      body: JSON.stringify({ texto: texto })
+    })
+    .then(function (r) { return r.json(); })
+    .then(function (data) { if (data.sucesso) openComments(currentPostId); });
+  });
+
+  document.querySelectorAll('.btn-repost').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      if (btn.dataset.reposted === 'true') return;
+      if (!confirm('Repostar esta publicação?')) return;
+      fetch('/explorar/post/' + btn.dataset.postId + '/repost', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ texto: 'Repostado' })
+      })
+      .then(function (r) { return r.json(); })
+      .then(function (data) { if (data.sucesso) location.reload(); });
+    });
+  });
+
+  var listaSegModal = document.getElementById('listaSegModal');
+  var listaSegBody = document.getElementById('listaSegBody');
+  var listaSegTitulo = document.getElementById('listaSegTitulo');
+  function escapeHtml(str) { if (!str) return ''; var div = document.createElement('div'); div.textContent = str; return div.innerHTML; }
+  function openListaPet(tipo) {
+    var url = tipo === 'seguidores' ? '/explorar/pet/' + petId + '/seguidores' : '/explorar/pet/' + petId + '/seguindo';
+    listaSegTitulo.textContent = tipo === 'seguidores' ? 'Seguidores' : 'Seguindo';
+    listaSegBody.innerHTML = '<div class="text-center py-8 text-gray-400"><i class="fa-solid fa-spinner fa-spin text-xl"></i></div>';
+    listaSegModal.classList.remove('hidden');
+    fetch(url, { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        var lista = data.lista || [];
+        if (lista.length === 0) {
+          listaSegBody.innerHTML = '<p class="text-sm text-gray-500 text-center py-6">Nenhum resultado.</p>';
+          return;
+        }
+        if (tipo === 'seguidores') {
+          listaSegBody.innerHTML = lista.map(function (u) {
+            var avatar = u.foto_perfil ? '<img src="' + escapeHtml(u.foto_perfil) + '" alt="" class="w-10 h-10 rounded-full object-cover">' : '<span class="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white" style="background:' + escapeHtml(u.cor_perfil || '#ec5a1c') + '">' + escapeHtml((u.nome || 'U').charAt(0).toUpperCase()) + '</span>';
+            return '<a href="/explorar/perfil/' + u.id + '" class="flex items-center gap-3 p-2 rounded-xl hover:bg-gray-50">' + avatar + '<span class="font-semibold text-gray-900">' + escapeHtml(u.nome) + '</span></a>';
+          }).join('');
+        } else {
+          listaSegBody.innerHTML = lista.map(function (p) {
+            var avatar = p.foto ? '<img src="' + escapeHtml(p.foto) + '" alt="" class="w-10 h-10 rounded-full object-cover">' : '<span class="w-10 h-10 rounded-full flex items-center justify-center text-primary-500"><i class="fa-solid fa-paw"></i></span>';
+            return '<a href="/explorar/pet/' + p.id + '" class="flex items-center gap-3 p-2 rounded-xl hover:bg-gray-50">' + avatar + '<div><span class="font-semibold text-gray-900 block">' + escapeHtml(p.nome) + '</span><span class="text-xs text-gray-500">' + escapeHtml(p.dono_nome || '') + '</span></div></a>';
+          }).join('');
+        }
+      })
+      .catch(function () { listaSegBody.innerHTML = '<p class="text-sm text-red-500 text-center py-6">Erro ao carregar.</p>'; });
+  }
+  document.getElementById('btnVerSeguidores').addEventListener('click', function () { openListaPet('seguidores'); });
+  document.getElementById('btnVerSeguindo').addEventListener('click', function () { openListaPet('seguindo'); });
+  document.getElementById('closeListaSeg').addEventListener('click', function () { listaSegModal.classList.add('hidden'); });
+  document.getElementById('listaSegOverlay').addEventListener('click', function () { listaSegModal.classList.add('hidden'); });
+})();
+</script>
+<%- include('../partials/footer') %>

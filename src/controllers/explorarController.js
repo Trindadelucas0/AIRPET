@@ -52,7 +52,7 @@ const explorarController = {
       const limite = 20;
       const offset = (page - 1) * limite;
 
-      const posts = await Publicacao.feedSeguindo(uid, limite, offset);
+      const posts = await Publicacao.feedSeguindoPets(uid, limite, offset);
 
       const [pets, totalPosts, totalFixadas, recomendacoes, petsRecomendados] = await Promise.all([
         Pet.buscarPorUsuario(uid),
@@ -193,7 +193,7 @@ const explorarController = {
       const svc = getNotificacaoService();
       if (svc && original.usuario_id !== uid) {
         const autor = await Usuario.buscarPorId(uid);
-        svc.criar(original.usuario_id, 'repost', `${autor.nome} repostou sua publicação.`, `/explorar#post-${id}`, { remetente_id: uid, publicacao_id: parseInt(id) }).catch(() => {});
+        svc.criar(original.usuario_id, 'repost', `${autor.nome} repostou sua publicação.`, `/explorar#post-${id}`, { remetente_id: uid, publicacao_id: parseInt(id), pet_id: original.pet_id || null }).catch(() => {});
       }
 
       res.json({ sucesso: true, post: completo, totalReposts, removido: removido ? removido.id : null });
@@ -215,7 +215,7 @@ const explorarController = {
         const post = await Publicacao.buscarPorId(id);
         if (post && post.usuario_id !== uid) {
           const autor = await Usuario.buscarPorId(uid);
-          svc.criar(post.usuario_id, 'curtida', `${autor.nome} curtiu sua publicação.`, `/explorar#post-${id}`, { remetente_id: uid, publicacao_id: parseInt(id) }).catch(() => {});
+          svc.criar(post.usuario_id, 'curtida', `${autor.nome} curtiu sua publicação.`, `/explorar#post-${id}`, { remetente_id: uid, publicacao_id: parseInt(id), pet_id: post.pet_id || null }).catch(() => {});
         }
       }
 
@@ -269,7 +269,7 @@ const explorarController = {
         const post = await Publicacao.buscarPorId(id);
         if (post && post.usuario_id !== uid) {
           const autor = await Usuario.buscarPorId(uid);
-          svc.criar(post.usuario_id, 'comentario', `${autor.nome} comentou na sua publicação.`, `/explorar#post-${id}`, { remetente_id: uid, publicacao_id: parseInt(id) }).catch(() => {});
+          svc.criar(post.usuario_id, 'comentario', `${autor.nome} comentou na sua publicação.`, `/explorar#post-${id}`, { remetente_id: uid, publicacao_id: parseInt(id), pet_id: post.pet_id || null }).catch(() => {});
         }
       }
 
@@ -397,6 +397,39 @@ const explorarController = {
     }
   },
 
+  async perfilPet(req, res) {
+    try {
+      const { id } = req.params;
+      const uid = req.session.usuario ? req.session.usuario.id : null;
+      const pet = await Pet.buscarPorId(id);
+      if (!pet) {
+        req.session.flash = { tipo: 'erro', mensagem: 'Pet não encontrado.' };
+        return res.redirect('/explorar');
+      }
+      const posts = await Publicacao.buscarPorPet(id, uid, 50);
+      const [totalSeguidores, totalSeguindo, estaSeguindo] = await Promise.all([
+        SeguidorPet.contarSeguidores(id),
+        SeguidorPet.contarSeguindo(pet.usuario_id),
+        uid ? SeguidorPet.estaSeguindo(uid, id) : false,
+      ]);
+      const dono = await Usuario.buscarPorId(pet.usuario_id);
+      res.render('explorar/perfil-pet', {
+        titulo: pet.nome,
+        pet,
+        dono,
+        posts,
+        totalSeguidores,
+        totalSeguindo,
+        estaSeguindo,
+        eMeuPet: uid === pet.usuario_id,
+      });
+    } catch (err) {
+      logger.error('EXPLORAR', 'Erro no perfil do pet', err);
+      req.session.flash = { tipo: 'erro', mensagem: 'Erro ao carregar perfil.' };
+      res.redirect('/explorar');
+    }
+  },
+
   async perfilPublico(req, res) {
     try {
       const { id } = req.params;
@@ -467,8 +500,16 @@ const explorarController = {
     try {
       const uid = req.session.usuario.id;
       const { id } = req.params;
+      const pet = await Pet.buscarPorId(id);
       await SeguidorPet.seguir(uid, id);
       const total = await SeguidorPet.contarSeguidores(id);
+      if (pet && pet.usuario_id !== uid) {
+        const svc = getNotificacaoService();
+        if (svc) {
+          const autor = await Usuario.buscarPorId(uid);
+          svc.criar(pet.usuario_id, 'seguidor', `${autor.nome} começou a seguir ${pet.nome}.`, `/explorar/pet/${id}`, { remetente_id: uid, pet_id: parseInt(id) }).catch(() => {});
+        }
+      }
       res.json({ sucesso: true, seguindo: true, totalSeguidores: total });
     } catch (err) {
       logger.error('EXPLORAR', 'Erro ao seguir pet', err);
@@ -489,6 +530,52 @@ const explorarController = {
     }
   },
 
+  async listarSeguidoresPet(req, res) {
+    try {
+      const { id } = req.params;
+      const lista = await SeguidorPet.listarSeguidores(id, 100);
+      res.json({ lista });
+    } catch (err) {
+      logger.error('EXPLORAR', 'Erro ao listar seguidores do pet', err);
+      res.status(500).json({ lista: [] });
+    }
+  },
+
+  async listarSeguindoPet(req, res) {
+    try {
+      const { id } = req.params;
+      const pet = await Pet.buscarPorId(id);
+      if (!pet) return res.json({ lista: [] });
+      const lista = await SeguidorPet.listarPetsSeguidos(pet.usuario_id, 100);
+      res.json({ lista });
+    } catch (err) {
+      logger.error('EXPLORAR', 'Erro ao listar seguindo do pet', err);
+      res.status(500).json({ lista: [] });
+    }
+  },
+
+  async listarSeguidoresUsuario(req, res) {
+    try {
+      const { id } = req.params;
+      const lista = await Seguidor.listarSeguidores(id, 100);
+      res.json({ lista });
+    } catch (err) {
+      logger.error('EXPLORAR', 'Erro ao listar seguidores', err);
+      res.status(500).json({ lista: [] });
+    }
+  },
+
+  async listarSeguindoUsuario(req, res) {
+    try {
+      const { id } = req.params;
+      const lista = await Seguidor.listarSeguindo(id, 100);
+      res.json({ lista });
+    } catch (err) {
+      logger.error('EXPLORAR', 'Erro ao listar seguindo', err);
+      res.status(500).json({ lista: [] });
+    }
+  },
+
   async buscarPets(req, res) {
     try {
       const uid = req.session.usuario.id;
@@ -499,6 +586,20 @@ const explorarController = {
     } catch (err) {
       logger.error('EXPLORAR', 'Erro ao buscar pets', err);
       res.json([]);
+    }
+  },
+
+  async petsProximosPost(req, res) {
+    try {
+      const uid = req.session.usuario.id;
+      const { id } = req.params;
+      const post = await Publicacao.buscarPorId(id);
+      if (!post) return res.status(404).json({ lista: [] });
+      const lista = await recomendacaoService.petsProximos(post.usuario_id, uid, 8);
+      res.json({ lista });
+    } catch (err) {
+      logger.error('EXPLORAR', 'Erro ao listar pets próximos', err);
+      res.status(500).json({ lista: [] });
     }
   },
 

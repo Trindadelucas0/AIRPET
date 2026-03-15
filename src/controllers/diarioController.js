@@ -47,7 +47,9 @@ const diarioController = {
         return res.redirect('/pets');
       }
 
-      const { tipo, descricao, valor_numerico } = req.body;
+      const { tipo, descricao } = req.body;
+      const valorNumerico = req.body.valor_numerico ?? req.body.valor;
+      const valorFinal = valorNumerico !== undefined && valorNumerico !== '' ? parseFloat(valorNumerico) : null;
       const foto = req.file ? `/images/diario/${req.file.filename}` : null;
 
       await DiarioPet.criar({
@@ -55,7 +57,7 @@ const diarioController = {
         usuario_id: req.session.usuario.id,
         tipo,
         descricao,
-        valor_numerico,
+        valor_numerico: valorFinal,
         foto,
       });
 

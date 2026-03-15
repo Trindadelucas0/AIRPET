@@ -52,6 +52,18 @@ const validarRegistro = [
     .trim()
     .isLength({ min: 10 })
     .withMessage('O telefone deve ter pelo menos 10 digitos (com DDD).'),
+
+  body('cep')
+    .optional({ checkFalsy: true })
+    .trim()
+    .isLength({ min: 8, max: 9 })
+    .withMessage('CEP invalido.'),
+
+  body('bio')
+    .optional({ checkFalsy: true })
+    .trim()
+    .isLength({ max: 160 })
+    .withMessage('A bio deve ter no maximo 160 caracteres.'),
 ];
 
 /**
@@ -102,6 +114,40 @@ const validarPet = [
   body('raca')
     .optional({ checkFalsy: true })
     .trim(),
+];
+
+/**
+ * validarPerfil — Regras de validacao para edicao de perfil (dados do dono)
+ *
+ * Campos validados:
+ *   - nome: obrigatorio, minimo 2 caracteres
+ *   - telefone: opcional, se fornecido minimo 10 digitos
+ *   - cep: opcional, se fornecido 8 ou 9 caracteres (com ou sem traco)
+ *   - bio: opcional, maximo 160 caracteres
+ */
+const validarPerfil = [
+  body('nome')
+    .trim()
+    .isLength({ min: 2 })
+    .withMessage('O nome deve ter pelo menos 2 caracteres.'),
+
+  body('telefone')
+    .optional({ checkFalsy: true })
+    .trim()
+    .isLength({ min: 10 })
+    .withMessage('O telefone deve ter pelo menos 10 digitos (com DDD).'),
+
+  body('cep')
+    .optional({ checkFalsy: true })
+    .trim()
+    .isLength({ min: 8, max: 9 })
+    .withMessage('CEP invalido.'),
+
+  body('bio')
+    .optional({ checkFalsy: true })
+    .trim()
+    .isLength({ max: 160 })
+    .withMessage('A bio deve ter no maximo 160 caracteres.'),
 ];
 
 /**
@@ -159,5 +205,6 @@ module.exports = {
   validarRegistro,
   validarLogin,
   validarPet,
+  validarPerfil,
   validarResultado,
 };

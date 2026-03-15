@@ -20,7 +20,7 @@ const TITULO_MAP = {
 const notificacaoService = {
 
   async criar(usuarioId, tipo, mensagem, link, opcoes = {}) {
-    const { remetente_id, publicacao_id } = opcoes;
+    const { remetente_id, publicacao_id, pet_id } = opcoes;
 
     if (remetente_id && parseInt(remetente_id) === parseInt(usuarioId)) {
       return null;
@@ -35,6 +35,7 @@ const notificacaoService = {
       link: link || null,
       remetente_id: remetente_id || null,
       publicacao_id: publicacao_id || null,
+      pet_id: pet_id || null,
     });
 
     logger.info('NotificacaoService', `Notificação criada: ${notificacao.id}`);
@@ -53,6 +54,7 @@ const notificacaoService = {
         id: notificacao.id, tipo, mensagem, link,
         data: notificacao.data_criacao || notificacao.data,
         remetente_id: remetente_id || null,
+        pet_id: pet_id || null,
       });
     }
 

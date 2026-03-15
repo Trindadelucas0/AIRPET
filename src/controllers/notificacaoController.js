@@ -1,20 +1,24 @@
 const Notificacao = require('../models/Notificacao');
 const PushSubscription = require('../models/PushSubscription');
+const Pet = require('../models/Pet');
 const logger = require('../utils/logger');
 
 const TIPOS_MENCOES = ['mencao'];
-const TIPOS_TODAS = null;
+const LIMITE = 80;
 
 async function listar(req, res) {
   try {
     const usuarioId = req.session.usuario.id;
     const tab = req.query.tab || 'todas';
+    const petId = req.query.pet ? parseInt(req.query.pet, 10) : null;
+
+    const pets = await Pet.buscarPorUsuario(usuarioId);
 
     let notificacoes;
     if (tab === 'mencoes') {
-      notificacoes = await Notificacao.buscarPorTipos(usuarioId, TIPOS_MENCOES);
+      notificacoes = await Notificacao.buscarPorTipos(usuarioId, TIPOS_MENCOES, LIMITE, petId);
     } else {
-      notificacoes = await Notificacao.buscarPorUsuario(usuarioId);
+      notificacoes = await Notificacao.buscarPorUsuario(usuarioId, LIMITE, petId);
     }
 
     const naoLidas = await Notificacao.contarNaoLidas(usuarioId);
@@ -25,6 +29,7 @@ async function listar(req, res) {
         dados: notificacoes,
         naoLidas,
         tab,
+        petId,
       });
     }
 
@@ -33,6 +38,8 @@ async function listar(req, res) {
       notificacoes,
       naoLidas,
       tab,
+      pets,
+      petFiltro: petId,
     });
   } catch (erro) {
     logger.error('NotificacaoController', 'Erro ao listar notificações', erro);

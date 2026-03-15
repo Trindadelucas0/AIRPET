@@ -155,10 +155,10 @@
           <span class="text-sm text-gray-500">
             <strong class="text-gray-900 font-black"><%= totalPosts %></strong> posts
           </span>
-          <span class="text-sm text-gray-500">
+          <span class="text-sm text-gray-500 cursor-pointer hover:text-primary-500 transition-colors" id="btnVerSeguidores" title="Ver seguidores">
             <strong class="text-gray-900 font-black" id="seguidoresCount"><%= seguidores %></strong> seguidores
           </span>
-          <span class="text-sm text-gray-500">
+          <span class="text-sm text-gray-500 cursor-pointer hover:text-primary-500 transition-colors" id="btnVerSeguindo" title="Ver seguindo">
             <strong class="text-gray-900 font-black"><%= seguindo %></strong> seguindo
           </span>
         </div>
@@ -503,6 +503,18 @@
     </div>
   </div>
 
+  <!-- ═══ Modal Lista Seguidores/Seguindo ═══ -->
+  <div id="listaSegModal" class="fixed inset-0 z-[60] hidden">
+    <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" id="listaSegOverlay"></div>
+    <div class="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl max-h-[70vh] flex flex-col animate-slideUp safe-bottom md:relative md:top-1/2 md:-translate-y-1/2 md:max-w-md md:mx-auto md:rounded-2xl md:max-h-[60vh]">
+      <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+        <h3 class="font-bold text-gray-900" id="listaSegTitulo">Seguidores</h3>
+        <button type="button" id="closeListaSeg" class="p-1 text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+      <div id="listaSegBody" class="flex-1 overflow-y-auto px-5 py-3 space-y-2"></div>
+    </div>
+  </div>
+
 </main>
 
 <%- include('../partials/footer') %>
@@ -632,6 +644,37 @@
       window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
     }
   });
+
+  /* ── Modal lista seguidores / seguindo ── */
+  var listaSegModal = document.getElementById('listaSegModal');
+  var listaSegBody = document.getElementById('listaSegBody');
+  var listaSegTitulo = document.getElementById('listaSegTitulo');
+  function openListaSeg(tipo) {
+    var url = tipo === 'seguidores' ? '/explorar/perfil/' + perfilId + '/seguidores' : '/explorar/perfil/' + perfilId + '/seguindo';
+    listaSegTitulo.textContent = tipo === 'seguidores' ? 'Seguidores' : 'Seguindo';
+    listaSegBody.innerHTML = '<div class="text-center py-8 text-gray-400"><i class="fa-solid fa-spinner fa-spin text-xl"></i></div>';
+    listaSegModal.classList.remove('hidden');
+    fetch(url, { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        var lista = data.lista || [];
+        if (lista.length === 0) {
+          listaSegBody.innerHTML = '<p class="text-sm text-gray-500 text-center py-6">Nenhum resultado.</p>';
+          return;
+        }
+        listaSegBody.innerHTML = lista.map(function (u) {
+          var avatar = u.foto_perfil
+            ? '<img src="' + escapeHtml(u.foto_perfil) + '" alt="" class="w-10 h-10 rounded-full object-cover">'
+            : '<span class="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white" style="background:' + escapeHtml(u.cor_perfil || '#ec5a1c') + '">' + escapeHtml((u.nome || 'U').charAt(0).toUpperCase()) + '</span>';
+          return '<a href="/explorar/perfil/' + u.id + '" class="flex items-center gap-3 p-2 rounded-xl hover:bg-gray-50 transition-colors">' + avatar + '<span class="font-semibold text-gray-900">' + escapeHtml(u.nome) + '</span></a>';
+        }).join('');
+      })
+      .catch(function () { listaSegBody.innerHTML = '<p class="text-sm text-red-500 text-center py-6">Erro ao carregar.</p>'; });
+  }
+  document.getElementById('btnVerSeguidores').addEventListener('click', function () { openListaSeg('seguidores'); });
+  document.getElementById('btnVerSeguindo').addEventListener('click', function () { openListaSeg('seguindo'); });
+  document.getElementById('closeListaSeg').addEventListener('click', function () { listaSegModal.classList.add('hidden'); });
+  document.getElementById('listaSegOverlay').addEventListener('click', function () { listaSegModal.classList.add('hidden'); });
 
   /* ── Like toggle ── */
   function doLike(postId, btn) {

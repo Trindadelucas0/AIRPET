@@ -41,7 +41,7 @@ router.get('/:id', petController.mostrarPerfil);
 router.get('/:id/editar', petController.mostrarEditar);
 
 // Atualizar pet (POST de /editar ou PUT via method-override)
-router.post('/:id/editar', upload.single('foto'), petController.atualizar);
+router.post('/:id/editar', upload.single('foto'), validarPet, validarResultado, petController.atualizar);
 router.put('/:id', upload.single('foto'), validarPet, validarResultado, petController.atualizar);
 
 // Página de saúde do pet

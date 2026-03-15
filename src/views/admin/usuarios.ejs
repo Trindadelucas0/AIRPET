@@ -25,7 +25,9 @@
               <th class="px-4 py-3 text-left font-semibold text-gray-600">Email</th>
               <th class="px-4 py-3 text-left font-semibold text-gray-600">Telefone</th>
               <th class="px-4 py-3 text-left font-semibold text-gray-600">Role</th>
+              <th class="px-4 py-3 text-left font-semibold text-gray-600">Status</th>
               <th class="px-4 py-3 text-left font-semibold text-gray-600">Data Criação</th>
+              <th class="px-4 py-3 text-left font-semibold text-gray-600">Ações</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-100">
@@ -36,13 +38,32 @@
                 <td class="px-4 py-3 text-gray-600"><%= u.email %></td>
                 <td class="px-4 py-3 text-gray-600"><%= u.telefone || '—' %></td>
                 <td class="px-4 py-3">
-                  <% if (u.papel === 'admin') { %>
+                  <% if (u.role === 'admin') { %>
                     <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-purple-100 text-purple-700">admin</span>
                   <% } else { %>
                     <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-600">usuário</span>
                   <% } %>
                 </td>
-                <td class="px-4 py-3 text-gray-500 text-xs"><%= u.criado_em ? new Date(u.criado_em).toLocaleDateString('pt-BR') : '—' %></td>
+                <td class="px-4 py-3">
+                  <% if (u.bloqueado) { %>
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-700">Bloqueado</span>
+                  <% } else { %>
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700">Ativo</span>
+                  <% } %>
+                </td>
+                <td class="px-4 py-3 text-gray-500 text-xs"><%= u.data_criacao ? new Date(u.data_criacao).toLocaleDateString('pt-BR') : '—' %></td>
+                <td class="px-4 py-3">
+                  <% const ehAdminEmail = typeof adminEmail !== 'undefined' && adminEmail && u.email === adminEmail; %>
+                  <% if (!ehAdminEmail) { %>
+                    <form action="<%= adminPath %>/usuarios/<%= u.id %>/bloquear" method="POST" class="inline">
+                      <button type="submit" class="text-xs font-medium <%= u.bloqueado ? 'text-green-600 hover:text-green-700' : 'text-red-600 hover:text-red-700' %> transition-colors">
+                        <%= u.bloqueado ? 'Desbloquear' : 'Bloquear' %>
+                      </button>
+                    </form>
+                  <% } else { %>
+                    <span class="text-xs text-gray-400">—</span>
+                  <% } %>
+                </td>
               </tr>
             <% }); %>
           </tbody>

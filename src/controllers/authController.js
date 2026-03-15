@@ -102,12 +102,19 @@ const authController = {
   async registrar(req, res) {
     try {
       /* Extrai os dados do corpo da requisição (formulário) */
-      const { nome, email, senha, telefone } = req.body;
+      const { nome, email, senha, telefone, cep, endereco, bairro, cidade, estado, bio } = req.body;
 
       /* Chama o serviço de autenticação para criar o usuário */
-      const resultado = await authService.registrar({ nome, email, senha, telefone });
+      const resultado = await authService.registrar({ nome, email, senha, telefone, cep, endereco, bairro, cidade, estado, bio });
 
-      /* Verifica se o serviço retornou erro (ex: email já cadastrado) */
+      /* Limite de usuários: exibe tela dedicada em vez de redirect com flash */
+      if (resultado.codigo === 'limite_atingido') {
+        return res.render('auth/limite-usuarios', {
+          titulo: 'Cadastro temporariamente indisponível',
+        });
+      }
+
+      /* Outros erros (ex: email já cadastrado) */
       if (resultado.erro) {
         req.session.flash = { tipo: 'erro', mensagem: resultado.erro };
         return res.redirect('/auth/registro');

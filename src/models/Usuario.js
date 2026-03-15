@@ -28,13 +28,13 @@ const Usuario = {
    * @returns {Promise<object>} O registro do usuário recém-criado
    */
   async criar(dados) {
-    const { nome, email, senha_hash, telefone, role } = dados;
+    const { nome, email, senha_hash, telefone, role, bio, endereco, bairro, cidade, estado, cep } = dados;
 
     const resultado = await query(
-      `INSERT INTO usuarios (nome, email, senha_hash, telefone, role)
-       VALUES ($1, $2, $3, $4, $5)
+      `INSERT INTO usuarios (nome, email, senha_hash, telefone, role, bio, endereco, bairro, cidade, estado, cep)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
        RETURNING *`,
-      [nome, email, senha_hash, telefone, role]
+      [nome, email, senha_hash, telefone || null, role || 'tutor', bio || null, endereco || null, bairro || null, cidade || null, estado || null, cep || null]
     );
 
     return resultado.rows[0];
@@ -160,14 +160,16 @@ const Usuario = {
    * @returns {Promise<object|undefined>} O registro removido ou undefined
    */
   async atualizarPerfil(id, dados) {
-    const { nome, telefone, cor_perfil, bio, endereco, bairro, cidade, estado, cep } = dados;
+    const { nome, telefone, cor_perfil, bio, endereco, bairro, cidade, estado, cep, data_nascimento, contato_extra, foto_perfil } = dados;
     const resultado = await query(
       `UPDATE usuarios
        SET nome = $2, telefone = $3, cor_perfil = $4, bio = $5,
            endereco = $6, bairro = $7, cidade = $8, estado = $9, cep = $10,
+           data_nascimento = $11, contato_extra = $12,
+           foto_perfil = COALESCE($13, foto_perfil),
            data_atualizacao = NOW()
        WHERE id = $1 RETURNING *`,
-      [id, nome, telefone, cor_perfil || '#ec5a1c', bio || null, endereco || null, bairro || null, cidade || null, estado || null, cep || null]
+      [id, nome, telefone, cor_perfil || '#ec5a1c', bio || null, endereco || null, bairro || null, cidade || null, estado || null, cep || null, data_nascimento || null, contato_extra || null, foto_perfil || null]
     );
     return resultado.rows[0];
   },
@@ -176,6 +178,14 @@ const Usuario = {
     const resultado = await query(
       `UPDATE usuarios SET role = $2, data_atualizacao = NOW() WHERE id = $1 RETURNING *`,
       [id, role]
+    );
+    return resultado.rows[0];
+  },
+
+  async atualizarBloqueado(id, bloqueado) {
+    const resultado = await query(
+      `UPDATE usuarios SET bloqueado = $2, data_atualizacao = NOW() WHERE id = $1 RETURNING *`,
+      [id, !!bloqueado]
     );
     return resultado.rows[0];
   },

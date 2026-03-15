@@ -27,6 +27,7 @@ router.post('/post/:id/curtir', explorarController.curtir);
 router.delete('/post/:id/curtir', explorarController.descurtir);
 
 router.get('/post/:id/comentarios', explorarController.comentarios);
+router.get('/post/:id/pets-proximos', explorarController.petsProximosPost);
 router.post('/post/:id/comentar', explorarController.comentar);
 router.delete('/comentario/:id', explorarController.deletarComentario);
 
@@ -39,6 +40,12 @@ router.post('/seguir/:id', explorarController.seguir);
 router.delete('/seguir/:id', explorarController.deixarDeSeguir);
 
 router.get('/perfil/:id', explorarController.perfilPublico);
+router.get('/perfil/:id/seguidores', explorarController.listarSeguidoresUsuario);
+router.get('/perfil/:id/seguindo', explorarController.listarSeguindoUsuario);
+
+router.get('/pet/:id/seguidores', explorarController.listarSeguidoresPet);
+router.get('/pet/:id/seguindo', explorarController.listarSeguindoPet);
+router.get('/pet/:id', explorarController.perfilPet);
 
 router.get('/api/usuarios', explorarController.buscarUsuarios);
 router.get('/api/pets', explorarController.buscarPets);

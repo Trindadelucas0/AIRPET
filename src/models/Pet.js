@@ -36,15 +36,18 @@ const Pet = {
   async criar(dados) {
     const {
       usuario_id, nome, tipo, tipo_custom, raca, cor,
-      porte, sexo, data_nascimento, peso, foto, descricao_emocional, telefone_contato
+      porte, sexo, data_nascimento, peso, foto, descricao_emocional, telefone_contato,
+      microchip, castrado, alergias_medicacoes, veterinario_nome, veterinario_telefone, observacoes
     } = dados;
 
     const resultado = await query(
       `INSERT INTO pets
-        (usuario_id, nome, tipo, tipo_custom, raca, cor, porte, sexo, data_nascimento, peso, foto, descricao_emocional, telefone_contato)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+        (usuario_id, nome, tipo, tipo_custom, raca, cor, porte, sexo, data_nascimento, peso, foto, descricao_emocional, telefone_contato,
+         microchip, castrado, alergias_medicacoes, veterinario_nome, veterinario_telefone, observacoes)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
        RETURNING *`,
-      [usuario_id, nome, tipo, tipo_custom, raca, cor, porte, sexo, data_nascimento, peso, foto, descricao_emocional, telefone_contato]
+      [usuario_id, nome, tipo, tipo_custom, raca, cor, porte, sexo, data_nascimento, peso, foto, descricao_emocional, telefone_contato,
+        microchip || null, castrado ?? null, alergias_medicacoes || null, veterinario_nome || null, veterinario_telefone || null, observacoes || null]
     );
 
     return resultado.rows[0];
@@ -114,7 +117,8 @@ const Pet = {
   async atualizar(id, dados) {
     const {
       nome, tipo, tipo_custom, raca, cor,
-      porte, sexo, data_nascimento, peso, descricao_emocional, telefone_contato
+      porte, sexo, data_nascimento, peso, descricao_emocional, telefone_contato,
+      microchip, castrado, alergias_medicacoes, veterinario_nome, veterinario_telefone, observacoes
     } = dados;
 
     const resultado = await query(
@@ -130,10 +134,17 @@ const Pet = {
            peso = $10,
            descricao_emocional = $11,
            telefone_contato = $12,
+           microchip = $13,
+           castrado = $14,
+           alergias_medicacoes = $15,
+           veterinario_nome = $16,
+           veterinario_telefone = $17,
+           observacoes = $18,
            data_atualizacao = NOW()
        WHERE id = $1
        RETURNING *`,
-      [id, nome, tipo, tipo_custom, raca, cor, porte, sexo, data_nascimento, peso, descricao_emocional, telefone_contato]
+      [id, nome, tipo, tipo_custom, raca, cor, porte, sexo, data_nascimento, peso, descricao_emocional, telefone_contato,
+        microchip || null, castrado ?? null, alergias_medicacoes || null, veterinario_nome || null, veterinario_telefone || null, observacoes || null]
     );
 
     return resultado.rows[0];

@@ -29,13 +29,28 @@ const perfilController = {
 
   async atualizar(req, res) {
     try {
-      const { nome, telefone, cor_perfil, bio, endereco, bairro, cidade, estado, cep } = req.body;
+      const { nome, telefone, cor_perfil, bio, endereco, bairro, cidade, estado, cep, data_nascimento, contato_extra } = req.body;
       const id = req.session.usuario.id;
+      const foto_perfil = req.file ? `/images/perfil/${req.file.filename}` : undefined;
 
-      await Usuario.atualizarPerfil(id, { nome, telefone, cor_perfil: cor_perfil || '#ec5a1c', bio, endereco, bairro, cidade, estado, cep });
+      await Usuario.atualizarPerfil(id, {
+        nome,
+        telefone,
+        cor_perfil: cor_perfil || '#ec5a1c',
+        bio,
+        endereco,
+        bairro,
+        cidade,
+        estado,
+        cep,
+        data_nascimento: data_nascimento || null,
+        contato_extra: contato_extra || null,
+        foto_perfil,
+      });
 
       req.session.usuario.nome = nome;
       req.session.usuario.cor_perfil = cor_perfil || '#ec5a1c';
+      if (foto_perfil) req.session.usuario.foto_perfil = foto_perfil;
 
       req.session.flash = { tipo: 'sucesso', mensagem: 'Perfil atualizado com sucesso!' };
       res.redirect('/perfil');

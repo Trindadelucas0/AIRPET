@@ -188,9 +188,56 @@ async function iniciarConversa(req, res) {
   }
 }
 
+/**
+ * abrirOuIniciarPorPet — GET /chat/novo/:pet_id
+ * Usado pelo link "Conversar com o dono" na tela NFC quando o pet está perdido.
+ * Busca alerta ativo por pet_id; se o usuário for encontrador, cria ou abre conversa e redireciona.
+ */
+async function abrirOuIniciarPorPet(req, res) {
+  try {
+    const { pet_id } = req.params;
+    const usuarioId = req.session.usuario.id;
+
+    const alerta = await PetPerdido.buscarAtivoPorPet(pet_id);
+
+    if (!alerta) {
+      req.session.flash = { tipo: 'erro', mensagem: 'Este pet não está mais como perdido.' };
+      return res.redirect(`/pets/${pet_id}`);
+    }
+
+    const pet_perdido_id = alerta.id;
+
+    if (alerta.usuario_id === usuarioId) {
+      req.session.flash = { tipo: 'info', mensagem: 'Você é o tutor. Suas conversas sobre este pet estão na lista.' };
+      return res.redirect('/chat');
+    }
+
+    const conversasExistentes = await Conversa.buscarPorPetPerdido(pet_perdido_id);
+    const conversaExistente = conversasExistentes.find((c) => c.iniciador_id === usuarioId);
+
+    if (conversaExistente) {
+      return res.redirect(`/chat/${conversaExistente.id}`);
+    }
+
+    const novaConversa = await Conversa.criar({
+      pet_perdido_id,
+      iniciador_id: usuarioId,
+      tutor_id: alerta.usuario_id,
+    });
+
+    logger.info('ChatController', `Conversa criada via /novo/:pet_id: ${novaConversa.id}`);
+    return res.redirect(`/chat/${novaConversa.id}`);
+  } catch (erro) {
+    logger.error('ChatController', 'Erro em abrirOuIniciarPorPet', erro);
+    req.session.flash = { tipo: 'erro', mensagem: 'Erro ao abrir a conversa. Tente novamente.' };
+    return res.redirect('/');
+  }
+}
+
 /* Exporta os métodos do controller */
 module.exports = {
   listarConversas,
   mostrarConversa,
   iniciarConversa,
+  abrirOuIniciarPorPet,
 };

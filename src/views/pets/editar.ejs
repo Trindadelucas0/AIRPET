@@ -93,8 +93,41 @@
       <div>
         <label for="telefoneContato" class="block text-sm font-medium text-gray-700 mb-1">Telefone</label>
         <input type="tel" id="telefoneContato" name="telefoneContato"
-               value="<%= pet.telefoneContato || '' %>"
+               value="<%= pet.telefoneContato || pet.telefone_contato || '' %>"
                placeholder="(00) 00000-0000" class="input-field">
+      </div>
+    </div>
+
+    <!-- Saúde e identificação -->
+    <div class="card space-y-4">
+      <h2 class="text-sm font-semibold text-gray-700 mb-1">Saúde e identificação</h2>
+      <div>
+        <label for="microchip" class="block text-sm font-medium text-gray-700 mb-1">Microchip</label>
+        <input type="text" id="microchip" name="microchip" value="<%= pet.microchip || '' %>" placeholder="Número do microchip" class="input-field">
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Castrado</label>
+        <select name="castrado" id="castrado" class="input-field">
+          <option value="">Não informado</option>
+          <option value="sim" <%= (pet.castrado === true || pet.castrado === 't') ? 'selected' : '' %>>Sim</option>
+          <option value="nao" <%= (pet.castrado === false || pet.castrado === 'f') ? 'selected' : '' %>>Não</option>
+        </select>
+      </div>
+      <div>
+        <label for="alergias_medicacoes" class="block text-sm font-medium text-gray-700 mb-1">Alergias / Medicações</label>
+        <textarea name="alergias_medicacoes" id="alergias_medicacoes" rows="2" class="input-field resize-none" placeholder="Alergias ou medicações em uso"><%= pet.alergias_medicacoes || '' %></textarea>
+      </div>
+      <div>
+        <label for="veterinario_nome" class="block text-sm font-medium text-gray-700 mb-1">Veterinário (nome)</label>
+        <input type="text" id="veterinario_nome" name="veterinario_nome" value="<%= pet.veterinario_nome || '' %>" placeholder="Nome do veterinário" class="input-field">
+      </div>
+      <div>
+        <label for="veterinario_telefone" class="block text-sm font-medium text-gray-700 mb-1">Veterinário (telefone)</label>
+        <input type="tel" id="veterinario_telefone" name="veterinario_telefone" value="<%= pet.veterinario_telefone || '' %>" placeholder="(00) 00000-0000" class="input-field">
+      </div>
+      <div>
+        <label for="observacoes" class="block text-sm font-medium text-gray-700 mb-1">Observações gerais</label>
+        <textarea name="observacoes" id="observacoes" rows="2" class="input-field resize-none" placeholder="Outras observações"><%= pet.observacoes || '' %></textarea>
       </div>
     </div>
 

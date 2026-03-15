@@ -64,6 +64,16 @@ const authService = {
       return { erro: 'Este e-mail já está cadastrado. Tente fazer login.' };
     }
 
+    /* Limite de usuários (MAX_USUARIOS no .env). 0 ou vazio = ilimitado */
+    const maxUsuarios = parseInt(process.env.MAX_USUARIOS || '0', 10);
+    if (maxUsuarios > 0) {
+      const total = await Usuario.contarTotal();
+      if (total >= maxUsuarios) {
+        logger.warn('AuthService', `Registro rejeitado — limite de usuários atingido (${total}/${maxUsuarios})`);
+        return { erro: 'Limite de usuários atingido.', codigo: 'limite_atingido' };
+      }
+    }
+
     /**
      * Gera o hash da senha usando bcrypt.
      * O salt é gerado automaticamente com o número de rounds especificado.
@@ -77,6 +87,12 @@ const authService = {
       senha_hash,
       telefone: dados.telefone,
       role: dados.role || 'tutor',
+      bio: dados.bio,
+      endereco: dados.endereco,
+      bairro: dados.bairro,
+      cidade: dados.cidade,
+      estado: dados.estado,
+      cep: dados.cep,
     };
 
     /* Persiste o novo usuário no banco de dados */
@@ -117,6 +133,11 @@ const authService = {
     if (!usuario) {
       logger.warn('AuthService', `Login falhou — e-mail não encontrado: ${email}`);
       return { erro: 'E-mail ou senha incorretos.' };
+    }
+
+    if (usuario.bloqueado) {
+      logger.warn('AuthService', `Login bloqueado para: ${email}`);
+      return { erro: 'Sua conta foi bloqueada. Entre em contato com o suporte.' };
     }
 
     /**
