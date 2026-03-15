@@ -18,7 +18,7 @@
       <label for="petFoto" class="block cursor-pointer">
         <div class="relative w-full h-48 rounded-xl overflow-hidden bg-gray-100 group">
           <% if (pet.foto) { %>
-            <img src="<%= pet.foto %>" alt="<%= pet.nome %>" id="fotoAtual"
+            <img src="<%= pet.foto %><%= pet.data_atualizacao ? '?t=' + new Date(pet.data_atualizacao).getTime() : '' %>" alt="<%= pet.nome %>" id="fotoAtual"
                  class="w-full h-full object-cover">
           <% } else { %>
             <div class="w-full h-full flex items-center justify-center" id="fotoAtual">

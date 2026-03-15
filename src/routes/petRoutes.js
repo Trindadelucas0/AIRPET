@@ -40,9 +40,25 @@ router.get('/:id', petController.mostrarPerfil);
 // Formulário de edição
 router.get('/:id/editar', petController.mostrarEditar);
 
+function handleUploadErro(req, res, next) {
+  return function (err) {
+    if (err) {
+      req.session.flash = {
+        tipo: 'erro',
+        mensagem: err.code === 'LIMIT_FILE_SIZE' ? 'Imagem muito grande (máx. 5 MB).' : 'Envie uma imagem válida (JPEG, PNG, GIF ou WebP).'
+      };
+      return res.redirect('back');
+    }
+    next();
+  };
+}
 // Atualizar pet (POST de /editar ou PUT via method-override)
-router.post('/:id/editar', upload.single('foto'), validarPet, validarResultado, petController.atualizar);
-router.put('/:id', upload.single('foto'), validarPet, validarResultado, petController.atualizar);
+router.post('/:id/editar', function (req, res, next) {
+  upload.single('foto')(req, res, handleUploadErro(req, res, next));
+}, validarPet, validarResultado, petController.atualizar);
+router.put('/:id', function (req, res, next) {
+  upload.single('foto')(req, res, handleUploadErro(req, res, next));
+}, validarPet, validarResultado, petController.atualizar);
 
 // Página de saúde do pet
 router.get('/:id/saude', petController.mostrarSaude);

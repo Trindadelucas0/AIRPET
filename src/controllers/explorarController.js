@@ -139,29 +139,31 @@ const explorarController = {
 
   async criarPost(req, res) {
     try {
-      const uid = req.session.usuario.id;
-      const { texto, pet_id } = req.body;
+      const uid = req.session.usuario?.id;
+      if (!uid) {
+        return res.status(401).json({ sucesso: false, mensagem: 'Faça login para publicar.' });
+      }
+      const { texto, pet_id } = req.body || {};
       const foto = req.file ? `/images/posts/${req.file.filename}` : null;
 
       if (!foto) {
         return res.status(400).json({ sucesso: false, mensagem: 'Envie uma foto.' });
       }
-      if (!texto || !texto.trim()) {
+      if (!texto || !String(texto).trim()) {
         return res.status(400).json({ sucesso: false, mensagem: 'Escreva uma legenda.' });
       }
       const petId = pet_id ? parseInt(pet_id, 10) : null;
-      if (!petId) {
-        return res.status(400).json({ sucesso: false, mensagem: 'Selecione em qual pet publicar.' });
-      }
-      const pet = await Pet.buscarPorId(petId);
-      if (!pet || pet.usuario_id !== uid) {
-        return res.status(403).json({ sucesso: false, mensagem: 'Pet não encontrado ou você não é o dono.' });
+      if (petId) {
+        const pet = await Pet.buscarPorId(petId);
+        if (!pet || pet.usuario_id !== uid) {
+          return res.status(400).json({ sucesso: false, mensagem: 'Pet não encontrado ou você não é o dono.' });
+        }
       }
 
       const removido = await autoDeleteSeNecessario(uid);
 
       const post = await Publicacao.criar({
-        usuario_id: uid, pet_id: petId, foto, legenda: texto.trim(), texto: texto.trim(),
+        usuario_id: uid, pet_id: petId || null, foto, legenda: String(texto).trim(), texto: String(texto).trim(),
       });
       const completo = await Publicacao.buscarPorId(post.id, uid);
       const totalPosts = await Publicacao.contarAtivas(uid);
@@ -487,9 +489,29 @@ const explorarController = {
 
   async buscarUsuarios(req, res) {
     try {
-      const { q } = req.query;
-      if (!q || q.length < 2) return res.json([]);
+      const uid = req.session?.usuario?.id;
+      const { q, seguindo } = req.query;
       const { query: dbQuery } = require('../config/database');
+      const somenteSeguindo = seguindo === '1' && uid;
+
+      if (somenteSeguindo) {
+        // Menções estilo Instagram: só quem eu sigo (digitar @ abre a lista)
+        const termo = (q || '').trim().toLowerCase();
+        const params = [uid];
+        let sql = `SELECT u.id, u.nome, u.cor_perfil, u.foto_perfil
+          FROM seguidores s
+          JOIN usuarios u ON u.id = s.seguido_id
+          WHERE s.seguidor_id = $1`;
+        if (termo.length >= 1) {
+          params.push('%' + termo + '%');
+          sql += ` AND LOWER(u.nome) LIKE $2`;
+        }
+        sql += ` ORDER BY u.nome LIMIT 15`;
+        const resultado = await dbQuery(sql, params);
+        return res.json(resultado.rows);
+      }
+
+      if (!q || q.length < 2) return res.json([]);
       const resultado = await dbQuery(
         `SELECT id, nome, cor_perfil, foto_perfil FROM usuarios WHERE LOWER(nome) LIKE $1 ORDER BY nome LIMIT 10`,
         ['%' + q.toLowerCase() + '%']

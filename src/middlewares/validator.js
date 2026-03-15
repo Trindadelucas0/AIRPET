@@ -127,6 +127,7 @@ const validarPet = [
  */
 const validarPerfil = [
   body('nome')
+    .optional({ checkFalsy: true })
     .trim()
     .isLength({ min: 2 })
     .withMessage('O nome deve ter pelo menos 2 caracteres.'),

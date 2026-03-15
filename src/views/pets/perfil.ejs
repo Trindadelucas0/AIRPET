@@ -21,7 +21,7 @@
   <div class="card p-0 overflow-hidden mb-6">
     <div class="relative">
       <% if (pet.foto) { %>
-        <img src="<%= pet.foto %>" alt="<%= pet.nome %>"
+        <img src="<%= pet.foto %><%= pet.data_atualizacao ? '?t=' + new Date(pet.data_atualizacao).getTime() : '' %>" alt="<%= pet.nome %>"
              class="w-full h-56 sm:h-72 object-cover">
       <% } else { %>
         <div class="w-full h-56 sm:h-72 bg-gradient-to-br from-orange-100 to-orange-50 flex items-center justify-center">

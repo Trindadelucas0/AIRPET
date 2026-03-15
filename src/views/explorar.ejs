@@ -73,11 +73,11 @@
             </div>
           <% } %>
 
-          <%/* ── Header ── */ %>
+          <%/* ── Header: avatar = foto do tutor, clique = perfil do tutor ── */ %>
           <div class="flex items-center gap-3 px-4 pt-3 pb-2">
-            <a href="<%= post.pet_id ? '/explorar/pet/' + post.pet_id : '/explorar/perfil/' + post.usuario_id %>" class="shrink-0">
+            <a href="/explorar/perfil/<%= post.usuario_id %>" class="shrink-0 rounded-full ring-2 ring-gray-100 hover:ring-primary-200 transition-all" title="Ver perfil de <%= post.autor_nome %>">
               <% if (post.foto_perfil) { %>
-                <img src="<%= post.foto_perfil %>" alt="" class="w-10 h-10 rounded-full object-cover ring-2 ring-gray-100 post-author-avatar">
+                <img src="<%= post.foto_perfil %>" alt="" class="w-10 h-10 rounded-full object-cover post-author-avatar">
               <% } else { %>
                 <span class="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white post-author-avatar"
                       style="background:<%= post.cor_perfil || '#ec5a1c' %>">
@@ -87,13 +87,13 @@
             </a>
 
             <div class="flex-1 min-w-0">
-              <div class="flex items-center gap-1.5">
-                <a href="<%= post.pet_id ? '/explorar/pet/' + post.pet_id : '/explorar/perfil/' + post.usuario_id %>"
+              <div class="flex items-center gap-1.5 flex-wrap">
+                <a href="/explorar/perfil/<%= post.usuario_id %>"
                    class="font-semibold text-sm text-gray-900 hover:underline truncate post-author-name"><%= post.autor_nome %></a>
-                <% if (post.pet_nome) { %>
-                  <span class="text-xs text-gray-400 truncate">
+                <% if (post.pet_nome && post.pet_id) { %>
+                  <a href="/explorar/pet/<%= post.pet_id %>" class="text-xs text-gray-400 hover:text-primary-500 truncate">
                     <i class="fa-solid fa-paw text-[9px]"></i> <%= post.pet_nome %>
-                  </span>
+                  </a>
                 <% } %>
               </div>
               <span class="text-xs text-gray-400 tempo-relativo" data-time="<%= post.criado_em %>"></span>
@@ -354,9 +354,9 @@
 
     <div class="flex-1 overflow-y-auto px-5 py-4 space-y-4 scrollbar-hide">
       <% if (totalPosts >= 10) { %>
-        <div class="flex items-center gap-2 px-4 py-3 rounded-xl bg-red-50 text-red-600 text-xs font-medium">
-          <i class="fa-solid fa-circle-exclamation"></i>
-          Limite atingido. Exclua um post antigo para publicar.
+        <div class="flex items-center gap-2 px-4 py-3 rounded-xl bg-amber-50 text-amber-700 text-xs font-medium">
+          <i class="fa-solid fa-info-circle"></i>
+          Ao publicar, o post mais antigo (não fixado) pode ser removido automaticamente.
         </div>
       <% } %>
 
@@ -380,8 +380,9 @@
       <input type="file" id="photoInput" accept="image/jpeg,image/png,image/gif,image/webp" class="hidden">
 
       <div>
+        <label for="novoPostTexto" class="block text-xs font-medium text-gray-500 mb-1.5">Legenda</label>
         <textarea id="novoPostTexto" rows="3" maxlength="500"
-                  placeholder="Escreva uma legenda…"
+                  placeholder="Conte algo sobre essa foto…"
                   class="w-full resize-none border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-primary-500/20 focus:border-primary-400 outline-none transition-all"></textarea>
         <div class="text-right mt-1">
           <span id="charCount" class="text-[11px] text-gray-300">0/500</span>
@@ -390,30 +391,26 @@
 
       <% if (pets && pets.length > 0) { %>
         <div>
-          <label class="text-xs font-medium text-gray-500 mb-1.5 block">Em qual perfil (pet) postar?</label>
-          <select id="novoPostPet" required
-                  class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-800 focus:ring-2 focus:ring-primary-500/20 focus:border-primary-400 outline-none bg-white transition-all">
-            <% pets.forEach(function(p, i) { %>
-              <option value="<%= p.id %>" <%= i === 0 ? 'selected' : '' %>><%= p.nome %></option>
+          <label class="text-xs font-medium text-gray-500 mb-1.5 block">Em qual perfil (pet) postar? (opcional)</label>
+          <select id="novoPostPet" class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-800 focus:ring-2 focus:ring-primary-500/20 focus:border-primary-400 outline-none bg-white transition-all">
+            <option value="">Meu perfil (sem pet)</option>
+            <% pets.forEach(function(p) { %>
+              <option value="<%= p.id %>"><%= p.nome %></option>
             <% }); %>
           </select>
         </div>
       <% } else { %>
-        <div class="flex items-center gap-2 px-4 py-3 rounded-xl bg-amber-50 text-amber-800 text-sm">
-          <i class="fa-solid fa-paw"></i>
-          <span>Cadastre um pet para publicar.</span>
-        </div>
+        <input type="hidden" id="novoPostPet" value="">
+        <p class="text-xs text-gray-500">A publicação será no seu perfil. <a href="/pets/cadastro" class="text-primary-500 hover:underline">Cadastre um pet</a> para postar em nome dele.</p>
       <% } %>
     </div>
 
-    <% if (pets && pets.length > 0) { %>
     <div class="px-5 py-4 border-t border-gray-100">
       <button type="button" id="btnPublicar" disabled
               class="w-full py-3 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-primary-500 to-primary-600 shadow-lg shadow-primary-500/20 hover:shadow-xl hover:shadow-primary-500/30 hover:-translate-y-0.5 transition-all duration-300 disabled:opacity-40 disabled:shadow-none disabled:translate-y-0 disabled:cursor-not-allowed">
         Publicar
       </button>
     </div>
-    <% } %>
   </div>
 </div>
 
@@ -841,16 +838,18 @@
     var val = input.value;
     var cursor = input.selectionStart;
     var before = val.substring(0, cursor);
-    var match = before.match(/@(\w{1,})$/);
+    var match = before.match(/@(\w*)$/);
 
     if (!match) {
       mentionDropdown.classList.add('hidden');
       return;
     }
-    var query = match[1];
+    var query = (match[1] || '').trim();
     clearTimeout(searchTimeout);
     searchTimeout = setTimeout(function () {
-      fetch('/explorar/api/usuarios?q=' + encodeURIComponent(query), {
+      var url = '/explorar/api/usuarios?seguindo=1';
+      if (query.length) url += '&q=' + encodeURIComponent(query);
+      fetch(url, {
         headers: { 'Accept': 'application/json' },
         credentials: 'same-origin'
       })
@@ -861,14 +860,14 @@
         users.forEach(function (u) {
           var av = u.foto_perfil
             ? '<img src="' + escapeHtml(u.foto_perfil) + '" class="w-7 h-7 rounded-full object-cover">'
-            : '<span class="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold text-white" style="background:' + escapeHtml(u.cor_perfil || '#ec5a1c') + '">' + escapeHtml(u.nome.charAt(0).toUpperCase()) + '</span>';
+            : '<span class="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold text-white" style="background:' + escapeHtml(u.cor_perfil || '#ec5a1c') + '">' + escapeHtml((u.nome || 'U').charAt(0).toUpperCase()) + '</span>';
           html += '<div class="autocomplete-item" data-nome="' + escapeHtml(u.nome) + '">' + av + '<span class="font-medium text-gray-700">' + escapeHtml(u.nome) + '</span></div>';
         });
         mentionDropdown.innerHTML = html;
         mentionDropdown.classList.remove('hidden');
       })
       .catch(function () { mentionDropdown.classList.add('hidden'); });
-    }, 250);
+    }, query.length ? 250 : 100);
   }
 
   mentionDropdown.addEventListener('click', function (e) {
@@ -966,14 +965,14 @@
 
   function abrirNovoPost() {
     var petSelect = document.getElementById('novoPostPet');
-    if (!petSelect) { toast('Cadastre um pet para publicar.', 'erro'); return; }
     selectedFile = null;
     photoInput.value = '';
     novoPostTexto.value = '';
     charCount.textContent = '0/500';
     uploadPlaceholder.classList.remove('hidden');
     uploadPreview.classList.add('hidden');
-    if (petSelect.options.length) petSelect.selectedIndex = 0;
+    if (petSelect && petSelect.options && petSelect.options.length) petSelect.selectedIndex = 0;
+    if (btnPublicar) { btnPublicar.disabled = false; btnPublicar.innerHTML = 'Publicar'; }
     validarFormPost();
     abrirModal('newPostModal');
     var counter = document.getElementById('postCounter');
@@ -981,10 +980,10 @@
   }
 
   function validarFormPost() {
-    var petOk = true;
-    var ps = document.getElementById('novoPostPet');
-    if (ps) petOk = !!ps.value;
-    if (btnPublicar) btnPublicar.disabled = (!selectedFile || !novoPostTexto.value.trim() || totalPostsLocal >= 10 || !petOk);
+    if (!btnPublicar) return;
+    var temFoto = !!selectedFile;
+    var temTexto = !!(novoPostTexto && novoPostTexto.value.trim());
+    btnPublicar.disabled = !(temFoto && temTexto);
   }
 
   uploadArea.addEventListener('click', function () { photoInput.click(); });
@@ -1042,24 +1041,26 @@
   });
 
   if (btnPublicar) btnPublicar.addEventListener('click', function () {
+    if (!selectedFile || !novoPostTexto || !novoPostTexto.value.trim()) return;
     var petSelect = document.getElementById('novoPostPet');
-    if (!selectedFile || !novoPostTexto.value.trim() || !petSelect || !petSelect.value) return;
+    var petVal = (petSelect && petSelect.value) ? petSelect.value : '';
     this.disabled = true;
     this.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>Publicando…';
 
     var formData = new FormData();
     formData.append('foto', selectedFile);
     formData.append('texto', novoPostTexto.value.trim());
-    formData.append('pet_id', petSelect.value);
+    if (petVal) formData.append('pet_id', petVal);
 
     fetch('/explorar/post', { method: 'POST', credentials: 'same-origin', body: formData })
     .then(function (r) { return r.json(); })
     .then(function (data) {
-      btnPublicar.textContent = 'Publicar';
+      btnPublicar.disabled = false;
+      btnPublicar.innerHTML = 'Publicar';
       if (!data.sucesso) { toast(data.mensagem || 'Erro ao publicar.', 'erro'); validarFormPost(); return; }
       fecharModal('newPostModal');
       toast('Publicado!');
-      totalPostsLocal = data.totalPosts || (totalPostsLocal + 1);
+      totalPostsLocal = data.totalPosts != null ? data.totalPosts : (totalPostsLocal + 1);
       if (data.post) {
         var emptyState = feedContainer.querySelector('.text-center.py-20');
         if (emptyState) emptyState.remove();
@@ -1071,7 +1072,12 @@
         if (old) { old.classList.add('fade-out'); setTimeout(function () { if (old.parentNode) old.parentNode.removeChild(old); }, 400); }
       }
     })
-    .catch(function () { toast('Erro de conexão.', 'erro'); btnPublicar.textContent = 'Publicar'; validarFormPost(); });
+    .catch(function () {
+      toast('Erro de conexão. Tente novamente.', 'erro');
+      btnPublicar.disabled = false;
+      btnPublicar.innerHTML = 'Publicar';
+      validarFormPost();
+    });
   });
 
   var fabBtn = document.getElementById('fabNewPost');
@@ -1241,10 +1247,10 @@
     if (p.fixada) h += '<div class="px-4 pt-3 flex items-center gap-2 text-gray-400 text-xs font-semibold"><i class="fa-solid fa-thumbtack text-[11px]"></i><span>Fixado</span></div>';
 
     h += '<div class="flex items-center gap-3 px-4 pt-3 pb-2">';
-    var authorHref = (p.pet_id ? '/explorar/pet/' + p.pet_id : '/explorar/perfil/' + p.usuario_id);
-    h += '<a href="' + authorHref + '" class="shrink-0">' + avatarHtml + '</a>';
-    h += '<div class="flex-1 min-w-0"><div class="flex items-center gap-1.5"><a href="' + authorHref + '" class="font-semibold text-sm text-gray-900 hover:underline truncate post-author-name">' + escapeHtml(p.autor_nome) + '</a>';
-    if (p.pet_nome) h += '<span class="text-xs text-gray-400 truncate"><i class="fa-solid fa-paw text-[9px]"></i> ' + escapeHtml(p.pet_nome) + '</span>';
+    var tutorHref = '/explorar/perfil/' + p.usuario_id;
+    h += '<a href="' + tutorHref + '" class="shrink-0 rounded-full ring-2 ring-gray-100 hover:ring-primary-200 transition-all">' + avatarHtml + '</a>';
+    h += '<div class="flex-1 min-w-0"><div class="flex items-center gap-1.5 flex-wrap"><a href="' + tutorHref + '" class="font-semibold text-sm text-gray-900 hover:underline truncate post-author-name">' + escapeHtml(p.autor_nome) + '</a>';
+    if (p.pet_nome && p.pet_id) h += '<a href="/explorar/pet/' + p.pet_id + '" class="text-xs text-gray-400 hover:text-primary-500 truncate"><i class="fa-solid fa-paw text-[9px]"></i> ' + escapeHtml(p.pet_nome) + '</a>';
     h += '</div><span class="text-xs text-gray-400 tempo-relativo" data-time="' + p.criado_em + '">' + tempoRelativo(p.criado_em) + '</span></div>';
 
     if (isMine) {

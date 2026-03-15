@@ -64,6 +64,24 @@
           <a href="/pets/cadastro" class="text-sm text-primary-500 font-medium hover:underline mt-1 inline-block">Cadastrar pet</a>
         </div>
       <% } %>
+      <p class="text-xs text-gray-400 mt-2">Gerencie e edite os perfis dos seus pets em <a href="/pets" class="text-primary-500 hover:underline">Meus Pets</a>.</p>
+    </div>
+
+    <!-- Seção: Rede social — quantidade de postagem -->
+    <div class="card animate-slideUp mb-6" style="animation-delay: 0.13s">
+      <div class="flex items-center justify-between mb-2">
+        <h2 class="text-lg font-bold text-gray-900"><i class="fa-solid fa-images mr-2 text-primary-500"></i>Publicações</h2>
+      </div>
+      <p class="text-sm text-gray-600 mb-3">Você pode publicar até 10 fotos no feed. Exclua posts antigos para liberar espaço.</p>
+      <div class="flex items-center gap-3 flex-wrap">
+        <span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-sm font-semibold <%= (typeof totalPosts !== 'undefined' ? totalPosts : 0) >= 10 ? 'bg-red-50 text-red-600' : 'bg-gray-100 text-gray-700' %>">
+          <i class="fa-solid fa-camera"></i>
+          <%= typeof totalPosts !== 'undefined' ? totalPosts : 0 %>/10 publicações
+        </span>
+        <a href="/feed" class="inline-flex items-center gap-1.5 text-sm font-medium text-primary-500 hover:text-primary-600 hover:underline">
+          <i class="fa-solid fa-arrow-right"></i> Ver minhas publicações
+        </a>
+      </div>
     </div>
 
     <!-- Seção: Foto de perfil -->
@@ -161,6 +179,17 @@
           </div>
         </div>
       </div>
+    </div>
+
+    <!-- Seção: Recuperar senha -->
+    <div class="card animate-slideUp mb-6" style="animation-delay: 0.17s">
+      <div class="flex items-center justify-between mb-2">
+        <h2 class="text-lg font-bold text-gray-900"><i class="fa-solid fa-key mr-2 text-primary-500"></i>Conta e segurança</h2>
+      </div>
+      <p class="text-sm text-gray-600 mb-3">Altere sua senha de acesso caso tenha esquecido ou queira atualizá-la.</p>
+      <a href="/auth/esqueci-senha" class="inline-flex items-center gap-2 text-sm font-medium text-primary-500 hover:text-primary-600 hover:underline">
+        <i class="fa-solid fa-lock"></i> Recuperar ou alterar senha
+      </a>
     </div>
 
     <!-- Seção: Endereço -->
@@ -273,7 +302,31 @@
     </div>
     <% } %>
 
-    <!-- Danger Zone -->
+    <!-- Central de ajuda -->
+    <div class="card animate-slideUp mb-6" style="animation-delay: 0.22s">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-lg font-bold text-gray-900"><i class="fa-solid fa-circle-question mr-2 text-primary-500"></i>Central de ajuda</h2>
+      </div>
+      <p class="text-sm text-gray-600 mb-4">Documentos e informações importantes do AIRPET.</p>
+      <ul class="space-y-2">
+        <li>
+          <a href="/termos" class="flex items-center gap-3 py-2.5 px-3 rounded-xl hover:bg-gray-50 transition-colors text-gray-700">
+            <i class="fa-solid fa-file-lines w-5 text-center text-gray-400"></i>
+            <span class="font-medium">Termos de uso</span>
+            <i class="fa-solid fa-chevron-right text-xs text-gray-300 ml-auto"></i>
+          </a>
+        </li>
+        <li>
+          <a href="/privacidade" class="flex items-center gap-3 py-2.5 px-3 rounded-xl hover:bg-gray-50 transition-colors text-gray-700">
+            <i class="fa-solid fa-shield-halved w-5 text-center text-gray-400"></i>
+            <span class="font-medium">Política de privacidade</span>
+            <i class="fa-solid fa-chevron-right text-xs text-gray-300 ml-auto"></i>
+          </a>
+        </li>
+      </ul>
+    </div>
+
+    <!-- Sair -->
     <div class="mt-6 text-center">
       <a href="/auth/logout" class="inline-flex items-center gap-2 text-sm text-red-500 hover:text-red-600 font-medium transition-colors">
         <i class="fa-solid fa-right-from-bracket"></i> Sair da conta
@@ -294,6 +347,19 @@
 <script>
 var croppedProfileFile = null;
 var croppedCapaFile = null;
+var perfilInicial = <%- JSON.stringify({
+  nome: perfil.nome || '',
+  telefone: perfil.telefone || '',
+  data_nascimento: perfil.data_nascimento ? new Date(perfil.data_nascimento).toISOString().split('T')[0] : '',
+  contato_extra: perfil.contato_extra || '',
+  bio: perfil.bio || '',
+  cep: perfil.cep || '',
+  endereco: perfil.endereco || '',
+  bairro: perfil.bairro || '',
+  cidade: perfil.cidade || '',
+  estado: perfil.estado || '',
+  cor_perfil: perfil.cor_perfil || '#ec5a1c'
+}) %>;
 
 function tryOpenCropModal(dataUrl, options, fallbackFile) {
   function doOpen() {
@@ -448,37 +514,6 @@ document.getElementById('btnCancelarCapa').addEventListener('click', function() 
   window.location.reload();
 });
 
-document.getElementById('foto_capa').addEventListener('change', function() {
-  var input = this;
-  if (!input.files || !input.files[0]) return;
-  var file = input.files[0];
-  if (!file.type.match(/^image\/(jpeg|png|gif|webp)$/)) { alert('Formato não suportado.'); input.value = ''; return; }
-  if (file.size > 5 * 1024 * 1024) { alert('Imagem muito grande (máx. 5MB).'); input.value = ''; return; }
-  var reader = new FileReader();
-  reader.onload = function(ev) {
-    var dataUrl = ev.target.result;
-    tryOpenCropModal(dataUrl, {
-      src: dataUrl,
-      aspectRatio: 3 / 1,
-      maxWidth: 1200,
-      maxHeight: 400,
-      onConfirm: function(blob) {
-        croppedCapaFile = new File([blob], 'capa.jpg', { type: 'image/jpeg' });
-        input.value = '';
-        var url = URL.createObjectURL(blob);
-        var preview = document.getElementById('previewCapa');
-        preview.style.backgroundImage = 'url(' + url + ')';
-        preview.style.backgroundSize = 'cover';
-        preview.style.backgroundPosition = 'center';
-        var span = preview.querySelector('span');
-        if (span) span.textContent = 'Clique para trocar';
-        document.getElementById('capaAcoes').classList.remove('hidden');
-      }
-    }, file);
-  };
-  reader.readAsDataURL(file);
-});
-
 function toggleSecao(secao) {
   var view = document.querySelector('.secao-' + secao + '-view');
   var edit = document.querySelector('.secao-' + secao + '-edit');
@@ -532,12 +567,13 @@ document.getElementById('btnSalvarDados').addEventListener('click', function() {
     });
 });
 document.getElementById('btnCancelarDados').addEventListener('click', function() {
-  document.getElementById('nome').value = '<%= perfil.nome %>';
-  document.getElementById('telefone').value = '<%= perfil.telefone || "" %>';
-  document.getElementById('data_nascimento').value = '<%= perfil.data_nascimento ? new Date(perfil.data_nascimento).toISOString().split("T")[0] : "" %>';
-  document.getElementById('contato_extra').value = '<%= perfil.contato_extra || "" %>';
-  document.getElementById('bio').value = '<%= perfil.bio || "" %>';
-  if (document.getElementById('bioCount')) document.getElementById('bioCount').textContent = '<%= (perfil.bio || "").length %>';
+  var p = perfilInicial;
+  document.getElementById('nome').value = p.nome;
+  document.getElementById('telefone').value = p.telefone;
+  document.getElementById('data_nascimento').value = p.data_nascimento;
+  document.getElementById('contato_extra').value = p.contato_extra;
+  document.getElementById('bio').value = p.bio;
+  if (document.getElementById('bioCount')) document.getElementById('bioCount').textContent = p.bio.length;
   toggleSecao('dados');
 });
 
@@ -572,11 +608,12 @@ document.getElementById('btnSalvarEndereco').addEventListener('click', function(
     });
 });
 document.getElementById('btnCancelarEndereco').addEventListener('click', function() {
-  document.getElementById('cep').value = '<%= perfil.cep || "" %>';
-  document.getElementById('endereco').value = '<%= perfil.endereco || "" %>';
-  document.getElementById('bairro').value = '<%= perfil.bairro || "" %>';
-  document.getElementById('cidade').value = '<%= perfil.cidade || "" %>';
-  document.getElementById('estado').value = '<%= perfil.estado || "" %>';
+  var p = perfilInicial;
+  document.getElementById('cep').value = p.cep;
+  document.getElementById('endereco').value = p.endereco;
+  document.getElementById('bairro').value = p.bairro;
+  document.getElementById('cidade').value = p.cidade;
+  document.getElementById('estado').value = p.estado;
   toggleSecao('endereco');
 });
 
@@ -619,8 +656,8 @@ document.getElementById('btnSalvarCor').addEventListener('click', function() {
     });
 });
 document.getElementById('btnCancelarCor').addEventListener('click', function() {
-  document.getElementById('cor_perfil').value = '<%= perfil.cor_perfil || "#ec5a1c" %>';
-  var cor = document.getElementById('cor_perfil').value;
+  var cor = perfilInicial.cor_perfil;
+  document.getElementById('cor_perfil').value = cor;
   document.querySelectorAll('#colorPicker .cor-picker-btn').forEach(function(b) {
     var c = b.getAttribute('data-cor');
     b.classList.toggle('border-gray-900', c === cor);

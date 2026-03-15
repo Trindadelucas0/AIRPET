@@ -20,7 +20,17 @@ const upload = multer({
 });
 
 router.get('/', explorarController.feed);
-router.post('/post', upload.single('foto'), explorarController.criarPost);
+router.post('/post', function (req, res, next) {
+  upload.single('foto')(req, res, function (err) {
+    if (err) {
+      const msg = err.code === 'LIMIT_FILE_SIZE'
+        ? 'Imagem muito grande (máx. 10 MB).'
+        : 'Envie uma imagem válida (JPEG, PNG, GIF ou WebP).';
+      return res.status(400).json({ sucesso: false, mensagem: msg });
+    }
+    next();
+  });
+}, explorarController.criarPost);
 router.post('/post/:id/repost', explorarController.repostar);
 
 router.post('/post/:id/curtir', explorarController.curtir);
