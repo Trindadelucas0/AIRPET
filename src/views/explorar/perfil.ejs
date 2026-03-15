@@ -27,7 +27,7 @@
 
   .follow-btn { transition: all .3s cubic-bezier(.4,0,.2,1); }
 
-  .tab-active { color: #111827; border-bottom-color: #ec5a1c; }
+  .tab-active { color: #111827; }
   .tab-inactive { color: #9ca3af; border-bottom-color: transparent; }
   .tab-inactive:hover { color: #6b7280; background: rgba(0,0,0,.02); }
 
@@ -100,10 +100,10 @@
         <div class="flex-shrink-0">
           <% if (perfil.foto_perfil) { %>
             <img src="<%= perfil.foto_perfil %>" alt="<%= perfil.nome %>"
-                 class="w-24 h-24 sm:w-28 sm:h-28 rounded-full object-cover ring-4 ring-white shadow-xl">
+                 class="w-24 h-24 sm:w-28 sm:h-28 rounded-full object-cover shadow-xl" style="box-shadow: 0 0 0 4px <%= corPerfil %>">
           <% } else { %>
-            <span class="w-24 h-24 sm:w-28 sm:h-28 rounded-full flex items-center justify-center text-3xl sm:text-4xl font-black text-white shadow-xl ring-4 ring-white"
-                  style="background: <%= corPerfil %>">
+            <span class="w-24 h-24 sm:w-28 sm:h-28 rounded-full flex items-center justify-center text-3xl sm:text-4xl font-black text-white bg-gray-400"
+                  style="box-shadow: 0 0 0 4px <%= corPerfil %>">
               <%= perfil.nome ? perfil.nome.charAt(0).toUpperCase() : 'U' %>
             </span>
           <% } %>
@@ -259,6 +259,7 @@
     <!-- ═══ Tabs (ocultos quando perfil só pets) ═══ -->
     <% if (!soPets) { %>
     <nav class="sticky top-14 z-40 bg-white/80 backdrop-blur-xl border-b border-gray-100 mt-4 profile-reveal" style="animation-delay: .15s">
+      <style>.tab-active { border-bottom-color: <%= corPerfil %>; }</style>
       <div class="flex">
         <a href="/explorar/perfil/<%= perfil.id %>?tab=posts"
            class="flex-1 py-3.5 text-center text-sm font-bold border-b-2 transition-all duration-200
@@ -355,10 +356,10 @@
           <div class="flex items-center gap-3 px-4 pt-3 pb-2">
             <a href="/explorar/perfil/<%= post.usuario_id %>" class="flex-shrink-0">
               <% if (post.foto_perfil) { %>
-                <img src="<%= post.foto_perfil %>" alt="" class="w-10 h-10 rounded-full object-cover ring-2 ring-gray-100 hover:ring-primary-200 transition-all">
+                <img src="<%= post.foto_perfil %>" alt="" class="w-10 h-10 rounded-full object-cover transition-all" style="box-shadow: 0 0 0 2px <%= post.cor_perfil || '#ec5a1c' %>">
               <% } else { %>
-                <span class="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white shadow-inner hover:scale-105 transition-transform"
-                      style="background: <%= post.cor_perfil || '#ec5a1c' %>">
+                <span class="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white bg-gray-400 hover:scale-105 transition-transform"
+                      style="box-shadow: 0 0 0 2px <%= post.cor_perfil || '#ec5a1c' %>">
                   <%= post.autor_nome ? post.autor_nome.charAt(0).toUpperCase() : 'U' %>
                 </span>
               <% } %>
@@ -431,10 +432,10 @@
               <div class="p-3">
                 <div class="flex items-center gap-2 mb-2">
                   <% if (post.orig_foto_perfil) { %>
-                    <img src="<%= post.orig_foto_perfil %>" alt="" class="w-5 h-5 rounded-full object-cover">
+                    <img src="<%= post.orig_foto_perfil %>" alt="" class="w-5 h-5 rounded-full object-cover" style="box-shadow: 0 0 0 1px <%= post.orig_cor_perfil || '#ec5a1c' %>">
                   <% } else { %>
-                    <span class="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold text-white"
-                          style="background: <%= post.orig_cor_perfil || '#ec5a1c' %>">
+                    <span class="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold text-white bg-gray-400"
+                          style="box-shadow: 0 0 0 1px <%= post.orig_cor_perfil || '#ec5a1c' %>">
                       <%= post.orig_autor_nome ? post.orig_autor_nome.charAt(0).toUpperCase() : 'U' %>
                     </span>
                   <% } %>
@@ -711,9 +712,10 @@
           return;
         }
         listaSegBody.innerHTML = lista.map(function (u) {
+          var cor = u.cor_perfil || '#ec5a1c';
           var avatar = u.foto_perfil
-            ? '<img src="' + escapeHtml(u.foto_perfil) + '" alt="" class="w-10 h-10 rounded-full object-cover">'
-            : '<span class="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white" style="background:' + escapeHtml(u.cor_perfil || '#ec5a1c') + '">' + escapeHtml((u.nome || 'U').charAt(0).toUpperCase()) + '</span>';
+            ? '<img src="' + escapeHtml(u.foto_perfil) + '" alt="" class="w-10 h-10 rounded-full object-cover" style="box-shadow:0 0 0 2px ' + escapeHtml(cor) + '">'
+            : '<span class="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white bg-gray-400" style="box-shadow:0 0 0 2px ' + escapeHtml(cor) + '">' + escapeHtml((u.nome || 'U').charAt(0).toUpperCase()) + '</span>';
           return '<a href="/explorar/perfil/' + u.id + '" class="flex items-center gap-3 p-2 rounded-xl hover:bg-gray-50 transition-colors">' + avatar + '<span class="font-semibold text-gray-900">' + escapeHtml(u.nome) + '</span></a>';
         }).join('');
       })
@@ -934,10 +936,11 @@
         data.comentarios.forEach(function (c) {
           var isMe = myUserId && c.usuario_id === myUserId;
           html += '<div class="flex gap-2.5 group" data-comment-id="' + c.id + '">';
+          var cCor = c.cor_perfil || '#ec5a1c';
           if (c.foto_perfil) {
-            html += '<a href="/explorar/perfil/' + c.usuario_id + '"><img src="' + c.foto_perfil + '" class="w-8 h-8 rounded-full object-cover flex-shrink-0"></a>';
+            html += '<a href="/explorar/perfil/' + c.usuario_id + '"><img src="' + c.foto_perfil + '" class="w-8 h-8 rounded-full object-cover flex-shrink-0" style="box-shadow:0 0 0 2px ' + cCor + '"></a>';
           } else {
-            html += '<a href="/explorar/perfil/' + c.usuario_id + '"><span class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0" style="background:' + (c.cor_perfil || '#ec5a1c') + '">' + (c.nome ? c.nome.charAt(0).toUpperCase() : 'U') + '</span></a>';
+            html += '<a href="/explorar/perfil/' + c.usuario_id + '"><span class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0 bg-gray-400" style="box-shadow:0 0 0 2px ' + cCor + '">' + (c.nome ? c.nome.charAt(0).toUpperCase() : 'U') + '</span></a>';
           }
           html += '<div class="flex-1 min-w-0">';
           html += '<p class="text-sm"><a href="/explorar/perfil/' + c.usuario_id + '" class="font-bold text-gray-900 hover:text-primary-600 transition-colors mr-1">' + escapeHtml(c.nome) + '</a><span class="text-gray-700">' + renderMentions(c.texto) + '</span></p>';

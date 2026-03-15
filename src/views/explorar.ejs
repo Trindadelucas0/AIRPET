@@ -75,12 +75,13 @@
 
           <%/* ── Header: avatar = foto do tutor, clique = perfil do tutor ── */ %>
           <div class="flex items-center gap-3 px-4 pt-3 pb-2">
-            <a href="/explorar/perfil/<%= post.usuario_id %>" class="shrink-0 rounded-full ring-2 ring-gray-100 hover:ring-primary-200 transition-all" title="Ver perfil de <%= post.autor_nome %>">
+            <a href="/explorar/perfil/<%= post.usuario_id %>" class="shrink-0 rounded-full transition-all" title="Ver perfil de <%= post.autor_nome %>">
+              <% var postCor = post.cor_perfil || '#ec5a1c'; %>
               <% if (post.foto_perfil) { %>
-                <img src="<%= post.foto_perfil %>" alt="" class="w-10 h-10 rounded-full object-cover post-author-avatar">
+                <img src="<%= post.foto_perfil %>" alt="" class="w-10 h-10 rounded-full object-cover post-author-avatar" style="box-shadow: 0 0 0 2px <%= postCor %>">
               <% } else { %>
-                <span class="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white post-author-avatar"
-                      style="background:<%= post.cor_perfil || '#ec5a1c' %>">
+                <span class="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white post-author-avatar bg-gray-400"
+                      style="box-shadow: 0 0 0 2px <%= postCor %>">
                   <%= post.autor_nome ? post.autor_nome.charAt(0).toUpperCase() : 'U' %>
                 </span>
               <% } %>
@@ -140,11 +141,12 @@
           <% if (post.tipo === 'repost' && post.orig_id) { %>
             <div class="mx-4 my-3 border border-gray-200 rounded-2xl overflow-hidden hover:bg-gray-50/50 transition-colors">
               <div class="flex items-center gap-2 px-3 pt-3 pb-1">
+                <% var origCor = post.orig_cor_perfil || '#ec5a1c'; %>
                 <% if (post.orig_foto_perfil) { %>
-                  <img src="<%= post.orig_foto_perfil %>" alt="" class="w-6 h-6 rounded-full object-cover">
+                  <img src="<%= post.orig_foto_perfil %>" alt="" class="w-6 h-6 rounded-full object-cover" style="box-shadow: 0 0 0 1px <%= origCor %>">
                 <% } else { %>
-                  <span class="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white"
-                        style="background:<%= post.orig_cor_perfil || '#ec5a1c' %>">
+                  <span class="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white bg-gray-400"
+                        style="box-shadow: 0 0 0 1px <%= origCor %>">
                     <%= post.orig_autor_nome ? post.orig_autor_nome.charAt(0).toUpperCase() : 'U' %>
                   </span>
                 <% } %>
@@ -196,11 +198,12 @@
           <%/* ── Inline comment input ── */ %>
           <% if (isLogado) { %>
             <div class="flex items-center gap-2 px-4 pb-3">
+              <% var expNavCor = usuario.cor_perfil || '#ec5a1c'; %>
               <% if (usuario.foto_perfil) { %>
-                <img src="<%= usuario.foto_perfil %>" alt="" class="w-7 h-7 rounded-full object-cover shrink-0">
+                <img src="<%= usuario.foto_perfil %>" alt="" class="w-7 h-7 rounded-full object-cover shrink-0" style="box-shadow: 0 0 0 2px <%= expNavCor %>">
               <% } else { %>
-                <span class="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0"
-                      style="background:<%= usuario.cor_perfil || '#ec5a1c' %>">
+                <span class="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0 bg-gray-400"
+                      style="box-shadow: 0 0 0 2px <%= expNavCor %>">
                   <%= usuario.nome ? usuario.nome.charAt(0).toUpperCase() : 'U' %>
                 </span>
               <% } %>
@@ -260,11 +263,12 @@
         <% recomendacoes.forEach(function(rec) { %>
           <div class="flex items-center gap-3 px-4 py-3 hover:bg-gray-50/50 transition-colors">
             <a href="/explorar/perfil/<%= rec.id %>" class="shrink-0">
+              <% var recCor = rec.cor_perfil || '#ec5a1c'; %>
               <% if (rec.foto_perfil) { %>
-                <img src="<%= rec.foto_perfil %>" alt="" class="w-10 h-10 rounded-full object-cover">
+                <img src="<%= rec.foto_perfil %>" alt="" class="w-10 h-10 rounded-full object-cover" style="box-shadow: 0 0 0 2px <%= recCor %>">
               <% } else { %>
-                <span class="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white"
-                      style="background:<%= rec.cor_perfil || '#ec5a1c' %>">
+                <span class="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white bg-gray-400"
+                      style="box-shadow: 0 0 0 2px <%= recCor %>">
                   <%= rec.nome ? rec.nome.charAt(0).toUpperCase() : 'U' %>
                 </span>
               <% } %>
@@ -485,11 +489,12 @@
       <div id="mentionDropdown" class="autocomplete-dropdown hidden"></div>
       <div class="flex items-center gap-2 px-5 py-3">
         <% if (isLogado) { %>
+          <% var modalCor = usuario.cor_perfil || '#ec5a1c'; %>
           <% if (usuario.foto_perfil) { %>
-            <img src="<%= usuario.foto_perfil %>" alt="" class="w-8 h-8 rounded-full object-cover shrink-0">
+            <img src="<%= usuario.foto_perfil %>" alt="" class="w-8 h-8 rounded-full object-cover shrink-0" style="box-shadow: 0 0 0 2px <%= modalCor %>">
           <% } else { %>
-            <span class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0"
-                  style="background:<%= usuario.cor_perfil || '#ec5a1c' %>">
+            <span class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0 bg-gray-400"
+                  style="box-shadow: 0 0 0 2px <%= modalCor %>">
               <%= usuario.nome ? usuario.nome.charAt(0).toUpperCase() : 'U' %>
             </span>
           <% } %>
@@ -749,11 +754,12 @@
   }
 
   function renderComentario(c) {
+    var cCor = c.cor_perfil || '#ec5a1c';
     var avatar;
     if (c.foto_perfil) {
-      avatar = '<img src="' + escapeHtml(c.foto_perfil) + '" class="w-8 h-8 rounded-full object-cover shrink-0">';
+      avatar = '<img src="' + escapeHtml(c.foto_perfil) + '" class="w-8 h-8 rounded-full object-cover shrink-0" style="box-shadow:0 0 0 2px ' + escapeHtml(cCor) + '">';
     } else {
-      avatar = '<span class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0" style="background:' + escapeHtml(c.cor_perfil || '#ec5a1c') + '">' + escapeHtml((c.nome || c.autor_nome || 'U').charAt(0).toUpperCase()) + '</span>';
+      avatar = '<span class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0 bg-gray-400" style="box-shadow:0 0 0 2px ' + escapeHtml(cCor) + '">' + escapeHtml((c.nome || c.autor_nome || 'U').charAt(0).toUpperCase()) + '</span>';
     }
     var podeApagar = (c.usuario_id === meuId);
     return '<div class="flex gap-3 group" data-comment-id="' + c.id + '">' +
@@ -858,9 +864,10 @@
         if (!users || !users.length) { mentionDropdown.classList.add('hidden'); return; }
         var html = '';
         users.forEach(function (u) {
+          var uCor = u.cor_perfil || '#ec5a1c';
           var av = u.foto_perfil
-            ? '<img src="' + escapeHtml(u.foto_perfil) + '" class="w-7 h-7 rounded-full object-cover">'
-            : '<span class="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold text-white" style="background:' + escapeHtml(u.cor_perfil || '#ec5a1c') + '">' + escapeHtml((u.nome || 'U').charAt(0).toUpperCase()) + '</span>';
+            ? '<img src="' + escapeHtml(u.foto_perfil) + '" class="w-7 h-7 rounded-full object-cover" style="box-shadow:0 0 0 2px ' + escapeHtml(uCor) + '">'
+            : '<span class="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold text-white bg-gray-400" style="box-shadow:0 0 0 2px ' + escapeHtml(uCor) + '">' + escapeHtml((u.nome || 'U').charAt(0).toUpperCase()) + '</span>';
           html += '<div class="autocomplete-item" data-nome="' + escapeHtml(u.nome) + '">' + av + '<span class="font-medium text-gray-700">' + escapeHtml(u.nome) + '</span></div>';
         });
         mentionDropdown.innerHTML = html;
@@ -1238,17 +1245,18 @@
     var txt = p.texto || p.legenda || '';
     var isRepost = p.tipo === 'repost';
     var isMine = p.usuario_id === meuId;
+    var pCor = p.cor_perfil || '#ec5a1c';
     var avatarHtml;
     if (p.foto_perfil) {
-      avatarHtml = '<img src="' + escapeHtml(p.foto_perfil) + '" alt="" class="w-10 h-10 rounded-full object-cover ring-2 ring-gray-100 post-author-avatar">';
+      avatarHtml = '<img src="' + escapeHtml(p.foto_perfil) + '" alt="" class="w-10 h-10 rounded-full object-cover post-author-avatar" style="box-shadow:0 0 0 2px ' + escapeHtml(pCor) + '">';
     } else {
-      avatarHtml = '<span class="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white post-author-avatar" style="background:' + escapeHtml(p.cor_perfil || '#ec5a1c') + '">' + escapeHtml((p.autor_nome || 'U').charAt(0).toUpperCase()) + '</span>';
+      avatarHtml = '<span class="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white post-author-avatar bg-gray-400" style="box-shadow:0 0 0 2px ' + escapeHtml(pCor) + '">' + escapeHtml((p.autor_nome || 'U').charAt(0).toUpperCase()) + '</span>';
     }
     var myAvatarHtml;
     if (meuFotoPerfil) {
-      myAvatarHtml = '<img src="' + escapeHtml(meuFotoPerfil) + '" alt="" class="w-7 h-7 rounded-full object-cover shrink-0">';
+      myAvatarHtml = '<img src="' + escapeHtml(meuFotoPerfil) + '" alt="" class="w-7 h-7 rounded-full object-cover shrink-0" style="box-shadow:0 0 0 2px ' + escapeHtml(meuCorPerfil) + '">';
     } else {
-      myAvatarHtml = '<span class="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0" style="background:' + escapeHtml(meuCorPerfil) + '">' + escapeHtml(meuNome.charAt(0).toUpperCase()) + '</span>';
+      myAvatarHtml = '<span class="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0 bg-gray-400" style="box-shadow:0 0 0 2px ' + escapeHtml(meuCorPerfil) + '">' + escapeHtml(meuNome.charAt(0).toUpperCase()) + '</span>';
     }
 
     var h = '<article class="bg-white rounded-2xl shadow-sm border border-gray-100/80 overflow-hidden post-enter" data-post-id="' + p.id + '" data-author-id="' + p.usuario_id + '" id="post-' + p.id + '">';
@@ -1258,7 +1266,7 @@
 
     h += '<div class="flex items-center gap-3 px-4 pt-3 pb-2">';
     var tutorHref = '/explorar/perfil/' + p.usuario_id;
-    h += '<a href="' + tutorHref + '" class="shrink-0 rounded-full ring-2 ring-gray-100 hover:ring-primary-200 transition-all">' + avatarHtml + '</a>';
+    h += '<a href="' + tutorHref + '" class="shrink-0 rounded-full transition-all">' + avatarHtml + '</a>';
     h += '<div class="flex-1 min-w-0"><div class="flex items-center gap-1.5 flex-wrap"><a href="' + tutorHref + '" class="font-semibold text-sm text-gray-900 hover:underline truncate post-author-name">' + escapeHtml(p.autor_nome) + '</a>';
     if (p.pet_nome && p.pet_id) h += '<a href="/explorar/pet/' + p.pet_id + '" class="text-xs text-gray-400 hover:text-primary-500 truncate"><i class="fa-solid fa-paw text-[9px]"></i> ' + escapeHtml(p.pet_nome) + '</a>';
     h += '</div><span class="text-xs text-gray-400 tempo-relativo" data-time="' + p.criado_em + '">' + tempoRelativo(p.criado_em) + '</span></div>';
@@ -1276,9 +1284,10 @@
     if (p.foto) h += '<div class="mt-1"><img src="' + escapeHtml(p.foto) + '" alt="" class="w-full max-h-[500px] object-cover post-photo" loading="lazy"></div>';
 
     if (isRepost && p.orig_id) {
+      var oCor = p.orig_cor_perfil || '#ec5a1c';
       var origAv;
-      if (p.orig_foto_perfil) origAv = '<img src="' + escapeHtml(p.orig_foto_perfil) + '" alt="" class="w-6 h-6 rounded-full object-cover">';
-      else origAv = '<span class="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white" style="background:' + escapeHtml(p.orig_cor_perfil || '#ec5a1c') + '">' + escapeHtml((p.orig_autor_nome || 'U').charAt(0).toUpperCase()) + '</span>';
+      if (p.orig_foto_perfil) origAv = '<img src="' + escapeHtml(p.orig_foto_perfil) + '" alt="" class="w-6 h-6 rounded-full object-cover" style="box-shadow:0 0 0 1px ' + escapeHtml(oCor) + '">';
+      else origAv = '<span class="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white bg-gray-400" style="box-shadow:0 0 0 1px ' + escapeHtml(oCor) + '">' + escapeHtml((p.orig_autor_nome || 'U').charAt(0).toUpperCase()) + '</span>';
       var origTxt = p.orig_texto || p.orig_legenda || '';
       h += '<div class="mx-4 my-3 border border-gray-200 rounded-2xl overflow-hidden hover:bg-gray-50/50 transition-colors">';
       h += '<div class="flex items-center gap-2 px-3 pt-3 pb-1">' + origAv + '<a href="/explorar/perfil/' + p.orig_usuario_id + '" class="text-xs font-semibold text-gray-700 hover:underline">' + escapeHtml(p.orig_autor_nome) + '</a><span class="text-[11px] text-gray-400 tempo-relativo" data-time="' + p.orig_criado_em + '">' + tempoRelativo(p.orig_criado_em) + '</span></div>';

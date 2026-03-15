@@ -37,11 +37,12 @@
             <div class="search-card flex items-center gap-3 bg-white rounded-2xl border border-gray-100 shadow-sm p-4 hover:shadow-md transition-shadow"
                  style="animation-delay:<%= i * 50 %>ms">
               <a href="/explorar/perfil/<%= u.id %>" class="shrink-0">
+                <% var uCor = u.cor_perfil || '#ec5a1c'; %>
                 <% if (u.foto_perfil) { %>
-                  <img src="<%= u.foto_perfil %>" alt="" class="w-12 h-12 rounded-full object-cover ring-2 ring-gray-100">
+                  <img src="<%= u.foto_perfil %>" alt="" class="w-12 h-12 rounded-full object-cover" style="box-shadow: 0 0 0 2px <%= uCor %>">
                 <% } else { %>
-                  <span class="w-12 h-12 rounded-full flex items-center justify-center text-base font-bold text-white"
-                        style="background:<%= u.cor_perfil || '#ec5a1c' %>">
+                  <span class="w-12 h-12 rounded-full flex items-center justify-center text-base font-bold text-white bg-gray-400"
+                        style="box-shadow: 0 0 0 2px <%= uCor %>">
                     <%= u.nome ? u.nome.charAt(0).toUpperCase() : 'U' %>
                   </span>
                 <% } %>
@@ -129,11 +130,12 @@
             <div class="search-card flex items-center gap-3 bg-white rounded-2xl border border-gray-100 shadow-sm p-4 hover:shadow-md transition-shadow"
                  style="animation-delay:<%= i * 60 %>ms">
               <a href="/explorar/perfil/<%= rec.id %>" class="shrink-0">
+                <% var recCor = rec.cor_perfil || '#ec5a1c'; %>
                 <% if (rec.foto_perfil) { %>
-                  <img src="<%= rec.foto_perfil %>" alt="" class="w-12 h-12 rounded-full object-cover ring-2 ring-gray-100">
+                  <img src="<%= rec.foto_perfil %>" alt="" class="w-12 h-12 rounded-full object-cover" style="box-shadow: 0 0 0 2px <%= recCor %>">
                 <% } else { %>
-                  <span class="w-12 h-12 rounded-full flex items-center justify-center text-base font-bold text-white"
-                        style="background:<%= rec.cor_perfil || '#ec5a1c' %>">
+                  <span class="w-12 h-12 rounded-full flex items-center justify-center text-base font-bold text-white bg-gray-400"
+                        style="box-shadow: 0 0 0 2px <%= recCor %>">
                     <%= rec.nome ? rec.nome.charAt(0).toUpperCase() : 'U' %>
                   </span>
                 <% } %>

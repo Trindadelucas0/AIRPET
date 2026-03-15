@@ -77,7 +77,7 @@ function estaAutenticado(req, res, next) {
     return next();
   }
 
-  req.session.flash = { tipo: 'erro', mensagem: 'Voce precisa estar logado para acessar esta pagina.' };
+  if (req.session) req.session.flash = { tipo: 'erro', mensagem: 'Voce precisa estar logado para acessar esta pagina.' };
   return res.redirect('/auth/login');
 }
 

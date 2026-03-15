@@ -44,11 +44,12 @@
           <div class="relative ml-1" id="profileDropdown">
             <button type="button" id="profileBtn"
                     class="flex items-center gap-2 p-1.5 rounded-xl hover:bg-gray-100 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500/20">
+              <% var navCor = usuario.cor_perfil || '#ec5a1c'; %>
               <% if (usuario.foto_perfil) { %>
-                <img src="<%= usuario.foto_perfil %>" alt="" class="w-8 h-8 rounded-full object-cover ring-2 ring-primary-100">
+                <img src="<%= usuario.foto_perfil %>" alt="" class="w-8 h-8 rounded-full object-cover" style="box-shadow: 0 0 0 2px <%= navCor %>">
               <% } else { %>
-                <span class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-inner"
-                      style="background: <%= usuario.cor_perfil || '#ec5a1c' %>">
+                <span class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white bg-gray-400"
+                      style="box-shadow: 0 0 0 2px <%= navCor %>">
                   <%= usuario.nome ? usuario.nome.charAt(0).toUpperCase() : 'U' %>
                 </span>
               <% } %>
@@ -134,10 +135,10 @@
     </a>
     <a href="/explorar/perfil/<%= usuario.id %>" class="bottom-tab flex flex-col items-center justify-center gap-0.5 w-12 py-1 rounded-2xl transition-all duration-200 text-gray-400 hover:text-primary-500">
       <% if (usuario.foto_perfil) { %>
-        <img src="<%= usuario.foto_perfil %>" alt="" class="w-6 h-6 rounded-full object-cover ring-2 ring-transparent">
+        <img src="<%= usuario.foto_perfil %>" alt="" class="w-6 h-6 rounded-full object-cover" style="box-shadow: 0 0 0 2px <%= navCor || usuario.cor_perfil || '#ec5a1c' %>">
       <% } else { %>
-        <span class="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white"
-              style="background: <%= usuario.cor_perfil || '#ec5a1c' %>"><%= usuario.nome ? usuario.nome.charAt(0).toUpperCase() : 'U' %></span>
+        <span class="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white bg-gray-400"
+              style="box-shadow: 0 0 0 2px <%= navCor || usuario.cor_perfil || '#ec5a1c' %>"><%= usuario.nome ? usuario.nome.charAt(0).toUpperCase() : 'U' %></span>
       <% } %>
       <span class="text-[10px] font-medium">Perfil</span>
     </a>

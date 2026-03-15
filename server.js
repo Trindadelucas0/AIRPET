@@ -60,13 +60,16 @@ app.set('views', path.join(__dirname, 'src', 'views'));
 
 // Variaveis globais disponiveis em todas as views EJS (incl. tema PWA / cores)
 app.use(async (req, res, next) => {
-  res.locals.usuario = req.session.usuario || null;
-  res.locals.flash = req.session.flash || null;
-  res.locals.verificarPermissoes = req.session.verificarPermissoes || false;
+  const session = req.session || {};
+  res.locals.usuario = session.usuario || null;
+  res.locals.flash = session.flash || null;
+  res.locals.verificarPermissoes = session.verificarPermissoes || false;
   res.locals.vapidPublicKey = process.env.VAPID_PUBLIC_KEY || '';
   res.locals.BASE_URL = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
-  req.session.flash = null;
-  req.session.verificarPermissoes = false;
+  if (req.session) {
+    req.session.flash = null;
+    req.session.verificarPermissoes = false;
+  }
 
   try {
     const configs = await ConfigSistema.listarTodas();
@@ -86,10 +89,10 @@ app.use(async (req, res, next) => {
     res.locals.appName = 'AIRPET';
   }
 
-  if (req.session.usuario && req.session.usuario.id) {
+  if (session.usuario && session.usuario.id) {
     try {
       const Notificacao = require('./src/models/Notificacao');
-      res.locals.notificacoesNaoLidas = await Notificacao.contarNaoLidas(req.session.usuario.id);
+      res.locals.notificacoesNaoLidas = await Notificacao.contarNaoLidas(session.usuario.id);
     } catch (_) {
       res.locals.notificacoesNaoLidas = 0;
     }
@@ -220,8 +223,19 @@ schedulerService.setNotificacaoService(notificacaoService);
 
 const PORT = process.env.PORT || 3000;
 
+const ENV_REQUIRED = ['DB_HOST', 'DB_USER', 'DB_PASSWORD', 'DB_DATABASE', 'SESSION_SECRET', 'JWT_SECRET'];
+function validarEnv() {
+  const faltando = ENV_REQUIRED.filter((k) => !process.env[k] || String(process.env[k]).trim() === '');
+  if (faltando.length) {
+    console.error('[AIRPET] Variaveis de ambiente obrigatorias nao definidas:', faltando.join(', '));
+    console.error('Defina-as no arquivo .env (veja .env.example).');
+    process.exit(1);
+  }
+}
+
 async function iniciar() {
   try {
+    validarEnv();
     logger.secao('Database');
     await pool.query('SELECT NOW()');
     logger.info('DB', 'Conectado ao PostgreSQL com sucesso');

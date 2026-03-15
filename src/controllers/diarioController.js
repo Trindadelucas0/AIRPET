@@ -88,9 +88,10 @@ const diarioController = {
       }
 
       const entrada = await DiarioPet.deletar(id);
+      const petId = (entrada && entrada.pet_id) ?? check.rows[0].pet_id;
 
       req.session.flash = { tipo: 'sucesso', mensagem: 'Entrada removida do diário.' };
-      res.redirect(`/diario/${entrada.pet_id}`);
+      res.redirect(`/diario/${petId}`);
     } catch (err) {
       logger.error('DIARIO', 'Erro ao deletar entrada', err);
       req.session.flash = { tipo: 'erro', mensagem: 'Erro ao remover entrada.' };

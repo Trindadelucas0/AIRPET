@@ -645,8 +645,10 @@ document.getElementById('btnSalvarCor').addEventListener('click', function() {
       return r.json();
     })
     .then(function() {
-      document.getElementById('viewCorSwatch').style.background = cor;
+      document.getElementById('viewCorSwatch').style.boxShadow = '0 0 0 3px ' + cor;
       document.getElementById('viewCorHex').textContent = cor;
+      var previewAvatar = document.getElementById('previewFotoPerfil');
+      if (previewAvatar && !previewAvatar.src) previewAvatar.style.boxShadow = '0 0 0 2px ' + cor;
       toggleSecao('cor');
       btn.disabled = false;
       btn.innerHTML = '<i class="fa-solid fa-check mr-1"></i>Salvar';
