@@ -381,7 +381,7 @@
         <div class="flex flex-col gap-2 px-4 py-3 rounded-xl bg-amber-50 text-amber-800 text-sm">
           <div class="flex items-center gap-2">
             <i class="fa-solid fa-paw"></i>
-            <span>Cadastre um pet para publicar.</span>
+            <span>Opcional: cadastre um pet para vincular às publicações.</span>
           </div>
           <a href="/pets/cadastro" class="inline-flex items-center gap-1.5 text-sm font-semibold text-amber-700 hover:text-amber-900 underline">
             <i class="fa-solid fa-plus text-xs"></i> Cadastrar pet
@@ -390,14 +390,12 @@
       <% } %>
     </div>
 
-    <% if (pets && pets.length > 0) { %>
     <div class="px-5 py-4 border-t border-gray-100">
       <button type="button" id="btnPublicar" disabled
               class="w-full py-3 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-primary-500 to-primary-600 shadow-lg shadow-primary-500/20 hover:shadow-xl hover:shadow-primary-500/30 hover:-translate-y-0.5 transition-all duration-300 disabled:opacity-40 disabled:shadow-none disabled:translate-y-0 disabled:cursor-not-allowed">
         Publicar
       </button>
     </div>
-    <% } %>
   </div>
 </div>
 
@@ -652,7 +650,8 @@
   function validarFormPost() {
     var petOk = true;
     var ps = document.getElementById('novoPostPet');
-    if (ps) petOk = !!ps.value;
+    if (ps && ps.tagName === 'SELECT') petOk = !!ps.value;
+    if (!btnPublicar) return;
     btnPublicar.disabled = (!selectedFile || !novoPostTexto.value.trim() || totalPostsLocal >= 10 || !petOk);
   }
   uploadArea.addEventListener('click', function () { photoInput.click(); });
@@ -684,6 +683,13 @@
           uploadPlaceholder.classList.add('hidden');
           uploadPreview.classList.remove('hidden');
           validarFormPost();
+        },
+        onCancel: function () {
+          selectedFile = file;
+          previewImg.src = ev.target.result;
+          uploadPlaceholder.classList.add('hidden');
+          uploadPreview.classList.remove('hidden');
+          validarFormPost();
         }
       });
     };
@@ -695,10 +701,11 @@
   if (ps) ps.addEventListener('change', validarFormPost);
 
   btnPublicar.addEventListener('click', function () {
+    if (!selectedFile || !novoPostTexto.value.trim()) return;
     var petSelect = document.getElementById('novoPostPet');
-    if (!selectedFile || !novoPostTexto.value.trim() || !petSelect || !petSelect.value) return;
     this.disabled = true; this.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>Publicando…';
-    var formData = new FormData(); formData.append('foto', selectedFile); formData.append('texto', novoPostTexto.value.trim()); formData.append('pet_id', petSelect.value);
+    var formData = new FormData(); formData.append('foto', selectedFile); formData.append('texto', novoPostTexto.value.trim());
+    if (petSelect && petSelect.value) formData.append('pet_id', petSelect.value);
     fetch('/explorar/post', { method: 'POST', credentials: 'same-origin', body: formData }).then(function (r) { return r.json(); }).then(function (data) {
       btnPublicar.textContent = 'Publicar';
       if (!data.sucesso) { toast(data.mensagem || 'Erro.', 'erro'); validarFormPost(); return; }

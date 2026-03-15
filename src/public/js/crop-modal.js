@@ -25,7 +25,9 @@
     }
   }
 
-  function closeModal() {
+  function closeModal(confirmed) {
+    var opts = currentOptions;
+    if (!confirmed && opts && typeof opts.onCancel === 'function') opts.onCancel();
     destroyCropper();
     if (modal) modal.classList.add('hidden');
     document.body.style.overflow = '';
@@ -36,7 +38,7 @@
 
   function applyCrop() {
     if (!cropperInstance || !currentOptions || !currentOptions.onConfirm) {
-      closeModal();
+      closeModal(true);
       return;
     }
     var opts = currentOptions;
@@ -44,26 +46,26 @@
     var maxH = (opts.maxHeight != null) ? opts.maxHeight : 1200;
     var canvas = cropperInstance.getCroppedCanvas({ maxWidth: maxW, maxHeight: maxH });
     if (!canvas) {
-      closeModal();
+      closeModal(false);
       return;
     }
     canvas.toBlob(
       function (blob) {
         if (blob && opts.onConfirm) opts.onConfirm(blob);
-        closeModal();
+        closeModal(true);
       },
       'image/jpeg',
       0.9
     );
   }
 
-  if (overlay) overlay.addEventListener('click', closeModal);
+  if (overlay) overlay.addEventListener('click', function () { closeModal(false); });
   if (modalBox) modalBox.addEventListener('click', function (e) { e.stopPropagation(); });
-  if (btnClose) btnClose.addEventListener('click', closeModal);
-  if (btnCancel) btnCancel.addEventListener('click', closeModal);
+  if (btnClose) btnClose.addEventListener('click', function () { closeModal(false); });
+  if (btnCancel) btnCancel.addEventListener('click', function () { closeModal(false); });
   if (btnApply) btnApply.addEventListener('click', applyCrop);
   document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape' && modal && !modal.classList.contains('hidden')) closeModal();
+    if (e.key === 'Escape' && modal && !modal.classList.contains('hidden')) closeModal(false);
   });
 
   /**

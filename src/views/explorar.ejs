@@ -1027,6 +1027,13 @@
           uploadPlaceholder.classList.add('hidden');
           uploadPreview.classList.remove('hidden');
           validarFormPost();
+        },
+        onCancel: function () {
+          selectedFile = file;
+          previewImg.src = ev.target.result;
+          uploadPlaceholder.classList.add('hidden');
+          uploadPreview.classList.remove('hidden');
+          validarFormPost();
         }
       });
     };
