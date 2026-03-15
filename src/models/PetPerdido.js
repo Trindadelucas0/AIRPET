@@ -73,6 +73,7 @@ const PetPerdido = {
               p.tipo AS pet_tipo,
               p.raca AS pet_raca,
               p.foto AS pet_foto,
+              u.id AS usuario_id,
               u.nome AS dono_nome,
               u.telefone AS dono_telefone,
               u.email AS dono_email
