@@ -20,6 +20,7 @@ const SHELL_ASSETS = [
   '/',
   '/offline.html',
   '/css/output.css',
+  '/css/theme-override.css',
   '/js/app.js',
   '/js/pwa.js',
   '/js/permissions.js',

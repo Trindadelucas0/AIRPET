@@ -20,6 +20,7 @@ const { runMigrations } = require('./src/config/migrate');
 const { pool } = require('./src/config/database');
 const routes = require('./src/routes');
 const logger = require('./src/utils/logger');
+const ConfigSistema = require('./src/models/ConfigSistema');
 
 const app = express();
 const server = http.createServer(app);
@@ -57,7 +58,7 @@ app.use(express.static(path.join(__dirname, 'src', 'public')));
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'src', 'views'));
 
-// Variaveis globais disponiveis em todas as views EJS
+// Variaveis globais disponiveis em todas as views EJS (incl. tema PWA / cores)
 app.use(async (req, res, next) => {
   res.locals.usuario = req.session.usuario || null;
   res.locals.flash = req.session.flash || null;
@@ -66,6 +67,24 @@ app.use(async (req, res, next) => {
   res.locals.BASE_URL = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
   req.session.flash = null;
   req.session.verificarPermissoes = false;
+
+  try {
+    const configs = await ConfigSistema.listarTodas();
+    const get = (chave, padrao) => (configs.find(c => c.chave === chave)?.valor) || padrao;
+    res.locals.themeColor = get('pwa_theme_color', '#ec5a1c');
+    res.locals.backgroundColor = get('pwa_background_color', '#ffffff');
+    res.locals.pwaIcon192 = get('pwa_icon_192', '/images/icons/icon-192.svg');
+    res.locals.pwaIcon512 = get('pwa_icon_512', '/images/icons/icon-512.svg');
+    res.locals.primaryColor = get('app_primary_color', '#ec5a1c');
+    res.locals.appName = get('app_name', 'AIRPET');
+  } catch (_) {
+    res.locals.themeColor = '#ec5a1c';
+    res.locals.backgroundColor = '#ffffff';
+    res.locals.pwaIcon192 = '/images/icons/icon-192.svg';
+    res.locals.pwaIcon512 = '/images/icons/icon-512.svg';
+    res.locals.primaryColor = '#ec5a1c';
+    res.locals.appName = 'AIRPET';
+  }
 
   if (req.session.usuario && req.session.usuario.id) {
     try {
@@ -79,6 +98,53 @@ app.use(async (req, res, next) => {
   }
 
   next();
+});
+
+// ========================
+// MANIFEST PWA (dinamico a partir de config_sistema)
+// ========================
+
+app.get('/manifest.json', async (req, res) => {
+  try {
+    const configs = await ConfigSistema.listarTodas();
+    const get = (chave, padrao) => (configs.find(c => c.chave === chave)?.valor) || padrao;
+    const themeColor = get('pwa_theme_color', '#ec5a1c');
+    const backgroundColor = get('pwa_background_color', '#ffffff');
+    const icon192 = get('pwa_icon_192', '/images/icons/icon-192.svg');
+    const icon512 = get('pwa_icon_512', '/images/icons/icon-512.svg');
+    const shortName = get('app_name', 'AIRPET');
+    const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
+    const manifest = {
+      name: shortName + ' — Proteja seu Pet',
+      short_name: shortName,
+      description: 'Sistema de identificacao e recuperacao de pets via NFC. Proteja seu animal de estimacao com tags inteligentes.',
+      start_url: baseUrl + '/',
+      display: 'standalone',
+      background_color: backgroundColor,
+      theme_color: themeColor,
+      orientation: 'portrait-primary',
+      scope: '/',
+      id: '/',
+      lang: 'pt-BR',
+      dir: 'ltr',
+      categories: ['lifestyle', 'utilities'],
+      icons: [
+        { src: icon192, sizes: '192x192', type: icon192.endsWith('.svg') ? 'image/svg+xml' : 'image/png', purpose: 'any' },
+        { src: icon512, sizes: '512x512', type: icon512.endsWith('.svg') ? 'image/svg+xml' : 'image/png', purpose: 'any' },
+        { src: icon192, sizes: '192x192', type: icon192.endsWith('.svg') ? 'image/svg+xml' : 'image/png', purpose: 'maskable' },
+        { src: icon512, sizes: '512x512', type: icon512.endsWith('.svg') ? 'image/svg+xml' : 'image/png', purpose: 'maskable' },
+      ],
+      shortcuts: [
+        { name: 'Meus Pets', short_name: 'Pets', url: baseUrl + '/pets', icons: [{ src: icon192, sizes: '192x192' }] },
+        { name: 'Mapa', short_name: 'Mapa', url: baseUrl + '/mapa', icons: [{ src: icon192, sizes: '192x192' }] },
+      ],
+    };
+    res.set('Content-Type', 'application/manifest+json');
+    res.json(manifest);
+  } catch (err) {
+    logger.error('SERVER', 'Erro ao gerar manifest.json', err);
+    res.status(500).json({ error: 'Manifest unavailable' });
+  }
 });
 
 // ========================

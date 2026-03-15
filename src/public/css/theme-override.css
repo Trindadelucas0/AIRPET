@@ -1,0 +1,92 @@
+/**
+ * theme-override.css — Cor principal do site definida pelo admin
+ * A variável --color-primary é injetada no header a partir de config_sistema (app_primary_color).
+ * Estes estilos sobrescrevem o Tailwind para botões, links e elementos de destaque.
+ */
+
+/* Botão principal (formulários, CTAs) */
+.btn-primary,
+button.btn-primary,
+a.btn-primary {
+  background: var(--color-primary) !important;
+  background-image: linear-gradient(to right, var(--color-primary), var(--color-primary)) !important;
+}
+.btn-primary:hover,
+button.btn-primary:hover,
+a.btn-primary:hover {
+  filter: brightness(0.92);
+}
+
+/* Navegação: logo e marca */
+nav .bg-gradient-to-br.from-primary-500,
+nav .from-primary-500,
+nav .to-primary-600,
+nav .bg-gradient-to-r.from-primary-500,
+nav [class*="from-primary-500"],
+nav [class*="to-primary-600"] {
+  background: var(--color-primary) !important;
+  background-image: none !important;
+}
+nav .bg-clip-text.text-transparent,
+nav .gradient-text {
+  background: var(--color-primary) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+}
+
+/* Itens de menu ativos e hover */
+nav a.bg-primary-50,
+nav a.text-primary-600,
+nav .text-primary-500,
+nav a:hover.text-primary-600,
+nav a:hover.bg-primary-50 {
+  background-color: color-mix(in srgb, var(--color-primary) 12%, transparent) !important;
+  color: var(--color-primary) !important;
+}
+
+/* Botão de registro / CTA no nav */
+nav a.bg-gradient-to-r.from-primary-500.to-primary-600,
+nav .bg-gradient-to-r.from-primary-500 {
+  background: var(--color-primary) !important;
+  background-image: none !important;
+}
+nav a:hover.bg-primary-50.text-primary-600 {
+  color: var(--color-primary) !important;
+}
+
+/* FAB (botão flutuante novo post) */
+#fabNewPost,
+.fab-new-post,
+button[class*="from-primary-500"].rounded-2xl {
+  background: var(--color-primary) !important;
+  background-image: none !important;
+  box-shadow: 0 10px 15px -3px color-mix(in srgb, var(--color-primary) 30%, transparent) !important;
+}
+#fabNewPost:hover,
+button[class*="from-primary-500"].rounded-2xl:hover {
+  filter: brightness(1.05);
+}
+
+/* Links primários (text-primary-500, hover primary-600) */
+a.text-primary-500:hover,
+a.text-primary-600,
+.text-primary-500,
+.border-primary-500 {
+  color: var(--color-primary) !important;
+  border-color: var(--color-primary) !important;
+}
+
+/* Focus ring em inputs */
+.focus\:ring-primary-500:focus,
+.focus\:border-primary-500:focus {
+  --tw-ring-color: color-mix(in srgb, var(--color-primary) 20%, transparent);
+  border-color: var(--color-primary);
+}
+
+/* Badge / pill com cor primária */
+.bg-primary-100,
+.text-primary-600,
+.ring-primary-100 {
+  background-color: color-mix(in srgb, var(--color-primary) 15%, transparent) !important;
+  color: var(--color-primary) !important;
+}

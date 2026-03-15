@@ -83,12 +83,18 @@
               <div>
                 <label for="foto_perfil" class="block text-sm font-semibold text-gray-700 mb-1.5">Foto de perfil</label>
                 <div class="flex items-center gap-4">
-                  <% if (perfil.foto_perfil) { %>
-                    <img src="<%= perfil.foto_perfil %>" alt="" id="previewFotoPerfil" class="w-16 h-16 rounded-full object-cover border-2 border-gray-200">
-                  <% } else { %>
-                    <div id="previewFotoPerfil" class="w-16 h-16 rounded-full border-2 border-gray-200 flex items-center justify-center text-2xl font-bold text-white" style="background:<%= perfil.cor_perfil || '#ec5a1c' %>"><%= (perfil.nome || 'U').charAt(0).toUpperCase() %></div>
-                  <% } %>
-                  <input type="file" id="foto_perfil" name="foto_perfil" accept="image/*" class="input-field text-sm">
+                  <button type="button" id="btnAbrirFotoPerfil" class="relative flex-shrink-0 rounded-full focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2" title="Trocar ou ajustar foto">
+                    <% if (perfil.foto_perfil) { %>
+                      <img src="<%= perfil.foto_perfil %>" alt="" id="previewFotoPerfil" class="w-16 h-16 rounded-full object-cover border-2 border-gray-200 block">
+                    <% } else { %>
+                      <div id="previewFotoPerfil" class="w-16 h-16 rounded-full border-2 border-gray-200 flex items-center justify-center text-2xl font-bold text-white" style="background:<%= perfil.cor_perfil || '#ec5a1c' %>"><%= (perfil.nome || 'U').charAt(0).toUpperCase() %></div>
+                    <% } %>
+                    <span class="absolute bottom-0 right-0 w-6 h-6 rounded-full bg-primary-500 text-white flex items-center justify-center text-xs shadow" title="Ajustar foto"><i class="fa-solid fa-crop"></i></span>
+                  </button>
+                  <div class="flex-1 min-w-0">
+                    <input type="file" id="foto_perfil" name="foto_perfil" accept="image/*" class="input-field text-sm">
+                    <p class="text-xs text-gray-500 mt-1">Escolha uma imagem e ajuste o recorte antes de salvar.</p>
+                  </div>
                 </div>
               </div>
 
@@ -213,6 +219,10 @@
 <script src="/js/crop-modal.js"></script>
 <script>
 var croppedProfileFile = null;
+
+document.getElementById('btnAbrirFotoPerfil').addEventListener('click', function() {
+  document.getElementById('foto_perfil').click();
+});
 
 document.getElementById('foto_perfil').addEventListener('change', function() {
   var input = this;

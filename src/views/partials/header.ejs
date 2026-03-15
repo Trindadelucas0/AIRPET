@@ -3,24 +3,26 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title><%= typeof titulo !== 'undefined' ? titulo + ' | AIRPET' : 'AIRPET — Proteja seu Pet' %></title>
+  <title><%= typeof titulo !== 'undefined' ? titulo + ' | ' + (typeof appName !== 'undefined' ? appName : 'AIRPET') : (typeof appName !== 'undefined' ? appName : 'AIRPET') + ' — Proteja seu Pet' %></title>
 
-  <meta name="theme-color" content="#ec5a1c">
+  <meta name="theme-color" content="<%= typeof themeColor !== 'undefined' ? themeColor : '#ec5a1c' %>">
   <meta name="description" content="AIRPET — Rede social e protecao inteligente para seu pet via NFC">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <meta name="apple-mobile-web-app-title" content="AIRPET">
-  <meta name="application-name" content="AIRPET">
-  <meta name="msapplication-TileColor" content="#ec5a1c">
+  <meta name="apple-mobile-web-app-title" content="<%= typeof appName !== 'undefined' ? appName : 'AIRPET' %>">
+  <meta name="application-name" content="<%= typeof appName !== 'undefined' ? appName : 'AIRPET' %>">
+  <meta name="msapplication-TileColor" content="<%= typeof themeColor !== 'undefined' ? themeColor : '#ec5a1c' %>">
   <meta name="format-detection" content="telephone=no">
   <meta name="referrer" content="origin">
 
-  <link rel="icon" type="image/svg+xml" href="/images/icons/icon-192.svg">
-  <link rel="apple-touch-icon" href="/images/icons/icon-192.svg">
+  <link rel="icon" type="image/svg+xml" href="<%= typeof pwaIcon192 !== 'undefined' ? pwaIcon192 : '/images/icons/icon-192.svg' %>">
+  <link rel="apple-touch-icon" href="<%= typeof pwaIcon192 !== 'undefined' ? pwaIcon192 : '/images/icons/icon-192.svg' %>">
   <link rel="manifest" href="/manifest.json">
 
+  <style>:root { --color-primary: <%= typeof primaryColor !== 'undefined' ? primaryColor : '#ec5a1c' %>; }</style>
   <link rel="stylesheet" href="/css/output.css">
+  <link rel="stylesheet" href="/css/theme-override.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">

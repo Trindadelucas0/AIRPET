@@ -7,7 +7,8 @@
   'use strict';
 
   var modal = document.getElementById('cropModal');
-  var overlay = document.getElementById('cropModalOverlay');
+  var backdrop = document.getElementById('cropModalBackdrop');
+  var modalBox = document.getElementById('cropModalBox');
   var cropImage = document.getElementById('cropImage');
   var btnClose = document.getElementById('cropModalClose');
   var btnCancel = document.getElementById('cropModalCancel');
@@ -54,7 +55,10 @@
     );
   }
 
-  if (overlay) overlay.addEventListener('click', closeModal);
+  if (backdrop) backdrop.addEventListener('click', function (e) {
+    if (e.target === backdrop) closeModal();
+  });
+  if (modalBox) modalBox.addEventListener('click', function (e) { e.stopPropagation(); });
   if (btnClose) btnClose.addEventListener('click', closeModal);
   if (btnCancel) btnCancel.addEventListener('click', closeModal);
   if (btnApply) btnApply.addEventListener('click', applyCrop);

@@ -65,6 +65,29 @@ const ConfigSistema = {
 
     return resultado.rows;
   },
+
+  /**
+   * Insere ou atualiza uma configuração (upsert).
+   * Usado pelo admin para salvar chaves de aparência que podem não existir ainda.
+   *
+   * @param {string} chave - Nome da configuração
+   * @param {string} valor - Valor a ser definido
+   * @param {string} [descricao] - Descrição opcional
+   * @returns {Promise<object>} O registro inserido ou atualizado
+   */
+  async inserirOuAtualizar(chave, valor, descricao = null) {
+    const resultado = await query(
+      `INSERT INTO config_sistema (chave, valor, descricao)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (chave) DO UPDATE SET
+         valor = EXCLUDED.valor,
+         descricao = COALESCE(EXCLUDED.descricao, config_sistema.descricao),
+         atualizado_em = NOW()
+       RETURNING *`,
+      [chave, valor, descricao]
+    );
+    return resultado.rows[0];
+  },
 };
 
 module.exports = ConfigSistema;

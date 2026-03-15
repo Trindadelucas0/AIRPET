@@ -1,11 +1,30 @@
 const express = require('express');
 const router = express.Router();
+const path = require('path');
 const bcrypt = require('bcrypt');
+const multer = require('multer');
 
 const adminController = require('../controllers/adminController');
 const pontoMapaController = require('../controllers/pontoMapaController');
 const { apenasAdmin } = require('../middlewares/adminMiddleware');
 const { limiterLogin } = require('../middlewares/rateLimiter');
+
+const storagePwa = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, path.join(__dirname, '..', 'public', 'images', 'pwa')),
+  filename: (req, file, cb) => {
+    const ext = (path.extname(file.originalname) || '.png').toLowerCase();
+    const name = file.fieldname === 'icon_192' ? 'icon-192' : 'icon-512';
+    cb(null, name + ext);
+  },
+});
+const uploadPwa = multer({
+  storage: storagePwa,
+  limits: { fileSize: 2 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const ok = /\.(png|svg)$/i.test(file.originalname) && /image\/(png|svg\+xml)/.test(file.mimetype);
+    cb(null, !!ok);
+  },
+});
 
 const BASE = process.env.ADMIN_PATH || '/admin';
 
@@ -80,6 +99,9 @@ router.post('/usuarios/:id/bloquear', apenasAdmin, adminController.toggleBloquei
 
 router.get('/configuracoes', apenasAdmin, adminController.mostrarConfiguracoes);
 router.post('/configuracoes', apenasAdmin, adminController.salvarConfiguracoes);
+
+router.get('/aparencia', apenasAdmin, adminController.mostrarAparencia);
+router.post('/aparencia', apenasAdmin, uploadPwa.fields([{ name: 'icon_192', maxCount: 1 }, { name: 'icon_512', maxCount: 1 }]), adminController.salvarAparencia);
 
 router.get('/gerenciar-mapa', apenasAdmin, adminController.mostrarGerenciarMapa);
 router.get('/mapa', apenasAdmin, adminController.mostrarMapa);

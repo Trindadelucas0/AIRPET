@@ -605,6 +605,73 @@ async function rejeitarMensagem(req, res) {
   }
 }
 
+/**
+ * mostrarAparencia — Exibe a página de aparência / PWA (ícones e cores)
+ * Rota: GET /admin/aparencia
+ */
+async function mostrarAparencia(req, res) {
+  try {
+    const configs = await ConfigSistema.listarTodas();
+    const aparencia = {};
+    const chaves = ['pwa_theme_color', 'pwa_background_color', 'pwa_icon_192', 'pwa_icon_512', 'app_primary_color', 'app_name'];
+    chaves.forEach(chave => {
+      const c = configs.find(x => x.chave === chave);
+      if (c) aparencia[chave] = c.valor;
+    });
+    return res.render('admin/aparencia', {
+      titulo: 'Aparência / PWA - AIRPET',
+      aparencia,
+    });
+  } catch (erro) {
+    logger.error('AdminController', 'Erro ao carregar aparência', erro);
+    req.session.flash = { tipo: 'erro', mensagem: 'Erro ao carregar a página de aparência.' };
+    return res.redirect('/admin');
+  }
+}
+
+/**
+ * salvarAparencia — Salva ícones (upload) e cores de aparência
+ * Rota: POST /admin/aparencia (multipart: icon_192, icon_512 + body: pwa_theme_color, pwa_background_color, app_primary_color, app_name)
+ */
+async function salvarAparencia(req, res) {
+  try {
+    const adminPath = process.env.ADMIN_PATH || '/admin';
+    const files = req.files || {};
+    const icon192File = files.icon_192 && files.icon_192[0];
+    const icon512File = files.icon_512 && files.icon_512[0];
+
+    if (icon192File && icon192File.filename) {
+      await ConfigSistema.inserirOuAtualizar('pwa_icon_192', '/images/pwa/' + icon192File.filename, 'URL do ícone 192x192');
+      if (!icon512File || !icon512File.filename) {
+        await ConfigSistema.inserirOuAtualizar('pwa_icon_512', '/images/pwa/' + icon192File.filename, 'URL do ícone 512x512');
+      }
+    }
+    if (icon512File && icon512File.filename) {
+      await ConfigSistema.inserirOuAtualizar('pwa_icon_512', '/images/pwa/' + icon512File.filename, 'URL do ícone 512x512');
+      if (!icon192File || !icon192File.filename) {
+        await ConfigSistema.inserirOuAtualizar('pwa_icon_192', '/images/pwa/' + icon512File.filename, 'URL do ícone 192x192');
+      }
+    }
+
+    const pwaThemeColor = (req.body.pwa_theme_color || '#ec5a1c').trim();
+    const pwaBackgroundColor = (req.body.pwa_background_color || '#ffffff').trim();
+    const appPrimaryColor = (req.body.app_primary_color || '#ec5a1c').trim();
+    const appName = (req.body.app_name || 'AIRPET').trim().slice(0, 30);
+
+    await ConfigSistema.inserirOuAtualizar('pwa_theme_color', pwaThemeColor, 'Cor do tema PWA e barra do navegador');
+    await ConfigSistema.inserirOuAtualizar('pwa_background_color', pwaBackgroundColor, 'Cor de fundo do PWA');
+    await ConfigSistema.inserirOuAtualizar('app_primary_color', appPrimaryColor, 'Cor principal do site (botões, links)');
+    await ConfigSistema.inserirOuAtualizar('app_name', appName || 'AIRPET', 'Nome curto do aplicativo');
+
+    req.session.flash = { tipo: 'sucesso', mensagem: 'Aparência salva com sucesso! O site e o PWA usarão as novas cores e ícones.' };
+    return res.redirect(adminPath + '/aparencia');
+  } catch (erro) {
+    logger.error('AdminController', 'Erro ao salvar aparência', erro);
+    req.session.flash = { tipo: 'erro', mensagem: 'Erro ao salvar a aparência. Tente novamente.' };
+    return res.redirect((process.env.ADMIN_PATH || '/admin') + '/aparencia');
+  }
+}
+
 module.exports = {
   dashboard,
   listarUsuarios,
@@ -619,6 +686,8 @@ module.exports = {
   rejeitarMensagem,
   mostrarConfiguracoes,
   salvarConfiguracoes,
+  mostrarAparencia,
+  salvarAparencia,
   mostrarGerenciarMapa,
   mostrarMapa,
   atualizarRoleUsuario,
