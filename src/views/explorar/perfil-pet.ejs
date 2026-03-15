@@ -178,6 +178,7 @@
 <script>
 (function () {
   var petId = '<%= pet.id %>';
+  var eMeuPet = <%= typeof eMeuPet !== 'undefined' && eMeuPet ? 'true' : 'false' %>;
   function tempoRelativo(dateStr) {
     var d = new Date(dateStr);
     var diff = Date.now() - d.getTime();
@@ -335,8 +336,38 @@
         if (tipo === 'seguidores') {
           listaSegBody.innerHTML = lista.map(function (u) {
             var avatar = u.foto_perfil ? '<img src="' + escapeHtml(u.foto_perfil) + '" alt="" class="w-10 h-10 rounded-full object-cover">' : '<span class="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white" style="background:' + escapeHtml(u.cor_perfil || '#ec5a1c') + '">' + escapeHtml((u.nome || 'U').charAt(0).toUpperCase()) + '</span>';
-            return '<a href="/explorar/perfil/' + u.id + '" class="flex items-center gap-3 p-2 rounded-xl hover:bg-gray-50">' + avatar + '<span class="font-semibold text-gray-900">' + escapeHtml(u.nome) + '</span></a>';
+            var row = '<div class="flex items-center justify-between gap-2 p-2 rounded-xl hover:bg-gray-50" data-seguidor-id="' + u.id + '"><a href="/explorar/perfil/' + u.id + '" class="flex items-center gap-3 flex-1 min-w-0">' + avatar + '<span class="font-semibold text-gray-900">' + escapeHtml(u.nome) + '</span></a>';
+            if (eMeuPet) {
+              row += '<button type="button" class="btn-remover-seguidor shrink-0 px-3 py-1.5 text-xs font-semibold text-red-500 hover:bg-red-50 rounded-lg transition-colors" data-usuario-id="' + u.id + '" title="Remover seguidor">Remover</button>';
+            }
+            row += '</div>';
+            return row;
           }).join('');
+          if (eMeuPet) {
+            listaSegBody.querySelectorAll('.btn-remover-seguidor').forEach(function (btn) {
+              btn.addEventListener('click', function (e) {
+                e.preventDefault();
+                var uid = btn.dataset.usuarioId;
+                if (!uid || !confirm('Remover este seguidor? Ele deixará de seguir o perfil deste pet.')) return;
+                btn.disabled = true;
+                fetch('/explorar/pet/' + petId + '/seguidor/' + uid, { method: 'DELETE', headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
+                  .then(function (r) { return r.json(); })
+                  .then(function (data) {
+                    if (data.sucesso) {
+                      var row = btn.closest('[data-seguidor-id]');
+                      if (row) row.remove();
+                      if (data.totalSeguidores !== undefined) {
+                        var el = document.getElementById('seguidoresCount');
+                        if (el) el.textContent = data.totalSeguidores;
+                      }
+                    } else {
+                      btn.disabled = false;
+                    }
+                  })
+                  .catch(function () { btn.disabled = false; });
+              });
+            });
+          }
         } else {
           listaSegBody.innerHTML = lista.map(function (p) {
             var avatar = p.foto ? '<img src="' + escapeHtml(p.foto) + '" alt="" class="w-10 h-10 rounded-full object-cover">' : '<span class="w-10 h-10 rounded-full flex items-center justify-center text-primary-500"><i class="fa-solid fa-paw"></i></span>';

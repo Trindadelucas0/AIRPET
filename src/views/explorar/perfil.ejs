@@ -109,7 +109,7 @@
                class="flex items-center gap-2 px-5 py-2 rounded-full border border-gray-300 hover:bg-gray-50 text-sm font-bold text-gray-800 transition-all duration-200">
               Editar perfil
             </a>
-          <% } else { %>
+          <% } else if (!soPets) { %>
             <button type="button" id="btnFollow"
                     data-user-id="<%= perfil.id %>"
                     data-following="<%= estaSeguindo ? 'true' : 'false' %>"
@@ -122,10 +122,12 @@
               <span><%= estaSeguindo ? 'Seguindo' : 'Seguir' %></span>
             </button>
           <% } %>
+          <% if (!soPets) { %>
           <button type="button" class="btn-share-profile flex items-center justify-center w-9 h-9 rounded-full border border-gray-300 hover:bg-gray-50 text-gray-600 transition-all duration-200"
                   title="Compartilhar perfil">
             <i class="fa-solid fa-arrow-up-from-bracket text-sm"></i>
           </button>
+          <% } %>
         </div>
       </div>
 
@@ -150,7 +152,8 @@
           <% } %>
         </div>
 
-        <!-- Stats row -->
+        <!-- Stats row (oculto quando perfil só pets) -->
+        <% if (!soPets) { %>
         <div class="flex items-center gap-5 mt-3">
           <span class="text-sm text-gray-500">
             <strong class="text-gray-900 font-black"><%= totalPosts %></strong> posts
@@ -162,9 +165,10 @@
             <strong class="text-gray-900 font-black"><%= seguindo %></strong> seguindo
           </span>
         </div>
+        <% } %>
 
         <!-- Capacity indicators -->
-        <% if (eMeuPerfil) { %>
+        <% if (eMeuPerfil && !soPets) { %>
           <div class="flex items-center gap-4 mt-4 profile-reveal" style="animation-delay: .1s">
             <div class="flex-1">
               <div class="flex items-center justify-between mb-1">
@@ -196,7 +200,7 @@
           </h3>
           <div class="flex gap-3 overflow-x-auto pet-scroll pb-2">
             <% pets.forEach(function(pet) { %>
-              <a href="/pets/<%= pet.id %>" class="flex flex-col items-center gap-1.5 flex-shrink-0 group">
+              <a href="<%= soPets ? '/explorar/pet/' + pet.id : '/pets/' + pet.id %>" class="flex flex-col items-center gap-1.5 flex-shrink-0 group">
                 <div class="w-14 h-14 sm:w-16 sm:h-16 rounded-full overflow-hidden ring-2 ring-gray-100 group-hover:ring-primary-300 transition-all shadow-sm">
                   <% if (pet.foto) { %>
                     <img src="<%= pet.foto %>" alt="<%= pet.nome %>" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300">
@@ -216,7 +220,8 @@
       <% } %>
     </div>
 
-    <!-- ═══ Tabs ═══ -->
+    <!-- ═══ Tabs (ocultos quando perfil só pets) ═══ -->
+    <% if (!soPets) { %>
     <nav class="sticky top-14 z-40 bg-white/80 backdrop-blur-xl border-b border-gray-100 mt-4 profile-reveal" style="animation-delay: .15s">
       <div class="flex">
         <a href="/explorar/perfil/<%= perfil.id %>?tab=posts"
@@ -236,9 +241,15 @@
         </a>
       </div>
     </nav>
+    <% } %>
 
-    <!-- ═══ Posts List (Twitter-style vertical) ═══ -->
+    <!-- ═══ Posts List (Twitter-style vertical) ou só mensagem quando soPets ═══ -->
     <div class="px-4 pt-3" id="postsContainer">
+    <% if (soPets) { %>
+      <div class="text-center py-12 profile-reveal">
+        <p class="text-sm text-gray-500">Conheça os perfis dos pets acima para ver publicações e seguidores.</p>
+      </div>
+    <% } else { %>
 
       <% if (posts.length === 0) { %>
         <div class="text-center py-16 profile-reveal" style="animation-delay: .2s">
@@ -451,6 +462,7 @@
           </div>
         </article>
       <% }); %>
+    <% } %>
 
     </div>
 
@@ -671,8 +683,10 @@
       })
       .catch(function () { listaSegBody.innerHTML = '<p class="text-sm text-red-500 text-center py-6">Erro ao carregar.</p>'; });
   }
-  document.getElementById('btnVerSeguidores').addEventListener('click', function () { openListaSeg('seguidores'); });
-  document.getElementById('btnVerSeguindo').addEventListener('click', function () { openListaSeg('seguindo'); });
+  var btnVerSeg = document.getElementById('btnVerSeguidores');
+  var btnVerSegu = document.getElementById('btnVerSeguindo');
+  if (btnVerSeg) btnVerSeg.addEventListener('click', function () { openListaSeg('seguidores'); });
+  if (btnVerSegu) btnVerSegu.addEventListener('click', function () { openListaSeg('seguindo'); });
   document.getElementById('closeListaSeg').addEventListener('click', function () { listaSegModal.classList.add('hidden'); });
   document.getElementById('listaSegOverlay').addEventListener('click', function () { listaSegModal.classList.add('hidden'); });
 

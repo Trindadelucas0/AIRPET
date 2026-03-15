@@ -65,19 +65,17 @@ const logger = require('../utils/logger');
  */
 async function dashboard(req, res) {
   try {
-    /*
-     * Executa todas as contagens em paralelo.
-     * Promise.all dispara todas as queries simultaneamente
-     * e aguarda todas terminarem antes de prosseguir.
-     * Isso é significativamente mais rápido que executar sequencialmente.
-     */
+    const maxUsuarios = parseInt(process.env.MAX_USUARIOS || '0', 10);
+
     const [
-      usuarios,
+      totalUsuarios,
       pets,
       perdidos,
       petshops,
       mensagens,
       tags,
+      usuariosPorEstado,
+      ultimosUsuarios,
     ] = await Promise.all([
       Usuario.contarTotal(),
       Pet.contarTotal(),
@@ -85,11 +83,23 @@ async function dashboard(req, res) {
       Petshop.contarTotal(),
       MensagemChat.contarPendentes(),
       PetPerdido.listarPendentes().then(lista => lista.length),
+      Usuario.contarPorEstado(),
+      Usuario.listarRecentes(8),
     ]);
 
     return res.render('admin/dashboard', {
       titulo: 'Painel Administrativo - AIRPET',
-      stats: { usuarios, pets, perdidos, petshops, mensagens, tags },
+      stats: {
+        usuarios: totalUsuarios,
+        maxUsuarios: maxUsuarios > 0 ? maxUsuarios : null,
+        pets,
+        perdidos,
+        petshops,
+        mensagens,
+        tags,
+      },
+      usuariosPorEstado,
+      ultimosUsuarios,
     });
   } catch (erro) {
     logger.error('AdminController', 'Erro ao carregar dashboard', erro);
@@ -112,13 +122,26 @@ async function dashboard(req, res) {
  */
 async function listarUsuarios(req, res) {
   try {
-    const usuarios = await Usuario.listarTodos();
+    const { estado, cidade, status } = req.query;
+    const filtros = {};
+    if (estado) filtros.estado = estado;
+    if (cidade) filtros.cidade = cidade;
+    if (status === 'bloqueado') filtros.bloqueado = true;
+    else if (status === 'ativo') filtros.bloqueado = false;
+
+    const [usuarios, estados] = await Promise.all([
+      Object.keys(filtros).length ? Usuario.listarComFiltros(filtros) : Usuario.listarTodos(),
+      Usuario.listarEstados(),
+    ]);
+
     const adminEmail = process.env.ADMIN_EMAIL || '';
 
     return res.render('admin/usuarios', {
       titulo: 'Usuários - AIRPET',
       usuarios,
       adminEmail,
+      estados: estados || [],
+      filtros: { estado: estado || '', cidade: cidade || '', status: status || 'todos' },
     });
   } catch (erro) {
     logger.error('AdminController', 'Erro ao listar usuários', erro);

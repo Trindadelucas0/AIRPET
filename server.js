@@ -99,13 +99,35 @@ app.use((req, res) => {
   });
 });
 
+// Erros de cliente (request aborted, conexão fechada) não são erros reais do servidor
+const isClientDisconnect = (err) => {
+  const msg = (err?.message || '').toLowerCase();
+  const code = err?.code;
+  return (
+    msg.includes('request aborted') ||
+    msg.includes('aborted') ||
+    code === 'ECONNRESET' ||
+    code === 'ECONNABORTED' ||
+    code === 'EPIPE'
+  );
+};
+
 app.use((err, req, res, _next) => {
+  if (isClientDisconnect(err)) {
+    // Cliente fechou a conexão (navegou, deu refresh, fechou aba) — não logar como erro
+    if (!res.headersSent && !res.writableEnded) {
+      res.status(499).end(); // 499 Client Closed Request
+    }
+    return;
+  }
   logger.error('SERVER', 'Erro interno', err);
-  res.status(500).render('partials/erro', {
-    titulo: 'Erro interno',
-    mensagem: 'Algo deu errado. Tente novamente mais tarde.',
-    codigo: 500,
-  });
+  if (!res.headersSent && !res.writableEnded) {
+    res.status(500).render('partials/erro', {
+      titulo: 'Erro interno',
+      mensagem: 'Algo deu errado. Tente novamente mais tarde.',
+      codigo: 500,
+    });
+  }
 });
 
 // ========================

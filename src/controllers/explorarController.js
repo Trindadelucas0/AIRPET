@@ -147,11 +147,19 @@ const explorarController = {
       if (!texto || !texto.trim()) {
         return res.status(400).json({ sucesso: false, mensagem: 'Escreva uma legenda.' });
       }
+      const petId = pet_id ? parseInt(pet_id, 10) : null;
+      if (!petId) {
+        return res.status(400).json({ sucesso: false, mensagem: 'Selecione em qual pet publicar.' });
+      }
+      const pet = await Pet.buscarPorId(petId);
+      if (!pet || pet.usuario_id !== uid) {
+        return res.status(403).json({ sucesso: false, mensagem: 'Pet não encontrado ou você não é o dono.' });
+      }
 
       const removido = await autoDeleteSeNecessario(uid);
 
       const post = await Publicacao.criar({
-        usuario_id: uid, pet_id: pet_id || null, foto, legenda: texto.trim(), texto: texto.trim(),
+        usuario_id: uid, pet_id: petId, foto, legenda: texto.trim(), texto: texto.trim(),
       });
       const completo = await Publicacao.buscarPorId(post.id, uid);
       const totalPosts = await Publicacao.contarAtivas(uid);
@@ -434,7 +442,6 @@ const explorarController = {
     try {
       const { id } = req.params;
       const uid = req.session.usuario ? req.session.usuario.id : null;
-      const perfilTab = req.query.tab || 'posts';
       const usuario = await Usuario.buscarPorId(id);
 
       if (!usuario) {
@@ -442,36 +449,21 @@ const explorarController = {
         return res.redirect('/explorar');
       }
 
-      let posts;
-      if (perfilTab === 'reposts') {
-        posts = await Publicacao.buscarRepostsPorUsuario(id, uid);
-      } else if (perfilTab === 'curtidas') {
-        posts = await Publicacao.buscarCurtidasPorUsuario(id);
-      } else {
-        posts = await Publicacao.buscarPorUsuario(id, uid);
-      }
-
-      const [pets, seguidores, seguindo, estaSeguindo, totalPosts, totalFixadas] = await Promise.all([
-        Pet.buscarPorUsuario(id),
-        Seguidor.contarSeguidores(id),
-        Seguidor.contarSeguindo(id),
-        uid ? Seguidor.estaSeguindo(uid, id) : false,
-        Publicacao.contarAtivas(id),
-        Publicacao.contarFixadas(id),
-      ]);
+      const pets = await Pet.buscarPorUsuario(id);
 
       res.render('explorar/perfil', {
         titulo: usuario.nome,
         perfil: usuario,
-        posts,
+        posts: [],
         pets,
-        seguidores,
-        seguindo,
-        estaSeguindo,
+        seguidores: 0,
+        seguindo: 0,
+        estaSeguindo: false,
         eMeuPerfil: uid === parseInt(id),
-        perfilTab,
-        totalPosts,
-        totalFixadas,
+        perfilTab: 'posts',
+        totalPosts: 0,
+        totalFixadas: 0,
+        soPets: true,
       });
     } catch (err) {
       logger.error('EXPLORAR', 'Erro no perfil público', err);
@@ -526,6 +518,27 @@ const explorarController = {
       res.json({ sucesso: true, seguindo: false, totalSeguidores: total });
     } catch (err) {
       logger.error('EXPLORAR', 'Erro ao deixar de seguir pet', err);
+      res.status(500).json({ sucesso: false });
+    }
+  },
+
+  async removerSeguidorPet(req, res) {
+    try {
+      const uid = req.session.usuario.id;
+      const { id: petId, usuarioId } = req.params;
+      const pet = await Pet.buscarPorId(petId);
+      if (!pet || pet.usuario_id !== uid) {
+        return res.status(403).json({ sucesso: false, mensagem: 'Você não pode remover seguidores deste pet.' });
+      }
+      const seguidorId = parseInt(usuarioId, 10);
+      if (!seguidorId) {
+        return res.status(400).json({ sucesso: false, mensagem: 'Usuário inválido.' });
+      }
+      await SeguidorPet.deixarDeSeguir(seguidorId, petId);
+      const total = await SeguidorPet.contarSeguidores(petId);
+      res.json({ sucesso: true, totalSeguidores: total });
+    } catch (err) {
+      logger.error('EXPLORAR', 'Erro ao remover seguidor do pet', err);
       res.status(500).json({ sucesso: false });
     }
   },

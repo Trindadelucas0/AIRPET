@@ -86,6 +86,83 @@ const Usuario = {
   },
 
   /**
+   * Lista os usuários mais recentes (para dashboard admin).
+   * @param {number} [limite=10]
+   * @returns {Promise<Array>}
+   */
+  async listarRecentes(limite = 10) {
+    const resultado = await query(
+      `SELECT id, nome, email, cidade, estado, data_criacao, bloqueado, role
+       FROM usuarios
+       ORDER BY data_criacao DESC
+       LIMIT $1`,
+      [limite]
+    );
+    return resultado.rows;
+  },
+
+  /**
+   * Contagem de usuários por estado (região). Para dashboard e filtros.
+   * @returns {Promise<Array<{estado: string, total: string}>>}
+   */
+  async contarPorEstado() {
+    const resultado = await query(
+      `SELECT estado, COUNT(*) AS total
+       FROM usuarios
+       WHERE estado IS NOT NULL AND TRIM(estado) <> ''
+       GROUP BY estado
+       ORDER BY total DESC`
+    );
+    return resultado.rows;
+  },
+
+  /**
+   * Lista usuários com filtros opcionais (estado, cidade, status bloqueado).
+   * @param {object} [filtros]
+   * @param {string} [filtros.estado]
+   * @param {string} [filtros.cidade]
+   * @param {boolean} [filtros.bloqueado] - true só bloqueados, false só ativos, undefined todos
+   * @returns {Promise<Array>}
+   */
+  async listarComFiltros(filtros = {}) {
+    const condicoes = [];
+    const valores = [];
+    let idx = 1;
+    if (filtros.estado) {
+      condicoes.push(`estado = $${idx}`);
+      valores.push(filtros.estado);
+      idx++;
+    }
+    if (filtros.cidade) {
+      condicoes.push(`cidade ILIKE $${idx}`);
+      valores.push(`%${filtros.cidade}%`);
+      idx++;
+    }
+    if (typeof filtros.bloqueado === 'boolean') {
+      condicoes.push(`bloqueado = $${idx}`);
+      valores.push(filtros.bloqueado);
+      idx++;
+    }
+    const where = condicoes.length ? `WHERE ${condicoes.join(' AND ')}` : '';
+    const resultado = await query(
+      `SELECT * FROM usuarios ${where} ORDER BY data_criacao DESC`,
+      valores
+    );
+    return resultado.rows;
+  },
+
+  /**
+   * Lista estados distintos com pelo menos um usuário (para dropdown de filtro).
+   * @returns {Promise<Array<string>>}
+   */
+  async listarEstados() {
+    const resultado = await query(
+      `SELECT DISTINCT estado FROM usuarios WHERE estado IS NOT NULL AND TRIM(estado) <> '' ORDER BY estado`
+    );
+    return resultado.rows.map(r => r.estado);
+  },
+
+  /**
    * Atualiza a localização geográfica de um usuário.
    * Utiliza PostGIS para armazenar o ponto geográfico (SRID 4326 = WGS84).
    * Isso permite consultas espaciais como "encontrar usuários próximos".

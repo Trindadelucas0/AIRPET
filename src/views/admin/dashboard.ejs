@@ -13,13 +13,15 @@
     <!-- Stat Cards -->
     <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-10">
 
-      <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 hover:shadow-md transition-shadow">
+      <a href="<%= adminPath %>/usuarios" class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 hover:shadow-md hover:border-blue-200 transition-all block">
         <div class="flex items-center justify-center w-10 h-10 rounded-lg bg-blue-50 text-blue-500 mb-3">
           <i class="fa-solid fa-users text-lg"></i>
         </div>
-        <p class="text-2xl font-bold text-gray-900"><%= stats.usuarios %></p>
+        <p class="text-2xl font-bold text-gray-900">
+          <%= stats.usuarios %><% if (stats.maxUsuarios) { %> <span class="text-lg font-normal text-gray-400">/ <%= stats.maxUsuarios %></span><% } %>
+        </p>
         <p class="text-xs font-medium text-gray-500 mt-1">Usuários</p>
-      </div>
+      </a>
 
       <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 hover:shadow-md transition-shadow">
         <div class="flex items-center justify-center w-10 h-10 rounded-lg bg-orange-50 text-orange-500 mb-3">
@@ -63,10 +65,71 @@
 
     </div>
 
+    <!-- Usuários: por região e últimos cadastros -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-10">
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <h2 class="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+          <i class="fa-solid fa-map-marker-alt text-blue-500"></i>
+          Usuários por região
+        </h2>
+        <% if (typeof usuariosPorEstado !== 'undefined' && usuariosPorEstado && usuariosPorEstado.length) { %>
+          <ul class="space-y-2 max-h-48 overflow-y-auto">
+            <% usuariosPorEstado.forEach(function(r) { %>
+              <li class="flex items-center justify-between text-sm">
+                <span class="font-medium text-gray-700"><%= r.estado || '—' %></span>
+                <span class="text-gray-500"><%= r.total %> usuários</span>
+              </li>
+            <% }); %>
+          </ul>
+        <% } else { %>
+          <p class="text-sm text-gray-400">Nenhum usuário com região informada.</p>
+        <% } %>
+      </div>
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
+            <i class="fa-solid fa-user-clock text-blue-500"></i>
+            Últimos cadastros
+          </h2>
+          <a href="<%= adminPath %>/usuarios" class="text-sm font-medium text-primary-500 hover:text-primary-600">Ver todos</a>
+        </div>
+        <% if (typeof ultimosUsuarios !== 'undefined' && ultimosUsuarios && ultimosUsuarios.length) { %>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="text-left text-gray-500 border-b border-gray-100">
+                  <th class="pb-2 font-medium">Nome</th>
+                  <th class="pb-2 font-medium">Região</th>
+                  <th class="pb-2 font-medium">Data</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% ultimosUsuarios.forEach(function(u) { %>
+                  <tr class="border-b border-gray-50 hover:bg-gray-50/50">
+                    <td class="py-2 font-medium text-gray-900"><%= u.nome %></td>
+                    <td class="py-2 text-gray-600"><%= (u.cidade || '') + (u.estado ? ' / ' + u.estado : '') || '—' %></td>
+                    <td class="py-2 text-gray-500 text-xs"><%= u.data_criacao ? new Date(u.data_criacao).toLocaleDateString('pt-BR') : '—' %></td>
+                  </tr>
+                <% }); %>
+              </tbody>
+            </table>
+          </div>
+        <% } else { %>
+          <p class="text-sm text-gray-400">Nenhum usuário cadastrado.</p>
+        <% } %>
+      </div>
+    </div>
+
     <!-- Quick Links -->
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
       <h2 class="text-lg font-semibold text-gray-900 mb-4">Acesso Rápido</h2>
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
+
+        <a href="<%= adminPath %>/usuarios"
+           class="flex items-center gap-3 px-4 py-3 rounded-lg border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-all group">
+          <i class="fa-solid fa-users text-blue-400 group-hover:text-blue-500"></i>
+          <span class="text-sm font-medium text-gray-700 group-hover:text-blue-700">Gerenciar usuários</span>
+        </a>
 
         <a href="<%= adminPath %>/pets-perdidos"
            class="flex items-center gap-3 px-4 py-3 rounded-lg border border-gray-200 hover:border-red-300 hover:bg-red-50 transition-all group">
@@ -100,6 +163,9 @@
 
       </div>
     </div>
+    <p class="mt-4 text-xs text-gray-400">
+      Limite de usuários: defina <code class="bg-gray-100 px-1 rounded">MAX_USUARIOS</code> no <code class="bg-gray-100 px-1 rounded">.env</code> (ex.: 50). O total é verificado automaticamente no cadastro; 0 ou vazio = sem limite.
+    </p>
 
   </div>
 </main>

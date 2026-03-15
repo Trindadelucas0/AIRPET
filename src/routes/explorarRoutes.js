@@ -52,6 +52,7 @@ router.get('/api/pets', explorarController.buscarPets);
 
 router.post('/pet/:id/seguir', explorarController.seguirPet);
 router.delete('/pet/:id/seguir', explorarController.deixarDeSeguirPet);
+router.delete('/pet/:id/seguidor/:usuarioId', explorarController.removerSeguidorPet);
 
 router.get('/busca', explorarController.paginaBusca);
 
