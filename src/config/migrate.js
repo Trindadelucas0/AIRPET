@@ -259,8 +259,8 @@ const migrations = [
   `INSERT INTO config_sistema (chave, valor, descricao) VALUES
     ('pwa_theme_color', '#ec5a1c', 'Cor do tema PWA e barra do navegador'),
     ('pwa_background_color', '#ffffff', 'Cor de fundo do PWA'),
-    ('pwa_icon_192', '/images/icons/icon-192.svg', 'URL do ícone 192x192'),
-    ('pwa_icon_512', '/images/icons/icon-512.svg', 'URL do ícone 512x512'),
+    ('pwa_icon_192', '/images/icons/icon-192.png', 'URL do ícone 192x192'),
+    ('pwa_icon_512', '/images/icons/icon-512.png', 'URL do ícone 512x512'),
     ('app_primary_color', '#ec5a1c', 'Cor principal do site (botões, links)'),
     ('app_name', 'AIRPET', 'Nome curto do aplicativo')
   ON CONFLICT (chave) DO NOTHING;`,

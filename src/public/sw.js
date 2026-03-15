@@ -25,8 +25,8 @@ const SHELL_ASSETS = [
   '/js/pwa.js',
   '/js/permissions.js',
   '/manifest.json',
-  '/images/icons/icon-192.svg',
-  '/images/icons/icon-512.svg',
+  '/images/icons/icon-192.png',
+  '/images/icons/icon-512.png',
 ];
 
 // ========================
@@ -135,7 +135,7 @@ self.addEventListener('fetch', function (event) {
 // PUSH NOTIFICATIONS
 // ========================
 self.addEventListener('push', function (event) {
-  var data = { titulo: 'AIRPET', corpo: 'Você tem uma nova notificação', url: '/notificacoes', icone: '/images/icons/icon-192.svg' };
+  var data = { titulo: 'AIRPET', corpo: 'Você tem uma nova notificação', url: '/notificacoes', icone: '/images/icons/icon-192.png' };
 
   if (event.data) {
     try {
@@ -153,7 +153,7 @@ self.addEventListener('push', function (event) {
   var options = {
     body: data.corpo,
     icon: data.icone,
-    badge: '/images/icons/icon-192.svg',
+    badge: '/images/icons/icon-192.png',
     tag: data.tag || 'airpet-notif',
     renotify: true,
     requireInteraction: false,

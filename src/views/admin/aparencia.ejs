@@ -6,8 +6,8 @@
   const backgroundColor = (aparencia && aparencia.pwa_background_color) || '#ffffff';
   const primaryColor = (aparencia && aparencia.app_primary_color) || '#ec5a1c';
   const appName = (aparencia && aparencia.app_name) || 'AIRPET';
-  const icon192 = (aparencia && aparencia.pwa_icon_192) || '/images/icons/icon-192.svg';
-  const icon512 = (aparencia && aparencia.pwa_icon_512) || '/images/icons/icon-512.svg';
+  const icon192 = (aparencia && aparencia.pwa_icon_192) || '/images/icons/icon-192.png';
+  const icon512 = (aparencia && aparencia.pwa_icon_512) || '/images/icons/icon-512.png';
 %>
 
 <main class="flex-1">
@@ -34,14 +34,14 @@
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Ícone 192×192</label>
             <input type="file" name="icon_192" accept=".png,.svg,image/png,image/svg+xml" class="block w-full text-sm text-gray-500 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:bg-primary-50 file:text-primary-600 file:font-medium hover:file:bg-primary-100">
-            <% if (icon192 && !icon192.includes('icon-192.svg')) { %>
+            <% if (icon192 && !icon192.includes('icon-192.png')) { %>
               <p class="mt-1 text-xs text-gray-500">Atual: <span class="font-mono"><%= icon192 %></span></p>
             <% } %>
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Ícone 512×512</label>
             <input type="file" name="icon_512" accept=".png,.svg,image/png,image/svg+xml" class="block w-full text-sm text-gray-500 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:bg-primary-50 file:text-primary-600 file:font-medium hover:file:bg-primary-100">
-            <% if (icon512 && !icon512.includes('icon-512.svg')) { %>
+            <% if (icon512 && !icon512.includes('icon-512.png')) { %>
               <p class="mt-1 text-xs text-gray-500">Atual: <span class="font-mono"><%= icon512 %></span></p>
             <% } %>
           </div>

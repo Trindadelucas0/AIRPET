@@ -53,7 +53,7 @@
           if ('Notification' in window && Notification.permission === 'granted' && document.hidden) {
             try {
               new Notification(data.tipo === 'alerta' ? 'Pet Perdido!' : 'AIRPET', {
-                body: data.mensagem, icon: '/images/icons/icon-192.svg', tag: 'airpet-' + (data.id || Date.now()),
+                body: data.mensagem, icon: '/images/icons/icon-192.png', tag: 'airpet-' + (data.id || Date.now()),
               });
             } catch (e) {}
           }
