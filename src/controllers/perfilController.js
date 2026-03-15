@@ -1,5 +1,8 @@
 const Usuario = require('../models/Usuario');
 const Pet = require('../models/Pet');
+const FotoPerfilPet = require('../models/FotoPerfilPet');
+const path = require('path');
+const fs = require('fs');
 const { query } = require('../config/database');
 const logger = require('../utils/logger');
 
@@ -31,9 +34,11 @@ const perfilController = {
     try {
       const { nome, telefone, cor_perfil, bio, endereco, bairro, cidade, estado, cep, data_nascimento, contato_extra } = req.body;
       const id = req.session.usuario.id;
-      const foto_perfil = req.file ? `/images/perfil/${req.file.filename}` : undefined;
+      const files = req.files || {};
+      const foto_perfil = files.foto_perfil && files.foto_perfil[0] ? `/images/perfil/${files.foto_perfil[0].filename}` : undefined;
+      const foto_capa = files.foto_capa && files.foto_capa[0] ? `/images/capa/${files.foto_capa[0].filename}` : undefined;
 
-      await Usuario.atualizarPerfil(id, {
+      const dados = {
         nome,
         telefone,
         cor_perfil: cor_perfil || '#ec5a1c',
@@ -46,11 +51,15 @@ const perfilController = {
         data_nascimento: data_nascimento || null,
         contato_extra: contato_extra || null,
         foto_perfil,
-      });
+      };
+      if (foto_capa !== undefined) dados.foto_capa = foto_capa;
+
+      await Usuario.atualizarPerfil(id, dados);
 
       req.session.usuario.nome = nome;
       req.session.usuario.cor_perfil = cor_perfil || '#ec5a1c';
       if (foto_perfil) req.session.usuario.foto_perfil = foto_perfil;
+      if (foto_capa !== undefined) req.session.usuario.foto_capa = foto_capa;
 
       req.session.flash = { tipo: 'sucesso', mensagem: 'Perfil atualizado com sucesso!' };
       res.redirect('/perfil');
@@ -58,6 +67,57 @@ const perfilController = {
       logger.error('PERFIL_CTRL', 'Erro ao atualizar perfil', erro);
       req.session.flash = { tipo: 'erro', mensagem: 'Erro ao atualizar perfil.' };
       res.redirect('/perfil');
+    }
+  },
+
+  async listarGaleria(req, res) {
+    try {
+      const uid = req.session.usuario.id;
+      const linhas = await FotoPerfilPet.listarPorUsuario(uid);
+      const porPet = {};
+      linhas.forEach((f) => {
+        if (!porPet[f.pet_id]) porPet[f.pet_id] = { pet_nome: f.pet_nome, pet_foto: f.pet_foto, fotos: [] };
+        porPet[f.pet_id].fotos.push({ id: f.id, foto: f.foto });
+      });
+      res.json({ galeria: Object.entries(porPet).map(([pet_id, v]) => ({ pet_id: parseInt(pet_id, 10), pet_nome: v.pet_nome, pet_foto: v.pet_foto, fotos: v.fotos })) });
+    } catch (erro) {
+      logger.error('PERFIL_CTRL', 'Erro ao listar galeria', erro);
+      res.status(500).json({ galeria: [] });
+    }
+  },
+
+  async adicionarFotoGaleria(req, res) {
+    try {
+      const uid = req.session.usuario.id;
+      const pet_id = parseInt(req.body.pet_id, 10);
+      if (!pet_id) return res.status(400).json({ sucesso: false, mensagem: 'Pet inválido.' });
+      const pet = await Pet.buscarPorId(pet_id);
+      if (!pet || pet.usuario_id !== uid) return res.status(403).json({ sucesso: false, mensagem: 'Pet não encontrado ou não é seu.' });
+      const total = await FotoPerfilPet.contarPorPet(uid, pet_id);
+      if (total >= FotoPerfilPet.MAX_FOTOS_POR_PET) return res.status(400).json({ sucesso: false, mensagem: `Máximo de ${FotoPerfilPet.MAX_FOTOS_POR_PET} fotos por pet.` });
+      if (!req.file) return res.status(400).json({ sucesso: false, mensagem: 'Nenhuma imagem enviada.' });
+      const foto = `/images/perfil-galeria/${req.file.filename}`;
+      const registro = await FotoPerfilPet.criar(uid, pet_id, foto);
+      res.json({ sucesso: true, id: registro.id, foto: registro.foto });
+    } catch (erro) {
+      logger.error('PERFIL_CTRL', 'Erro ao adicionar foto galeria', erro);
+      res.status(500).json({ sucesso: false, mensagem: 'Erro ao salvar.' });
+    }
+  },
+
+  async removerFotoGaleria(req, res) {
+    try {
+      const uid = req.session.usuario.id;
+      const id = parseInt(req.params.id, 10);
+      if (!id) return res.status(400).json({ sucesso: false });
+      const registro = await FotoPerfilPet.deletar(id, uid);
+      if (!registro) return res.status(404).json({ sucesso: false });
+      const caminho = path.join(__dirname, '..', 'public', registro.foto);
+      try { fs.unlinkSync(caminho); } catch (_) {}
+      res.json({ sucesso: true });
+    } catch (erro) {
+      logger.error('PERFIL_CTRL', 'Erro ao remover foto galeria', erro);
+      res.status(500).json({ sucesso: false });
     }
   },
 

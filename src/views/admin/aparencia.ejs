@@ -1,6 +1,5 @@
 <% locals.titulo = 'Aparência / PWA' %>
-<%- include('../partials/header') %>
-<%- include('../partials/flash') %>
+<%- include('../partials/admin-layout') %>
 
 <%
   const themeColor = (aparencia && aparencia.pwa_theme_color) || '#ec5a1c';
@@ -120,4 +119,4 @@
   })();
 </script>
 
-<%- include('../partials/footer') %>
+<%- include('../partials/admin-footer') %>

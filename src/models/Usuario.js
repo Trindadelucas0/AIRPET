@@ -237,16 +237,21 @@ const Usuario = {
    * @returns {Promise<object|undefined>} O registro removido ou undefined
    */
   async atualizarPerfil(id, dados) {
-    const { nome, telefone, cor_perfil, bio, endereco, bairro, cidade, estado, cep, data_nascimento, contato_extra, foto_perfil } = dados;
+    const { nome, telefone, cor_perfil, bio, endereco, bairro, cidade, estado, cep, data_nascimento, contato_extra, foto_perfil, foto_capa } = dados;
+    const temCapa = dados.hasOwnProperty('foto_capa');
+    const setCapa = temCapa ? ', foto_capa = $14' : '';
+    const params = [id, nome, telefone, cor_perfil || '#ec5a1c', bio || null, endereco || null, bairro || null, cidade || null, estado || null, cep || null, data_nascimento || null, contato_extra || null, foto_perfil || null];
+    if (temCapa) params.push(foto_capa);
     const resultado = await query(
       `UPDATE usuarios
        SET nome = $2, telefone = $3, cor_perfil = $4, bio = $5,
            endereco = $6, bairro = $7, cidade = $8, estado = $9, cep = $10,
            data_nascimento = $11, contato_extra = $12,
-           foto_perfil = COALESCE($13, foto_perfil),
+           foto_perfil = COALESCE($13, foto_perfil)
+           ${setCapa},
            data_atualizacao = NOW()
        WHERE id = $1 RETURNING *`,
-      [id, nome, telefone, cor_perfil || '#ec5a1c', bio || null, endereco || null, bairro || null, cidade || null, estado || null, cep || null, data_nascimento || null, contato_extra || null, foto_perfil || null]
+      params
     );
     return resultado.rows[0];
   },

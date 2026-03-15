@@ -42,6 +42,7 @@ const ConfigSistema = require('../models/ConfigSistema');
 const PontoMapa = require('../models/PontoMapa');
 const notificacaoService = require('../services/notificacaoService');
 const logger = require('../utils/logger');
+const { query } = require('../config/database');
 
 /**
  * dashboard — Exibe o painel administrativo com métricas gerais
@@ -129,12 +130,14 @@ async function listarUsuarios(req, res) {
     if (status === 'bloqueado') filtros.bloqueado = true;
     else if (status === 'ativo') filtros.bloqueado = false;
 
-    const [usuarios, estados] = await Promise.all([
+    const [usuarios, estados, totalUsuarios] = await Promise.all([
       Object.keys(filtros).length ? Usuario.listarComFiltros(filtros) : Usuario.listarTodos(),
       Usuario.listarEstados(),
+      Usuario.contarTotal(),
     ]);
 
     const adminEmail = process.env.ADMIN_EMAIL || '';
+    const maxUsuarios = parseInt(process.env.MAX_USUARIOS || '0', 10);
 
     return res.render('admin/usuarios', {
       titulo: 'Usuários - AIRPET',
@@ -142,6 +145,8 @@ async function listarUsuarios(req, res) {
       adminEmail,
       estados: estados || [],
       filtros: { estado: estado || '', cidade: cidade || '', status: status || 'todos' },
+      totalUsuarios,
+      maxUsuarios: maxUsuarios > 0 ? maxUsuarios : null,
     });
   } catch (erro) {
     logger.error('AdminController', 'Erro ao listar usuários', erro);
@@ -672,6 +677,44 @@ async function salvarAparencia(req, res) {
   }
 }
 
+/**
+ * excluirUsuario — Remove permanentemente um usuário e anula FKs que não têm CASCADE
+ * Rota: POST /admin/usuarios/:id/excluir
+ */
+async function excluirUsuario(req, res) {
+  const adminPath = process.env.ADMIN_PATH || '/admin';
+  const { id } = req.params;
+  const adminEmail = process.env.ADMIN_EMAIL || '';
+
+  try {
+    const usuario = await Usuario.buscarPorId(id);
+    if (!usuario) {
+      req.session.flash = { tipo: 'erro', mensagem: 'Usuário não encontrado.' };
+      return res.redirect(adminPath + '/usuarios');
+    }
+    if (adminEmail && usuario.email === adminEmail) {
+      req.session.flash = { tipo: 'erro', mensagem: 'Não é possível excluir o administrador principal.' };
+      return res.redirect(adminPath + '/usuarios');
+    }
+
+    await query('UPDATE tag_batches SET criado_por = NULL WHERE criado_por = $1', [id]);
+    await query('UPDATE nfc_tags SET user_id = NULL WHERE user_id = $1', [id]);
+    await query('UPDATE conversas SET dono_id = NULL WHERE dono_id = $1', [id]);
+    await query('UPDATE mensagens_chat SET moderado_por = NULL WHERE moderado_por = $1', [id]);
+    await query('UPDATE agenda_petshop SET usuario_id = NULL WHERE usuario_id = $1', [id]);
+    await query('UPDATE pontos_mapa SET criado_por = NULL WHERE criado_por = $1', [id]);
+    await query('UPDATE diario_pet SET usuario_id = NULL WHERE usuario_id = $1', [id]);
+
+    await Usuario.deletar(id);
+    req.session.flash = { tipo: 'sucesso', mensagem: 'Cadastro excluído permanentemente.' };
+    return res.redirect(adminPath + '/usuarios');
+  } catch (erro) {
+    logger.error('AdminController', 'Erro ao excluir usuário', erro);
+    req.session.flash = { tipo: 'erro', mensagem: 'Não foi possível excluir o cadastro. Tente novamente.' };
+    return res.redirect(adminPath + '/usuarios');
+  }
+}
+
 module.exports = {
   dashboard,
   listarUsuarios,
@@ -688,6 +731,7 @@ module.exports = {
   salvarConfiguracoes,
   mostrarAparencia,
   salvarAparencia,
+  excluirUsuario,
   mostrarGerenciarMapa,
   mostrarMapa,
   atualizarRoleUsuario,

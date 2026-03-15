@@ -82,10 +82,16 @@
 <main class="flex-1 pb-24 md:pb-6">
   <div class="max-w-2xl mx-auto">
 
-    <!-- ═══ Banner ═══ -->
+    <!-- ═══ Banner (capa ou gradiente) ═══ -->
+    <% if (perfil.foto_capa) { %>
+    <div class="h-[150px] sm:h-[200px] bg-gray-200 overflow-hidden">
+      <img src="<%= perfil.foto_capa %>" alt="" class="w-full h-full object-cover">
+    </div>
+    <% } else { %>
     <div class="banner-gradient h-[150px] sm:h-[200px]"
          style="background: linear-gradient(135deg, <%= bannerFrom %> 0%, <%= bannerTo %> 100%);">
     </div>
+    <% } %>
 
     <div class="px-4">
 
@@ -214,6 +220,36 @@
                   <%= pet.nome %>
                 </span>
               </a>
+            <% }); %>
+          </div>
+        </section>
+      <% } %>
+
+      <!-- ═══ Fotos dos pets (galeria por pet) ═══ -->
+      <% if (typeof galeriaPorPet !== 'undefined' && galeriaPorPet && galeriaPorPet.length > 0) { %>
+        <section class="mt-6 mb-2 profile-reveal" style="animation-delay: .14s">
+          <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">
+            <i class="fa-solid fa-images mr-1"></i> Fotos dos pets
+          </h3>
+          <div class="space-y-4">
+            <% galeriaPorPet.forEach(function(item) { %>
+              <div class="rounded-xl border border-gray-100 overflow-hidden">
+                <div class="px-3 py-2 bg-gray-50 border-b border-gray-100 flex items-center gap-2">
+                  <% if (item.pet_foto) { %>
+                    <img src="<%= item.pet_foto %>" alt="" class="w-6 h-6 rounded-full object-cover">
+                  <% } else { %>
+                    <span class="w-6 h-6 rounded-full bg-primary-100 flex items-center justify-center text-[10px] text-primary-600"><i class="fa-solid fa-paw"></i></span>
+                  <% } %>
+                  <span class="text-sm font-bold text-gray-800"><%= item.pet_nome %></span>
+                </div>
+                <div class="grid grid-cols-3 sm:grid-cols-4 gap-1 p-2">
+                  <% (item.fotos || []).forEach(function(f) { %>
+                    <a href="<%= f.foto %>" target="_blank" rel="noopener" class="block aspect-square rounded-lg overflow-hidden bg-gray-100">
+                      <img src="<%= f.foto %>" alt="" class="w-full h-full object-cover">
+                    </a>
+                  <% }); %>
+                </div>
+              </div>
             <% }); %>
           </div>
         </section>

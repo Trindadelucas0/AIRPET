@@ -7,6 +7,8 @@
  * A ordem respeita foreign keys (tabelas referenciadas sao criadas primeiro).
  */
 
+const path = require('path');
+const fs = require('fs');
 const { pool } = require('./database');
 const logger = require('../utils/logger');
 
@@ -763,7 +765,22 @@ const migrations = [
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='usuarios' AND column_name='bloqueado') THEN
       ALTER TABLE usuarios ADD COLUMN bloqueado BOOLEAN DEFAULT false;
     END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='usuarios' AND column_name='foto_capa') THEN
+      ALTER TABLE usuarios ADD COLUMN foto_capa TEXT;
+    END IF;
   END $$;`,
+
+  // Capa do perfil e galeria de fotos por pet no perfil do tutor
+  `CREATE TABLE IF NOT EXISTS fotos_perfil_pet (
+    id SERIAL PRIMARY KEY,
+    usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+    pet_id INTEGER NOT NULL REFERENCES pets(id) ON DELETE CASCADE,
+    foto TEXT NOT NULL,
+    ordem INTEGER DEFAULT 0,
+    criado_em TIMESTAMP DEFAULT NOW()
+  );`,
+  `CREATE INDEX IF NOT EXISTS idx_fotos_perfil_pet_usuario ON fotos_perfil_pet (usuario_id);`,
+  `CREATE INDEX IF NOT EXISTS idx_fotos_perfil_pet_pet ON fotos_perfil_pet (pet_id);`,
 
   // Campos extras em pets: microchip, castrado, alergias, veterinario, observacoes
   `DO $$ BEGIN
@@ -875,6 +892,13 @@ async function runMigrations() {
       logger.error('MIGRATE', `Migration ${i + 1}/${total} falhou`, err);
     }
   }
+
+  ['capa', 'perfil-galeria'].forEach((dir) => {
+    try {
+      const full = path.join(__dirname, '..', 'public', 'images', dir);
+      fs.mkdirSync(full, { recursive: true });
+    } catch (e) {}
+  });
 
   const ok = total - erros;
   if (erros > 0) {

@@ -43,6 +43,8 @@ async function autoDeleteSeNecessario(usuarioId) {
   return antiga;
 }
 
+const FotoPerfilPet = require('../models/FotoPerfilPet');
+
 const explorarController = {
 
   async feedSeguidos(req, res) {
@@ -449,7 +451,17 @@ const explorarController = {
         return res.redirect('/explorar');
       }
 
-      const pets = await Pet.buscarPorUsuario(id);
+      const [pets, galeriaLinhas] = await Promise.all([
+        Pet.buscarPorUsuario(id),
+        FotoPerfilPet.listarPorUsuario(id),
+      ]);
+
+      const galeriaPorPet = {};
+      (galeriaLinhas || []).forEach((f) => {
+        if (!galeriaPorPet[f.pet_id]) galeriaPorPet[f.pet_id] = { pet_nome: f.pet_nome, pet_foto: f.pet_foto, fotos: [] };
+        galeriaPorPet[f.pet_id].fotos.push({ id: f.id, foto: f.foto });
+      });
+      const galeriaPorPetLista = Object.entries(galeriaPorPet).map(([pet_id, v]) => ({ pet_id: parseInt(pet_id, 10), pet_nome: v.pet_nome, pet_foto: v.pet_foto, fotos: v.fotos }));
 
       res.render('explorar/perfil', {
         titulo: usuario.nome,
@@ -464,6 +476,7 @@ const explorarController = {
         totalPosts: 0,
         totalFixadas: 0,
         soPets: true,
+        galeriaPorPet: galeriaPorPetLista,
       });
     } catch (err) {
       logger.error('EXPLORAR', 'Erro no perfil público', err);

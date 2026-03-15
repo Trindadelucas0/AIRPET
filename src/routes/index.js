@@ -21,6 +21,23 @@ const uploadPerfil = multer({
   },
 });
 
+const storagePerfilCapa = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const dir = file.fieldname === 'foto_capa' ? 'capa' : 'perfil';
+    cb(null, path.join(__dirname, '..', 'public', 'images', dir));
+  },
+  filename: (req, file, cb) => cb(null, crypto.randomBytes(16).toString('hex') + path.extname(file.originalname || '.jpg')),
+});
+const uploadPerfilCapa = multer({
+  storage: storagePerfilCapa,
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const allowed = /jpeg|jpg|png|gif|webp/;
+    const ext = path.extname(file.originalname || '').toLowerCase();
+    cb(null, allowed.test(ext) && (file.mimetype && allowed.test(file.mimetype)));
+  },
+});
+
 // Sub-rotas
 const authRoutes = require('./authRoutes');
 const petRoutes = require('./petRoutes');
@@ -96,7 +113,12 @@ router.get('/feed', estaAutenticado, require('../controllers/explorarController'
 const perfilController = require('../controllers/perfilController');
 const { validarPerfil, validarResultado } = require('../middlewares/validator');
 router.get('/perfil', estaAutenticado, perfilController.mostrarPerfil);
-router.put('/perfil', estaAutenticado, uploadPerfil.single('foto_perfil'), validarPerfil, validarResultado, perfilController.atualizar);
+router.put('/perfil', estaAutenticado, uploadPerfilCapa.fields([{ name: 'foto_perfil', maxCount: 1 }, { name: 'foto_capa', maxCount: 1 }]), validarPerfil, validarResultado, perfilController.atualizar);
+
+router.get('/perfil/galeria', estaAutenticado, perfilController.listarGaleria);
+const { uploadPerfilGaleria } = require('../utils/upload');
+router.post('/perfil/galeria', estaAutenticado, uploadPerfilGaleria.single('foto'), perfilController.adicionarFotoGaleria);
+router.delete('/perfil/galeria/:id', estaAutenticado, perfilController.removerFotoGaleria);
 
 // API publica de racas (usada pelo autocomplete no cadastro de pet)
 router.get('/api/racas', require('../controllers/perfilController').buscarRacas);

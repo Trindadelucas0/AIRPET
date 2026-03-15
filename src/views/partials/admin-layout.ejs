@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= typeof titulo !== 'undefined' ? titulo + ' | AIRPET Admin' : 'Painel de Controle | AIRPET Admin' %></title>
+  <link rel="stylesheet" href="/css/output.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
+  <style>
+    .admin-nav a.active { background: rgba(236, 90, 28, 0.1); color: #c2410c; font-weight: 600; }
+    .admin-nav a:hover:not(.active) { background: rgba(0,0,0,0.04); color: #111; }
+  </style>
+</head>
+<body class="bg-gray-100 min-h-screen antialiased text-gray-800">
+
+<header class="bg-white border-b border-gray-200 sticky top-0 z-40 shadow-sm">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex items-center justify-between h-14">
+      <a href="<%= adminPath %>" class="flex items-center gap-2.5 group">
+        <span class="w-9 h-9 rounded-xl bg-primary-500 text-white flex items-center justify-center shadow-md group-hover:scale-105 transition-transform">
+          <i class="fa-solid fa-shield-halved text-sm"></i>
+        </span>
+        <span class="text-lg font-bold text-gray-800">AIRPET Admin</span>
+      </a>
+      <span class="text-xs text-gray-400 hidden sm:inline">Painel de controle</span>
+      <a href="<%= adminPath %>/logout" class="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-red-50 hover:text-red-600 transition-colors">
+        <i class="fa-solid fa-right-from-bracket"></i> Sair
+      </a>
+    </div>
+    <nav class="admin-nav flex flex-wrap items-center gap-1 -mb-px border-t border-gray-100 pt-3 mt-1">
+      <% const p = typeof currentPath !== 'undefined' ? currentPath : ''; %>
+      <a href="<%= adminPath %>" class="px-3 py-2 rounded-lg text-sm font-medium transition-colors <%= (p === '' || p === '/') ? 'active' : 'text-gray-600' %>">
+        <i class="fa-solid fa-chart-line mr-1.5 w-4"></i>Dashboard
+      </a>
+      <a href="<%= adminPath %>/usuarios" class="px-3 py-2 rounded-lg text-sm font-medium transition-colors <%= p === '/usuarios' ? 'active' : 'text-gray-600' %>">
+        <i class="fa-solid fa-users mr-1.5 w-4"></i>Usuários
+      </a>
+      <a href="<%= adminPath %>/pets-perdidos" class="px-3 py-2 rounded-lg text-sm font-medium transition-colors <%= p === '/pets-perdidos' ? 'active' : 'text-gray-600' %>">
+        <i class="fa-solid fa-triangle-exclamation mr-1.5 w-4"></i>Pets perdidos
+      </a>
+      <a href="<%= adminPath %>/moderacao" class="px-3 py-2 rounded-lg text-sm font-medium transition-colors <%= p === '/moderacao' ? 'active' : 'text-gray-600' %>">
+        <i class="fa-solid fa-comment-dots mr-1.5 w-4"></i>Moderação
+      </a>
+      <a href="/tags/admin/lista" class="px-3 py-2 rounded-lg text-sm font-medium transition-colors text-gray-600 hover:bg-gray-50">
+        <i class="fa-solid fa-tag mr-1.5 w-4"></i>Tags
+      </a>
+      <a href="<%= adminPath %>/gerenciar-mapa" class="px-3 py-2 rounded-lg text-sm font-medium transition-colors <%= p === '/gerenciar-mapa' ? 'active' : 'text-gray-600' %>">
+        <i class="fa-solid fa-map-location-dot mr-1.5 w-4"></i>Mapa
+      </a>
+      <a href="<%= adminPath %>/configuracoes" class="px-3 py-2 rounded-lg text-sm font-medium transition-colors <%= p === '/configuracoes' ? 'active' : 'text-gray-600' %>">
+        <i class="fa-solid fa-gear mr-1.5 w-4"></i>Configurações
+      </a>
+      <a href="<%= adminPath %>/aparencia" class="px-3 py-2 rounded-lg text-sm font-medium transition-colors <%= p === '/aparencia' ? 'active' : 'text-gray-600' %>">
+        <i class="fa-solid fa-palette mr-1.5 w-4"></i>Aparência
+      </a>
+    </nav>
+  </div>
+</header>
+
+<%- include('./flash') %>

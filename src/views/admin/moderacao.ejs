@@ -1,6 +1,5 @@
 <% locals.titulo = 'Moderacao' %>
-<%- include('../partials/header') %>
-<%- include('../partials/flash') %>
+<%- include('../partials/admin-layout') %>
 
 <main class="flex-1">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -77,4 +76,4 @@
 </main>
 
 <% locals.extraScripts = '<script src="/socket.io/socket.io.js"></script><script src="/js/admin-moderacao.js"></script>' %>
-<%- include('../partials/footer') %>
+<%- include('../partials/admin-footer') %>

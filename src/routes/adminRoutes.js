@@ -30,6 +30,7 @@ const BASE = process.env.ADMIN_PATH || '/admin';
 
 router.use((req, res, next) => {
   res.locals.adminPath = BASE;
+  res.locals.currentPath = req.path;
   next();
 });
 
@@ -96,6 +97,7 @@ router.post('/moderacao/:id/rejeitar', apenasAdmin, adminController.rejeitarMens
 
 router.post('/usuarios/:id/role', apenasAdmin, adminController.atualizarRoleUsuario);
 router.post('/usuarios/:id/bloquear', apenasAdmin, adminController.toggleBloqueioUsuario);
+router.post('/usuarios/:id/excluir', apenasAdmin, adminController.excluirUsuario);
 
 router.get('/configuracoes', apenasAdmin, adminController.mostrarConfiguracoes);
 router.post('/configuracoes', apenasAdmin, adminController.salvarConfiguracoes);
