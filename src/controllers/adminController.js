@@ -45,6 +45,8 @@ const notificacaoService = require('../services/notificacaoService');
 const logger = require('../utils/logger');
 const { query } = require('../config/database');
 
+const getAdminPath = () => process.env.ADMIN_PATH || '/admin';
+
 /**
  * dashboard — Exibe o painel administrativo com métricas gerais
  *
@@ -152,7 +154,7 @@ async function listarUsuarios(req, res) {
   } catch (erro) {
     logger.error('AdminController', 'Erro ao listar usuários', erro);
     req.session.flash = { tipo: 'erro', mensagem: 'Erro ao carregar a lista de usuários.' };
-    return res.redirect('/admin');
+    return res.redirect(getAdminPath());
   }
 }
 
@@ -178,7 +180,7 @@ async function listarPets(req, res) {
   } catch (erro) {
     logger.error('AdminController', 'Erro ao listar pets', erro);
     req.session.flash = { tipo: 'erro', mensagem: 'Erro ao carregar a lista de pets.' };
-    return res.redirect('/admin');
+    return res.redirect(getAdminPath());
   }
 }
 
@@ -206,7 +208,7 @@ async function listarPetshops(req, res) {
   } catch (erro) {
     logger.error('AdminController', 'Erro ao listar petshops', erro);
     req.session.flash = { tipo: 'erro', mensagem: 'Erro ao carregar a lista de petshops.' };
-    return res.redirect('/admin');
+    return res.redirect(getAdminPath());
   }
 }
 
@@ -233,7 +235,7 @@ async function listarPerdidos(req, res) {
   } catch (erro) {
     logger.error('AdminController', 'Erro ao listar pets perdidos', erro);
     req.session.flash = { tipo: 'erro', mensagem: 'Erro ao carregar a lista de pets perdidos.' };
-    return res.redirect('/admin');
+    return res.redirect(getAdminPath());
   }
 }
 
@@ -264,7 +266,7 @@ async function aprovarPerdido(req, res) {
 
     if (!alerta) {
       req.session.flash = { tipo: 'erro', mensagem: 'Alerta de pet perdido não encontrado.' };
-      return res.redirect('/admin/pets-perdidos');
+      return res.redirect(getAdminPath() + '/pets-perdidos');
     }
 
     await PetPerdido.aprovar(id);
@@ -288,11 +290,11 @@ async function aprovarPerdido(req, res) {
     logger.info('AdminController', `Alerta aprovado: ${id} (pet: ${alerta.pet_nome})`);
 
     req.session.flash = { tipo: 'sucesso', mensagem: `Alerta de ${alerta.pet_nome} aprovado. O alerta agora está visível no mapa.` };
-    return res.redirect('/admin/pets-perdidos');
+    return res.redirect(getAdminPath() + '/pets-perdidos');
   } catch (erro) {
     logger.error('AdminController', 'Erro ao aprovar alerta de pet perdido', erro);
     req.session.flash = { tipo: 'erro', mensagem: 'Erro ao aprovar o alerta.' };
-    return res.redirect('/admin/pets-perdidos');
+    return res.redirect(getAdminPath() + '/pets-perdidos');
   }
 }
 
@@ -388,7 +390,7 @@ async function mostrarModeracao(req, res) {
   } catch (erro) {
     logger.error('AdminController', 'Erro ao carregar moderação', erro);
     req.session.flash = { tipo: 'erro', mensagem: 'Erro ao carregar as mensagens para moderação.' };
-    return res.redirect('/admin');
+    return res.redirect(getAdminPath());
   }
 }
 
@@ -422,7 +424,7 @@ async function mostrarConfiguracoes(req, res) {
   } catch (erro) {
     logger.error('AdminController', 'Erro ao carregar configurações', erro);
     req.session.flash = { tipo: 'erro', mensagem: 'Erro ao carregar as configurações.' };
-    return res.redirect('/admin');
+    return res.redirect(getAdminPath());
   }
 }
 
@@ -453,11 +455,11 @@ async function salvarConfiguracoes(req, res) {
     logger.info('AdminController', `Configurações atualizadas: ${Object.keys(configs).length} itens`);
 
     req.session.flash = { tipo: 'sucesso', mensagem: 'Configurações salvas com sucesso!' };
-    return res.redirect('/admin/configuracoes');
+    return res.redirect(getAdminPath() + '/configuracoes');
   } catch (erro) {
     logger.error('AdminController', 'Erro ao salvar configurações', erro);
     req.session.flash = { tipo: 'erro', mensagem: 'Erro ao salvar as configurações.' };
-    return res.redirect('/admin/configuracoes');
+    return res.redirect(getAdminPath() + '/configuracoes');
   }
 }
 
@@ -484,7 +486,7 @@ async function mostrarGerenciarMapa(req, res) {
   } catch (erro) {
     logger.error('AdminController', 'Erro ao carregar gerenciar mapa', erro);
     req.session.flash = { tipo: 'erro', mensagem: 'Erro ao carregar a gestão do mapa.' };
-    return res.redirect('/admin');
+    return res.redirect(getAdminPath());
   }
 }
 
@@ -527,7 +529,7 @@ async function mostrarMapa(req, res) {
   } catch (erro) {
     logger.error('AdminController', 'Erro ao carregar mapa administrativo', erro);
     req.session.flash = { tipo: 'erro', mensagem: 'Erro ao carregar o mapa.' };
-    return res.redirect('/admin');
+    return res.redirect(getAdminPath());
   }
 }
 
@@ -537,7 +539,7 @@ async function rejeitarPerdido(req, res) {
     const alerta = await PetPerdido.buscarPorId(id);
     if (!alerta) {
       req.session.flash = { tipo: 'erro', mensagem: 'Alerta não encontrado.' };
-      return res.redirect('/admin/pets-perdidos');
+      return res.redirect(getAdminPath() + '/pets-perdidos');
     }
 
     await PetPerdido.rejeitar(id);
@@ -551,11 +553,11 @@ async function rejeitarPerdido(req, res) {
     } catch (e) { logger.error('AdminController', 'Erro notificação rejeição', e); }
 
     req.session.flash = { tipo: 'sucesso', mensagem: `Alerta de ${alerta.pet_nome} rejeitado.` };
-    return res.redirect('/admin/pets-perdidos');
+    return res.redirect(getAdminPath() + '/pets-perdidos');
   } catch (erro) {
     logger.error('AdminController', 'Erro ao rejeitar alerta', erro);
     req.session.flash = { tipo: 'erro', mensagem: 'Erro ao rejeitar o alerta.' };
-    return res.redirect('/admin/pets-perdidos');
+    return res.redirect(getAdminPath() + '/pets-perdidos');
   }
 }
 
@@ -565,15 +567,15 @@ async function atualizarRoleUsuario(req, res) {
     const { role } = req.body;
     if (!['usuario', 'admin'].includes(role)) {
       req.session.flash = { tipo: 'erro', mensagem: 'Role inválido.' };
-      return res.redirect('/admin/usuarios');
+      return res.redirect(getAdminPath() + '/usuarios');
     }
     await Usuario.atualizarRole(id, role);
     req.session.flash = { tipo: 'sucesso', mensagem: 'Papel do usuário atualizado.' };
-    return res.redirect('/admin/usuarios');
+    return res.redirect(getAdminPath() + '/usuarios');
   } catch (erro) {
     logger.error('AdminController', 'Erro ao atualizar role', erro);
     req.session.flash = { tipo: 'erro', mensagem: 'Erro ao atualizar papel do usuário.' };
-    return res.redirect('/admin/usuarios');
+    return res.redirect(getAdminPath() + '/usuarios');
   }
 }
 
@@ -583,21 +585,21 @@ async function toggleBloqueioUsuario(req, res) {
     const usuario = await Usuario.buscarPorId(id);
     if (!usuario) {
       req.session.flash = { tipo: 'erro', mensagem: 'Usuário não encontrado.' };
-      return res.redirect('/admin/usuarios');
+      return res.redirect(getAdminPath() + '/usuarios');
     }
     const adminEmail = process.env.ADMIN_EMAIL || '';
     if (adminEmail && usuario.email === adminEmail) {
       req.session.flash = { tipo: 'erro', mensagem: 'Não é possível bloquear o usuário administrador.' };
-      return res.redirect('/admin/usuarios');
+      return res.redirect(getAdminPath() + '/usuarios');
     }
     const novoEstado = !usuario.bloqueado;
     await Usuario.atualizarBloqueado(id, novoEstado);
     req.session.flash = { tipo: 'sucesso', mensagem: novoEstado ? 'Usuário bloqueado.' : 'Usuário desbloqueado.' };
-    return res.redirect('/admin/usuarios');
+    return res.redirect(getAdminPath() + '/usuarios');
   } catch (erro) {
     logger.error('AdminController', 'Erro ao bloquear/desbloquear usuário', erro);
     req.session.flash = { tipo: 'erro', mensagem: 'Erro ao atualizar status do usuário.' };
-    return res.redirect('/admin/usuarios');
+    return res.redirect(getAdminPath() + '/usuarios');
   }
 }
 
@@ -607,11 +609,11 @@ async function aprovarMensagem(req, res) {
     const adminId = req.session.admin ? null : req.session.usuario?.id;
     await MensagemChat.aprovar(id, adminId);
     req.session.flash = { tipo: 'sucesso', mensagem: 'Mensagem aprovada.' };
-    return res.redirect('/admin/moderacao');
+    return res.redirect(getAdminPath() + '/moderacao');
   } catch (erro) {
     logger.error('AdminController', 'Erro ao aprovar mensagem', erro);
     req.session.flash = { tipo: 'erro', mensagem: 'Erro ao aprovar mensagem.' };
-    return res.redirect('/admin/moderacao');
+    return res.redirect(getAdminPath() + '/moderacao');
   }
 }
 
@@ -621,11 +623,11 @@ async function rejeitarMensagem(req, res) {
     const adminId = req.session.admin ? null : req.session.usuario?.id;
     await MensagemChat.rejeitar(id, adminId);
     req.session.flash = { tipo: 'sucesso', mensagem: 'Mensagem rejeitada.' };
-    return res.redirect('/admin/moderacao');
+    return res.redirect(getAdminPath() + '/moderacao');
   } catch (erro) {
     logger.error('AdminController', 'Erro ao rejeitar mensagem', erro);
     req.session.flash = { tipo: 'erro', mensagem: 'Erro ao rejeitar mensagem.' };
-    return res.redirect('/admin/moderacao');
+    return res.redirect(getAdminPath() + '/moderacao');
   }
 }
 
@@ -649,7 +651,7 @@ async function mostrarAparencia(req, res) {
   } catch (erro) {
     logger.error('AdminController', 'Erro ao carregar aparência', erro);
     req.session.flash = { tipo: 'erro', mensagem: 'Erro ao carregar a página de aparência.' };
-    return res.redirect('/admin');
+    return res.redirect(getAdminPath());
   }
 }
 

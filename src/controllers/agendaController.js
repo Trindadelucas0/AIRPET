@@ -174,12 +174,12 @@ async function confirmar(req, res) {
 
     if (!agendamento) {
       req.session.flash = { tipo: 'erro', mensagem: 'Agendamento não encontrado.' };
-      return res.redirect('/admin/dashboard');
+      return res.redirect((process.env.ADMIN_PATH || '/admin') + '/dashboard');
     }
 
     if (agendamento.status !== 'agendado') {
       req.session.flash = { tipo: 'erro', mensagem: `Não é possível confirmar um agendamento com status "${agendamento.status}".` };
-      return res.redirect('/admin/dashboard');
+      return res.redirect((process.env.ADMIN_PATH || '/admin') + '/dashboard');
     }
 
     await AgendaPetshop.confirmar(id);
@@ -187,11 +187,11 @@ async function confirmar(req, res) {
     logger.info('AgendaController', `Agendamento confirmado: ${id} pelo admin`);
 
     req.session.flash = { tipo: 'sucesso', mensagem: 'Agendamento confirmado com sucesso.' };
-    return res.redirect('/admin/dashboard');
+    return res.redirect((process.env.ADMIN_PATH || '/admin') + '/dashboard');
   } catch (erro) {
     logger.error('AgendaController', 'Erro ao confirmar agendamento', erro);
     req.session.flash = { tipo: 'erro', mensagem: 'Erro ao confirmar o agendamento. Tente novamente.' };
-    return res.redirect('/admin/dashboard');
+    return res.redirect((process.env.ADMIN_PATH || '/admin') + '/dashboard');
   }
 }
 

@@ -333,7 +333,7 @@ async function listarTags(req, res) {
   } catch (erro) {
     logger.error('TagController', 'Erro ao listar tags', erro);
     req.session.flash = { tipo: 'erro', mensagem: 'Erro ao carregar a lista de tags.' };
-    return res.redirect('/admin/dashboard');
+    return res.redirect((process.env.ADMIN_PATH || '/admin') + '/dashboard');
   }
 }
 

@@ -30,6 +30,8 @@
 const PontoMapa = require('../models/PontoMapa');
 const logger = require('../utils/logger');
 
+const getAdminPath = () => process.env.ADMIN_PATH || '/admin';
+
 /**
  * criar — Cria um novo ponto de interesse no mapa
  *
@@ -53,7 +55,7 @@ async function criar(req, res) {
 
     if (!nome || !categoria || !latitude || !longitude) {
       req.session.flash = { tipo: 'erro', mensagem: 'Nome, categoria, latitude e longitude são obrigatórios.' };
-      return res.redirect('/admin/gerenciar-mapa');
+      return res.redirect(getAdminPath() + '/gerenciar-mapa');
     }
 
     const servicosArray = servicos
@@ -75,11 +77,11 @@ async function criar(req, res) {
     logger.info('PontoMapaController', `Ponto criado: ${ponto.nome} (categoria: ${categoria})`);
 
     req.session.flash = { tipo: 'sucesso', mensagem: `Ponto "${ponto.nome}" adicionado ao mapa com sucesso!` };
-    return res.redirect('/admin/gerenciar-mapa');
+    return res.redirect(getAdminPath() + '/gerenciar-mapa');
   } catch (erro) {
     logger.error('PontoMapaController', 'Erro ao criar ponto no mapa', erro);
     req.session.flash = { tipo: 'erro', mensagem: 'Erro ao criar o ponto no mapa. Tente novamente.' };
-    return res.redirect('/admin/gerenciar-mapa');
+    return res.redirect(getAdminPath() + '/gerenciar-mapa');
   }
 }
 
@@ -103,7 +105,7 @@ async function atualizar(req, res) {
 
     if (!pontoExistente) {
       req.session.flash = { tipo: 'erro', mensagem: 'Ponto não encontrado.' };
-      return res.redirect('/admin/gerenciar-mapa');
+      return res.redirect(getAdminPath() + '/gerenciar-mapa');
     }
 
     const servicosArray = servicos
@@ -125,11 +127,11 @@ async function atualizar(req, res) {
     logger.info('PontoMapaController', `Ponto atualizado: ${id}`);
 
     req.session.flash = { tipo: 'sucesso', mensagem: 'Ponto atualizado com sucesso!' };
-    return res.redirect('/admin/gerenciar-mapa');
+    return res.redirect(getAdminPath() + '/gerenciar-mapa');
   } catch (erro) {
     logger.error('PontoMapaController', 'Erro ao atualizar ponto', erro);
     req.session.flash = { tipo: 'erro', mensagem: 'Erro ao atualizar o ponto. Tente novamente.' };
-    return res.redirect('/admin/gerenciar-mapa');
+    return res.redirect(getAdminPath() + '/gerenciar-mapa');
   }
 }
 
@@ -153,7 +155,7 @@ async function ativarDesativar(req, res) {
 
     if (!ponto) {
       req.session.flash = { tipo: 'erro', mensagem: 'Ponto não encontrado.' };
-      return res.redirect('/admin/gerenciar-mapa');
+      return res.redirect(getAdminPath() + '/gerenciar-mapa');
     }
 
     /* Inverte o status: se ativo → inativo, se inativo → ativo */
@@ -164,11 +166,11 @@ async function ativarDesativar(req, res) {
     logger.info('PontoMapaController', `Ponto ${id} ${statusTexto}`);
 
     req.session.flash = { tipo: 'sucesso', mensagem: `Ponto "${ponto.nome}" ${statusTexto} com sucesso.` };
-    return res.redirect('/admin/gerenciar-mapa');
+    return res.redirect(getAdminPath() + '/gerenciar-mapa');
   } catch (erro) {
     logger.error('PontoMapaController', 'Erro ao alternar status do ponto', erro);
     req.session.flash = { tipo: 'erro', mensagem: 'Erro ao alterar o status do ponto.' };
-    return res.redirect('/admin/gerenciar-mapa');
+    return res.redirect(getAdminPath() + '/gerenciar-mapa');
   }
 }
 
@@ -193,7 +195,7 @@ async function deletar(req, res) {
 
     if (!ponto) {
       req.session.flash = { tipo: 'erro', mensagem: 'Ponto não encontrado.' };
-      return res.redirect('/admin/gerenciar-mapa');
+      return res.redirect(getAdminPath() + '/gerenciar-mapa');
     }
 
     await PontoMapa.deletar(id);
@@ -201,11 +203,11 @@ async function deletar(req, res) {
     logger.info('PontoMapaController', `Ponto removido: ${ponto.nome} (ID: ${id})`);
 
     req.session.flash = { tipo: 'sucesso', mensagem: `Ponto "${ponto.nome}" removido permanentemente.` };
-    return res.redirect('/admin/gerenciar-mapa');
+    return res.redirect(getAdminPath() + '/gerenciar-mapa');
   } catch (erro) {
     logger.error('PontoMapaController', 'Erro ao deletar ponto', erro);
     req.session.flash = { tipo: 'erro', mensagem: 'Erro ao remover o ponto do mapa.' };
-    return res.redirect('/admin/gerenciar-mapa');
+    return res.redirect(getAdminPath() + '/gerenciar-mapa');
   }
 }
 
