@@ -276,7 +276,6 @@ document.getElementById('foto_capa').addEventListener('change', function() {
   if (file.size > 5 * 1024 * 1024) { alert('Imagem muito grande (máx. 5MB).'); input.value = ''; return; }
   var reader = new FileReader();
   reader.onload = function(ev) {
-    input.value = '';
     if (typeof openCropModal !== 'function') { alert('Recorte não disponível.'); return; }
     openCropModal({
       src: ev.target.result,
@@ -285,6 +284,7 @@ document.getElementById('foto_capa').addEventListener('change', function() {
       maxHeight: 400,
       onConfirm: function(blob) {
         croppedCapaFile = new File([blob], 'capa.jpg', { type: 'image/jpeg' });
+        input.value = '';
         var url = URL.createObjectURL(blob);
         var preview = document.getElementById('previewCapa');
         preview.style.backgroundImage = 'url(' + url + ')';
@@ -306,7 +306,6 @@ document.getElementById('foto_perfil').addEventListener('change', function() {
   if (file.size > 5 * 1024 * 1024) { alert('Imagem muito grande (máx. 5MB).'); input.value = ''; return; }
   var reader = new FileReader();
   reader.onload = function(ev) {
-    input.value = '';
     if (typeof openCropModal !== 'function') { alert('Recorte não disponível.'); return; }
     openCropModal({
       src: ev.target.result,
@@ -315,6 +314,7 @@ document.getElementById('foto_perfil').addEventListener('change', function() {
       maxHeight: 500,
       onConfirm: function(blob) {
         croppedProfileFile = new File([blob], 'foto-perfil.jpg', { type: 'image/jpeg' });
+        input.value = '';
         var url = URL.createObjectURL(blob);
         var preview = document.getElementById('previewFotoPerfil');
         if (preview.tagName === 'IMG') {
@@ -347,9 +347,16 @@ document.querySelector('form[action*="/perfil"]').addEventListener('submit', fun
   btn.disabled = true;
   btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>Salvando…';
   fetch(form.action, { method: 'POST', body: formData, credentials: 'same-origin' })
-    .then(function(r) { return r.text(); })
-    .then(function() {
-      window.location.href = '/perfil';
+    .then(function(r) {
+      if (r.ok) {
+        window.location.href = '/perfil';
+        return;
+      }
+      return r.text().then(function() {
+        alert('Não foi possível salvar. Tamanho ou formato da imagem podem estar incorretos.');
+        btn.disabled = false;
+        btn.innerHTML = origHtml;
+      });
     })
     .catch(function() {
       alert('Erro ao salvar. Tente novamente.');

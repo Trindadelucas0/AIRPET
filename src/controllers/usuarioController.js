@@ -20,13 +20,14 @@
  */
 
 const Usuario = require('../models/Usuario');
+const Pet = require('../models/Pet');
 const logger = require('../utils/logger');
 
 /**
  * mostrarPerfil — Renderiza a página de perfil do usuário logado
  *
- * Rota: GET /perfil
- * View: usuario/perfil
+ * Rota: GET /perfil (quando usar este controller)
+ * View: perfil (mesma view do perfilController — espera perfil e pets)
  *
  * Busca os dados atualizados do usuário no banco (não usa apenas
  * os dados da sessão, pois estes podem estar desatualizados).
@@ -50,10 +51,13 @@ async function mostrarPerfil(req, res) {
       return res.redirect('/auth/logout');
     }
 
-    /* Renderiza a página de perfil com os dados do banco */
-    return res.render('usuario/perfil', {
+    const pets = await Pet.buscarPorUsuario(usuarioId);
+
+    /* Renderiza a página de perfil (view perfil.ejs espera perfil e pets) */
+    return res.render('perfil', {
       titulo: 'Meu Perfil - AIRPET',
-      usuario,
+      perfil: usuario,
+      pets: pets || [],
     });
   } catch (erro) {
     logger.error('UsuarioController', 'Erro ao exibir perfil', erro);

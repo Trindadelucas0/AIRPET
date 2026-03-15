@@ -645,16 +645,20 @@ async function salvarAparencia(req, res) {
     const icon192File = files.icon_192 && files.icon_192[0];
     const icon512File = files.icon_512 && files.icon_512[0];
 
+    const cacheBust = '?v=' + Date.now();
+
     if (icon192File && icon192File.filename) {
-      await ConfigSistema.inserirOuAtualizar('pwa_icon_192', '/images/pwa/' + icon192File.filename, 'URL do ícone 192x192');
+      const url192 = '/images/pwa/' + icon192File.filename + cacheBust;
+      await ConfigSistema.inserirOuAtualizar('pwa_icon_192', url192, 'URL do ícone 192x192');
       if (!icon512File || !icon512File.filename) {
-        await ConfigSistema.inserirOuAtualizar('pwa_icon_512', '/images/pwa/' + icon192File.filename, 'URL do ícone 512x512');
+        await ConfigSistema.inserirOuAtualizar('pwa_icon_512', url192, 'URL do ícone 512x512');
       }
     }
     if (icon512File && icon512File.filename) {
-      await ConfigSistema.inserirOuAtualizar('pwa_icon_512', '/images/pwa/' + icon512File.filename, 'URL do ícone 512x512');
+      const url512 = '/images/pwa/' + icon512File.filename + cacheBust;
+      await ConfigSistema.inserirOuAtualizar('pwa_icon_512', url512, 'URL do ícone 512x512');
       if (!icon192File || !icon192File.filename) {
-        await ConfigSistema.inserirOuAtualizar('pwa_icon_192', '/images/pwa/' + icon512File.filename, 'URL do ícone 192x192');
+        await ConfigSistema.inserirOuAtualizar('pwa_icon_192', url512, 'URL do ícone 192x192');
       }
     }
 

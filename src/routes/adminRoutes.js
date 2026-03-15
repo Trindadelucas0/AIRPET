@@ -9,10 +9,12 @@ const pontoMapaController = require('../controllers/pontoMapaController');
 const { apenasAdmin } = require('../middlewares/adminMiddleware');
 const { limiterLogin } = require('../middlewares/rateLimiter');
 
+const pwaDir = path.join(__dirname, '..', 'public', 'images', 'pwa');
 const storagePwa = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, path.join(__dirname, '..', 'public', 'images', 'pwa')),
+  destination: (req, file, cb) => cb(null, pwaDir),
   filename: (req, file, cb) => {
-    const ext = (path.extname(file.originalname) || '.png').toLowerCase();
+    const rawExt = (path.extname(file.originalname) || '.png').toLowerCase();
+    const ext = rawExt === '.svg' ? '.svg' : '.png';
     const name = file.fieldname === 'icon_192' ? 'icon-192' : 'icon-512';
     cb(null, name + ext);
   },

@@ -1,5 +1,6 @@
 node_modules/
 .env
+.env.example
 src/public/css/output.css
 src/public/images/pets/*
 !src/public/images/pets/.gitkeep
