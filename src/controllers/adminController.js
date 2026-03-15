@@ -313,23 +313,28 @@ async function aprovarPerdido(req, res) {
  * @param {object} res - Resposta Express
  */
 async function escalarAlerta(req, res) {
+  const adminPath = process.env.ADMIN_PATH || '/admin';
   try {
     const { id } = req.params;
     const { nivel } = req.body;
 
-    /* Valida o nível de alerta (deve ser 1, 2 ou 3) */
-    const nivelNumero = parseInt(nivel, 10);
-    if (!nivelNumero || nivelNumero < 1 || nivelNumero > 3) {
-      req.session.flash = { tipo: 'erro', mensagem: 'O nível de alerta deve ser 1, 2 ou 3.' };
-      return res.redirect('/admin/pets-perdidos');
-    }
-
-    /* Busca o alerta para verificar existência */
+    /* Busca o alerta primeiro (para validar e, se não vier nivel no body, calcular próximo nível) */
     const alerta = await PetPerdido.buscarPorId(id);
 
     if (!alerta) {
       req.session.flash = { tipo: 'erro', mensagem: 'Alerta de pet perdido não encontrado.' };
-      return res.redirect('/admin/pets-perdidos');
+      return res.redirect(adminPath + '/pets-perdidos');
+    }
+
+    /* Nível: se vier no body (1–3), usa; senão sobe um nível (1→2→3) como no botão "Escalar Alerta" */
+    let nivelNumero = parseInt(nivel, 10);
+    if (!nivelNumero || nivelNumero < 1 || nivelNumero > 3) {
+      const atual = alerta.nivel_alerta || 1;
+      nivelNumero = Math.min(atual + 1, 3);
+      if (nivelNumero === atual) {
+        req.session.flash = { tipo: 'erro', mensagem: 'Alerta já está no nível máximo (3).' };
+        return res.redirect(adminPath + '/pets-perdidos');
+      }
     }
 
     await PetPerdido.atualizarNivel(id, nivelNumero);
@@ -349,11 +354,11 @@ async function escalarAlerta(req, res) {
     logger.info('AdminController', `Alerta ${id} escalado para nível ${nivelNumero}`);
 
     req.session.flash = { tipo: 'sucesso', mensagem: `Nível de alerta atualizado para ${nivelNumero}. Notificações enviadas.` };
-    return res.redirect('/admin/pets-perdidos');
+    return res.redirect(adminPath + '/pets-perdidos');
   } catch (erro) {
     logger.error('AdminController', 'Erro ao escalar alerta', erro);
     req.session.flash = { tipo: 'erro', mensagem: 'Erro ao atualizar o nível de alerta.' };
-    return res.redirect('/admin/pets-perdidos');
+    return res.redirect(adminPath + '/pets-perdidos');
   }
 }
 
