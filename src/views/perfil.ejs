@@ -66,152 +66,186 @@
       <% } %>
     </div>
 
-    <!-- Edit Form -->
-    <div class="card animate-slideUp" style="animation-delay: 0.15s">
-      <h2 class="text-lg font-bold text-gray-900 mb-5"><i class="fa-solid fa-user-pen mr-2 text-primary-500"></i>Editar Perfil</h2>
-
-      <form action="/perfil?_method=PUT" method="POST" enctype="multipart/form-data">
-        <input type="hidden" name="_method" value="PUT">
-
-        <div class="space-y-5">
-
-          <!-- Dados pessoais -->
-          <div class="pb-2 border-b border-gray-100">
-            <h3 class="text-sm font-bold text-gray-500 uppercase tracking-wider mb-4"><i class="fa-solid fa-user mr-1.5"></i>Dados Pessoais</h3>
-
-            <div class="space-y-4">
-              <div>
-                <label for="foto_perfil" class="block text-sm font-semibold text-gray-700 mb-1.5">Foto de perfil</label>
-                <div class="flex items-center gap-4">
-                  <button type="button" id="btnAbrirFotoPerfil" class="relative flex-shrink-0 rounded-full focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2" title="Trocar ou ajustar foto">
-                    <% if (perfil.foto_perfil) { %>
-                      <img src="<%= perfil.foto_perfil %>" alt="" id="previewFotoPerfil" class="w-16 h-16 rounded-full object-cover border-2 border-gray-200 block">
-                    <% } else { %>
-                      <div id="previewFotoPerfil" class="w-16 h-16 rounded-full border-2 border-gray-200 flex items-center justify-center text-2xl font-bold text-white" style="background:<%= perfil.cor_perfil || '#ec5a1c' %>"><%= (perfil.nome || 'U').charAt(0).toUpperCase() %></div>
-                    <% } %>
-                    <span class="absolute bottom-0 right-0 w-6 h-6 rounded-full bg-primary-500 text-white flex items-center justify-center text-xs shadow" title="Ajustar foto"><i class="fa-solid fa-crop"></i></span>
-                  </button>
-                  <div class="flex-1 min-w-0">
-                    <input type="file" id="foto_perfil" name="foto_perfil" accept="image/*" class="input-field text-sm">
-                    <p class="text-xs text-gray-500 mt-1">Escolha uma imagem e ajuste o recorte antes de salvar.</p>
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-1.5">Capa do perfil</label>
-                <p class="text-xs text-gray-500 mb-2">Banner exibido no topo do seu perfil (estilo Twitter).</p>
-                <button type="button" id="btnAbrirCapa" class="block w-full rounded-xl border-2 border-dashed border-gray-200 hover:border-primary-300 hover:bg-primary-50/30 transition-all overflow-hidden">
-                  <div id="previewCapa" class="h-24 sm:h-28 bg-gray-100 flex items-center justify-center" style="<%= perfil.foto_capa ? 'background-image:url(' + perfil.foto_capa + '); background-size:cover; background-position:center' : '' %>">
-                    <% if (!perfil.foto_capa) { %>
-                      <span class="text-gray-400 text-sm font-medium"><i class="fa-solid fa-image mr-1"></i> Clique para escolher capa</span>
-                    <% } else { %>
-                      <span class="text-white/90 text-sm font-medium drop-shadow">Clique para trocar</span>
-                    <% } %>
-                  </div>
-                </button>
-                <input type="file" id="foto_capa" name="foto_capa" accept="image/*" class="hidden">
-              </div>
-
-              <div>
-                <label for="nome" class="block text-sm font-semibold text-gray-700 mb-1.5">Nome</label>
-                <input type="text" id="nome" name="nome" value="<%= perfil.nome %>" required class="input-field">
-              </div>
-
-              <div>
-                <label for="telefone" class="block text-sm font-semibold text-gray-700 mb-1.5">Telefone</label>
-                <input type="tel" id="telefone" name="telefone" value="<%= perfil.telefone || '' %>" placeholder="(00) 00000-0000" class="input-field">
-              </div>
-
-              <div>
-                <label for="data_nascimento" class="block text-sm font-semibold text-gray-700 mb-1.5">Data de nascimento</label>
-                <input type="date" id="data_nascimento" name="data_nascimento" value="<%= perfil.data_nascimento ? new Date(perfil.data_nascimento).toISOString().split('T')[0] : '' %>" class="input-field">
-              </div>
-
-              <div>
-                <label for="contato_extra" class="block text-sm font-semibold text-gray-700 mb-1.5">Contato extra (redes sociais, WhatsApp)</label>
-                <input type="text" id="contato_extra" name="contato_extra" value="<%= perfil.contato_extra || '' %>" placeholder="Ex: @usuario ou link" class="input-field">
-              </div>
-
-              <div>
-                <label for="bio" class="block text-sm font-semibold text-gray-700 mb-1.5">Bio</label>
-                <textarea id="bio" name="bio" maxlength="160" rows="2" placeholder="Conte sobre você e seus pets..." class="input-field resize-none"><%= perfil.bio || '' %></textarea>
-                <p class="text-xs text-gray-400 mt-1"><span id="bioCount"><%= (perfil.bio || '').length %></span>/160</p>
-              </div>
-            </div>
-          </div>
-
-          <!-- Endereço -->
-          <div class="pb-2 border-b border-gray-100">
-            <h3 class="text-sm font-bold text-gray-500 uppercase tracking-wider mb-1"><i class="fa-solid fa-location-dot mr-1.5"></i>Endereço / Região</h3>
-            <p class="text-xs text-gray-400 mb-4">Usado para recomendar tutores e pets próximos a você</p>
-
-            <div class="space-y-4">
-              <div>
-                <label for="cep" class="block text-sm font-semibold text-gray-700 mb-1.5">CEP</label>
-                <div class="relative">
-                  <input type="text" id="cep" name="cep" value="<%= perfil.cep || '' %>" placeholder="00000-000" maxlength="9" class="input-field pr-10">
-                  <button type="button" id="btnBuscarCep" class="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-primary-500 hover:bg-primary-50 rounded-lg transition-colors" title="Buscar CEP">
-                    <i class="fa-solid fa-magnifying-glass text-sm"></i>
-                  </button>
-                </div>
-              </div>
-
-              <div>
-                <label for="endereco" class="block text-sm font-semibold text-gray-700 mb-1.5">Endereço</label>
-                <input type="text" id="endereco" name="endereco" value="<%= perfil.endereco || '' %>" placeholder="Rua, número" class="input-field">
-              </div>
-
-              <div class="grid grid-cols-2 gap-3">
-                <div>
-                  <label for="bairro" class="block text-sm font-semibold text-gray-700 mb-1.5">Bairro</label>
-                  <input type="text" id="bairro" name="bairro" value="<%= perfil.bairro || '' %>" placeholder="Bairro" class="input-field">
-                </div>
-                <div>
-                  <label for="cidade" class="block text-sm font-semibold text-gray-700 mb-1.5">Cidade</label>
-                  <input type="text" id="cidade" name="cidade" value="<%= perfil.cidade || '' %>" placeholder="Cidade" class="input-field">
-                </div>
-              </div>
-
-              <div>
-                <label for="estado" class="block text-sm font-semibold text-gray-700 mb-1.5">Estado</label>
-                <select id="estado" name="estado" class="input-field">
-                  <option value="">Selecione</option>
-                  <% var estados = [{s:'AC',n:'Acre'},{s:'AL',n:'Alagoas'},{s:'AP',n:'Amapá'},{s:'AM',n:'Amazonas'},{s:'BA',n:'Bahia'},{s:'CE',n:'Ceará'},{s:'DF',n:'Distrito Federal'},{s:'ES',n:'Espírito Santo'},{s:'GO',n:'Goiás'},{s:'MA',n:'Maranhão'},{s:'MT',n:'Mato Grosso'},{s:'MS',n:'Mato Grosso do Sul'},{s:'MG',n:'Minas Gerais'},{s:'PA',n:'Pará'},{s:'PB',n:'Paraíba'},{s:'PR',n:'Paraná'},{s:'PE',n:'Pernambuco'},{s:'PI',n:'Piauí'},{s:'RJ',n:'Rio de Janeiro'},{s:'RN',n:'Rio Grande do Norte'},{s:'RS',n:'Rio Grande do Sul'},{s:'RO',n:'Rondônia'},{s:'RR',n:'Roraima'},{s:'SC',n:'Santa Catarina'},{s:'SP',n:'São Paulo'},{s:'SE',n:'Sergipe'},{s:'TO',n:'Tocantins'}]; %>
-                  <% estados.forEach(function(e) { %>
-                    <option value="<%= e.s %>" <%= (perfil.estado || '') === e.s ? 'selected' : '' %>><%= e.n %></option>
-                  <% }) %>
-                </select>
-              </div>
-
-              <button type="button" id="btnGeolocalizacao" class="w-full flex items-center justify-center gap-2 py-2.5 px-4 border-2 border-dashed border-primary-200 rounded-2xl text-sm font-semibold text-primary-500 hover:bg-primary-50 hover:border-primary-300 transition-all">
-                <i class="fa-solid fa-crosshairs"></i> Usar minha localização atual
-              </button>
-            </div>
-          </div>
-
-          <!-- Cor do Perfil -->
+    <!-- Seção: Foto de perfil -->
+    <div class="card animate-slideUp mb-6" style="animation-delay: 0.12s">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-lg font-bold text-gray-900"><i class="fa-solid fa-image mr-2 text-primary-500"></i>Foto de perfil</h2>
+      </div>
+      <div class="perfil-secao-view">
+        <div class="flex items-center gap-4">
+          <button type="button" id="btnAbrirFotoPerfil" class="relative flex-shrink-0 rounded-full focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2" title="Trocar ou ajustar foto">
+            <% if (perfil.foto_perfil) { %>
+              <img src="<%= perfil.foto_perfil %>" alt="" id="previewFotoPerfil" class="w-16 h-16 rounded-full object-cover border-2 border-gray-200 block">
+            <% } else { %>
+              <div id="previewFotoPerfil" class="w-16 h-16 rounded-full border-2 border-gray-200 flex items-center justify-center text-2xl font-bold text-white" style="background:<%= perfil.cor_perfil || '#ec5a1c' %>"><%= (perfil.nome || 'U').charAt(0).toUpperCase() %></div>
+            <% } %>
+            <span class="absolute bottom-0 right-0 w-6 h-6 rounded-full bg-primary-500 text-white flex items-center justify-center text-xs shadow" title="Ajustar foto"><i class="fa-solid fa-crop"></i></span>
+          </button>
           <div>
-            <label class="block text-sm font-semibold text-gray-700 mb-2">Cor do Perfil</label>
-            <div class="flex flex-wrap gap-2" id="colorPicker">
-              <% var cores = ['#ec5a1c','#e74c3c','#e91e63','#9b59b6','#673ab7','#3f51b5','#2196f3','#03a9f4','#00bcd4','#009688','#4caf50','#8bc34a','#ff9800','#ff5722','#795548','#607d8b','#000000']; %>
-              <% cores.forEach(function(cor) { %>
-                <button type="button" onclick="selecionarCor('<%= cor %>')"
-                        class="w-9 h-9 rounded-full border-2 transition-all duration-200 hover:scale-110 active:scale-95 <%= (perfil.cor_perfil || '#ec5a1c') === cor ? 'border-gray-900 ring-2 ring-offset-2 ring-gray-400 scale-110' : 'border-transparent' %>"
-                        style="background: <%= cor %>" data-cor="<%= cor %>">
-                </button>
-              <% }) %>
+            <p class="text-sm text-gray-600">Clique na foto para alterar e recortar.</p>
+            <div id="fotoPerfilAcoes" class="mt-2 hidden">
+              <button type="button" id="btnSalvarFotoPerfil" class="btn-primary text-sm py-1.5 px-3 mr-2"><i class="fa-solid fa-check mr-1"></i>Salvar foto</button>
+              <button type="button" id="btnCancelarFotoPerfil" class="text-sm text-gray-500 hover:text-gray-700">Cancelar</button>
             </div>
-            <input type="hidden" name="cor_perfil" id="cor_perfil" value="<%= perfil.cor_perfil || '#ec5a1c' %>">
-          </div>
-
-          <div class="pt-1">
-            <button type="submit" class="btn-primary w-full">
-              <i class="fa-solid fa-check mr-2"></i>Salvar Alterações
-            </button>
           </div>
         </div>
-      </form>
+      </div>
+      <input type="file" id="foto_perfil" accept="image/*" class="hidden">
+    </div>
+
+    <!-- Seção: Capa -->
+    <div class="card animate-slideUp mb-6" style="animation-delay: 0.14s">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-lg font-bold text-gray-900"><i class="fa-solid fa-image mr-2 text-primary-500"></i>Capa do perfil</h2>
+      </div>
+      <div class="perfil-secao-view">
+        <p class="text-xs text-gray-500 mb-2">Banner exibido no topo do seu perfil.</p>
+        <button type="button" id="btnAbrirCapa" class="block w-full rounded-xl border-2 border-dashed border-gray-200 hover:border-primary-300 hover:bg-primary-50/30 transition-all overflow-hidden">
+          <div id="previewCapa" class="h-24 sm:h-28 bg-gray-100 flex items-center justify-center" style="<%= perfil.foto_capa ? 'background-image:url(' + perfil.foto_capa + '); background-size:cover; background-position:center' : '' %>">
+            <% if (!perfil.foto_capa) { %>
+              <span class="text-gray-400 text-sm font-medium"><i class="fa-solid fa-image mr-1"></i> Clique para escolher capa</span>
+            <% } else { %>
+              <span class="text-white/90 text-sm font-medium drop-shadow">Clique para trocar</span>
+            <% } %>
+          </div>
+        </button>
+        <input type="file" id="foto_capa" accept="image/*" class="hidden">
+        <div id="capaAcoes" class="mt-2 hidden">
+          <button type="button" id="btnSalvarCapa" class="btn-primary text-sm py-1.5 px-3 mr-2"><i class="fa-solid fa-check mr-1"></i>Salvar capa</button>
+          <button type="button" id="btnCancelarCapa" class="text-sm text-gray-500 hover:text-gray-700">Cancelar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Seção: Dados pessoais -->
+    <div class="card animate-slideUp mb-6" style="animation-delay: 0.16s">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-lg font-bold text-gray-900"><i class="fa-solid fa-user mr-2 text-primary-500"></i>Dados pessoais</h2>
+        <button type="button" class="perfil-btn-editar secao-dados text-sm text-primary-500 font-medium hover:underline"><i class="fa-solid fa-pen-to-square mr-1"></i>Editar</button>
+      </div>
+      <div class="perfil-secao-view secao-dados-view">
+        <dl class="space-y-2 text-sm">
+          <div><dt class="text-gray-500 font-medium">Nome</dt><dd class="text-gray-900" id="viewNome"><%= perfil.nome %></dd></div>
+          <div><dt class="text-gray-500 font-medium">Telefone</dt><dd class="text-gray-900" id="viewTelefone"><%= perfil.telefone || '—' %></dd></div>
+          <div><dt class="text-gray-500 font-medium">Data de nascimento</dt><dd class="text-gray-900" id="viewDataNascimento"><%= perfil.data_nascimento ? new Date(perfil.data_nascimento).toISOString().split('T')[0] : '—' %></dd></div>
+          <div><dt class="text-gray-500 font-medium">Contato extra</dt><dd class="text-gray-900" id="viewContatoExtra"><%= perfil.contato_extra || '—' %></dd></div>
+          <div><dt class="text-gray-500 font-medium">Bio</dt><dd class="text-gray-900 whitespace-pre-wrap" id="viewBio"><%= perfil.bio || '—' %></dd></div>
+        </dl>
+      </div>
+      <div class="perfil-secao-edit secao-dados-edit hidden">
+        <div class="space-y-4">
+          <div>
+            <label for="nome" class="block text-sm font-semibold text-gray-700 mb-1">Nome</label>
+            <input type="text" id="nome" value="<%= perfil.nome %>" required class="input-field">
+          </div>
+          <div>
+            <label for="telefone" class="block text-sm font-semibold text-gray-700 mb-1">Telefone</label>
+            <input type="tel" id="telefone" value="<%= perfil.telefone || '' %>" placeholder="(00) 00000-0000" class="input-field">
+          </div>
+          <div>
+            <label for="data_nascimento" class="block text-sm font-semibold text-gray-700 mb-1">Data de nascimento</label>
+            <input type="date" id="data_nascimento" value="<%= perfil.data_nascimento ? new Date(perfil.data_nascimento).toISOString().split('T')[0] : '' %>" class="input-field">
+          </div>
+          <div>
+            <label for="contato_extra" class="block text-sm font-semibold text-gray-700 mb-1">Contato extra</label>
+            <input type="text" id="contato_extra" value="<%= perfil.contato_extra || '' %>" placeholder="Ex: @usuario ou link" class="input-field">
+          </div>
+          <div>
+            <label for="bio" class="block text-sm font-semibold text-gray-700 mb-1">Bio</label>
+            <textarea id="bio" maxlength="160" rows="2" placeholder="Conte sobre você e seus pets..." class="input-field resize-none"><%= perfil.bio || '' %></textarea>
+            <p class="text-xs text-gray-400 mt-1"><span id="bioCount"><%= (perfil.bio || '').length %></span>/160</p>
+          </div>
+          <div class="flex gap-2">
+            <button type="button" id="btnSalvarDados" class="btn-primary text-sm py-2 px-4"><i class="fa-solid fa-check mr-1"></i>Salvar</button>
+            <button type="button" id="btnCancelarDados" class="text-sm text-gray-500 hover:text-gray-700 py-2">Cancelar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Seção: Endereço -->
+    <div class="card animate-slideUp mb-6" style="animation-delay: 0.18s">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-lg font-bold text-gray-900"><i class="fa-solid fa-location-dot mr-2 text-primary-500"></i>Endereço</h2>
+        <button type="button" class="perfil-btn-editar secao-endereco text-sm text-primary-500 font-medium hover:underline"><i class="fa-solid fa-pen-to-square mr-1"></i>Editar</button>
+      </div>
+      <div class="perfil-secao-view secao-endereco-view">
+        <dl class="space-y-2 text-sm">
+          <div><dt class="text-gray-500 font-medium">CEP</dt><dd class="text-gray-900" id="viewCep"><%= perfil.cep || '—' %></dd></div>
+          <div><dt class="text-gray-500 font-medium">Endereço</dt><dd class="text-gray-900" id="viewEndereco"><%= perfil.endereco || '—' %></dd></div>
+          <div><dt class="text-gray-500 font-medium">Bairro, cidade, estado</dt><dd class="text-gray-900" id="viewBairroCidadeEstado"><%= [perfil.bairro, perfil.cidade, perfil.estado].filter(Boolean).join(', ') || '—' %></dd></div>
+        </dl>
+      </div>
+      <div class="perfil-secao-edit secao-endereco-edit hidden">
+        <p class="text-xs text-gray-400 mb-4">Usado para recomendar tutores e pets próximos.</p>
+        <div class="space-y-4">
+          <div>
+            <label for="cep" class="block text-sm font-semibold text-gray-700 mb-1">CEP</label>
+            <div class="relative">
+              <input type="text" id="cep" value="<%= perfil.cep || '' %>" placeholder="00000-000" maxlength="9" class="input-field pr-10">
+              <button type="button" id="btnBuscarCep" class="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-primary-500 hover:bg-primary-50 rounded-lg transition-colors" title="Buscar CEP"><i class="fa-solid fa-magnifying-glass text-sm"></i></button>
+            </div>
+          </div>
+          <div>
+            <label for="endereco" class="block text-sm font-semibold text-gray-700 mb-1">Endereço</label>
+            <input type="text" id="endereco" value="<%= perfil.endereco || '' %>" placeholder="Rua, número" class="input-field">
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label for="bairro" class="block text-sm font-semibold text-gray-700 mb-1">Bairro</label>
+              <input type="text" id="bairro" value="<%= perfil.bairro || '' %>" class="input-field">
+            </div>
+            <div>
+              <label for="cidade" class="block text-sm font-semibold text-gray-700 mb-1">Cidade</label>
+              <input type="text" id="cidade" value="<%= perfil.cidade || '' %>" class="input-field">
+            </div>
+          </div>
+          <div>
+            <label for="estado" class="block text-sm font-semibold text-gray-700 mb-1">Estado</label>
+            <select id="estado" class="input-field">
+              <option value="">Selecione</option>
+              <% var estados = [{s:'AC',n:'Acre'},{s:'AL',n:'Alagoas'},{s:'AP',n:'Amapá'},{s:'AM',n:'Amazonas'},{s:'BA',n:'Bahia'},{s:'CE',n:'Ceará'},{s:'DF',n:'Distrito Federal'},{s:'ES',n:'Espírito Santo'},{s:'GO',n:'Goiás'},{s:'MA',n:'Maranhão'},{s:'MT',n:'Mato Grosso'},{s:'MS',n:'Mato Grosso do Sul'},{s:'MG',n:'Minas Gerais'},{s:'PA',n:'Pará'},{s:'PB',n:'Paraíba'},{s:'PR',n:'Paraná'},{s:'PE',n:'Pernambuco'},{s:'PI',n:'Piauí'},{s:'RJ',n:'Rio de Janeiro'},{s:'RN',n:'Rio Grande do Norte'},{s:'RS',n:'Rio Grande do Sul'},{s:'RO',n:'Rondônia'},{s:'RR',n:'Roraima'},{s:'SC',n:'Santa Catarina'},{s:'SP',n:'São Paulo'},{s:'SE',n:'Sergipe'},{s:'TO',n:'Tocantins'}]; %>
+              <% estados.forEach(function(e) { %>
+                <option value="<%= e.s %>" <%= (perfil.estado || '') === e.s ? 'selected' : '' %>><%= e.n %></option>
+              <% }) %>
+            </select>
+          </div>
+          <button type="button" id="btnGeolocalizacao" class="w-full flex items-center justify-center gap-2 py-2.5 px-4 border-2 border-dashed border-primary-200 rounded-2xl text-sm font-semibold text-primary-500 hover:bg-primary-50 hover:border-primary-300 transition-all">
+            <i class="fa-solid fa-crosshairs"></i> Usar minha localização atual
+          </button>
+          <div class="flex gap-2">
+            <button type="button" id="btnSalvarEndereco" class="btn-primary text-sm py-2 px-4"><i class="fa-solid fa-check mr-1"></i>Salvar</button>
+            <button type="button" id="btnCancelarEndereco" class="text-sm text-gray-500 hover:text-gray-700 py-2">Cancelar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Seção: Cor do perfil -->
+    <div class="card animate-slideUp mb-6" style="animation-delay: 0.2s">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-lg font-bold text-gray-900"><i class="fa-solid fa-palette mr-2 text-primary-500"></i>Cor do perfil</h2>
+        <button type="button" class="perfil-btn-editar secao-cor text-sm text-primary-500 font-medium hover:underline"><i class="fa-solid fa-pen-to-square mr-1"></i>Editar</button>
+      </div>
+      <div class="perfil-secao-view secao-cor-view">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-full border-2 border-gray-200" id="viewCorSwatch" style="background:<%= perfil.cor_perfil || '#ec5a1c' %>"></div>
+          <span class="text-sm text-gray-600" id="viewCorHex"><%= perfil.cor_perfil || '#ec5a1c' %></span>
+        </div>
+      </div>
+      <div class="perfil-secao-edit secao-cor-edit hidden">
+        <div class="flex flex-wrap gap-2 mb-4" id="colorPicker">
+          <% var cores = ['#ec5a1c','#e74c3c','#e91e63','#9b59b6','#673ab7','#3f51b5','#2196f3','#03a9f4','#00bcd4','#009688','#4caf50','#8bc34a','#ff9800','#ff5722','#795548','#607d8b','#000000']; %>
+          <% cores.forEach(function(cor) { %>
+            <button type="button" class="cor-picker-btn w-9 h-9 rounded-full border-2 transition-all duration-200 hover:scale-110 active:scale-95 <%= (perfil.cor_perfil || '#ec5a1c') === cor ? 'border-gray-900 ring-2 ring-offset-2 ring-gray-400 scale-110' : 'border-transparent' %>" style="background: <%= cor %>" data-cor="<%= cor %>"></button>
+          <% }) %>
+        </div>
+        <input type="hidden" id="cor_perfil" value="<%= perfil.cor_perfil || '#ec5a1c' %>">
+        <div class="flex gap-2">
+          <button type="button" id="btnSalvarCor" class="btn-primary text-sm py-2 px-4"><i class="fa-solid fa-check mr-1"></i>Salvar</button>
+          <button type="button" id="btnCancelarCor" class="text-sm text-gray-500 hover:text-gray-700 py-2">Cancelar</button>
+        </div>
+      </div>
     </div>
 
     <!-- Fotos dos pets no perfil -->
@@ -261,6 +295,35 @@
 var croppedProfileFile = null;
 var croppedCapaFile = null;
 
+function tryOpenCropModal(dataUrl, options, fallbackFile) {
+  function doOpen() {
+    if (typeof openCropModal === 'function' && typeof Cropper !== 'undefined') {
+      openCropModal(options);
+      return true;
+    }
+    return false;
+  }
+  if (doOpen()) return;
+  var attempts = 0;
+  var maxAttempts = 15;
+  var interval = setInterval(function() {
+    attempts++;
+    if (doOpen()) { clearInterval(interval); return; }
+    if (attempts >= maxAttempts) {
+      clearInterval(interval);
+      if (fallbackFile && options.onConfirm) {
+        fetch(dataUrl).then(function(r) { return r.blob(); }).then(function(blob) {
+          options.onConfirm(blob);
+        }).catch(function() {
+          alert('Não foi possível carregar o editor de fotos. Tente recarregar a página ou use outra rede.');
+        });
+      } else {
+        alert('Não foi possível carregar o editor de fotos. Tente recarregar a página ou use outra rede.');
+      }
+    }
+  }, 200);
+}
+
 document.getElementById('btnAbrirFotoPerfil').addEventListener('click', function() {
   document.getElementById('foto_perfil').click();
 });
@@ -276,9 +339,9 @@ document.getElementById('foto_capa').addEventListener('change', function() {
   if (file.size > 5 * 1024 * 1024) { alert('Imagem muito grande (máx. 5MB).'); input.value = ''; return; }
   var reader = new FileReader();
   reader.onload = function(ev) {
-    if (typeof openCropModal !== 'function') { alert('Recorte não disponível.'); return; }
-    openCropModal({
-      src: ev.target.result,
+    var dataUrl = ev.target.result;
+    tryOpenCropModal(dataUrl, {
+      src: dataUrl,
       aspectRatio: 3 / 1,
       maxWidth: 1200,
       maxHeight: 400,
@@ -292,8 +355,9 @@ document.getElementById('foto_capa').addEventListener('change', function() {
         preview.style.backgroundPosition = 'center';
         var span = preview.querySelector('span');
         if (span) span.textContent = 'Clique para trocar';
+        document.getElementById('capaAcoes').classList.remove('hidden');
       }
-    });
+    }, file);
   };
   reader.readAsDataURL(file);
 });
@@ -306,9 +370,9 @@ document.getElementById('foto_perfil').addEventListener('change', function() {
   if (file.size > 5 * 1024 * 1024) { alert('Imagem muito grande (máx. 5MB).'); input.value = ''; return; }
   var reader = new FileReader();
   reader.onload = function(ev) {
-    if (typeof openCropModal !== 'function') { alert('Recorte não disponível.'); return; }
-    openCropModal({
-      src: ev.target.result,
+    var dataUrl = ev.target.result;
+    tryOpenCropModal(dataUrl, {
+      src: dataUrl,
       aspectRatio: 1,
       maxWidth: 500,
       maxHeight: 500,
@@ -327,56 +391,247 @@ document.getElementById('foto_perfil').addEventListener('change', function() {
           img.src = url;
           preview.parentNode.replaceChild(img, preview);
         }
+        document.getElementById('fotoPerfilAcoes').classList.remove('hidden');
       }
-    });
+    }, file);
   };
   reader.readAsDataURL(file);
 });
 
-document.querySelector('form[action*="/perfil"]').addEventListener('submit', function(e) {
-  if (!croppedProfileFile && !croppedCapaFile) return;
-  e.preventDefault();
-  var form = this;
-  var formData = new FormData(form);
-  formData.delete('foto_perfil');
-  formData.delete('foto_capa');
-  if (croppedProfileFile) formData.append('foto_perfil', croppedProfileFile);
-  if (croppedCapaFile) formData.append('foto_capa', croppedCapaFile);
-  var btn = form.querySelector('button[type="submit"]');
-  var origHtml = btn.innerHTML;
+document.getElementById('btnSalvarFotoPerfil').addEventListener('click', function() {
+  if (!croppedProfileFile) return;
+  var fd = new FormData();
+  fd.append('_method', 'PUT');
+  fd.append('foto_perfil', croppedProfileFile);
+  var btn = this;
   btn.disabled = true;
-  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>Salvando…';
-  fetch(form.action, { method: 'POST', body: formData, credentials: 'same-origin' })
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i>Salvando…';
+  fetch('/perfil?_method=PUT', { method: 'POST', body: fd, credentials: 'same-origin' })
     .then(function(r) {
-      if (r.ok) {
-        window.location.href = '/perfil';
-        return;
-      }
-      return r.text().then(function() {
-        alert('Não foi possível salvar. Tamanho ou formato da imagem podem estar incorretos.');
-        btn.disabled = false;
-        btn.innerHTML = origHtml;
-      });
+      if (r.ok) { window.location.href = '/perfil'; return; }
+      return r.text().then(function() { throw new Error('Erro'); });
     })
     .catch(function() {
-      alert('Erro ao salvar. Tente novamente.');
+      alert('Não foi possível salvar a foto.');
       btn.disabled = false;
-      btn.innerHTML = origHtml;
+      btn.innerHTML = '<i class="fa-solid fa-check mr-1"></i>Salvar foto';
     });
 });
+document.getElementById('btnCancelarFotoPerfil').addEventListener('click', function() {
+  croppedProfileFile = null;
+  document.getElementById('fotoPerfilAcoes').classList.add('hidden');
+  window.location.reload();
+});
 
-function selecionarCor(cor) {
-  document.getElementById('cor_perfil').value = cor;
-  document.querySelectorAll('#colorPicker button').forEach(function(btn) {
-    btn.classList.remove('border-gray-900', 'ring-2', 'ring-offset-2', 'ring-gray-400', 'scale-110');
-    btn.classList.add('border-transparent');
-  });
-  var btn = document.querySelector('#colorPicker button[data-cor="' + cor + '"]');
-  if (btn) {
-    btn.classList.remove('border-transparent');
-    btn.classList.add('border-gray-900', 'ring-2', 'ring-offset-2', 'ring-gray-400', 'scale-110');
+document.getElementById('btnSalvarCapa').addEventListener('click', function() {
+  if (!croppedCapaFile) return;
+  var fd = new FormData();
+  fd.append('_method', 'PUT');
+  fd.append('foto_capa', croppedCapaFile);
+  var btn = this;
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i>Salvando…';
+  fetch('/perfil?_method=PUT', { method: 'POST', body: fd, credentials: 'same-origin' })
+    .then(function(r) {
+      if (r.ok) { window.location.href = '/perfil'; return; }
+      return r.text().then(function() { throw new Error('Erro'); });
+    })
+    .catch(function() {
+      alert('Não foi possível salvar a capa.');
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa-solid fa-check mr-1"></i>Salvar capa';
+    });
+});
+document.getElementById('btnCancelarCapa').addEventListener('click', function() {
+  croppedCapaFile = null;
+  document.getElementById('capaAcoes').classList.add('hidden');
+  window.location.reload();
+});
+
+document.getElementById('foto_capa').addEventListener('change', function() {
+  var input = this;
+  if (!input.files || !input.files[0]) return;
+  var file = input.files[0];
+  if (!file.type.match(/^image\/(jpeg|png|gif|webp)$/)) { alert('Formato não suportado.'); input.value = ''; return; }
+  if (file.size > 5 * 1024 * 1024) { alert('Imagem muito grande (máx. 5MB).'); input.value = ''; return; }
+  var reader = new FileReader();
+  reader.onload = function(ev) {
+    var dataUrl = ev.target.result;
+    tryOpenCropModal(dataUrl, {
+      src: dataUrl,
+      aspectRatio: 3 / 1,
+      maxWidth: 1200,
+      maxHeight: 400,
+      onConfirm: function(blob) {
+        croppedCapaFile = new File([blob], 'capa.jpg', { type: 'image/jpeg' });
+        input.value = '';
+        var url = URL.createObjectURL(blob);
+        var preview = document.getElementById('previewCapa');
+        preview.style.backgroundImage = 'url(' + url + ')';
+        preview.style.backgroundSize = 'cover';
+        preview.style.backgroundPosition = 'center';
+        var span = preview.querySelector('span');
+        if (span) span.textContent = 'Clique para trocar';
+        document.getElementById('capaAcoes').classList.remove('hidden');
+      }
+    }, file);
+  };
+  reader.readAsDataURL(file);
+});
+
+function toggleSecao(secao) {
+  var view = document.querySelector('.secao-' + secao + '-view');
+  var edit = document.querySelector('.secao-' + secao + '-edit');
+  var btns = document.querySelectorAll('.secao-' + secao);
+  if (!view || !edit) return;
+  if (edit.classList.contains('hidden')) {
+    view.classList.add('hidden');
+    edit.classList.remove('hidden');
+    btns.forEach(function(b) { if (b.classList.contains('perfil-btn-editar')) b.classList.add('hidden'); });
+  } else {
+    edit.classList.add('hidden');
+    view.classList.remove('hidden');
+    btns.forEach(function(b) { if (b.classList.contains('perfil-btn-editar')) b.classList.remove('hidden'); });
   }
 }
+
+document.querySelector('.secao-dados.perfil-btn-editar').addEventListener('click', function() { toggleSecao('dados'); });
+document.querySelector('.secao-endereco.perfil-btn-editar').addEventListener('click', function() { toggleSecao('endereco'); });
+document.querySelector('.secao-cor.perfil-btn-editar').addEventListener('click', function() { toggleSecao('cor'); });
+
+document.getElementById('btnSalvarDados').addEventListener('click', function() {
+  var payload = new URLSearchParams();
+  payload.append('_method', 'PUT');
+  payload.append('nome', document.getElementById('nome').value.trim());
+  payload.append('telefone', document.getElementById('telefone').value.trim());
+  payload.append('data_nascimento', document.getElementById('data_nascimento').value || '');
+  payload.append('contato_extra', document.getElementById('contato_extra').value.trim());
+  payload.append('bio', document.getElementById('bio').value.trim());
+  var btn = this;
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i>Salvando…';
+  fetch('/perfil?_method=PUT', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Accept': 'application/json' }, body: payload.toString(), credentials: 'same-origin' })
+    .then(function(r) {
+      if (!r.ok) throw new Error();
+      return r.json();
+    })
+    .then(function() {
+      document.getElementById('viewNome').textContent = document.getElementById('nome').value.trim();
+      document.getElementById('viewTelefone').textContent = document.getElementById('telefone').value.trim() || '—';
+      document.getElementById('viewDataNascimento').textContent = document.getElementById('data_nascimento').value || '—';
+      document.getElementById('viewContatoExtra').textContent = document.getElementById('contato_extra').value.trim() || '—';
+      document.getElementById('viewBio').textContent = document.getElementById('bio').value.trim() || '—';
+      toggleSecao('dados');
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa-solid fa-check mr-1"></i>Salvar';
+    })
+    .catch(function() {
+      alert('Erro ao salvar.');
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa-solid fa-check mr-1"></i>Salvar';
+    });
+});
+document.getElementById('btnCancelarDados').addEventListener('click', function() {
+  document.getElementById('nome').value = '<%= perfil.nome %>';
+  document.getElementById('telefone').value = '<%= perfil.telefone || "" %>';
+  document.getElementById('data_nascimento').value = '<%= perfil.data_nascimento ? new Date(perfil.data_nascimento).toISOString().split("T")[0] : "" %>';
+  document.getElementById('contato_extra').value = '<%= perfil.contato_extra || "" %>';
+  document.getElementById('bio').value = '<%= perfil.bio || "" %>';
+  if (document.getElementById('bioCount')) document.getElementById('bioCount').textContent = '<%= (perfil.bio || "").length %>';
+  toggleSecao('dados');
+});
+
+document.getElementById('btnSalvarEndereco').addEventListener('click', function() {
+  var payload = new URLSearchParams();
+  payload.append('_method', 'PUT');
+  payload.append('cep', document.getElementById('cep').value.trim());
+  payload.append('endereco', document.getElementById('endereco').value.trim());
+  payload.append('bairro', document.getElementById('bairro').value.trim());
+  payload.append('cidade', document.getElementById('cidade').value.trim());
+  payload.append('estado', document.getElementById('estado').value);
+  var btn = this;
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i>Salvando…';
+  fetch('/perfil?_method=PUT', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Accept': 'application/json' }, body: payload.toString(), credentials: 'same-origin' })
+    .then(function(r) {
+      if (!r.ok) throw new Error();
+      return r.json();
+    })
+    .then(function() {
+      document.getElementById('viewCep').textContent = document.getElementById('cep').value.trim() || '—';
+      document.getElementById('viewEndereco').textContent = document.getElementById('endereco').value.trim() || '—';
+      document.getElementById('viewBairroCidadeEstado').textContent = [document.getElementById('bairro').value.trim(), document.getElementById('cidade').value.trim(), document.getElementById('estado').value].filter(Boolean).join(', ') || '—';
+      toggleSecao('endereco');
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa-solid fa-check mr-1"></i>Salvar';
+    })
+    .catch(function() {
+      alert('Erro ao salvar.');
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa-solid fa-check mr-1"></i>Salvar';
+    });
+});
+document.getElementById('btnCancelarEndereco').addEventListener('click', function() {
+  document.getElementById('cep').value = '<%= perfil.cep || "" %>';
+  document.getElementById('endereco').value = '<%= perfil.endereco || "" %>';
+  document.getElementById('bairro').value = '<%= perfil.bairro || "" %>';
+  document.getElementById('cidade').value = '<%= perfil.cidade || "" %>';
+  document.getElementById('estado').value = '<%= perfil.estado || "" %>';
+  toggleSecao('endereco');
+});
+
+document.querySelectorAll('#colorPicker .cor-picker-btn').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    var cor = this.getAttribute('data-cor');
+    document.getElementById('cor_perfil').value = cor;
+    document.querySelectorAll('#colorPicker .cor-picker-btn').forEach(function(b) {
+      b.classList.remove('border-gray-900', 'ring-2', 'ring-offset-2', 'ring-gray-400', 'scale-110');
+      b.classList.add('border-transparent');
+    });
+    this.classList.remove('border-transparent');
+    this.classList.add('border-gray-900', 'ring-2', 'ring-offset-2', 'ring-gray-400', 'scale-110');
+  });
+});
+document.getElementById('btnSalvarCor').addEventListener('click', function() {
+  var cor = document.getElementById('cor_perfil').value;
+  var payload = new URLSearchParams();
+  payload.append('_method', 'PUT');
+  payload.append('cor_perfil', cor);
+  var btn = this;
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i>Salvando…';
+  fetch('/perfil?_method=PUT', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Accept': 'application/json' }, body: payload.toString(), credentials: 'same-origin' })
+    .then(function(r) {
+      if (!r.ok) throw new Error();
+      return r.json();
+    })
+    .then(function() {
+      document.getElementById('viewCorSwatch').style.background = cor;
+      document.getElementById('viewCorHex').textContent = cor;
+      toggleSecao('cor');
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa-solid fa-check mr-1"></i>Salvar';
+    })
+    .catch(function() {
+      alert('Erro ao salvar.');
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa-solid fa-check mr-1"></i>Salvar';
+    });
+});
+document.getElementById('btnCancelarCor').addEventListener('click', function() {
+  document.getElementById('cor_perfil').value = '<%= perfil.cor_perfil || "#ec5a1c" %>';
+  var cor = document.getElementById('cor_perfil').value;
+  document.querySelectorAll('#colorPicker .cor-picker-btn').forEach(function(b) {
+    var c = b.getAttribute('data-cor');
+    b.classList.toggle('border-gray-900', c === cor);
+    b.classList.toggle('ring-2', c === cor);
+    b.classList.toggle('ring-offset-2', c === cor);
+    b.classList.toggle('ring-gray-400', c === cor);
+    b.classList.toggle('scale-110', c === cor);
+    b.classList.toggle('border-transparent', c !== cor);
+  });
+  toggleSecao('cor');
+});
 
 var bioEl = document.getElementById('bio');
 var bioCount = document.getElementById('bioCount');

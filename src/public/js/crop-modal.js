@@ -7,6 +7,7 @@
   'use strict';
 
   var modal = document.getElementById('cropModal');
+  var overlay = document.getElementById('cropModalOverlay');
   var backdrop = document.getElementById('cropModalBackdrop');
   var modalBox = document.getElementById('cropModalBox');
   var cropImage = document.getElementById('cropImage');
@@ -27,6 +28,7 @@
   function closeModal() {
     destroyCropper();
     if (modal) modal.classList.add('hidden');
+    document.body.style.overflow = '';
     cropImage.src = '';
     cropImage.removeAttribute('src');
     currentOptions = null;
@@ -55,9 +57,7 @@
     );
   }
 
-  if (backdrop) backdrop.addEventListener('click', function (e) {
-    if (e.target === backdrop) closeModal();
-  });
+  if (overlay) overlay.addEventListener('click', closeModal);
   if (modalBox) modalBox.addEventListener('click', function (e) { e.stopPropagation(); });
   if (btnClose) btnClose.addEventListener('click', closeModal);
   if (btnCancel) btnCancel.addEventListener('click', closeModal);
@@ -91,6 +91,7 @@
     destroyCropper();
     cropImage.src = src;
     modal.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
 
     cropImage.onload = function () {
       var aspectRatio = currentOptions.aspectRatio;

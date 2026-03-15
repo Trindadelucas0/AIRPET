@@ -32,40 +32,45 @@ const perfilController = {
 
   async atualizar(req, res) {
     try {
-      const { nome, telefone, cor_perfil, bio, endereco, bairro, cidade, estado, cep, data_nascimento, contato_extra } = req.body;
       const id = req.session.usuario.id;
+      const body = req.body || {};
       const files = req.files || {};
-      const foto_perfil = files.foto_perfil && files.foto_perfil[0] ? `/images/perfil/${files.foto_perfil[0].filename}` : undefined;
-      const foto_capa = files.foto_capa && files.foto_capa[0] ? `/images/capa/${files.foto_capa[0].filename}` : undefined;
+      const fotoPerfilFile = files.foto_perfil && files.foto_perfil[0];
+      const fotoCapaFile = files.foto_capa && files.foto_capa[0];
 
-      const dados = {
-        nome,
-        telefone,
-        cor_perfil: cor_perfil || '#ec5a1c',
-        bio,
-        endereco,
-        bairro,
-        cidade,
-        estado,
-        cep,
-        data_nascimento: data_nascimento || null,
-        contato_extra: contato_extra || null,
-        foto_perfil,
-      };
-      if (foto_capa !== undefined) dados.foto_capa = foto_capa;
+      const dados = {};
+      const camposBody = ['nome', 'telefone', 'cor_perfil', 'bio', 'endereco', 'bairro', 'cidade', 'estado', 'cep', 'data_nascimento', 'contato_extra'];
+      camposBody.forEach((campo) => {
+        if (body.hasOwnProperty(campo)) {
+          if (campo === 'cor_perfil') dados[campo] = body[campo] || '#ec5a1c';
+          else if (campo === 'data_nascimento' || campo === 'contato_extra') dados[campo] = body[campo] || null;
+          else dados[campo] = body[campo];
+        }
+      });
+      if (fotoPerfilFile) dados.foto_perfil = `/images/perfil/${fotoPerfilFile.filename}`;
+      if (fotoCapaFile) dados.foto_capa = `/images/capa/${fotoCapaFile.filename}`;
+
+      if (Object.keys(dados).length === 0) {
+        req.session.flash = { tipo: 'sucesso', mensagem: 'Nenhuma alteração enviada.' };
+        return res.redirect('/perfil');
+      }
 
       await Usuario.atualizarPerfil(id, dados);
 
-      req.session.usuario.nome = nome;
-      req.session.usuario.cor_perfil = cor_perfil || '#ec5a1c';
-      if (foto_perfil) req.session.usuario.foto_perfil = foto_perfil;
-      if (foto_capa !== undefined) req.session.usuario.foto_capa = foto_capa;
+      if (dados.nome !== undefined) req.session.usuario.nome = dados.nome;
+      if (dados.cor_perfil !== undefined) req.session.usuario.cor_perfil = dados.cor_perfil;
+      if (dados.foto_perfil !== undefined) req.session.usuario.foto_perfil = dados.foto_perfil;
+      if (dados.foto_capa !== undefined) req.session.usuario.foto_capa = dados.foto_capa;
 
       req.session.flash = { tipo: 'sucesso', mensagem: 'Perfil atualizado com sucesso!' };
+      const wantsJson = req.get('Accept') && req.get('Accept').includes('application/json');
+      if (wantsJson) return res.json({ sucesso: true, mensagem: 'Perfil atualizado com sucesso!' });
       res.redirect('/perfil');
     } catch (erro) {
       logger.error('PERFIL_CTRL', 'Erro ao atualizar perfil', erro);
       req.session.flash = { tipo: 'erro', mensagem: 'Erro ao atualizar perfil.' };
+      const wantsJson = req.get('Accept') && req.get('Accept').includes('application/json');
+      if (wantsJson) return res.status(500).json({ sucesso: false, mensagem: 'Erro ao atualizar perfil.' });
       res.redirect('/perfil');
     }
   },

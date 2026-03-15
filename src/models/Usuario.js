@@ -236,23 +236,32 @@ const Usuario = {
    * @param {string} id - UUID do usuário a ser removido
    * @returns {Promise<object|undefined>} O registro removido ou undefined
    */
+  /**
+   * Atualização parcial do perfil: apenas os campos presentes em `dados` são atualizados.
+   * @param {string} id - UUID do usuário
+   * @param {object} dados - Subconjunto de campos: nome, telefone, cor_perfil, bio, endereco, bairro, cidade, estado, cep, data_nascimento, contato_extra, foto_perfil, foto_capa
+   * @returns {Promise<object>} O registro atualizado
+   */
   async atualizarPerfil(id, dados) {
-    const { nome, telefone, cor_perfil, bio, endereco, bairro, cidade, estado, cep, data_nascimento, contato_extra, foto_perfil, foto_capa } = dados;
-    const temCapa = dados.hasOwnProperty('foto_capa');
-    const setCapa = temCapa ? ', foto_capa = $14' : '';
-    const params = [id, nome, telefone, cor_perfil || '#ec5a1c', bio || null, endereco || null, bairro || null, cidade || null, estado || null, cep || null, data_nascimento || null, contato_extra || null, foto_perfil || null];
-    if (temCapa) params.push(foto_capa);
-    const resultado = await query(
-      `UPDATE usuarios
-       SET nome = $2, telefone = $3, cor_perfil = $4, bio = $5,
-           endereco = $6, bairro = $7, cidade = $8, estado = $9, cep = $10,
-           data_nascimento = $11, contato_extra = $12,
-           foto_perfil = COALESCE($13, foto_perfil)
-           ${setCapa},
-           data_atualizacao = NOW()
-       WHERE id = $1 RETURNING *`,
-      params
-    );
+    const colunasPermitidas = ['nome', 'telefone', 'cor_perfil', 'bio', 'endereco', 'bairro', 'cidade', 'estado', 'cep', 'data_nascimento', 'contato_extra', 'foto_perfil', 'foto_capa'];
+    const setPartes = [];
+    const params = [id];
+    let idx = 2;
+    colunasPermitidas.forEach((col) => {
+      if (!dados.hasOwnProperty(col)) return;
+      setPartes.push(`${col} = $${idx}`);
+      if (col === 'cor_perfil') params.push(dados[col] || '#ec5a1c');
+      else if (col === 'data_nascimento' || col === 'contato_extra' || col === 'bio' || col === 'endereco' || col === 'bairro' || col === 'cidade' || col === 'estado' || col === 'cep') params.push(dados[col] || null);
+      else params.push(dados[col]);
+      idx++;
+    });
+    if (setPartes.length === 0) {
+      const resultado = await query(`SELECT * FROM usuarios WHERE id = $1`, [id]);
+      return resultado.rows[0];
+    }
+    setPartes.push('data_atualizacao = NOW()');
+    const sql = `UPDATE usuarios SET ${setPartes.join(', ')} WHERE id = $1 RETURNING *`;
+    const resultado = await query(sql, params);
     return resultado.rows[0];
   },
 
