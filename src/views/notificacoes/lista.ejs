@@ -168,11 +168,12 @@
                   <% var isAlerta = n.tipo === 'alerta' && n.pet_id; %>
                   <div class="notif-card relative group" data-notif-id="<%= n.id %>">
                     <a href="<%= n.link || '#' %>"
-                       class="flex items-start gap-3 p-3.5 rounded-2xl transition-all duration-200
+                       class="notif-link flex items-start gap-3 p-3.5 rounded-2xl transition-all duration-200
                          <%= !n.lida ? 'bg-primary-50/40 hover:bg-primary-50/70' : 'bg-white hover:bg-gray-50' %>
                          border <%= !n.lida ? 'border-primary-100/50' : 'border-gray-100/80' %>"
-                       <%= isAlerta ? ' data-tipo="alerta" data-pet-id="' + n.pet_id + '" data-link="' + (n.link || '') + '" data-notif-id="' + n.id + '"' : '' %>
-                       onclick="<%= !n.lida ? 'marcarLidaNav(' + n.id + ', event)' : '' %>">
+                       data-notif-id="<%= n.id %>"
+                       data-link="<%= (n.link || '#') %>"
+                       <%= isAlerta ? ' data-tipo="alerta" data-pet-id="' + n.pet_id + '"' : '' %>>
 
                       <!-- Avatar ou Icone -->
                       <div class="relative shrink-0">
@@ -271,6 +272,20 @@
       <div class="flex gap-3">
         <button type="button" id="modalAlertaFechar" class="flex-1 py-3 rounded-xl font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors">Fechar</button>
         <a id="modalAlertaVerPerfil" href="#" class="flex-1 py-3 rounded-xl font-bold text-white bg-[#ec5a1c] hover:bg-[#d4500f] text-center transition-colors">Ver perfil</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: notificacao generica (scan, sistema, etc.) -->
+<div id="modalNotificacao" class="fixed inset-0 z-[9999] hidden items-center justify-center p-4 bg-black/50" aria-hidden="true">
+  <div class="bg-white rounded-3xl shadow-2xl max-w-sm w-full overflow-hidden animate-scaleIn" role="dialog">
+    <div class="p-5">
+      <h2 class="text-lg font-bold text-gray-900 mb-2">Notificação</h2>
+      <p id="modalNotifMensagem" class="text-sm text-gray-600 mb-4"></p>
+      <div class="flex gap-3">
+        <button type="button" id="modalNotifFechar" class="flex-1 py-3 rounded-xl font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors">Fechar</button>
+        <a id="modalNotifVer" href="#" class="flex-1 py-3 rounded-xl font-bold text-white bg-[#ec5a1c] hover:bg-[#d4500f] text-center transition-colors">Ver</a>
       </div>
     </div>
   </div>
@@ -430,25 +445,60 @@
     if (e.target === modalAlerta) fecharModalAlerta();
   });
 
+  var modalNotif = document.getElementById('modalNotificacao');
+  var modalNotifMensagem = document.getElementById('modalNotifMensagem');
+  var modalNotifVer = document.getElementById('modalNotifVer');
+  var modalNotifFechar = document.getElementById('modalNotifFechar');
+
+  function abrirModalNotificacao(mensagem, link) {
+    if (modalNotifMensagem) modalNotifMensagem.textContent = mensagem || '';
+    if (modalNotifVer) {
+      modalNotifVer.href = link && link !== '#' ? link : '/notificacoes';
+      modalNotifVer.style.display = link && link !== '#' ? '' : 'none';
+    }
+    if (modalNotif) {
+      modalNotif.classList.remove('hidden');
+      modalNotif.classList.add('flex');
+    }
+  }
+  function fecharModalNotificacao() {
+    if (modalNotif) {
+      modalNotif.classList.add('hidden');
+      modalNotif.classList.remove('flex');
+    }
+  }
+  if (modalNotifFechar) modalNotifFechar.addEventListener('click', fecharModalNotificacao);
+  if (modalNotif) modalNotif.addEventListener('click', function (e) { if (e.target === modalNotif) fecharModalNotificacao(); });
+
   document.body.addEventListener('click', function (e) {
-    var a = e.target.closest('a[data-tipo="alerta"]');
+    var a = e.target.closest('a.notif-link');
     if (!a) return;
-    e.preventDefault();
-    var petId = a.getAttribute('data-pet-id');
-    var link = a.getAttribute('data-link') || ('/pets/' + petId);
     var notifId = a.getAttribute('data-notif-id');
-    if (!petId) return;
-    fetch('/api/pets/' + petId + '/alerta-ativo', { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
-      .then(function (r) { return r.json(); })
-      .then(function (data) {
-        if (data.ativo && data.pet_nome != null) {
-          if (notifId && typeof marcarLida === 'function') marcarLida(parseInt(notifId, 10));
-          abrirModalAlerta(data, link);
-        } else {
-          window.location.href = link;
-        }
-      })
-      .catch(function () { window.location.href = link; });
+    var link = a.getAttribute('data-link') || '#';
+    var isAlerta = a.getAttribute('data-tipo') === 'alerta';
+    var petId = a.getAttribute('data-pet-id');
+
+    if (isAlerta && petId) {
+      e.preventDefault();
+      fetch('/api/pets/' + petId + '/alerta-ativo', { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          if (data.ativo && data.pet_nome != null) {
+            if (notifId && typeof marcarLida === 'function') marcarLida(parseInt(notifId, 10));
+            abrirModalAlerta(data, link);
+          } else {
+            window.location.href = link;
+          }
+        })
+        .catch(function () { window.location.href = link; });
+      return;
+    }
+
+    e.preventDefault();
+    var msgEl = a.querySelector('.flex-1.min-w-0 p');
+    var mensagem = msgEl ? msgEl.textContent.trim() : '';
+    if (notifId && typeof marcarLida === 'function') marcarLida(parseInt(notifId, 10));
+    abrirModalNotificacao(mensagem, link);
   });
 })();
 </script>

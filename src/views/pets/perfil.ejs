@@ -348,6 +348,66 @@
     <% } %>
   <% } %>
 
+  <!-- Fotos recebidas (quem encontrou enviou foto) -->
+  <% if (typeof ehDono !== 'undefined' && ehDono && typeof fotosRecebidas !== 'undefined' && fotosRecebidas && fotosRecebidas.length > 0) { %>
+    <div class="card mb-6" id="fotos-recebidas">
+      <h2 class="text-lg font-bold text-gray-900 mb-3">
+        <i class="fa-solid fa-camera text-[#ec5a1c] mr-2"></i>Fotos recebidas
+      </h2>
+      <p class="text-xs text-gray-500 mb-4">Fotos que alguem enviou ao encontrar <%= pet.nome %>. Toque para ampliar.</p>
+      <div class="grid grid-cols-3 sm:grid-cols-4 gap-3">
+        <% fotosRecebidas.forEach(function(loc) {
+          var dt = loc.data ? new Date(loc.data) : null;
+          var dataStr = dt ? dt.toLocaleDateString('pt-BR') + ' ' + dt.toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'}) : '';
+        %>
+          <button type="button" class="block rounded-xl overflow-hidden border border-gray-200 hover:border-[#ec5a1c]/50 focus:outline-none focus:ring-2 focus:ring-[#ec5a1c]/30 foto-recebida-btn"
+                  data-foto-url="<%= loc.foto_url %>" data-data-str="<%= dataStr %>">
+            <img src="<%= loc.foto_url %>" alt="Foto recebida" class="w-full aspect-square object-cover">
+          </button>
+        <% }); %>
+      </div>
+    </div>
+    <!-- Modal foto recebida -->
+    <div id="modalFotoRecebida" class="fixed inset-0 z-[9999] hidden items-center justify-center p-4 bg-black/70" aria-hidden="true">
+      <div class="relative max-w-2xl w-full" onclick="if (event.target === this) fecharModalFoto();">
+        <button type="button" onclick="fecharModalFoto()" class="absolute -top-10 right-0 text-white hover:text-gray-200 text-2xl">
+          <i class="fa-solid fa-times"></i>
+        </button>
+        <img id="modalFotoRecebidaImg" src="" alt="Foto" class="w-full rounded-2xl shadow-2xl">
+        <p id="modalFotoRecebidaData" class="text-white/90 text-sm mt-2 text-center"></p>
+      </div>
+    </div>
+    <script>
+    function abrirModalFoto(url, dataStr) {
+      var modal = document.getElementById('modalFotoRecebida');
+      var img = document.getElementById('modalFotoRecebidaImg');
+      var dataEl = document.getElementById('modalFotoRecebidaData');
+      if (modal && img) {
+        img.src = url || '';
+        if (dataEl) dataEl.textContent = dataStr || '';
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        document.body.style.overflow = 'hidden';
+      }
+    }
+    function fecharModalFoto() {
+      var modal = document.getElementById('modalFotoRecebida');
+      if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        document.body.style.overflow = '';
+      }
+    }
+    document.querySelectorAll('.foto-recebida-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        abrirModalFoto(this.getAttribute('data-foto-url'), this.getAttribute('data-data-str'));
+      });
+    });
+    var modalEl = document.getElementById('modalFotoRecebida');
+    if (modalEl) modalEl.addEventListener('click', function(e) { if (e.target === this) fecharModalFoto(); });
+    </script>
+  <% } %>
+
   <!-- Telefone de contato publico -->
   <% if (pet.telefone_contato) { %>
     <div class="card mb-6">

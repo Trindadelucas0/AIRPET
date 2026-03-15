@@ -78,7 +78,9 @@ function estaAutenticado(req, res, next) {
   }
 
   if (req.session) req.session.flash = { tipo: 'erro', mensagem: 'Voce precisa estar logado para acessar esta pagina.' };
-  return res.redirect('/auth/login');
+  const returnUrl = (req.originalUrl || req.url || '').trim();
+  const q = returnUrl && returnUrl.startsWith('/') ? '?returnUrl=' + encodeURIComponent(returnUrl) : '';
+  return res.redirect('/auth/login' + q);
 }
 
 /**

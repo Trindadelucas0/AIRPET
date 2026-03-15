@@ -170,7 +170,8 @@ const nfcController = {
       const tagResult = await query('SELECT * FROM nfc_tags WHERE tag_code = $1 AND status = $2', [tag_code, 'active']);
       const tag = tagResult.rows[0];
       if (!tag || !tag.pet_id) {
-        return res.status(404).render('partials/erro', { titulo: 'Tag não encontrada', mensagem: 'Tag inválida.', codigo: 404 });
+        if (req.session) req.session.flash = { tipo: 'erro', mensagem: 'Tag inválida ou inativa. Tente escanear novamente.' };
+        return res.redirect('/tag/' + encodeURIComponent(tag_code));
       }
       const pet = await Pet.buscarPorId(tag.pet_id);
       res.render('nfc/encontrei', { titulo: `Encontrei ${pet.nome}`, pet, tag_code });
@@ -181,8 +182,8 @@ const nfcController = {
   },
 
   async processarEncontrei(req, res) {
+    const tag_code = req.params.tag_code;
     try {
-      const { tag_code } = req.params;
       const { nome, telefone, mensagem, latitude, longitude } = req.body;
       const foto = req.file ? `/images/pets/${req.file.filename}` : null;
 
@@ -190,14 +191,23 @@ const nfcController = {
       const tagResult = await query('SELECT * FROM nfc_tags WHERE tag_code = $1 AND status = $2', [tag_code, 'active']);
       const tag = tagResult.rows[0];
       if (!tag || !tag.pet_id) {
-        return res.status(404).render('partials/erro', { titulo: 'Tag não encontrada', mensagem: 'Tag inválida.', codigo: 404 });
+        if (req.session) req.session.flash = { tipo: 'erro', mensagem: 'Tag inválida ou inativa. Tente escanear novamente.' };
+        return res.redirect('/tag/' + encodeURIComponent(tag_code));
       }
 
       const pet = await Pet.buscarPorId(tag.pet_id);
 
-      if (latitude && longitude) {
+      const temCoords = latitude && longitude && !isNaN(parseFloat(latitude)) && !isNaN(parseFloat(longitude));
+      if (temCoords || foto) {
         try {
-          await Localizacao.registrar({ pet_id: tag.pet_id, latitude, longitude, origem: 'encontrei', foto_url: pet.foto || null });
+          await Localizacao.registrar({
+            pet_id: tag.pet_id,
+            latitude: temCoords ? parseFloat(latitude) : 0,
+            longitude: temCoords ? parseFloat(longitude) : 0,
+            cidade: null,
+            ip: req.ip || null,
+            foto_url: foto || null,
+          });
         } catch (e) { logger.error('NFC_CTRL', 'Erro ao registrar localização do encontrei', e); }
       }
 
@@ -210,8 +220,8 @@ const nfcController = {
       res.render('nfc/encontrei-sucesso', { titulo: 'Obrigado!', pet, tag_code });
     } catch (erro) {
       logger.error('NFC_CTRL', 'Erro ao processar encontrei', erro);
-      req.session.flash = { tipo: 'erro', mensagem: 'Erro ao enviar os dados.' };
-      res.redirect(`/tag/${req.params.tag_code}`);
+      if (req.session) req.session.flash = { tipo: 'erro', mensagem: 'Erro ao enviar os dados.' };
+      return res.redirect('/tag/' + encodeURIComponent(tag_code));
     }
   },
 
@@ -222,7 +232,8 @@ const nfcController = {
       const tagResult = await query('SELECT * FROM nfc_tags WHERE tag_code = $1 AND status = $2', [tag_code, 'active']);
       const tag = tagResult.rows[0];
       if (!tag || !tag.pet_id) {
-        return res.status(404).render('partials/erro', { titulo: 'Tag não encontrada', mensagem: 'Tag inválida.', codigo: 404 });
+        if (req.session) req.session.flash = { tipo: 'erro', mensagem: 'Tag inválida ou inativa. Tente escanear novamente.' };
+        return res.redirect('/tag/' + encodeURIComponent(tag_code));
       }
       const pet = await Pet.buscarPorId(tag.pet_id);
       res.render('nfc/enviar-foto', { titulo: `Enviar foto de ${pet.nome}`, pet, tag_code });
@@ -318,12 +329,22 @@ const nfcController = {
       const tagResult = await query('SELECT * FROM nfc_tags WHERE tag_code = $1 AND status = $2', [tag_code, 'active']);
       const tag = tagResult.rows[0];
       if (!tag || !tag.pet_id) {
-        return res.status(404).render('partials/erro', { titulo: 'Tag não encontrada', mensagem: 'Tag inválida.', codigo: 404 });
+        if (req.session) req.session.flash = { tipo: 'erro', mensagem: 'Tag inválida ou inativa. Tente escanear novamente.' };
+        return res.redirect('/tag/' + encodeURIComponent(tag_code));
       }
 
       const pet = await Pet.buscarPorId(tag.pet_id);
 
-      // Foto salva em diretório de pets - registra como scan
+      try {
+        await Localizacao.registrar({
+          pet_id: tag.pet_id,
+          latitude: 0,
+          longitude: 0,
+          cidade: null,
+          ip: req.ip || null,
+          foto_url: foto,
+        });
+      } catch (e) { logger.error('NFC_CTRL', 'Erro ao registrar foto enviada', e); }
 
       try {
         await notificacaoService.criar(pet.usuario_id, 'scan', `Alguém enviou uma foto de ${pet.nome}!`, `/pets/${pet.id}`);
@@ -332,7 +353,8 @@ const nfcController = {
       res.render('nfc/encontrei-sucesso', { titulo: 'Foto enviada!', pet, tag_code });
     } catch (erro) {
       logger.error('NFC_CTRL', 'Erro ao processar enviar-foto', erro);
-      res.redirect(`/tag/${req.params.tag_code}`);
+      if (req.session) req.session.flash = { tipo: 'erro', mensagem: 'Erro ao enviar a foto.' };
+      return res.redirect('/tag/' + encodeURIComponent(req.params.tag_code));
     }
   },
 };

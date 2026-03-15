@@ -37,7 +37,7 @@
       </div>
     </div>
 
-    <form action="/tag/<%= tag_code %>/encontrei" method="POST" enctype="multipart/form-data" class="space-y-5">
+    <form id="formEncontrei" action="/tag/<%= tag_code %>/encontrei" method="POST" enctype="multipart/form-data" class="space-y-5">
       <input type="hidden" name="pet_id" value="<%= pet.id %>">
 
       <div>
@@ -106,6 +106,10 @@
 <% locals.extraScripts = `
 <script>
 (function() {
+  var form = document.getElementById('formEncontrei');
+  if (form && window.location.pathname.indexOf('/encontrei') !== -1) {
+    form.action = window.location.pathname;
+  }
   var inputFoto = document.getElementById('foto');
   var preview = document.getElementById('fotoPreview');
   var previewContainer = document.getElementById('fotoPreviewContainer');

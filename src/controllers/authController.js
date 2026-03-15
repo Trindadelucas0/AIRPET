@@ -39,11 +39,17 @@ const authController = {
   mostrarLogin(req, res) {
     try {
       if (req.session.usuario) {
+        const returnUrl = (req.query.returnUrl || '').trim();
+        if (returnUrl && returnUrl.startsWith('/') && !returnUrl.startsWith('//')) {
+          return res.redirect(returnUrl);
+        }
         return res.redirect('/explorar');
       }
 
+      const returnUrl = (req.query.returnUrl || '').trim();
       res.render('auth/login', {
         titulo: 'Entrar no AIRPET',
+        returnUrl: returnUrl && returnUrl.startsWith('/') && !returnUrl.startsWith('//') ? returnUrl : '',
       });
     } catch (erro) {
       logger.error('AUTH_CTRL', 'Erro ao renderizar página de login', erro);
@@ -181,7 +187,9 @@ const authController = {
       /* Verifica se o serviço retornou erro (credenciais inválidas) */
       if (resultado.erro) {
         req.session.flash = { tipo: 'erro', mensagem: resultado.erro };
-        return res.redirect('/auth/login');
+        const returnUrl = (req.body.returnUrl || '').trim();
+        const q = returnUrl && returnUrl.startsWith('/') && !returnUrl.startsWith('//') ? '?returnUrl=' + encodeURIComponent(returnUrl) : '';
+        return res.redirect('/auth/login' + q);
       }
 
       /*
@@ -218,7 +226,9 @@ const authController = {
       logger.info('AUTH_CTRL', `Login realizado: ${resultado.usuario.email}`);
 
       req.session.flash = { tipo: 'sucesso', mensagem: `Bem-vindo de volta, ${resultado.usuario.nome}!` };
-      res.redirect('/explorar');
+      const returnUrl = (req.body.returnUrl || '').trim();
+      const dest = returnUrl && returnUrl.startsWith('/') && !returnUrl.startsWith('//') ? returnUrl : '/explorar';
+      return res.redirect(dest);
     } catch (erro) {
       logger.error('AUTH_CTRL', 'Erro ao realizar login', erro);
       req.session.flash = { tipo: 'erro', mensagem: 'Erro ao fazer login. Tente novamente.' };

@@ -27,6 +27,7 @@ const Vacina = require('../models/Vacina');
 const RegistroSaude = require('../models/RegistroSaude');
 const TagScan = require('../models/TagScan');
 const NfcTag = require('../models/NfcTag');
+const Localizacao = require('../models/Localizacao');
 const logger = require('../utils/logger');
 
 const petController = {
@@ -246,10 +247,13 @@ const petController = {
 
       let scans = [];
       let tags = [];
+      let fotosRecebidas = [];
       if (ehDono) {
-        scans = await TagScan.buscarPorPet(id, 10);
-        tags = await NfcTag.buscarPorUsuario(req.session.usuario.id);
-        tags = tags.filter(t => t.pet_id === parseInt(id, 10));
+        [scans, tags, fotosRecebidas] = await Promise.all([
+          TagScan.buscarPorPet(id, 10),
+          NfcTag.buscarPorUsuario(req.session.usuario.id).then(lista => lista.filter(t => t.pet_id === parseInt(id, 10))),
+          Localizacao.buscarComFotosPorPet(id, 20),
+        ]);
       }
 
       res.render('pets/perfil', {
@@ -258,6 +262,7 @@ const petController = {
         ehDono,
         scans,
         tags,
+        fotosRecebidas,
         idadePet,
         calendario,
         pesoIdeal,

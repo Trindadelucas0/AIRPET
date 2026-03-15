@@ -64,6 +64,26 @@ const Localizacao = {
   },
 
   /**
+   * Busca localizações do pet que tenham foto (fotos enviadas por quem encontrou).
+   * Para exibir na seção "Fotos recebidas" do perfil do pet.
+   *
+   * @param {string|number} petId - ID do pet
+   * @param {number} limite - Quantidade máxima (padrão: 20)
+   * @returns {Promise<Array>}
+   */
+  async buscarComFotosPorPet(petId, limite = 20) {
+    const resultado = await query(
+      `SELECT id, pet_id, latitude, longitude, cidade, foto_url, data
+       FROM localizacoes
+       WHERE pet_id = $1 AND foto_url IS NOT NULL AND TRIM(foto_url) <> ''
+       ORDER BY data DESC
+       LIMIT $2`,
+      [petId, limite]
+    );
+    return resultado.rows;
+  },
+
+  /**
    * Lista as localizações mais recentes de todos os pets.
    * Aplica um LIMIT para controlar o volume de dados.
    *
