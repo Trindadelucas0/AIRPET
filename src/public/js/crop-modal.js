@@ -91,26 +91,38 @@
     }
 
     destroyCropper();
-    cropImage.src = src;
     modal.classList.remove('hidden');
     document.body.style.overflow = 'hidden';
 
     cropImage.onload = function () {
       var aspectRatio = currentOptions.aspectRatio;
       if (aspectRatio === undefined) aspectRatio = 0;
-      cropperInstance = new Cropper(cropImage, {
-        aspectRatio: aspectRatio,
-        viewMode: 1,
-        dragMode: 'move',
-        autoCropArea: 0.8,
-        restore: false,
-        guides: true,
-        center: true,
-        highlight: false,
-        cropBoxMovable: true,
-        cropBoxResizable: true,
-        toggleDragModeOnDblclick: false
-      });
+      function initCropper() {
+        if (!currentOptions || !cropImage.src) return;
+        cropperInstance = new Cropper(cropImage, {
+          aspectRatio: aspectRatio,
+          viewMode: 1,
+          dragMode: 'move',
+          autoCropArea: 0.8,
+          restore: false,
+          guides: true,
+          center: true,
+          highlight: false,
+          cropBoxMovable: true,
+          cropBoxResizable: true,
+          toggleDragModeOnDblclick: false
+        });
+      }
+      if (cropImage.naturalWidth && cropImage.naturalHeight) {
+        initCropper();
+      } else {
+        requestAnimationFrame(function () { requestAnimationFrame(initCropper); });
+      }
     };
+    cropImage.onerror = function () {
+      if (currentOptions && typeof currentOptions.onCancel === 'function') currentOptions.onCancel();
+      closeModal(false);
+    };
+    cropImage.src = src;
   };
 })();
