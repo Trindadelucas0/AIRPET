@@ -94,9 +94,9 @@
         <div class="flex items-center gap-4">
           <button type="button" id="btnAbrirFotoPerfil" class="relative flex-shrink-0 rounded-full focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2" title="Trocar ou ajustar foto">
             <% if (perfil.foto_perfil) { %>
-              <img src="<%= perfil.foto_perfil %>" alt="" id="previewFotoPerfil" class="w-16 h-16 rounded-full object-cover border-2 border-gray-200 block">
+              <img src="<%= perfil.foto_perfil %>" alt="" id="previewFotoPerfil" class="w-16 h-16 rounded-full object-cover border-2 border-gray-200 block" style="box-shadow: 0 0 0 2px <%= perfil.cor_perfil || '#ec5a1c' %>">
             <% } else { %>
-              <div id="previewFotoPerfil" class="w-16 h-16 rounded-full border-2 border-gray-200 flex items-center justify-center text-2xl font-bold text-white" style="background:<%= perfil.cor_perfil || '#ec5a1c' %>"><%= (perfil.nome || 'U').charAt(0).toUpperCase() %></div>
+              <div id="previewFotoPerfil" class="w-16 h-16 rounded-full border-2 border-gray-200 flex items-center justify-center text-2xl font-bold text-white bg-gray-400" style="box-shadow: 0 0 0 2px <%= perfil.cor_perfil || '#ec5a1c' %>"><%= (perfil.nome || 'U').charAt(0).toUpperCase() %></div>
             <% } %>
             <span class="absolute bottom-0 right-0 w-6 h-6 rounded-full bg-primary-500 text-white flex items-center justify-center text-xs shadow" title="Ajustar foto"><i class="fa-solid fa-crop"></i></span>
           </button>
@@ -251,15 +251,16 @@
       </div>
     </div>
 
-    <!-- Seção: Cor do perfil -->
+    <!-- Seção: Cor de destaque -->
     <div class="card animate-slideUp mb-6" style="animation-delay: 0.2s">
-      <div class="flex items-center justify-between mb-4">
-        <h2 class="text-lg font-bold text-gray-900"><i class="fa-solid fa-palette mr-2 text-primary-500"></i>Cor do perfil</h2>
+      <div class="flex items-center justify-between mb-2">
+        <h2 class="text-lg font-bold text-gray-900"><i class="fa-solid fa-palette mr-2 text-primary-500"></i>Cor de destaque</h2>
         <button type="button" class="perfil-btn-editar secao-cor text-sm text-primary-500 font-medium hover:underline"><i class="fa-solid fa-pen-to-square mr-1"></i>Editar</button>
       </div>
+      <p class="text-sm text-gray-500 mb-3">Define a cor das bordas do seu avatar e dos destaques no seu perfil (estilo Twitter).</p>
       <div class="perfil-secao-view secao-cor-view">
         <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-full border-2 border-gray-200" id="viewCorSwatch" style="background:<%= perfil.cor_perfil || '#ec5a1c' %>"></div>
+          <div class="w-10 h-10 rounded-full bg-gray-400 flex items-center justify-center text-white text-xs font-bold" id="viewCorSwatch" style="box-shadow: 0 0 0 3px <%= perfil.cor_perfil || '#ec5a1c' %>">U</div>
           <span class="text-sm text-gray-600" id="viewCorHex"><%= perfil.cor_perfil || '#ec5a1c' %></span>
         </div>
       </div>
