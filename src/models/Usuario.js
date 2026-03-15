@@ -243,12 +243,13 @@ const Usuario = {
    * @returns {Promise<object>} O registro atualizado
    */
   async atualizarPerfil(id, dados) {
+    dados = dados && typeof dados === 'object' ? dados : {};
     const colunasPermitidas = ['nome', 'telefone', 'cor_perfil', 'bio', 'endereco', 'bairro', 'cidade', 'estado', 'cep', 'data_nascimento', 'contato_extra', 'foto_perfil', 'foto_capa'];
     const setPartes = [];
     const params = [id];
     let idx = 2;
     colunasPermitidas.forEach((col) => {
-      if (!dados.hasOwnProperty(col)) return;
+      if (!Object.prototype.hasOwnProperty.call(dados, col)) return;
       setPartes.push(`${col} = $${idx}`);
       if (col === 'cor_perfil') params.push(dados[col] || '#ec5a1c');
       else if (col === 'data_nascimento' || col === 'contato_extra' || col === 'bio' || col === 'endereco' || col === 'bairro' || col === 'cidade' || col === 'estado' || col === 'cep') params.push(dados[col] || null);
