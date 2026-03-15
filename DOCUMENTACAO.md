@@ -38,7 +38,7 @@
 ### Parte 4 — Documentacao Tecnica (Programadores)
 28. [Arquitetura do sistema](#28-arquitetura-do-sistema)
 29. [Estrutura de pastas](#29-estrutura-de-pastas)
-30. [Como instalar e rodar](#30-como-instalar-e-rodar)
+30. [Requisitos e boot do servidor](#30-requisitos-e-boot-do-servidor)
 31. [Banco de dados](#31-banco-de-dados)
 32. [Rotas e endpoints](#32-rotas-e-endpoints)
 33. [Controllers](#33-controllers)
@@ -53,6 +53,7 @@
 
 ### Parte 5 — Referencia Rapida
 42. [Tabela de referencia rapida](#42-tabela-de-referencia-rapida)
+43. [Guia para testes — Rotas e Views](#43-guia-para-testes--rotas-e-views)
 
 ---
 
@@ -140,9 +141,9 @@ O sistema vai alem da tag NFC e oferece uma experiencia completa para tutores de
 | CSS | TailwindCSS 3 |
 | Tempo real | Socket.IO (chat, notificacoes, admin) |
 | Autenticacao | express-session + JWT (cookie httpOnly) |
-| Hash de senhas | bcrypt (12 rounds) |
+| Hash de senhas | Hash seguro (nao armazena senha em texto puro) |
 | Upload | multer (fotos de pets, diario, chat, posts) |
-| Push | Web Push API (VAPID) |
+| Push | Web Push API |
 | Mapas | Leaflet + MarkerCluster + OpenStreetMap |
 | PWA | Service Worker + manifest.json + cache offline |
 | Seguranca | helmet, express-rate-limit, express-validator |
@@ -682,15 +683,14 @@ O painel administrativo possui **login separado** do login de usuarios.
 
 ### Como acessar
 
-1. Acesse `/admin/login` (ou o path customizado definido em `ADMIN_PATH` no `.env`)
-2. Informe o **email** e **senha** de administrador (configurados no `.env`)
+1. Acesse a URL do painel admin (ex.: `/admin/login`)
+2. Informe o **email** e **senha** de administrador
 3. Clique em **"Entrar"**
 
 **Seguranca:**
-- O login admin usa credenciais definidas nas variaveis de ambiente (`ADMIN_EMAIL` e `ADMIN_PASSWORD_HASH`)
-- A senha e comparada usando **bcrypt** (nao texto puro)
+- Credenciais de administrador sao gerenciadas fora da aplicacao (nao ha cadastro de admin pela interface)
 - Rate limiting de 20 tentativas por 15 minutos
-- O path de acesso pode ser customizado via `ADMIN_PATH` no `.env` (seguranca por obscuridade)
+- O path de acesso ao painel pode ser customizado na configuracao do ambiente
 
 ### Sessao admin
 
@@ -998,8 +998,6 @@ Browser ←→ Socket.IO Server
 AIRPET/
 ├── server.js                          ← Ponto de entrada (Express + Socket.IO)
 ├── package.json                       ← Dependencias e scripts
-├── .env                               ← Variaveis de ambiente (NAO commitado)
-├── .env.example                       ← Template do .env
 ├── tailwind.config.js                 ← Config TailwindCSS
 ├── postcss.config.js                  ← PostCSS (Tailwind + Autoprefixer)
 ├── DOCUMENTACAO.md                    ← Este arquivo
@@ -1079,7 +1077,7 @@ AIRPET/
     │   ├── authService.js             ← Hash de senha, JWT, login
     │   ├── nfcService.js              ← Decisao de tela ao escanear tag
     │   ├── notificacaoService.js      ← Criacao, envio, proximidade PostGIS
-    │   ├── pushService.js             ← Web Push API (VAPID)
+    │   ├── pushService.js             ← Web Push API
     │   ├── schedulerService.js        ← Jobs automaticos
     │   ├── localizacaoService.js      ← Registro de localizacoes
     │   ├── mapaService.js             ← Queries PostGIS por bounding box
@@ -1153,110 +1151,25 @@ AIRPET/
 
 ---
 
-## 30. Como instalar e rodar
+## 30. Requisitos e boot do servidor
 
-### Pre-requisitos
+### Requisitos
 
-1. **Node.js** (versao 18 ou superior) — [nodejs.org](https://nodejs.org)
-2. **PostgreSQL** (versao 14 ou superior) com extensao **PostGIS**
-3. **Git** (opcional, para clonar o repositorio)
+- **Node.js** (versao 18 ou superior)
+- **PostgreSQL** (versao 14 ou superior) com extensao **PostGIS** (queries geograficas)
 
-### Passo 1: Instalar PostgreSQL com PostGIS
-
-No Windows, baixe o instalador em [postgresql.org](https://www.postgresql.org/download/).
-Durante a instalacao, use o "Stack Builder" para instalar o PostGIS.
-
-Crie o banco de dados:
-```sql
-CREATE DATABASE airpet;
-\c airpet
-CREATE EXTENSION postgis;
-```
-
-### Passo 2: Configurar o .env
-
-Copie o arquivo de exemplo:
-```bash
-cp .env.example .env
-```
-
-Edite o `.env` com suas credenciais:
-```env
-# Banco de dados
-DB_HOST=localhost
-DB_PORT=5432
-DB_USER=postgres
-DB_PASSWORD=sua_senha
-DB_NAME=airpet
-
-# Seguranca
-JWT_SECRET=uma_chave_secreta_longa_e_aleatoria
-SESSION_SECRET=outra_chave_secreta_longa_e_aleatoria
-
-# Admin
-ADMIN_EMAIL=admin@airpet.com
-ADMIN_PASSWORD_HASH=$2b$12$...    # Hash bcrypt da senha admin
-ADMIN_PATH=/admin                  # Path customizavel do painel admin
-
-# Web Push (VAPID)
-VAPID_PUBLIC_KEY=sua_chave_publica
-VAPID_PRIVATE_KEY=sua_chave_privada
-VAPID_EMAIL=mailto:admin@airpet.com
-
-# Servidor
-PORT=3000
-NODE_ENV=development
-```
-
-Para gerar as chaves VAPID:
-```bash
-npx web-push generate-vapid-keys
-```
-
-Para gerar o hash da senha admin:
-```bash
-node -e "const bcrypt = require('bcrypt'); bcrypt.hash('sua_senha', 12).then(h => console.log(h))"
-```
-
-### Passo 3: Instalar dependencias
-
-```bash
-npm install
-```
-
-### Passo 4: Compilar o CSS (TailwindCSS)
-
-```bash
-npx tailwindcss -i src/public/css/input.css -o src/public/css/output.css
-```
-
-Para modo watch (recompila automaticamente):
-```bash
-npx tailwindcss -i src/public/css/input.css -o src/public/css/output.css --watch
-```
-
-### Passo 5: Iniciar o servidor
-
-**Desenvolvimento (com auto-restart):**
-```bash
-npm run dev
-```
-
-**Producao:**
-```bash
-npm start
-```
-
-O servidor inicia em `http://localhost:3000` (ou a porta definida no `.env`).
+A instalacao do banco, variaveis de ambiente e credenciais e feita **fora desta documentacao**. O sistema nao documenta passos de configuracao sensivel.
 
 ### O que acontece no boot
 
-1. Conecta ao PostgreSQL
-2. Executa `migrate.js` — cria as 25 tabelas automaticamente (idempotente)
-3. Insere seeds (configuracoes padrao, catalogo de racas)
-4. Inicializa Socket.IO com 3 namespaces
-5. Inicia o scheduler (escalar alertas a cada 30min, lembretes a cada 6h, limpeza a cada 1h)
-6. Servidor pronto para receber requisicoes
+Ao iniciar o servidor:
+
+1. Conexao ao banco de dados
+2. Execucao de `migrate.js` — criacao das tabelas (idempotente)
+3. Seeds: configuracoes padrao e catalogo de racas
+4. Socket.IO: 3 namespaces (chat, admin, notificacoes)
+5. Scheduler: escalar alertas (30 min), lembretes de vacinas (6 h), limpeza (1 h)
+6. Servidor pronto para requisicoes
 
 ---
 
@@ -1271,7 +1184,7 @@ O sistema usa **PostgreSQL** com a extensao **PostGIS** para queries geograficas
 | id | SERIAL (PK) | Auto-incremento |
 | nome | VARCHAR(100) | NOT NULL |
 | email | VARCHAR(150) | UNIQUE NOT NULL |
-| senha_hash | VARCHAR(255) | NOT NULL (bcrypt 12 rounds) |
+| senha_hash | VARCHAR(255) | NOT NULL (hash) |
 | telefone | VARCHAR(20) | |
 | role | VARCHAR(20) | Default: 'usuario'. Valores: 'usuario', 'admin' |
 | ultima_localizacao | GEOGRAPHY(POINT, 4326) | PostGIS — atualizada via GPS |
@@ -1654,6 +1567,8 @@ usuarios ──1:N──> notificacoes
 
 Todas as rotas sao montadas em `src/routes/index.js` com sub-routers.
 
+**Para testar rotas e views:** use o [Guia para testes (Secao 43)](#43-guia-para-testes--rotas-e-views), que traz tabela completa metodo/path, view renderizada, exigencia de auth e fluxos sugeridos.
+
 ### Rotas publicas (sem autenticacao)
 
 | Metodo | Path | Descricao |
@@ -1791,7 +1706,7 @@ Cada controller recebe a request do router, orquestra a logica (chamando service
 | `mostrarEsqueciSenha` | Renderiza formulario de recuperacao |
 | `esqueciSenha` | Gera token de reset (1h validade), armazena in-memory |
 | `mostrarRedefinirSenha` | Renderiza formulario de nova senha (valida token) |
-| `redefinirSenha` | Hash da nova senha com bcrypt, salva no banco |
+| `redefinirSenha` | Hash da nova senha, salva no banco |
 | `logout` | Destroi sessao, limpa cookies JWT e session |
 
 ### petController.js
@@ -1939,8 +1854,8 @@ Services contem a logica de negocio que nao pertence aos controllers nem aos mod
 
 | Funcao | Descricao |
 |---|---|
-| `registrar` | Hash da senha com bcrypt (12 rounds), verifica email duplicado, cria usuario |
-| `login` | Busca por email, compara bcrypt, gera JWT (7 dias, payload: id/email/role) |
+| `registrar` | Hash da senha, verifica email duplicado, cria usuario |
+| `login` | Busca por email, valida senha, inicia sessao e cookie |
 | `verificarToken` | Decodifica e valida JWT |
 
 ### nfcService.js
@@ -2117,8 +2032,8 @@ Se o valor for 0 no nivel 3, **todos os usuarios do sistema** sao notificados.
 
 ### Senhas
 
-- Hash com **bcrypt** (12 rounds) — resistente a ataques de forca bruta
-- Senha admin tambem em bcrypt (via `ADMIN_PASSWORD_HASH` no `.env`)
+- Senhas armazenadas com hash (nao em texto puro)
+- Credenciais de administrador gerenciadas fora da aplicacao
 
 ### Rate limiting
 
@@ -2243,7 +2158,7 @@ Todas as operacoes de edicao/exclusao verificam se o recurso pertence ao usuario
 
 | Voce quer... | Faca isso |
 |---|---|
-| Acessar o painel admin | Acesse `/admin/login` com credenciais do `.env` |
+| Acessar o painel admin | Acesse `/admin/login` com credenciais de administrador |
 | Ver metricas do sistema | Admin → Dashboard (`/admin`) |
 | Listar usuarios | Admin → Usuarios (`/admin/usuarios`) |
 | Promover usuario a admin | Admin → Usuarios → botao de alterar role |
@@ -2271,7 +2186,7 @@ Todas as operacoes de edicao/exclusao verificam se o recurso pertence ao usuario
 |---|---|
 | Entender a arquitetura | [Secao 28 — Arquitetura](#28-arquitetura-do-sistema) |
 | Ver todas as pastas | [Secao 29 — Estrutura de pastas](#29-estrutura-de-pastas) |
-| Instalar o projeto | [Secao 30 — Como instalar e rodar](#30-como-instalar-e-rodar) |
+| Requisitos e boot | [Secao 30 — Requisitos e boot](#30-requisitos-e-boot-do-servidor) |
 | Ver tabelas do banco | [Secao 31 — Banco de dados](#31-banco-de-dados) |
 | Ver todos os endpoints | [Secao 32 — Rotas e endpoints](#32-rotas-e-endpoints) |
 | Entender um controller | [Secao 33 — Controllers](#33-controllers) |
@@ -2287,8 +2202,298 @@ Todas as operacoes de edicao/exclusao verificam se o recurso pertence ao usuario
 | Adicionar novo model | Crie em `src/models/`, adicione tabela em `src/config/migrate.js` |
 | Adicionar novo controller | Crie em `src/controllers/`, conecte na rota |
 | Adicionar novo service | Crie em `src/services/`, use no controller |
-| Gerar chaves VAPID | `npx web-push generate-vapid-keys` |
-| Gerar hash bcrypt | `node -e "require('bcrypt').hash('senha', 12).then(console.log)"` |
 | Compilar CSS | `npx tailwindcss -i src/public/css/input.css -o src/public/css/output.css` |
-| Rodar em dev | `npm run dev` (nodemon com auto-restart) |
+| Rodar em dev | `npm run dev` (auto-restart) |
 | Rodar em producao | `npm start` |
+| **Testar rotas e views** | [Secao 43 — Guia para testes](#43-guia-para-testes--rotas-e-views) |
+
+---
+
+# PARTE 6 — GUIA PARA TESTES
+
+---
+
+## 43. Guia para testes — Rotas e Views
+
+Esta secao lista **todas as rotas do sistema**, a **view renderizada** (quando for GET que devolve HTML) ou o tipo de **resposta** (redirect/JSON), e se exige **autenticacao**. Use como checklist ao testar o sistema.
+
+**Legenda:**  
+- **Auth:** — = publica | **User** = usuario logado | **Admin** = administrador logado  
+- **View:** nome do arquivo EJS (em `src/views/`)  
+- **Resposta:** redirect, JSON ou acao (ex.: criar, atualizar)
+
+---
+
+### Rotas publicas (sem login)
+
+| Metodo | Path | Auth | View / Resposta | Observacao |
+|---|---|---|---|---|
+| GET | `/` | — | `home` ou redirect `/feed` | Se logado, redireciona para feed |
+| GET | `/termos` | — | `termos` | Termos de uso |
+| GET | `/privacidade` | — | `privacidade` | Politica de privacidade |
+| GET | `/auth/login` | — | `auth/login` | Formulario de login |
+| POST | `/auth/login` | — | redirect | Redireciona para `/explorar` ou flash erro |
+| GET | `/auth/registro` | — | `auth/registro` | Formulario de registro |
+| POST | `/auth/registro` | — | redirect | Cria conta, redireciona ou `auth/limite-usuarios` |
+| GET | `/auth/esqueci-senha` | — | `auth/esqueci-senha` | Recuperar senha |
+| POST | `/auth/esqueci-senha` | — | redirect | Envia link por email (in-memory) |
+| GET | `/auth/redefinir-senha/:token` | — | `auth/redefinir-senha` | Formulario nova senha |
+| POST | `/auth/redefinir-senha/:token` | — | redirect | Salva nova senha |
+| GET | `/auth/logout` | — | redirect | Encerra sessao |
+| GET | `/tag/:tag_code` | — | `nfc/nao-ativada` \| `nfc/ativar` \| `nfc/intermediaria` | Depende do status da tag |
+| GET | `/tag/:tag_code/encontrei` | — | `nfc/encontrei` | Formulario "encontrei este pet" |
+| POST | `/tag/:tag_code/encontrei` | — | `nfc/encontrei-sucesso` | Renderiza sucesso; upload foto opcional |
+| GET | `/tag/:tag_code/enviar-foto` | — | `nfc/enviar-foto` | Formulario enviar foto |
+| POST | `/tag/:tag_code/enviar-foto` | — | `nfc/encontrei-sucesso` | Renderiza "Foto enviada!" |
+| POST | `/tag/:tag_code/localizacao` | — | JSON | API: registra localizacao (body: lat, lng, etc.) |
+| GET | `/t/:tag_code` | — | (igual a `/tag/:tag_code`) | Alias da rota NFC |
+| GET | `/petshops` | — | `petshops/lista` | Lista de petshops ativos |
+| GET | `/petshops/:id` | — | `petshops/detalhes` | Detalhes do petshop |
+| GET | `/mapa` | — | `mapa/index` | Pagina do mapa |
+| GET | `/mapa/api/pins` | — | JSON (GeoJSON) | Pins por bounding box (query: bbox) |
+| GET | `/api/racas` | — | JSON | Autocomplete racas (query: tipo, q) |
+| GET | `/chat` | User | `chat/lista` | Lista de conversas (exige login) |
+
+---
+
+### Rotas autenticadas (usuario logado)
+
+| Metodo | Path | Auth | View / Resposta | Observacao |
+|---|---|---|---|---|
+| GET | `/feed` | User | `feed` | Feed "seguindo" (pets + pessoas) |
+| GET | `/pets` | User | `pets/meus-pets` | Lista dos meus pets |
+| GET | `/pets/cadastro` | User | `pets/cadastro` | Wizard 8 passos |
+| POST | `/pets/cadastro` | User | redirect depois `pets/confirmacao` | multipart: foto; apos sucesso redireciona e exibe confirmacao |
+| GET | `/pets/:id` | User | `pets/perfil` | Perfil do pet (dono ou so leitura) |
+| GET | `/pets/:id/editar` | User | `pets/editar` | So dono |
+| POST | `/pets/:id/editar` | User | redirect | So dono; multipart: foto |
+| PUT | `/pets/:id` | User | redirect | So dono; method-override |
+| GET | `/pets/:id/saude` | User | `pets/saude` | Carteira de saude |
+| GET | `/pets/:id/vincular-tag` | User | `pets/vincular-tag` | Vincular tag NFC ao pet |
+| POST | `/pets/:id/vincular-tag` | User | redirect | Body: tag_code |
+| POST | `/saude/:pet_id/vacinas` | User | redirect ou JSON | So dono do pet |
+| DELETE | `/saude/vacinas/:id` | User | redirect ou JSON | So dono |
+| POST | `/saude/:pet_id/registros` | User | redirect ou JSON | So dono |
+| DELETE | `/saude/registros/:id` | User | redirect ou JSON | So dono |
+| GET | `/diario/:pet_id` | User | `diario/index` | So dono |
+| POST | `/diario/:pet_id` | User | redirect | multipart: foto opcional |
+| DELETE | `/diario/:id` | User | redirect ou JSON | So dono da entrada |
+| GET | `/tags/:tag_code/ativar` | User | `nfc/ativar` | Formulario ativacao tag |
+| POST | `/tags/:tag_code/ativar` | User | redirect | Body: activation_code |
+| GET | `/tags/:tag_code/escolher-pet` | User | `nfc/escolher-pet` | Lista pets para vincular |
+| POST | `/tags/:tag_code/vincular-pet` | User | redirect | Body: pet_id |
+| GET | `/perdidos/:pet_id/formulario` | User | `pets-perdidos/formulario` | Reportar pet perdido |
+| POST | `/perdidos/:pet_id/reportar` | User | redirect | Cria alerta (pendente) |
+| GET | `/perdidos/:pet_id/encontrado` | User | `pets-perdidos/encontrado` | Form "meu pet foi encontrado" |
+| POST | `/perdidos/:pet_id/encontrado` | User | redirect depois `pets-perdidos/confirmacao` | Resolve alerta; redireciona para tela celebracao |
+| GET | `/perdidos/:pet_id/confirmacao` | User | `pets-perdidos/confirmacao` | Tela celebracao |
+| POST | `/perdidos/:id/resolver` | User | redirect | Redireciona para fluxo encontrado |
+| GET | `/explorar` | User | `explorar` | Feed "para voce" / regional |
+| POST | `/explorar/post` | User | redirect ou JSON | multipart: foto (max 10MB) |
+| POST | `/explorar/post/:id/repost` | User | redirect ou JSON | Repostar |
+| POST | `/explorar/post/:id/curtir` | User | redirect ou JSON | Toggle curtir |
+| DELETE | `/explorar/post/:id/curtir` | User | redirect ou JSON | Descurtir |
+| GET | `/explorar/post/:id/comentarios` | User | JSON | Lista comentarios |
+| GET | `/explorar/post/:id/pets-proximos` | User | JSON | Pets proximos ao post |
+| POST | `/explorar/post/:id/comentar` | User | redirect ou JSON | Body: texto |
+| DELETE | `/explorar/comentario/:id` | User | redirect ou JSON | So autor |
+| POST | `/explorar/post/:id/fixar` | User | redirect ou JSON | Max 2 fixadas |
+| DELETE | `/explorar/post/:id/fixar` | User | redirect ou JSON | |
+| DELETE | `/explorar/post/:id` | User | redirect ou JSON | So autor; remove foto |
+| POST | `/explorar/seguir/:id` | User | redirect ou JSON | id = usuario_id |
+| DELETE | `/explorar/seguir/:id` | User | redirect ou JSON | |
+| GET | `/explorar/perfil/:id` | User | `explorar/perfil` | Perfil publico usuario (id numerico) |
+| GET | `/explorar/perfil/:id/seguidores` | User | JSON ou HTML | Lista seguidores |
+| GET | `/explorar/perfil/:id/seguindo` | User | JSON ou HTML | Lista seguindo |
+| GET | `/explorar/pet/:id` | User | `explorar/perfil-pet` | Perfil publico do pet |
+| GET | `/explorar/pet/:id/seguidores` | User | JSON ou HTML | Seguidores do pet |
+| GET | `/explorar/pet/:id/seguindo` | User | JSON ou HTML | Seguindo do pet |
+| POST | `/explorar/pet/:id/seguir` | User | redirect ou JSON | Seguir pet |
+| DELETE | `/explorar/pet/:id/seguir` | User | redirect ou JSON | |
+| DELETE | `/explorar/pet/:id/seguidor/:usuarioId` | User | redirect ou JSON | Remover seguidor (dono do pet) |
+| GET | `/explorar/busca` | User | `explorar/busca` | Pagina de busca |
+| GET | `/explorar/api/usuarios` | User | JSON | Busca usuarios (query: q) |
+| GET | `/explorar/api/pets` | User | JSON | Busca pets (query: q) |
+| POST | `/chat/iniciar` | User | redirect | Body: pet_perdido_id, etc. |
+| GET | `/chat/novo/:pet_id` | User | redirect | Abre ou inicia conversa pelo pet |
+| GET | `/chat/:conversaId` | User | `chat/conversa` | So participante da conversa |
+| GET | `/notificacoes` | User | `notificacoes/lista` | Lista notificacoes |
+| GET | `/notificacoes/api/count` | User | JSON | Contagem nao lidas |
+| POST | `/notificacoes/marcar-todas-lidas` | User | redirect | |
+| POST | `/notificacoes/:id/lida` | User | redirect ou JSON | Marcar uma como lida |
+| POST | `/notificacoes/push/subscribe` | User | JSON | Body: subscription (Web Push) |
+| POST | `/notificacoes/push/unsubscribe` | User | JSON | |
+| GET | `/agenda` | User | `agenda/lista` | Meus agendamentos |
+| POST | `/agenda` | User | redirect | Body: petshop_id, pet_id, servico, data |
+| POST | `/agenda/:id/cancelar` | User | redirect | So dono do agendamento |
+| POST | `/agenda/:id/confirmar` | User | redirect | Admin ou petshop |
+| GET | `/perfil` | User | `perfil` | Meu perfil (configuracoes) |
+| PUT | `/perfil` | User | redirect | multipart: foto_perfil, foto_capa; validarPerfil |
+| GET | `/perfil/galeria` | User | JSON ou HTML | Galeria de fotos por pet |
+| POST | `/perfil/galeria` | User | redirect ou JSON | multipart: foto |
+| DELETE | `/perfil/galeria/:id` | User | redirect ou JSON | Remover foto da galeria |
+| POST | `/api/localizacao` | User | JSON | Body: pet_id, latitude, longitude (atualiza posicao) |
+| GET | `/api/localizacao/:pet_id` | User | JSON | Historico de localizacoes do pet |
+
+---
+
+### Rotas administrativas (admin)
+
+O path base do admin pode ser customizado (ex.: `/admin`). Abaixo usa-se `/admin` como referencia.
+
+| Metodo | Path | Auth | View / Resposta | Observacao |
+|---|---|---|---|---|
+| GET | `/admin/login` | — | `admin/login` | Se ja admin, redirect `/admin` |
+| POST | `/admin/login` | — | redirect | Credenciais no servidor |
+| GET | `/admin/logout` | — | redirect → `/admin/login` | |
+| GET | `/admin` | Admin | `admin/dashboard` | Dashboard metricas |
+| GET | `/admin/usuarios` | Admin | `admin/usuarios` | Lista usuarios |
+| POST | `/admin/usuarios/:id/role` | Admin | redirect | Alternar usuario/admin |
+| POST | `/admin/usuarios/:id/bloquear` | Admin | redirect | Toggle bloqueio |
+| POST | `/admin/usuarios/:id/excluir` | Admin | redirect | Excluir usuario |
+| GET | `/admin/pets` | Admin | `admin/pets` | Lista todos os pets |
+| GET | `/admin/petshops` | Admin | `admin/petshops` | Lista petshops |
+| GET | `/admin/pets-perdidos` | Admin | `admin/pets-perdidos` | Alertas pendentes/aprovados |
+| POST | `/admin/pets-perdidos/:id/aprovar` | Admin | redirect | Aprova e notifica proximos |
+| POST | `/admin/pets-perdidos/:id/rejeitar` | Admin | redirect | Body: motivo (opcional) |
+| POST | `/admin/pets-perdidos/:id/escalar` | Admin | redirect | Sobe nivel 1→2→3 |
+| GET | `/admin/moderacao` | Admin | `admin/moderacao` | Mensagens pendentes |
+| POST | `/admin/moderacao/:id/aprovar` | Admin | redirect | Entrega mensagem (Socket.IO) |
+| POST | `/admin/moderacao/:id/rejeitar` | Admin | redirect | |
+| GET | `/admin/configuracoes` | Admin | `admin/configuracoes` | Editar raios e horas |
+| POST | `/admin/configuracoes` | Admin | redirect | |
+| GET | `/admin/aparencia` | Admin | `admin/aparencia` | PWA: icones e cores |
+| POST | `/admin/aparencia` | Admin | redirect | multipart: icon_192, icon_512 |
+| GET | `/admin/gerenciar-mapa` | Admin | `admin/gerenciar-mapa` | CRUD pontos (clinica, abrigo, etc.) |
+| GET | `/admin/mapa` | Admin | `admin/mapa` | Mapa com todos os pontos |
+| POST | `/admin/pontos-mapa` | Admin | redirect ou JSON | Criar ponto |
+| PUT | `/admin/pontos-mapa/:id` | Admin | redirect ou JSON | Atualizar ponto |
+| POST | `/admin/pontos-mapa/:id/toggle` | Admin | redirect ou JSON | Ativar/desativar |
+| DELETE | `/admin/pontos-mapa/:id` | Admin | redirect ou JSON | Deletar ponto |
+| GET | `/tags/admin/lista` | Admin | `admin/tags` | Lista todas as tags NFC |
+| GET | `/tags/admin/lotes` | Admin | `admin/lotes` | Lista lotes |
+| GET | `/tags/admin/lote/:id` | Admin | `admin/lote-detalhes` | Detalhes do lote |
+| POST | `/tags/admin/gerar` | Admin | redirect | Body: quantidade, fabricante, observacoes |
+| POST | `/tags/admin/:id/reservar` | Admin | redirect ou JSON | Body: user_id (opcional) |
+| POST | `/tags/admin/:id/enviar` | Admin | redirect | Marca tag como enviada |
+| POST | `/tags/admin/:id/bloquear` | Admin | redirect | Bloqueia tag |
+
+---
+
+### Mapa View → Rota(s)
+
+Para cada view EJS, qual rota (e metodo) a exibe. Use para conferir se ao testar a URL a tela correta abre.
+
+| View | Rota que renderiza |
+|---|---|
+| `home` | GET `/` (se nao logado) |
+| `termos` | GET `/termos` |
+| `privacidade` | GET `/privacidade` |
+| `auth/login` | GET `/auth/login` |
+| `auth/registro` | GET `/auth/registro` |
+| `auth/limite-usuarios` | POST `/auth/registro` (quando atinge limite) |
+| `auth/esqueci-senha` | GET `/auth/esqueci-senha` |
+| `auth/redefinir-senha` | GET `/auth/redefinir-senha/:token` |
+| `nfc/nao-ativada` | GET `/tag/:tag_code` (tag nao ativada) |
+| `nfc/ativar` | GET `/tag/:tag_code` (tag enviada) ou GET `/tags/:tag_code/ativar` |
+| `nfc/intermediaria` | GET `/tag/:tag_code` (tag ativa: dados do pet/dono) |
+| `nfc/encontrei` | GET `/tag/:tag_code/encontrei` |
+| `nfc/encontrei-sucesso` | POST `/tag/:tag_code/encontrei` ou POST `/tag/:tag_code/enviar-foto` |
+| `nfc/enviar-foto` | GET `/tag/:tag_code/enviar-foto` |
+| `nfc/escolher-pet` | GET `/tags/:tag_code/escolher-pet` |
+| `petshops/lista` | GET `/petshops` |
+| `petshops/detalhes` | GET `/petshops/:id` |
+| `mapa/index` | GET `/mapa` |
+| `pets/meus-pets` | GET `/pets` |
+| `pets/cadastro` | GET `/pets/cadastro` |
+| `pets/confirmacao` | POST `/pets/cadastro` (sucesso) |
+| `pets/perfil` | GET `/pets/:id` |
+| `pets/editar` | GET `/pets/:id/editar` |
+| `pets/saude` | GET `/pets/:id/saude` |
+| `pets/vincular-tag` | GET `/pets/:id/vincular-tag` |
+| `diario/index` | GET `/diario/:pet_id` |
+| `pets-perdidos/formulario` | GET `/perdidos/:pet_id/formulario` |
+| `pets-perdidos/encontrado` | GET `/perdidos/:pet_id/encontrado` |
+| `pets-perdidos/confirmacao` | POST `/perdidos/:pet_id/encontrado` (sucesso) |
+| `explorar` | GET `/explorar` |
+| `feed` | GET `/feed` |
+| `explorar/perfil` | GET `/explorar/perfil/:id` |
+| `explorar/perfil-pet` | GET `/explorar/pet/:id` |
+| `explorar/busca` | GET `/explorar/busca` |
+| `chat/lista` | GET `/chat` |
+| `chat/conversa` | GET `/chat/:conversaId` |
+| `notificacoes/lista` | GET `/notificacoes` |
+| `agenda/lista` | GET `/agenda` |
+| `perfil` | GET `/perfil` |
+| `admin/login` | GET `/admin/login` |
+| `admin/dashboard` | GET `/admin` |
+| `admin/usuarios` | GET `/admin/usuarios` |
+| `admin/pets` | GET `/admin/pets` |
+| `admin/petshops` | GET `/admin/petshops` |
+| `admin/pets-perdidos` | GET `/admin/pets-perdidos` |
+| `admin/moderacao` | GET `/admin/moderacao` |
+| `admin/configuracoes` | GET `/admin/configuracoes` |
+| `admin/aparencia` | GET `/admin/aparencia` |
+| `admin/gerenciar-mapa` | GET `/admin/gerenciar-mapa` |
+| `admin/mapa` | GET `/admin/mapa` |
+| `admin/tags` | GET `/tags/admin/lista` |
+| `admin/lotes` | GET `/tags/admin/lotes` |
+| `admin/lote-detalhes` | GET `/tags/admin/lote/:id` |
+| `pontos/detalhes` | (usado por link no mapa; rota pode estar em mapa/pontos) |
+
+---
+
+### Lista de views (arquivos EJS)
+
+Todas as views em `src/views/` que sao **paginas** (nao partials):
+
+- **Raiz:** `home.ejs`, `termos.ejs`, `privacidade.ejs`, `perfil.ejs`, `explorar.ejs`, `feed.ejs`
+- **auth:** `login.ejs`, `registro.ejs`, `esqueci-senha.ejs`, `redefinir-senha.ejs`, `limite-usuarios.ejs`
+- **pets:** `meus-pets.ejs`, `cadastro.ejs`, `perfil.ejs`, `editar.ejs`, `saude.ejs`, `confirmacao.ejs`, `vincular-tag.ejs`
+- **nfc:** `nao-ativada.ejs`, `ativar.ejs`, `intermediaria.ejs`, `encontrei.ejs`, `encontrei-sucesso.ejs`, `enviar-foto.ejs`, `escolher-pet.ejs`
+- **petshops:** `lista.ejs`, `detalhes.ejs`
+- **pets-perdidos:** `formulario.ejs`, `encontrado.ejs`, `confirmacao.ejs`
+- **mapa:** `index.ejs`
+- **pontos:** `detalhes.ejs`
+- **diario:** `index.ejs`
+- **agenda:** `lista.ejs`
+- **chat:** `lista.ejs`, `conversa.ejs`
+- **notificacoes:** `lista.ejs`
+- **explorar:** `perfil.ejs`, `perfil-pet.ejs`, `busca.ejs`
+- **admin:** `login.ejs`, `dashboard.ejs`, `usuarios.ejs`, `pets.ejs`, `petshops.ejs`, `pets-perdidos.ejs`, `moderacao.ejs`, `configuracoes.ejs`, `aparencia.ejs`, `gerenciar-mapa.ejs`, `mapa.ejs`, `tags.ejs`, `lotes.ejs`, `lote-detalhes.ejs`, `gerar-tags.ejs` (se existir)
+
+**Partials** (incluidos por outras views): `partials/header.ejs`, `partials/footer.ejs`, `partials/nav.ejs`, `partials/flash.ejs`, `partials/admin-layout.ejs`, `partials/admin-footer.ejs`, `partials/modal-crop.ejs`, `partials/erro.ejs`, `layouts/main.ejs`.
+
+---
+
+### Fluxos sugeridos para testar
+
+1. **Publico (sem login)**  
+   GET `/` → home; GET `/auth/login` e `/auth/registro`; GET `/petshops` e `/petshops/1`; GET `/mapa`; GET `/tag/PET-XXXXXX` (com tag existente no banco para ver uma das telas NFC).
+
+2. **Login e perfil**  
+   POST `/auth/login` → redirect `/explorar` ou `/feed`; GET `/perfil`; PUT `/perfil` (editar nome, foto).
+
+3. **Pets**  
+   GET `/pets` → `meus-pets`; GET `/pets/cadastro` → wizard; POST cadastro com foto → `confirmacao`; GET `/pets/:id` → perfil do pet; GET `/pets/:id/editar` e POST editar; GET `/pets/:id/saude`; GET `/diario/:pet_id`.
+
+4. **Explorar / Feed**  
+   GET `/explorar` → feed explorar; GET `/feed` → feed seguindo; POST criar post com foto; curtir, comentar, repostar; GET `/explorar/perfil/:id` e GET `/explorar/pet/:id`; GET `/explorar/busca`.
+
+5. **Pet perdido**  
+   GET `/perdidos/:pet_id/formulario`; POST reportar; (como admin) GET `/admin/pets-perdidos`, aprovar; GET `/perdidos/:pet_id/encontrado` e POST marcar encontrado → `confirmacao`.
+
+6. **Chat**  
+   GET `/chat` → lista; GET `/chat/novo/:pet_id` ou POST `/chat/iniciar`; GET `/chat/:conversaId` → conversa; (admin) GET `/admin/moderacao`, aprovar/rejeitar mensagem.
+
+7. **Agenda**  
+   GET `/agenda`; POST criar agendamento (petshop_id, pet_id, servico, data); POST cancelar.
+
+8. **Notificacoes**  
+   GET `/notificacoes`; GET `/notificacoes/api/count` (JSON); POST marcar lida.
+
+9. **Admin**  
+   GET `/admin/login`; POST login; GET `/admin` (dashboard); GET cada secao: usuarios, pets, petshops, pets-perdidos, moderacao, configuracoes, aparencia, gerenciar-mapa, mapa; GET `/tags/admin/lista` e `/tags/admin/lotes`, GET `/tags/admin/lote/:id`; POST aprovar/rejeitar/escalar; POST moderacao aprovar/rejeitar; POST pontos-mapa CRUD.
+
+10. **APIs JSON**  
+   GET `/api/racas?tipo=cachorro&q=lab`; GET `/mapa/api/pins?bbox=...`; GET `/notificacoes/api/count`; GET `/explorar/post/:id/comentarios`; GET `/explorar/api/usuarios?q=...`; GET `/api/localizacao/:pet_id`.
