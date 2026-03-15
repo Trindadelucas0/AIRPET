@@ -3,13 +3,13 @@ const { query } = require('../config/database');
 const Notificacao = {
 
   async criar(dados) {
-    const { usuario_id, tipo, mensagem, link, remetente_id, publicacao_id } = dados;
+    const { usuario_id, tipo, mensagem, link, remetente_id, publicacao_id, pet_id } = dados;
 
     const resultado = await query(
-      `INSERT INTO notificacoes (usuario_id, tipo, mensagem, link, remetente_id, publicacao_id, data_criacao)
-       VALUES ($1, $2, $3, $4, $5, $6, NOW())
+      `INSERT INTO notificacoes (usuario_id, tipo, mensagem, link, remetente_id, publicacao_id, pet_id, data_criacao)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
        RETURNING *`,
-      [usuario_id, tipo, mensagem, link, remetente_id || null, publicacao_id || null]
+      [usuario_id, tipo, mensagem, link, remetente_id || null, publicacao_id || null, pet_id || null]
     );
 
     return resultado.rows[0];
@@ -26,39 +26,47 @@ const Notificacao = {
     return resultado.rows;
   },
 
-  async buscarPorUsuario(usuarioId, limite = 80) {
-    const resultado = await query(
-      `SELECT n.*,
+  async buscarPorUsuario(usuarioId, limite = 80, petId = null) {
+    let sql = `SELECT n.*,
               COALESCE(n.data_criacao, n.data) AS data_criacao,
               r.nome AS remetente_nome,
               r.cor_perfil AS remetente_cor,
-              r.foto_perfil AS remetente_foto
+              r.foto_perfil AS remetente_foto,
+              pt.nome AS pet_nome
        FROM notificacoes n
        LEFT JOIN usuarios r ON r.id = n.remetente_id
-       WHERE n.usuario_id = $1
-       ORDER BY COALESCE(n.data_criacao, n.data) DESC
-       LIMIT $2`,
-      [usuarioId, limite]
-    );
-
+       LEFT JOIN pets pt ON pt.id = n.pet_id
+       WHERE n.usuario_id = $1`;
+    const params = [usuarioId];
+    if (petId != null) {
+      sql += ` AND n.pet_id = $2`;
+      params.push(petId);
+    }
+    sql += ` ORDER BY COALESCE(n.data_criacao, n.data) DESC LIMIT $${params.length + 1}`;
+    params.push(limite);
+    const resultado = await query(sql, params);
     return resultado.rows;
   },
 
-  async buscarPorTipos(usuarioId, tipos, limite = 80) {
-    const resultado = await query(
-      `SELECT n.*,
+  async buscarPorTipos(usuarioId, tipos, limite = 80, petId = null) {
+    let sql = `SELECT n.*,
               COALESCE(n.data_criacao, n.data) AS data_criacao,
               r.nome AS remetente_nome,
               r.cor_perfil AS remetente_cor,
-              r.foto_perfil AS remetente_foto
+              r.foto_perfil AS remetente_foto,
+              pt.nome AS pet_nome
        FROM notificacoes n
        LEFT JOIN usuarios r ON r.id = n.remetente_id
-       WHERE n.usuario_id = $1 AND n.tipo = ANY($2)
-       ORDER BY COALESCE(n.data_criacao, n.data) DESC
-       LIMIT $3`,
-      [usuarioId, tipos, limite]
-    );
-
+       LEFT JOIN pets pt ON pt.id = n.pet_id
+       WHERE n.usuario_id = $1 AND n.tipo = ANY($2)`;
+    const params = [usuarioId, tipos];
+    if (petId != null) {
+      sql += ` AND n.pet_id = $3`;
+      params.push(petId);
+    }
+    sql += ` ORDER BY COALESCE(n.data_criacao, n.data) DESC LIMIT $${params.length + 1}`;
+    params.push(limite);
+    const resultado = await query(sql, params);
     return resultado.rows;
   },
 

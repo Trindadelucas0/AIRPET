@@ -779,9 +779,13 @@ const migrations = [
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='notificacoes' AND column_name='data_criacao') THEN
       ALTER TABLE notificacoes ADD COLUMN data_criacao TIMESTAMP DEFAULT NOW();
     END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='notificacoes' AND column_name='pet_id') THEN
+      ALTER TABLE notificacoes ADD COLUMN pet_id INTEGER REFERENCES pets(id) ON DELETE SET NULL;
+    END IF;
   END $$;`,
 
   `CREATE INDEX IF NOT EXISTS idx_notificacoes_usuario ON notificacoes (usuario_id, data_criacao DESC);`,
+  `CREATE INDEX IF NOT EXISTS idx_notificacoes_pet ON notificacoes (pet_id);`,
   `CREATE INDEX IF NOT EXISTS idx_notificacoes_remetente ON notificacoes (remetente_id);`,
 ];
 
