@@ -542,30 +542,6 @@ const petController = {
       return res.redirect(`/pets/${req.params.id}/vincular-tag`);
     }
   },
-};
-
-const PESO_IDEAL = {
-  cachorro: {
-    'Labrador': { min: 25, max: 36 },
-    'Golden Retriever': { min: 25, max: 34 },
-    'Pastor Alemão': { min: 22, max: 40 },
-    'Bulldog': { min: 18, max: 25 },
-    'Poodle': { min: 3, max: 32 },
-    'Yorkshire': { min: 2, max: 3.5 },
-    'Shih Tzu': { min: 4, max: 7.5 },
-    'Pinscher': { min: 3, max: 5 },
-    'Pit Bull': { min: 14, max: 27 },
-    'Rottweiler': { min: 36, max: 60 },
-    'default_pequeno': { min: 2, max: 10 },
-    'default_medio': { min: 10, max: 25 },
-    'default_grande': { min: 25, max: 45 },
-  },
-  gato: {
-    'default': { min: 3.5, max: 5.5 },
-    'Persa': { min: 3, max: 5.5 },
-    'Siamês': { min: 3, max: 5 },
-    'Maine Coon': { min: 5, max: 11 },
-  },
 
   /**
    * API: dados do alerta ativo de um pet (para modal de notificação de pet perdido).
@@ -596,6 +572,30 @@ const PESO_IDEAL = {
       logger.error('PET_CTRL', 'Erro ao buscar alerta ativo', erro);
       return res.status(500).json({ ativo: false, mensagem: 'Erro ao carregar dados do alerta.' });
     }
+  },
+};
+
+const PESO_IDEAL = {
+  cachorro: {
+    'Labrador': { min: 25, max: 36 },
+    'Golden Retriever': { min: 25, max: 34 },
+    'Pastor Alemão': { min: 22, max: 40 },
+    'Bulldog': { min: 18, max: 25 },
+    'Poodle': { min: 3, max: 32 },
+    'Yorkshire': { min: 2, max: 3.5 },
+    'Shih Tzu': { min: 4, max: 7.5 },
+    'Pinscher': { min: 3, max: 5 },
+    'Pit Bull': { min: 14, max: 27 },
+    'Rottweiler': { min: 36, max: 60 },
+    'default_pequeno': { min: 2, max: 10 },
+    'default_medio': { min: 10, max: 25 },
+    'default_grande': { min: 25, max: 45 },
+  },
+  gato: {
+    'default': { min: 3.5, max: 5.5 },
+    'Persa': { min: 3, max: 5.5 },
+    'Siamês': { min: 3, max: 5 },
+    'Maine Coon': { min: 5, max: 11 },
   },
 };
 
