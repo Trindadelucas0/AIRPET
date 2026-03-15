@@ -82,7 +82,7 @@
           <h2 class="font-bold text-blue-900 text-base">Como funciona o Sistema de Alertas Escalonáveis</h2>
           <p class="text-sm text-blue-700 mt-1">
             Quando um pet é reportado como perdido e o alerta é aprovado, o sistema notifica pessoas em um raio inicial (Nível 1).
-            Se o pet não for encontrado após um tempo configurado, o raio de busca <strong>expande automaticamente</strong> para alcançar mais pessoas.
+            Um <strong>cron roda a cada 30 minutos</strong>: a partir do momento em que o pet está perdido, o sistema cronometra e, de acordo com as horas configuradas abaixo, expande o raio (Nível 2 e 3) e reenvia notificações para alcançar mais telefones. Ajuste aqui o raio (km) e o tempo (horas) de cada nível.
           </p>
         </div>
       </div>

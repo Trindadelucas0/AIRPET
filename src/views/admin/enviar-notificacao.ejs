@@ -1,4 +1,4 @@
-<% locals.titulo = typeof titulo !== 'undefined' ? titulo : 'Enviar notificação por região' %>
+<% locals.titulo = typeof titulo !== 'undefined' ? titulo : 'Notificação em massa' %>
 <%- include('../partials/admin-layout') %>
 
 <main class="flex-1">
@@ -8,8 +8,8 @@
       <a href="<%= adminPath %>" class="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-primary-500 transition-colors mb-3">
         <i class="fa-solid fa-arrow-left text-xs"></i> Dashboard
       </a>
-      <h1 class="text-2xl font-bold text-gray-900">Enviar notificação por região</h1>
-      <p class="text-sm text-gray-500 mt-1">Escolha o centro (lat/lng), o raio em km e o conteúdo. Apenas usuários com localização ativa no app receberão.</p>
+      <h1 class="text-2xl font-bold text-gray-900">Notificação em massa</h1>
+      <p class="text-sm text-gray-500 mt-1">Envie notificações por região: escolha o centro (lat/lng), o raio em km e o conteúdo. Apenas usuários com localização ativa no app receberão.</p>
     </div>
 
     <form action="<%= adminPath %>/notificacoes/enviar" method="POST" class="space-y-6 bg-white rounded-xl shadow-sm border border-gray-100 p-6">
@@ -73,7 +73,7 @@
         <a href="<%= adminPath %>" class="px-4 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 transition-colors">Cancelar</a>
         <button type="submit" id="btnEnviar" class="inline-flex items-center gap-2 px-6 py-2.5 bg-primary-500 hover:bg-primary-600 text-white text-sm font-semibold rounded-lg shadow-sm hover:shadow transition-all">
           <i class="fa-solid fa-paper-plane"></i>
-          Enviar notificação
+          Enviar notificação em massa
         </button>
       </div>
     </form>

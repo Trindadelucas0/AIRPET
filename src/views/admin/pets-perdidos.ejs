@@ -12,6 +12,26 @@
       <p class="text-sm text-gray-500 mt-1"><%= perdidos.length %> registros</p>
     </div>
 
+    <!-- Acesso rápido: configurações de alertas e notificação em massa -->
+    <div class="mb-8 p-5 bg-white rounded-xl shadow-sm border border-gray-100">
+      <h2 class="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+        <i class="fa-solid fa-cog text-primary-500"></i>
+        Notificações e alertas
+      </h2>
+      <p class="text-xs text-gray-500 mb-4">Configure o tempo e o raio (km) para o envio automático de notificações quando um pet está perdido, ou envie uma notificação em massa por região.</p>
+      <div class="flex flex-wrap gap-3">
+        <a href="<%= adminPath %>/configuracoes" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium bg-primary-50 text-primary-700 hover:bg-primary-100 border border-primary-200 transition-colors">
+          <i class="fa-solid fa-clock"></i>
+          Configurações de alertas (tempo e raio)
+        </a>
+        <a href="<%= adminPath %>/notificacoes/enviar" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200 transition-colors">
+          <i class="fa-solid fa-bell"></i>
+          Notificação em massa (região e raio)
+        </a>
+      </div>
+      <p class="text-xs text-gray-400 mt-3">O sistema dispara um cron a cada 30 minutos: a partir do momento em que o pet está perdido, ele cronometra e reenvia notificações conforme as horas e raios configurados (Nível 1 → 2 → 3).</p>
+    </div>
+
     <% if (perdidos.length === 0) { %>
       <div class="bg-white rounded-xl shadow-sm border border-gray-100 text-center py-16 text-gray-400">
         <i class="fa-solid fa-paw text-4xl mb-3"></i>
@@ -27,9 +47,9 @@
             else if (p.status === 'resolvido') statusClass = 'bg-emerald-100 text-emerald-700';
           %>
           <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-            <% if (p.foto_url) { %>
+            <% if (p.pet_foto) { %>
               <div class="h-44 bg-gray-100">
-                <img src="<%= p.foto_url %>" alt="<%= p.pet_nome %>" class="w-full h-full object-cover">
+                <img src="<%= p.pet_foto %>" alt="<%= p.pet_nome %>" class="w-full h-full object-cover">
               </div>
             <% } else { %>
               <div class="h-44 bg-gray-100 flex items-center justify-center text-gray-300">

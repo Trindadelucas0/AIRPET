@@ -741,7 +741,7 @@ async function excluirUsuario(req, res) {
 async function mostrarEnviarNotificacao(req, res) {
   try {
     return res.render('admin/enviar-notificacao', {
-      titulo: 'Enviar notificação por região - AIRPET Admin',
+      titulo: 'Notificação em massa - AIRPET Admin',
     });
   } catch (erro) {
     logger.error('AdminController', 'Erro ao exibir formulário de notificação', erro);
