@@ -46,7 +46,7 @@ const perfilController = {
       const dados = {};
       const camposBody = ['nome', 'telefone', 'cor_perfil', 'bio', 'endereco', 'bairro', 'cidade', 'estado', 'cep', 'data_nascimento', 'contato_extra'];
       camposBody.forEach((campo) => {
-        if (body.hasOwnProperty(campo)) {
+        if (Object.prototype.hasOwnProperty.call(body, campo)) {
           if (campo === 'cor_perfil') dados[campo] = body[campo] || '#ec5a1c';
           else if (campo === 'data_nascimento' || campo === 'contato_extra') dados[campo] = body[campo] || null;
           else dados[campo] = body[campo];

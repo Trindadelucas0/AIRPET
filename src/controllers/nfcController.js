@@ -197,7 +197,7 @@ const nfcController = {
 
       if (latitude && longitude) {
         try {
-          await Localizacao.registrar({ pet_id: tag.pet_id, latitude, longitude, origem: 'encontrei' });
+          await Localizacao.registrar({ pet_id: tag.pet_id, latitude, longitude, origem: 'encontrei', foto_url: pet.foto || null });
         } catch (e) { logger.error('NFC_CTRL', 'Erro ao registrar localização do encontrei', e); }
       }
 
@@ -262,7 +262,15 @@ const nfcController = {
         logger.error('NFC_CTRL', 'Erro no reverse geocoding (não crítico)', e);
       }
 
-      await Localizacao.registrar({ pet_id: tag.pet_id, latitude: lat, longitude: lng, origem: 'encontrador' });
+      const pet = await Pet.buscarPorId(tag.pet_id);
+      await Localizacao.registrar({
+        pet_id: tag.pet_id,
+        latitude: lat,
+        longitude: lng,
+        origem: 'encontrador',
+        cidade: cidade || null,
+        foto_url: (pet && pet.foto) ? pet.foto : null,
+      });
 
       try {
         await TagScan.registrar({
@@ -276,7 +284,6 @@ const nfcController = {
         });
       } catch (e) { logger.error('NFC_CTRL', 'Erro ao registrar scan de localização', e); }
 
-      const pet = await Pet.buscarPorId(tag.pet_id);
       if (pet) {
         const cidadeTexto = cidade ? ` em ${cidade}` : '';
         try {

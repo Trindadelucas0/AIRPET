@@ -169,7 +169,8 @@ const mapaService = {
       promessas.push(
         query(
           `SELECT DISTINCT ON (l.pet_id)
-                  l.id, p.nome, l.latitude, l.longitude,
+                  l.id, p.nome AS pet_nome, l.latitude, l.longitude,
+                  l.foto_url, p.foto AS pet_foto,
                   'localizacao' AS categoria, 'paw' AS icone,
                   'localizacao' AS tipo_original
            FROM localizacoes l
@@ -178,7 +179,7 @@ const mapaService = {
                    l.ponto::geometry,
                    ST_MakeEnvelope($2, $1, $4, $3, 4326)
                  )
-           ORDER BY l.pet_id, l.data_registro DESC`,
+           ORDER BY l.pet_id, l.data DESC`,
           [swLat, swLng, neLat, neLng]
         ).then(res => res.rows)
       );
@@ -237,10 +238,12 @@ const mapaService = {
       },
       properties: {
         id: ponto.id,
-        nome: ponto.nome,
+        nome: ponto.nome || ponto.pet_nome,
         categoria: ponto.categoria,
         icone: ponto.icone,
         tipo_original: ponto.tipo_original,
+        foto_url: ponto.foto_url || null,
+        pet_foto: ponto.pet_foto || null,
       },
     }));
 

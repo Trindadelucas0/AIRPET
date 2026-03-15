@@ -171,7 +171,10 @@ const explorarController = {
       res.json({ sucesso: true, post: completo, totalPosts, removido: removido ? removido.id : null });
     } catch (err) {
       logger.error('EXPLORAR', 'Erro ao criar post', err);
-      res.status(500).json({ sucesso: false, mensagem: 'Erro ao publicar.' });
+      const msg = process.env.NODE_ENV === 'production'
+        ? 'Erro ao publicar. Tente novamente.'
+        : (err.message || 'Erro ao publicar.');
+      res.status(500).json({ sucesso: false, mensagem: msg });
     }
   },
 

@@ -1,21 +1,32 @@
 const express = require('express');
 const router = express.Router();
+const fs = require('fs');
 const multer = require('multer');
 const path = require('path');
 const crypto = require('crypto');
 
 const explorarController = require('../controllers/explorarController');
 
+const postsDir = path.join(__dirname, '..', 'public', 'images', 'posts');
+if (!fs.existsSync(postsDir)) {
+  fs.mkdirSync(postsDir, { recursive: true });
+}
+
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, path.join(__dirname, '..', 'public', 'images', 'posts')),
-  filename: (req, file, cb) => cb(null, crypto.randomBytes(16).toString('hex') + path.extname(file.originalname)),
+  destination: (req, file, cb) => cb(null, postsDir),
+  filename: (req, file, cb) => {
+    const ext = (path.extname(file.originalname) || '.jpg').toLowerCase().replace(/[^a-z.]/g, '') || '.jpg';
+    cb(null, crypto.randomBytes(16).toString('hex') + ext);
+  },
 });
 const upload = multer({
   storage,
   limits: { fileSize: 10 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
-    const allowed = /jpeg|jpg|png|gif|webp/;
-    cb(null, allowed.test(path.extname(file.originalname).toLowerCase()) && allowed.test(file.mimetype));
+    const ext = (path.extname(file.originalname) || '').toLowerCase();
+    const extOk = /\.(jpe?g|png|gif|webp)$/.test(ext);
+    const mimeOk = !file.mimetype || /image\/(jpeg|png|gif|webp)/.test(file.mimetype);
+    cb(null, !!(extOk || mimeOk));
   },
 });
 

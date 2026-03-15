@@ -1053,11 +1053,21 @@
     if (petVal) formData.append('pet_id', petVal);
 
     fetch('/explorar/post', { method: 'POST', credentials: 'same-origin', body: formData })
-    .then(function (r) { return r.json(); })
-    .then(function (data) {
+    .then(function (r) {
+      return r.text().then(function (text) {
+        try { return { ok: r.ok, data: JSON.parse(text) }; }
+        catch (_) { return { ok: false, data: { sucesso: false, mensagem: r.status === 401 ? 'Sessão expirada. Faça login de novo.' : 'Erro no servidor. Tente novamente.' } }; }
+      });
+    })
+    .then(function (result) {
+      var data = result.data;
       btnPublicar.disabled = false;
       btnPublicar.innerHTML = 'Publicar';
-      if (!data.sucesso) { toast(data.mensagem || 'Erro ao publicar.', 'erro'); validarFormPost(); return; }
+      if (!result.ok || !data.sucesso) {
+        toast(data.mensagem || 'Erro ao publicar.', 'erro');
+        validarFormPost();
+        return;
+      }
       fecharModal('newPostModal');
       toast('Publicado!');
       totalPostsLocal = data.totalPosts != null ? data.totalPosts : (totalPostsLocal + 1);
@@ -1073,7 +1083,7 @@
       }
     })
     .catch(function () {
-      toast('Erro de conexão. Tente novamente.', 'erro');
+      toast('Erro de conexão. Verifique a internet e tente novamente.', 'erro');
       btnPublicar.disabled = false;
       btnPublicar.innerHTML = 'Publicar';
       validarFormPost();

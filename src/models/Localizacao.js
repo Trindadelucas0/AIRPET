@@ -80,6 +80,45 @@ const Localizacao = {
 
     return resultado.rows;
   },
+
+  /**
+   * Lista localizações para o mapa admin: últimas por pet com nome e foto.
+   * No front usar foto_url || pet_foto para o marcador.
+   *
+   * @param {number} limite - Quantidade máxima (padrão: 500)
+   * @returns {Promise<Array>}
+   */
+  async listarParaAdminMapa(limite = 500) {
+    const resultado = await query(
+      `SELECT l.id, l.latitude, l.longitude, l.cidade, l.data, l.foto_url,
+              p.nome AS pet_nome, p.foto AS pet_foto
+       FROM localizacoes l
+       JOIN pets p ON p.id = l.pet_id
+       ORDER BY l.data DESC
+       LIMIT $1`,
+      [limite]
+    );
+    return resultado.rows;
+  },
+
+  /**
+   * Contagem de localizações por cidade (concentração de pets no mapa admin).
+   *
+   * @param {number} limite - Quantidade de cidades no ranking (padrão: 30)
+   * @returns {Promise<Array<{cidade: string, total: string}>>}
+   */
+  async contarPorCidade(limite = 30) {
+    const resultado = await query(
+      `SELECT cidade, COUNT(*) AS total
+       FROM localizacoes
+       WHERE cidade IS NOT NULL AND TRIM(cidade) <> ''
+       GROUP BY cidade
+       ORDER BY total DESC
+       LIMIT $1`,
+      [limite]
+    );
+    return resultado.rows;
+  },
 };
 
 module.exports = Localizacao;

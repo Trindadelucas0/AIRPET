@@ -45,7 +45,7 @@ const logger = require('../utils/logger');
  */
 async function registrar(req, res) {
   try {
-    const { pet_id, latitude, longitude, origem } = req.body;
+    const { pet_id, latitude, longitude, origem, cidade } = req.body;
 
     /* Validação dos campos obrigatórios */
     if (!pet_id || !latitude || !longitude) {
@@ -76,12 +76,15 @@ async function registrar(req, res) {
       });
     }
 
-    /* Registra a localização no banco de dados */
+    /* Registra a localização no banco de dados (com foto do pet para o mapa) */
     const localizacao = await Localizacao.registrar({
       pet_id,
       latitude: lat,
       longitude: lng,
       origem: origem || 'manual',
+      foto_url: (pet && pet.foto) ? pet.foto : null,
+      cidade: cidade || null,
+      ip: req.ip || req.connection?.remoteAddress || null,
     });
 
     logger.info('LocalizacaoController', `Localização registrada para pet ${pet_id} (${origem || 'manual'})`);

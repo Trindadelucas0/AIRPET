@@ -40,6 +40,7 @@ const MensagemChat = require('../models/MensagemChat');
 const Notificacao = require('../models/Notificacao');
 const ConfigSistema = require('../models/ConfigSistema');
 const PontoMapa = require('../models/PontoMapa');
+const Localizacao = require('../models/Localizacao');
 const notificacaoService = require('../services/notificacaoService');
 const logger = require('../utils/logger');
 const { query } = require('../config/database');
@@ -502,8 +503,21 @@ async function mostrarGerenciarMapa(req, res) {
  */
 async function mostrarMapa(req, res) {
   try {
+    const [pontos, petshops, perdidos, avistamentos, concentracaoCidades] = await Promise.all([
+      PontoMapa.listarTodos(),
+      Petshop.listarTodos(),
+      PetPerdido.listarTodos(),
+      Localizacao.listarParaAdminMapa(500),
+      Localizacao.contarPorCidade(30),
+    ]);
+
     return res.render('admin/mapa', {
       titulo: 'Mapa Administrativo - AIRPET',
+      pontos,
+      petshops,
+      perdidos,
+      avistamentos,
+      concentracaoCidades,
     });
   } catch (erro) {
     logger.error('AdminController', 'Erro ao carregar mapa administrativo', erro);
