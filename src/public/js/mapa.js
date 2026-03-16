@@ -50,6 +50,7 @@
   var loadedIds = {};
   var markers = {};
   var activeLayers = { petshops: true, perdidos: true, avistamentos: true, pontos: false };
+  var locMarker = null;
 
   var debounceTimer = null;
   function debounce(fn, delay) {
@@ -227,6 +228,146 @@
 
   fetchPins();
   map.on('moveend', debounce(fetchPins, 400));
+
+  /* ---------- Localizar por Estado / Cidade / Bairro ---------- */
+  var painelLocalizar = document.getElementById('painelLocalizar');
+  var btnToggleLocalizar = document.getElementById('btnToggleLocalizar');
+  if (btnToggleLocalizar && painelLocalizar) {
+    if (window.matchMedia('(max-width: 767px)').matches) {
+      painelLocalizar.classList.add('collapsed');
+    }
+    btnToggleLocalizar.addEventListener('click', function () {
+      painelLocalizar.classList.toggle('collapsed');
+    });
+  }
+
+  var mapaEstado = document.getElementById('mapaEstado');
+  var mapaCidade = document.getElementById('mapaCidade');
+  var mapaBairro = document.getElementById('mapaBairro');
+  var btnMostrarNoMapa = document.getElementById('btnMostrarNoMapa');
+  var btnMostrarNoMapaText = document.getElementById('btnMostrarNoMapaText');
+  var mapaLocalizarMsg = document.getElementById('mapaLocalizarMsg');
+
+  function atualizarBtnMostrarNoMapa() {
+    var estado = mapaEstado && mapaEstado.value;
+    var cidade = mapaCidade && mapaCidade.value;
+    if (btnMostrarNoMapa) {
+      btnMostrarNoMapa.disabled = !estado || !cidade;
+    }
+  }
+
+  if (mapaEstado) {
+    fetch('https://servicodados.ibge.gov.br/api/v1/localidades/estados?orderBy=nome')
+      .then(function (r) { return r.json(); })
+      .then(function (estados) {
+        estados.forEach(function (e) {
+          var opt = document.createElement('option');
+          opt.value = e.id;
+          opt.setAttribute('data-sigla', e.sigla);
+          opt.textContent = e.nome;
+          mapaEstado.appendChild(opt);
+        });
+      })
+      .catch(function () {
+        if (mapaLocalizarMsg) {
+          mapaLocalizarMsg.textContent = 'Nao foi possivel carregar os estados. Tente novamente.';
+          mapaLocalizarMsg.classList.remove('hidden');
+        }
+      });
+    mapaEstado.addEventListener('change', function () {
+      var id = this.value;
+      var sigla = this.options[this.selectedIndex] && this.options[this.selectedIndex].getAttribute('data-sigla');
+      if (mapaCidade) {
+        mapaCidade.disabled = !id;
+        mapaCidade.innerHTML = '<option value="">Selecione a cidade</option>';
+        mapaCidade.value = '';
+        if (id) {
+          mapaCidade.disabled = true;
+          fetch('https://servicodados.ibge.gov.br/api/v1/localidades/estados/' + id + '/municipios?orderBy=nome')
+            .then(function (r) { return r.json(); })
+            .then(function (municipios) {
+              municipios.forEach(function (m) {
+                var opt = document.createElement('option');
+                opt.value = m.nome;
+                opt.textContent = m.nome;
+                mapaCidade.appendChild(opt);
+              });
+              mapaCidade.disabled = false;
+            })
+            .catch(function () {
+              mapaCidade.disabled = false;
+              if (mapaLocalizarMsg) {
+                mapaLocalizarMsg.textContent = 'Nao foi possivel carregar as cidades.';
+                mapaLocalizarMsg.classList.remove('hidden');
+              }
+            });
+        }
+      }
+      atualizarBtnMostrarNoMapa();
+    });
+  }
+  if (mapaCidade) {
+    mapaCidade.addEventListener('change', atualizarBtnMostrarNoMapa);
+  }
+
+  if (btnMostrarNoMapa) {
+    btnMostrarNoMapa.addEventListener('click', function () {
+      if (this.disabled) return;
+      var estadoOpt = mapaEstado && mapaEstado.options[mapaEstado.selectedIndex];
+      var sigla = estadoOpt ? estadoOpt.getAttribute('data-sigla') : '';
+      var cidade = mapaCidade ? mapaCidade.value.trim() : '';
+      var bairro = mapaBairro ? mapaBairro.value.trim() : '';
+      if (!sigla || !cidade) return;
+      var query = bairro ? bairro + ', ' + cidade + ', ' + sigla + ', Brasil' : cidade + ', ' + sigla + ', Brasil';
+      if (mapaLocalizarMsg) {
+        mapaLocalizarMsg.classList.add('hidden');
+        mapaLocalizarMsg.textContent = '';
+      }
+      this.disabled = true;
+      if (btnMostrarNoMapaText) btnMostrarNoMapaText.textContent = 'Buscando...';
+      var btn = this;
+      fetch('https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(query) + '&limit=1&countrycodes=br', {
+        headers: { 'Accept': 'application/json', 'Accept-Language': 'pt-BR', 'User-Agent': 'AIRPET/1.0 (mapa localizar)' }
+      })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          btn.disabled = false;
+          if (btnMostrarNoMapaText) btnMostrarNoMapaText.textContent = 'Mostrar no mapa';
+          if (!data || !data.length) {
+            if (mapaLocalizarMsg) {
+              mapaLocalizarMsg.textContent = 'Endereco nao encontrado. Tente outro bairro ou apenas cidade e estado.';
+              mapaLocalizarMsg.classList.remove('hidden');
+            }
+            return;
+          }
+          var lat = parseFloat(data[0].lat);
+          var lon = parseFloat(data[0].lon);
+          var displayName = data[0].display_name || query;
+          if (locMarker && map.hasLayer(locMarker)) {
+            map.removeLayer(locMarker);
+          }
+          locMarker = L.marker([lat, lon], {
+            icon: L.divIcon({
+              className: 'custom-pin-localizar',
+              html: '<div style="background:#ec5a1c;width:36px;height:36px;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center"><i class="fa-solid fa-location-dot" style="color:#fff;font-size:14px"></i></div>',
+              iconSize: [36, 36],
+              iconAnchor: [18, 18],
+              popupAnchor: [0, -18]
+            })
+          }).addTo(map);
+          locMarker.bindPopup('<div style="min-width:180px"><strong>Local buscado</strong><br><small style="color:#666">' + displayName.replace(/</g, '&lt;').substring(0, 120) + '</small></div>');
+          map.setView([lat, lon], 14);
+        })
+        .catch(function () {
+          btn.disabled = false;
+          if (btnMostrarNoMapaText) btnMostrarNoMapaText.textContent = 'Mostrar no mapa';
+          if (mapaLocalizarMsg) {
+            mapaLocalizarMsg.textContent = 'Erro ao buscar endereco. Tente novamente.';
+            mapaLocalizarMsg.classList.remove('hidden');
+          }
+        });
+    });
+  }
 
   if (navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(function (pos) {

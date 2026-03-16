@@ -7,13 +7,16 @@
   #mapaFull { position: absolute; inset: 0; z-index: 0; }
   .mapa-wrapper { position: relative; flex: 1; display: flex; flex-direction: column; }
   .layer-btn.active { background-color: #ec5a1c; color: white; border-color: #ec5a1c; }
+  .painel-localizar { max-height: 20rem; transition: max-height 0.25s ease-out, opacity 0.2s; }
+  .painel-localizar.collapsed { max-height: 0; overflow: hidden; opacity: 0; pointer-events: none; }
+  @media (min-width: 768px) { .painel-localizar.collapsed { max-height: 20rem; overflow: visible; opacity: 1; pointer-events: auto; } }
 </style>
 ` %>
 <%- include('../partials/header') %>
 
 <div class="mapa-wrapper">
 
-  <div class="absolute top-3 left-3 right-3 z-[1000]">
+  <div class="absolute top-3 left-3 right-3 z-[1000] flex flex-col gap-2">
     <div class="bg-white/95 backdrop-blur-sm rounded-2xl shadow-lg p-2 flex items-center gap-2 overflow-x-auto">
       <button type="button" class="layer-btn active flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold border border-gray-200 whitespace-nowrap transition-all"
               data-layer="petshops">
@@ -31,6 +34,36 @@
               data-layer="pontos">
         <i class="fa-solid fa-map-pin"></i> Pontos
       </button>
+      <button type="button" id="btnToggleLocalizar" class="ml-auto flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold border border-gray-200 whitespace-nowrap transition-all text-gray-600 hover:bg-gray-50 md:hidden">
+        <i class="fa-solid fa-magnifying-glass-location"></i> Localizar regiao
+      </button>
+    </div>
+    <div id="painelLocalizar" class="painel-localizar bg-white/95 backdrop-blur-sm rounded-2xl shadow-lg p-3">
+      <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Localizar no mapa</p>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 items-end">
+        <div>
+          <label for="mapaEstado" class="block text-xs font-medium text-gray-600 mb-0.5">Estado</label>
+          <select id="mapaEstado" class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-[#ec5a1c] focus:ring-1 focus:ring-[#ec5a1c]">
+            <option value="">Selecione o estado</option>
+          </select>
+        </div>
+        <div>
+          <label for="mapaCidade" class="block text-xs font-medium text-gray-600 mb-0.5">Cidade</label>
+          <select id="mapaCidade" class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-[#ec5a1c] focus:ring-1 focus:ring-[#ec5a1c] disabled:bg-gray-100" disabled>
+            <option value="">Selecione a cidade</option>
+          </select>
+        </div>
+        <div>
+          <label for="mapaBairro" class="block text-xs font-medium text-gray-600 mb-0.5">Bairro (opcional)</label>
+          <input type="text" id="mapaBairro" placeholder="Ex.: Centro" class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-[#ec5a1c] focus:ring-1 focus:ring-[#ec5a1c]">
+        </div>
+        <div class="flex gap-2">
+          <button type="button" id="btnMostrarNoMapa" class="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-sm font-semibold text-white bg-[#ec5a1c] hover:bg-[#d4500f] disabled:opacity-50 disabled:cursor-not-allowed transition-all" disabled>
+            <i class="fa-solid fa-map-pin"></i> <span id="btnMostrarNoMapaText">Mostrar no mapa</span>
+          </button>
+        </div>
+      </div>
+      <p id="mapaLocalizarMsg" class="text-xs text-gray-500 mt-1.5 hidden"></p>
     </div>
   </div>
 
