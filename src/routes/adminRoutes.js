@@ -92,6 +92,9 @@ router.get('/logout', (req, res) => {
 
 router.get('/', apenasAdmin, adminController.dashboard);
 router.get('/analytics', apenasAdmin, adminController.mostrarAnalyticsAvancado);
+router.get('/boosts', apenasAdmin, adminController.listarBoosts);
+router.post('/boosts', apenasAdmin, adminController.criarBoost);
+router.post('/boosts/:id/cancelar', apenasAdmin, adminController.cancelarBoost);
 
 router.get('/usuarios', apenasAdmin, adminController.listarUsuarios);
 router.get('/pets', apenasAdmin, adminController.listarPets);

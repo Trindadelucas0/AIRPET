@@ -129,14 +129,17 @@ async function dashboard(req, res) {
 
 async function mostrarAnalyticsAvancado(req, res) {
   try {
-    const periodoInfluentes = req.query.influentes || 'week';
+    const periodoGlobal = req.query.periodo || 'week';
+    const periodoInfluentes = periodoGlobal;
     const periodoRisco = req.query.risco || 'month';
     const periodoViral = req.query.viral || 'today';
-    const periodoRacas = req.query.racas || 'week';
-    const periodoCidades = req.query.cidades || 'week';
+    const periodoRacas = req.query.racas || periodoGlobal;
+    const periodoCidades = req.query.cidades || periodoGlobal;
 
     const [
       influentes,
+      engajamentoMedio,
+      taxaResposta,
       perigosos,
       viralHoje,
       trendingRacas,
@@ -144,6 +147,8 @@ async function mostrarAnalyticsAvancado(req, res) {
       timeline,
     ] = await Promise.all([
       adminAnalyticsService.topUsuariosInfluentes(periodoInfluentes, 10),
+      adminAnalyticsService.topUsuariosPorEngajamentoMedio(periodoInfluentes, 10),
+      adminAnalyticsService.topUsuariosPorResposta(periodoInfluentes, 10),
       adminAnalyticsService.usuariosPerigosos(periodoRisco, 10),
       adminAnalyticsService.conteudoViralPorPeriodo(periodoViral, 20),
       adminAnalyticsService.trendingBreeds(periodoRacas, 15),
@@ -154,11 +159,14 @@ async function mostrarAnalyticsAvancado(req, res) {
     return res.render('admin/analytics', {
       titulo: 'Analytics avançado - AIRPET',
       influentes,
+      engajamentoMedio,
+      taxaResposta,
       perigosos,
       viralHoje,
       trendingRacas,
       cidades,
       timeline,
+      periodoGlobal,
     });
   } catch (erro) {
     logger.error('AdminController', 'Erro ao carregar analytics avançado', erro);
@@ -873,6 +881,87 @@ async function enviarNotificacaoRegiao(req, res) {
   }
 }
 
+async function listarBoosts(req, res) {
+  try {
+    const { query: dbQuery } = require('../config/database');
+    const boostsAtivos = await dbQuery(
+      `SELECT id, target_type, target_id, boost_value, reason, starts_at, ends_at, created_at
+       FROM manual_boosts
+       ORDER BY created_at DESC
+       LIMIT 200`
+    );
+
+    return res.render('admin/boosts', {
+      titulo: 'Boosts - AIRPET',
+      boosts: boostsAtivos.rows,
+    });
+  } catch (erro) {
+    logger.error('AdminController', 'Erro ao listar boosts', erro);
+    req.session.flash = { tipo: 'erro', mensagem: 'Erro ao carregar os boosts.' };
+    return res.redirect(getAdminPath());
+  }
+}
+
+async function criarBoost(req, res) {
+  try {
+    const { target_type, target_id, boost_value, duracao_horas, motivo } = req.body || {};
+    const adminPath = getAdminPath();
+
+    const tipo = (target_type || '').trim();
+    const idAlvo = parseInt(target_id, 10);
+    const valor = parseFloat(boost_value);
+    const horas = parseInt(duracao_horas || '2', 10);
+
+    if (!['user', 'post'].includes(tipo) || !idAlvo || Number.isNaN(valor)) {
+      req.session.flash = { tipo: 'erro', mensagem: 'Dados inválidos para boost.' };
+      return res.redirect(adminPath + '/boosts');
+    }
+
+    if (valor <= 0 || valor > 1000) {
+      req.session.flash = { tipo: 'erro', mensagem: 'Valor do boost deve ser entre 1 e 1000.' };
+      return res.redirect(adminPath + '/boosts');
+    }
+
+    const duracaoSegura = Number.isNaN(horas) || horas <= 0 || horas > 168 ? 2 : horas;
+
+    const createdBy = req.session && req.session.admin ? req.session.admin.email : null;
+
+    await query(
+      `INSERT INTO manual_boosts
+         (target_type, target_id, boost_value, reason, starts_at, ends_at, created_by_admin)
+       VALUES
+         ($1, $2, $3, $4, NOW(), NOW() + ($5 || ' hours')::interval, $6)`,
+      [tipo, idAlvo, valor, motivo || null, duracaoSegura, createdBy]
+    );
+
+    req.session.flash = { tipo: 'sucesso', mensagem: 'Boost criado com sucesso.' };
+    return res.redirect(adminPath + '/boosts');
+  } catch (erro) {
+    logger.error('AdminController', 'Erro ao criar boost', erro);
+    req.session.flash = { tipo: 'erro', mensagem: 'Erro ao criar boost. Tente novamente.' };
+    return res.redirect(getAdminPath() + '/boosts');
+  }
+}
+
+async function cancelarBoost(req, res) {
+  try {
+    const { id } = req.params;
+    const adminPath = getAdminPath();
+    await query(
+      `UPDATE manual_boosts
+       SET ends_at = NOW()
+       WHERE id = $1`,
+      [id]
+    );
+    req.session.flash = { tipo: 'sucesso', mensagem: 'Boost cancelado.' };
+    return res.redirect(adminPath + '/boosts');
+  } catch (erro) {
+    logger.error('AdminController', 'Erro ao cancelar boost', erro);
+    req.session.flash = { tipo: 'erro', mensagem: 'Erro ao cancelar o boost.' };
+    return res.redirect(getAdminPath() + '/boosts');
+  }
+}
+
 module.exports = {
   dashboard,
   listarUsuarios,
@@ -898,4 +987,7 @@ module.exports = {
   previewEnviarNotificacao,
   enviarNotificacaoRegiao,
   mostrarAnalyticsAvancado,
+  listarBoosts,
+  criarBoost,
+  cancelarBoost,
 };

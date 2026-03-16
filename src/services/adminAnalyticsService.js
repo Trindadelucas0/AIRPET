@@ -78,6 +78,79 @@ async function topUsuariosInfluentes(periodoChave = 'week', limite = 10) {
   };
 }
 
+async function topUsuariosPorEngajamentoMedio(periodoChave = 'week', limite = 10) {
+  const { sql: since } = resolvePeriodo(periodoChave);
+
+  const res = await query(
+    `WITH stats AS (
+       SELECT p.usuario_id,
+              COUNT(DISTINCT p.id)::int AS posts_publicados,
+              COUNT(c.id)::int AS total_likes,
+              COUNT(cm.id)::int AS total_comentarios,
+              COUNT(r.id)::int AS total_reposts
+       FROM publicacoes p
+       LEFT JOIN curtidas c ON c.publicacao_id = p.id AND c.criado_em >= ${since}
+       LEFT JOIN comentarios cm ON cm.publicacao_id = p.id AND cm.criado_em >= ${since}
+       LEFT JOIN reposts r ON r.publicacao_id = p.id AND r.criado_em >= ${since}
+       WHERE p.criado_em >= ${since}
+       GROUP BY p.usuario_id
+     )
+     SELECT usuario_id,
+            posts_publicados,
+            total_likes,
+            total_comentarios,
+            total_reposts,
+            CASE
+              WHEN posts_publicados = 0 THEN 0
+              ELSE (total_likes + total_comentarios + total_reposts)::numeric / posts_publicados
+            END AS engajamento_medio
+     FROM stats
+     WHERE posts_publicados > 0
+     ORDER BY engajamento_medio DESC
+     LIMIT $1`,
+    [limite]
+  );
+
+  return { periodo: periodoChave, usuarios: res.rows };
+}
+
+async function topUsuariosPorResposta(periodoChave = 'week', limite = 10) {
+  const { sql: since } = resolvePeriodo(periodoChave);
+
+  const res = await query(
+    `WITH base AS (
+       SELECT p.usuario_id,
+              COUNT(cm.id)::int AS comentarios_recebidos
+       FROM publicacoes p
+       LEFT JOIN comentarios cm ON cm.publicacao_id = p.id
+       WHERE p.criado_em >= ${since}
+         AND cm.criado_em >= ${since}
+       GROUP BY p.usuario_id
+     ),
+     feitos AS (
+       SELECT usuario_id,
+              COUNT(*)::int AS comentarios_feitos
+       FROM comentarios
+       WHERE criado_em >= ${since}
+       GROUP BY usuario_id
+     )
+     SELECT b.usuario_id,
+            b.comentarios_recebidos,
+            COALESCE(f.comentarios_feitos, 0) AS comentarios_feitos,
+            CASE
+              WHEN COALESCE(f.comentarios_feitos, 0) = 0 THEN NULL
+              ELSE b.comentarios_recebidos::numeric / f.comentarios_feitos
+            END AS taxa_resposta
+     FROM base b
+     LEFT JOIN feitos f ON f.usuario_id = b.usuario_id
+     ORDER BY taxa_resposta DESC NULLS LAST
+     LIMIT $1`,
+    [limite]
+  );
+
+  return { periodo: periodoChave, usuarios: res.rows };
+}
+
 async function usuariosPerigosos(periodoChave = 'month', limite = 10) {
   const { sql: since } = resolvePeriodo(periodoChave);
 
@@ -178,7 +251,7 @@ async function trendingBreeds(periodoChave = 'week', limite = 20) {
 async function cidadesMaisAtivas(periodoChave = 'week', limite = 20) {
   const { sql: since } = resolvePeriodo(periodoChave);
 
-  const [usuariosAtivos, interacoes] = await Promise.all([
+  const [usuariosAtivos, interacoes, postsPorCidade] = await Promise.all([
     query(
       `SELECT cidade, COUNT(*)::int AS total_usuarios
        FROM usuarios
@@ -199,12 +272,25 @@ async function cidadesMaisAtivas(periodoChave = 'week', limite = 20) {
        LIMIT $1`,
       [limite]
     ),
+    query(
+      `SELECT u.cidade,
+              COUNT(p.id)::int AS total_posts_periodo
+       FROM publicacoes p
+       JOIN usuarios u ON u.id = p.usuario_id
+       WHERE u.cidade IS NOT NULL AND TRIM(u.cidade) <> ''
+         AND p.criado_em >= ${since}
+       GROUP BY u.cidade
+       ORDER BY total_posts_periodo DESC
+       LIMIT $1`,
+      [limite]
+    ),
   ]);
 
   return {
     periodo: periodoChave,
     usuariosAtivos: usuariosAtivos.rows,
     interacoes: interacoes.rows,
+    postsPorCidade: postsPorCidade.rows,
   };
 }
 
@@ -255,6 +341,8 @@ async function listarBoostsAtivos() {
 
 module.exports = {
   topUsuariosInfluentes,
+  topUsuariosPorEngajamentoMedio,
+  topUsuariosPorResposta,
   usuariosPerigosos,
   conteudoViralPorPeriodo,
   trendingBreeds,

@@ -1,0 +1,140 @@
+<% locals.titulo = 'Boosts' %>
+<%- include('../partials/admin-layout') %>
+
+<main class="flex-1">
+  <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+
+    <div>
+      <h1 class="text-2xl font-bold text-gray-900">Impulsionamento (Boosts)</h1>
+      <p class="text-sm text-gray-500 mt-1">
+        Use boosts para destacar temporariamente usuários ou posts no feed, sem alterar dados originais.
+      </p>
+    </div>
+
+    <!-- Formulário de criação de boost -->
+    <section class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+      <h2 class="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+        <i class="fa-solid fa-bolt text-yellow-500"></i>
+        Criar novo boost
+      </h2>
+      <p class="text-xs text-gray-400 mb-4">
+        Recomenda-se valores entre 50 e 500 pontos. Duração curta (2–24h) é ideal para campanhas pontuais.
+      </p>
+      <form method="POST" action="<%= adminPath %>/boosts" class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+        <div>
+          <label class="block text-xs font-medium text-gray-600 mb-1">Tipo de alvo</label>
+          <select name="target_type" required class="w-full border border-gray-300 rounded-lg px-3 py-2">
+            <option value="post">Post</option>
+            <option value="user">Usuário (criador)</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-600 mb-1">ID do alvo</label>
+          <input type="number" name="target_id" required min="1" class="w-full border border-gray-300 rounded-lg px-3 py-2" placeholder="Ex: ID do post ou usuário">
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-600 mb-1">Valor do boost (pontos)</label>
+          <input type="number" name="boost_value" required min="1" max="1000" class="w-full border border-gray-300 rounded-lg px-3 py-2" placeholder="Ex: 200">
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-600 mb-1">Duração (horas)</label>
+          <select name="duracao_horas" class="w-full border border-gray-300 rounded-lg px-3 py-2">
+            <option value="2">2 horas</option>
+            <option value="6">6 horas</option>
+            <option value="12">12 horas</option>
+            <option value="24">24 horas</option>
+            <option value="48">48 horas</option>
+          </select>
+        </div>
+        <div class="md:col-span-2">
+          <label class="block text-xs font-medium text-gray-600 mb-1">Motivo (opcional)</label>
+          <textarea name="motivo" rows="2" class="w-full border border-gray-300 rounded-lg px-3 py-2" placeholder="Campanha, parceria, correção manual, etc."></textarea>
+        </div>
+        <div class="md:col-span-2 flex justify-end">
+          <button type="submit" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary-500 text-white text-sm font-medium hover:bg-primary-600">
+            <i class="fa-solid fa-rocket"></i>
+            Aplicar boost
+          </button>
+        </div>
+      </form>
+    </section>
+
+    <!-- Lista de boosts -->
+    <section class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+      <h2 class="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+        <i class="fa-solid fa-list text-gray-600"></i>
+        Boosts recentes
+      </h2>
+      <p class="text-xs text-gray-400 mb-4">
+        Boosts ativos influenciam o score final do feed enquanto estiverem dentro da janela de início/fim.
+      </p>
+      <div class="overflow-x-auto">
+        <table class="min-w-full text-xs md:text-sm">
+          <thead>
+          <tr class="text-left text-gray-500 border-b border-gray-100">
+            <th class="pb-2 font-medium">ID</th>
+            <th class="pb-2 font-medium">Tipo</th>
+            <th class="pb-2 font-medium">Alvo</th>
+            <th class="pb-2 font-medium">Valor</th>
+            <th class="pb-2 font-medium">Início</th>
+            <th class="pb-2 font-medium">Fim</th>
+            <th class="pb-2 font-medium">Criado em</th>
+            <th class="pb-2 font-medium text-right">Ações</th>
+          </tr>
+          </thead>
+          <tbody>
+          <% if (boosts && boosts.length) { %>
+            <% boosts.forEach(function(b) { %>
+              <tr class="border-b border-gray-50 hover:bg-gray-50/50">
+                <td class="py-2 text-gray-700"><%= b.id %></td>
+                <td class="py-2 text-gray-600"><%= b.target_type %></td>
+                <td class="py-2 text-gray-600">
+                  <% if (b.target_type === 'post') { %>
+                    Post <%= b.target_id %>
+                  <% } else { %>
+                    Usuário <%= b.target_id %>
+                  <% } %>
+                </td>
+                <td class="py-2 font-semibold text-gray-900">+<%= b.boost_value %></td>
+                <td class="py-2 text-gray-500">
+                  <%= b.starts_at ? new Date(b.starts_at).toLocaleString('pt-BR') : '—' %>
+                </td>
+                <td class="py-2 text-gray-500">
+                  <%= b.ends_at ? new Date(b.ends_at).toLocaleString('pt-BR') : '—' %>
+                </td>
+                <td class="py-2 text-gray-500">
+                  <%= b.created_at ? new Date(b.created_at).toLocaleString('pt-BR') : '—' %>
+                </td>
+                <td class="py-2 text-right">
+                  <% const aindaAtivo = !b.ends_at || new Date(b.ends_at) > new Date(); %>
+                  <% if (aindaAtivo) { %>
+                    <form method="POST" action="<%= adminPath %>/boosts/<%= b.id %>/cancelar" onsubmit="return confirm('Cancelar este boost?');">
+                      <button type="submit" class="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-red-200 text-red-600 text-xs hover:bg-red-50">
+                        <i class="fa-solid fa-ban"></i> Cancelar
+                      </button>
+                    </form>
+                  <% } else { %>
+                    <span class="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-gray-100 text-gray-500 text-xs">
+                      Expirado
+                    </span>
+                  <% } %>
+                </td>
+              </tr>
+            <% }) %>
+          <% } else { %>
+            <tr>
+              <td colspan="8" class="py-4 text-center text-xs text-gray-400">
+                Nenhum boost cadastrado ainda.
+              </td>
+            </tr>
+          <% } %>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<%- include('../partials/admin-footer') %>
+
