@@ -136,6 +136,50 @@ const Publicacao = {
     return resultado.rows;
   },
 
+  async buscarPatrocinadosPetAtivos(usuarioId = null, limite = 6) {
+    const limiteSeguro = Number.isInteger(limite) && limite > 0 ? limite : 6;
+    const resultado = await query(
+      `SELECT
+         mb.id AS boost_id,
+         mb.target_id AS pet_id,
+         mb.boost_value,
+         mb.reason,
+         mb.starts_at,
+         mb.ends_at,
+         pet.nome AS pet_nome,
+         pet.foto AS pet_foto,
+         dono.id AS usuario_id,
+         dono.nome AS autor_nome,
+         dono.cor_perfil,
+         dono.foto_perfil,
+         p.id,
+         p.foto,
+         p.legenda,
+         p.texto,
+         p.criado_em,
+         TRUE AS is_sponsored,
+         'PATROCINADO'::text AS sponsored_label,
+         'pet_profile'::text AS sponsor_type
+       FROM manual_boosts mb
+       JOIN pets pet ON pet.id = mb.target_id
+       JOIN usuarios dono ON dono.id = pet.usuario_id
+       LEFT JOIN LATERAL (
+         SELECT pub.id, pub.foto, pub.legenda, pub.texto, pub.criado_em
+         FROM publicacoes pub
+         WHERE pub.pet_id = pet.id
+         ORDER BY pub.criado_em DESC
+         LIMIT 1
+       ) p ON TRUE
+       WHERE mb.target_type = 'pet'
+         AND mb.starts_at <= NOW()
+         AND (mb.ends_at IS NULL OR mb.ends_at >= NOW())
+       ORDER BY mb.boost_value DESC, mb.created_at DESC
+       LIMIT $1`,
+      [limiteSeguro]
+    );
+    return resultado.rows;
+  },
+
   async buscarRepostsPorUsuario(usuarioId, usuarioAtualId = null, limite = 50) {
     const resultado = await query(
       `SELECT ${SELECT_COLS} ${curtiuCol(usuarioAtualId)}, true AS repostou ${FROM_JOINS}

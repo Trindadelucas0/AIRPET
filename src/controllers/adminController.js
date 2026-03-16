@@ -896,16 +896,15 @@ async function listarBoosts(req, res) {
               mb.starts_at,
               mb.ends_at,
               mb.created_at,
-              u.nome AS usuario_nome,
-              u.foto_perfil AS usuario_foto,
-              p.foto AS post_foto,
-              p.legenda AS post_legenda,
               pet.nome AS pet_nome,
-              pet.foto AS pet_foto
+              pet.foto AS pet_foto,
+              dono.id AS dono_id,
+              dono.nome AS dono_nome,
+              dono.foto_perfil AS dono_foto
        FROM manual_boosts mb
-       LEFT JOIN usuarios u ON mb.target_type = 'user' AND u.id = mb.target_id
-       LEFT JOIN publicacoes p ON mb.target_type = 'post' AND p.id = mb.target_id
        LEFT JOIN pets pet ON mb.target_type = 'pet' AND pet.id = mb.target_id
+       LEFT JOIN usuarios dono ON dono.id = pet.usuario_id
+       WHERE mb.target_type = 'pet'
        ORDER BY mb.created_at DESC
        LIMIT 200`
     );
@@ -967,8 +966,13 @@ async function criarBoost(req, res) {
     const valor = parseFloat(boost_value);
     const horas = parseInt(duracao_horas || '2', 10);
 
-    if (!['user', 'post', 'pet'].includes(tipo) || !idAlvo || Number.isNaN(valor)) {
-      req.session.flash = { tipo: 'erro', mensagem: 'Dados inválidos para boost.' };
+    if (!tipo || tipo !== 'pet') {
+      req.session.flash = { tipo: 'erro', mensagem: 'Impulsionamento permitido apenas para perfil de pet patrocinado.' };
+      return res.redirect(adminPath + '/boosts');
+    }
+
+    if (!idAlvo || Number.isNaN(valor)) {
+      req.session.flash = { tipo: 'erro', mensagem: 'Selecione um pet válido e informe o valor do boost.' };
       return res.redirect(adminPath + '/boosts');
     }
 
@@ -977,7 +981,16 @@ async function criarBoost(req, res) {
       return res.redirect(adminPath + '/boosts');
     }
 
-    const duracaoSegura = Number.isNaN(horas) || horas <= 0 || horas > 168 ? 2 : horas;
+    if (Number.isNaN(horas) || horas <= 0 || horas > 168) {
+      req.session.flash = { tipo: 'erro', mensagem: 'Duração inválida. Use entre 1 e 168 horas.' };
+      return res.redirect(adminPath + '/boosts');
+    }
+
+    const petAlvo = await Pet.buscarPorId(idAlvo);
+    if (!petAlvo) {
+      req.session.flash = { tipo: 'erro', mensagem: 'Pet alvo não encontrado. Selecione novamente.' };
+      return res.redirect(adminPath + '/boosts');
+    }
 
     // manual_boosts.created_by_admin é INTEGER; sessão de admin guarda email.
     // Só gravamos um id numérico válido para evitar erro de tipo no INSERT.
@@ -989,7 +1002,7 @@ async function criarBoost(req, res) {
          (target_type, target_id, boost_value, reason, starts_at, ends_at, created_by_admin)
        VALUES
          ($1, $2, $3, $4, NOW(), NOW() + ($5 || ' hours')::interval, $6)`,
-      [tipo, idAlvo, valor, motivo || null, duracaoSegura, createdBy]
+      [tipo, idAlvo, valor, motivo || null, horas, createdBy]
     );
 
     req.session.flash = { tipo: 'sucesso', mensagem: 'Boost criado com sucesso.' };

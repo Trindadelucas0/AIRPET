@@ -5,75 +5,51 @@
   <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
 
     <div>
-      <h1 class="text-2xl font-bold text-gray-900">Impulsionamento (Boosts)</h1>
+      <h1 class="text-2xl font-bold text-gray-900">Patrocinado de Perfil Pet</h1>
       <p class="text-sm text-gray-500 mt-1">
-        Painel rápido para priorizar conteúdos estratégicos no feed sem alterar métricas reais de curtida/comentário.
+        Criação guiada de anúncios para perfis pet. O conteúdo aparece no `/feed` e no `/explorar` como card diferenciado com selo de patrocinado.
       </p>
     </div>
 
     <section class="bg-indigo-50 border border-indigo-100 rounded-xl p-4 text-sm text-indigo-900 space-y-2">
-      <p class="font-semibold">Como o boost funciona no ranking</p>
-      <p>O boost soma pontos temporários ao score de entrega do alvo (post, criador ou pet), aumentando prioridade no feed durante a janela ativa.</p>
-      <p class="text-indigo-800">
-        Boas práticas: use entre <strong>80 e 300</strong> pontos para campanhas normais e duração curta (2h a 24h) para ter controle fino de exposição.
-      </p>
+      <p class="font-semibold">Como funciona entrega e engajamento</p>
+      <p>Este painel não altera curtidas/comentários reais. O boost apenas aumenta prioridade de exibição do perfil pet durante a janela ativa.</p>
+      <p>O card patrocinado é identificado visualmente para transparência e entra de forma adaptativa: mais presença no início do consumo e redução progressiva.</p>
     </section>
 
-    <!-- Formulário de criação de boost -->
     <section class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
       <h2 class="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
         <i class="fa-solid fa-bolt text-yellow-500"></i>
-        Criar boost guiado
+        Criar patrocinado de pet
       </h2>
       <p class="text-xs text-gray-400 mb-4">
-        Escolha o tipo de alvo, encontre o tutor com foto/nome e aplique o boost com valor e duração.
+        Fluxo: buscar tutor, escolher pet e configurar valor/duração.
       </p>
+
       <form id="boostForm" method="POST" action="<%= adminPath %>/boosts" class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-        <input type="hidden" name="target_type" id="targetTypeInput" value="user">
+        <input type="hidden" name="target_type" value="pet">
         <input type="hidden" name="target_id" id="targetIdInput" value="">
         <input type="hidden" name="selected_user_id" id="selectedUserInput" value="">
         <input type="hidden" name="selected_pet_id" id="selectedPetInput" value="">
 
         <div class="md:col-span-2">
-          <label class="block text-xs font-medium text-gray-600 mb-2">1) Tipo de alvo</label>
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
-            <label class="border border-gray-200 rounded-lg px-3 py-2 cursor-pointer hover:border-primary-400">
-              <input type="radio" name="target_type_choice" value="user" class="mr-2" checked>
-              Impulsionar criador
-            </label>
-            <label class="border border-gray-200 rounded-lg px-3 py-2 cursor-pointer hover:border-primary-400">
-              <input type="radio" name="target_type_choice" value="post" class="mr-2">
-              Impulsionar post específico
-            </label>
-            <label class="border border-gray-200 rounded-lg px-3 py-2 cursor-pointer hover:border-primary-400">
-              <input type="radio" name="target_type_choice" value="pet" class="mr-2">
-              Impulsionar pet
-            </label>
-          </div>
-        </div>
-
-        <div class="md:col-span-2" id="userSearchStep">
-          <label class="block text-xs font-medium text-gray-600 mb-1">2) Buscar tutor</label>
+          <label class="block text-xs font-medium text-gray-600 mb-1">1) Buscar tutor</label>
           <input type="text" id="buscarTutorInput" class="w-full border border-gray-300 rounded-lg px-3 py-2" placeholder="Digite nome do tutor (mín. 2 letras)">
           <div id="usuariosResultado" class="mt-2 border border-gray-100 rounded-lg divide-y divide-gray-100 max-h-56 overflow-y-auto hidden"></div>
-          <p class="text-xs text-gray-400 mt-1">Selecione um tutor para preencher automaticamente o alvo do boost.</p>
+          <p class="text-xs text-gray-400 mt-1">Você seleciona o tutor e o sistema já carrega os pets disponíveis.</p>
         </div>
 
         <div class="md:col-span-2 hidden" id="userSelecionadoCard"></div>
 
         <div class="md:col-span-2 hidden" id="petsStep">
-          <label class="block text-xs font-medium text-gray-600 mb-1">3) Escolher pet (opcional para tipo criador / obrigatório para tipo pet)</label>
+          <label class="block text-xs font-medium text-gray-600 mb-1">2) Escolher pet alvo</label>
           <div id="petsResultado" class="grid grid-cols-1 md:grid-cols-2 gap-2"></div>
         </div>
 
-        <div id="postTargetStep" class="hidden md:col-span-2">
-          <label class="block text-xs font-medium text-gray-600 mb-1">2) ID do post alvo</label>
-          <input type="number" id="postTargetInput" min="1" class="w-full border border-gray-300 rounded-lg px-3 py-2" placeholder="Ex: 154">
-          <p class="text-xs text-gray-400 mt-1">Para post específico, informe o ID da publicação.</p>
-        </div>
+        <div class="md:col-span-2 hidden" id="petSelecionadoCard"></div>
 
         <div>
-          <label class="block text-xs font-medium text-gray-600 mb-1">Valor do boost (pontos)</label>
+          <label class="block text-xs font-medium text-gray-600 mb-1">3) Valor do boost (pontos)</label>
           <input type="number" name="boost_value" required min="1" max="1000" class="w-full border border-gray-300 rounded-lg px-3 py-2" placeholder="Ex: 200">
         </div>
         <div>
@@ -88,34 +64,33 @@
         </div>
         <div class="md:col-span-2">
           <label class="block text-xs font-medium text-gray-600 mb-1">Motivo (opcional)</label>
-          <textarea name="motivo" rows="2" class="w-full border border-gray-300 rounded-lg px-3 py-2" placeholder="Campanha regional, parceria, ajuste de exposição etc."></textarea>
-          <p class="text-xs text-gray-400 mt-1">Exemplo prático: +200 pontos costuma levar o alvo para o topo do feed durante o período ativo.</p>
+          <textarea name="motivo" rows="2" class="w-full border border-gray-300 rounded-lg px-3 py-2" placeholder="Campanha local, parceria, destaque sazonal etc."></textarea>
+          <p class="text-xs text-gray-400 mt-1">Use valores entre 80 e 300 para campanhas normais com duração curta.</p>
         </div>
         <div class="md:col-span-2 flex justify-end">
           <button type="submit" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary-500 text-white text-sm font-medium hover:bg-primary-600">
             <i class="fa-solid fa-rocket"></i>
-            Aplicar boost
+            Aplicar patrocinado
           </button>
         </div>
       </form>
     </section>
 
-    <!-- Lista de boosts -->
     <section class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
       <h2 class="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
         <i class="fa-solid fa-list text-gray-600"></i>
-        Boosts recentes
+        Patrocinados recentes
       </h2>
       <p class="text-xs text-gray-400 mb-4">
-        Boost ativo = ainda dentro da janela entre início e fim. Boost expirado deixa de influenciar automaticamente.
+        Patrocinados ativos influenciam a entrega enquanto estiverem dentro da janela entre início e fim.
       </p>
       <div class="overflow-x-auto">
         <table class="min-w-full text-xs md:text-sm">
           <thead>
           <tr class="text-left text-gray-500 border-b border-gray-100">
             <th class="pb-2 font-medium">ID</th>
-            <th class="pb-2 font-medium">Tipo</th>
-            <th class="pb-2 font-medium">Alvo</th>
+            <th class="pb-2 font-medium">Alvo pet</th>
+            <th class="pb-2 font-medium">Tutor</th>
             <th class="pb-2 font-medium">Valor</th>
             <th class="pb-2 font-medium">Início</th>
             <th class="pb-2 font-medium">Fim</th>
@@ -128,80 +103,54 @@
             <% boosts.forEach(function(b) { %>
               <tr class="border-b border-gray-50 hover:bg-gray-50/50">
                 <td class="py-2 text-gray-700"><%= b.id %></td>
-                <td class="py-2 text-gray-600"><%= b.target_type %></td>
                 <td class="py-2 text-gray-600">
-                  <% if (b.target_type === 'post') { %>
-                    <div class="flex items-center gap-2">
-                      <% if (b.post_foto) { %>
-                        <img src="<%= b.post_foto %>" alt="" class="w-8 h-8 rounded object-cover">
-                      <% } %>
-                      <div>
-                        <p class="text-gray-800">Post <%= b.target_id %></p>
-                        <a href="/explorar#post-<%= b.target_id %>" target="_blank" class="text-primary-600 hover:underline">Ver post</a>
-                      </div>
+                  <div class="flex items-center gap-2">
+                    <% if (b.pet_foto) { %>
+                      <img src="<%= b.pet_foto %>" alt="" class="w-8 h-8 rounded-full object-cover">
+                    <% } %>
+                    <div>
+                      <p class="text-gray-800"><%= b.pet_nome || ('Pet ' + b.target_id) %></p>
+                      <a href="/explorar/pet/<%= b.target_id %>" target="_blank" class="text-primary-600 hover:underline">Ver perfil pet</a>
                     </div>
-                  <% } else if (b.target_type === 'pet') { %>
-                    <div class="flex items-center gap-2">
-                      <% if (b.pet_foto) { %>
-                        <img src="<%= b.pet_foto %>" alt="" class="w-8 h-8 rounded-full object-cover">
+                  </div>
+                </td>
+                <td class="py-2 text-gray-600">
+                  <% if (b.dono_id) { %>
+                    <a href="/explorar/perfil/<%= b.dono_id %>" target="_blank" class="inline-flex items-center gap-2 text-primary-600 hover:underline">
+                      <% if (b.dono_foto) { %>
+                        <img src="<%= b.dono_foto %>" alt="" class="w-5 h-5 rounded-full object-cover">
                       <% } %>
-                      <div>
-                        <p class="text-gray-800"><%= b.pet_nome || ('Pet ' + b.target_id) %></p>
-                        <a href="/explorar/pet/<%= b.target_id %>" target="_blank" class="text-primary-600 hover:underline">Ver pet</a>
-                      </div>
-                    </div>
-                  <% } else if (b.target_type === 'user') { %>
-                    <div class="flex items-center gap-2">
-                      <% if (b.usuario_foto) { %>
-                        <img src="<%= b.usuario_foto %>" alt="" class="w-8 h-8 rounded-full object-cover">
-                      <% } %>
-                      <div>
-                        <p class="text-gray-800"><%= b.usuario_nome || ('Usuário ' + b.target_id) %></p>
-                        <a href="/explorar/perfil/<%= b.target_id %>" target="_blank" class="text-primary-600 hover:underline">Ver perfil</a>
-                      </div>
-                    </div>
+                      <span><%= b.dono_nome || ('Usuário ' + b.dono_id) %></span>
+                    </a>
                   <% } else { %>
-                    Alvo <%= b.target_id %>
+                    <span class="text-gray-400">—</span>
                   <% } %>
                 </td>
                 <td class="py-2 font-semibold text-gray-900">+<%= b.boost_value %></td>
-                <td class="py-2 text-gray-500">
-                  <%= b.starts_at ? new Date(b.starts_at).toLocaleString('pt-BR') : '—' %>
-                </td>
-                <td class="py-2 text-gray-500">
-                  <%= b.ends_at ? new Date(b.ends_at).toLocaleString('pt-BR') : '—' %>
-                </td>
-                <td class="py-2 text-gray-500">
-                  <%= b.created_at ? new Date(b.created_at).toLocaleString('pt-BR') : '—' %>
-                </td>
+                <td class="py-2 text-gray-500"><%= b.starts_at ? new Date(b.starts_at).toLocaleString('pt-BR') : '—' %></td>
+                <td class="py-2 text-gray-500"><%= b.ends_at ? new Date(b.ends_at).toLocaleString('pt-BR') : '—' %></td>
+                <td class="py-2 text-gray-500"><%= b.created_at ? new Date(b.created_at).toLocaleString('pt-BR') : '—' %></td>
                 <td class="py-2 text-right">
                   <% const aindaAtivo = !b.ends_at || new Date(b.ends_at) > new Date(); %>
                   <% if (aindaAtivo) { %>
-                    <form method="POST" action="<%= adminPath %>/boosts/<%= b.id %>/cancelar" onsubmit="return confirm('Cancelar este boost?');">
+                    <form method="POST" action="<%= adminPath %>/boosts/<%= b.id %>/cancelar" onsubmit="return confirm('Cancelar este patrocinado?');">
                       <button type="submit" class="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-red-200 text-red-600 text-xs hover:bg-red-50">
                         <i class="fa-solid fa-ban"></i> Cancelar
                       </button>
                     </form>
                   <% } else { %>
-                    <span class="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-gray-100 text-gray-500 text-xs">
-                      Expirado
-                    </span>
+                    <span class="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-gray-100 text-gray-500 text-xs">Expirado</span>
                   <% } %>
                 </td>
               </tr>
             <% }) %>
           <% } else { %>
             <tr>
-              <td colspan="8" class="py-4 text-center text-xs text-gray-400">
-                Nenhum boost cadastrado ainda.
-              </td>
+              <td colspan="8" class="py-4 text-center text-xs text-gray-400">Nenhum patrocinado cadastrado ainda.</td>
             </tr>
           <% } %>
           </tbody>
         </table>
-      </div>
-      <div class="mt-4 bg-gray-50 border border-gray-100 rounded-lg p-3 text-xs text-gray-600">
-        A priorização via boost é temporária e não muda os números reais de engajamento do conteúdo.
       </div>
     </section>
 
@@ -213,20 +162,17 @@
     var form = document.getElementById('boostForm');
     if (!form) return;
 
-    var targetTypeInput = document.getElementById('targetTypeInput');
     var targetIdInput = document.getElementById('targetIdInput');
     var selectedUserInput = document.getElementById('selectedUserInput');
     var selectedPetInput = document.getElementById('selectedPetInput');
-    var postTargetInput = document.getElementById('postTargetInput');
-    var postTargetStep = document.getElementById('postTargetStep');
-    var userSearchStep = document.getElementById('userSearchStep');
-    var petsStep = document.getElementById('petsStep');
-    var userSelecionadoCard = document.getElementById('userSelecionadoCard');
     var buscarTutorInput = document.getElementById('buscarTutorInput');
     var usuariosResultado = document.getElementById('usuariosResultado');
+    var petsStep = document.getElementById('petsStep');
     var petsResultado = document.getElementById('petsResultado');
-    var radioEls = document.querySelectorAll('input[name="target_type_choice"]');
+    var userSelecionadoCard = document.getElementById('userSelecionadoCard');
+    var petSelecionadoCard = document.getElementById('petSelecionadoCard');
     var debounceRef = null;
+    var usuarioSelecionado = null;
 
     function esc(texto) {
       return String(texto || '')
@@ -237,42 +183,51 @@
         .replace(/'/g, '&#39;');
     }
 
-    function renderTutorSelecionado(usuario) {
-      var avatar = usuario.foto_perfil
-        ? '<img src="' + esc(usuario.foto_perfil) + '" class="w-9 h-9 rounded-full object-cover">'
-        : '<div class="w-9 h-9 rounded-full bg-gray-200 text-gray-600 text-xs font-semibold flex items-center justify-center">' + esc((usuario.nome || 'U').charAt(0).toUpperCase()) + '</div>';
-      userSelecionadoCard.classList.remove('hidden');
-      userSelecionadoCard.innerHTML = '<div class="border border-green-200 bg-green-50 rounded-lg p-3 flex items-center justify-between gap-3"><div class="flex items-center gap-2 min-w-0">' + avatar + '<div class="min-w-0"><p class="text-sm font-semibold text-green-900 truncate">' + esc(usuario.nome || ('Usuário ' + usuario.id)) + '</p><p class="text-xs text-green-700 truncate">ID ' + esc(usuario.id) + ' · ' + esc((usuario.cidade || 'Sem cidade') + ' / ' + (usuario.estado || '—')) + '</p></div></div><a href="/explorar/perfil/' + esc(usuario.id) + '" target="_blank" class="text-xs text-primary-700 hover:underline">Ver perfil</a></div>';
+    function avatar(nome, foto, sizeClass) {
+      if (foto) return '<img src="' + esc(foto) + '" class="' + sizeClass + ' rounded-full object-cover">';
+      return '<div class="' + sizeClass + ' rounded-full bg-gray-200 text-gray-600 text-xs font-semibold flex items-center justify-center">' + esc((nome || 'U').charAt(0).toUpperCase()) + '</div>';
     }
 
-    function atualizarVisibilidadePorTipo(tipo) {
-      targetTypeInput.value = tipo;
-      var isPost = tipo === 'post';
-      postTargetStep.classList.toggle('hidden', !isPost);
-      userSearchStep.classList.toggle('hidden', isPost);
-      petsStep.classList.toggle('hidden', isPost || !selectedUserInput.value);
-      if (isPost) {
-        targetIdInput.value = postTargetInput.value || '';
-      } else if (tipo === 'user') {
-        targetIdInput.value = selectedUserInput.value || '';
-      } else if (tipo === 'pet') {
-        targetIdInput.value = selectedPetInput.value || '';
-      }
+    function renderTutorSelecionado(usuario) {
+      userSelecionadoCard.classList.remove('hidden');
+      userSelecionadoCard.innerHTML =
+        '<div class="border border-green-200 bg-green-50 rounded-lg p-3 flex items-center justify-between gap-3">' +
+          '<div class="flex items-center gap-2 min-w-0">' +
+            avatar(usuario.nome, usuario.foto_perfil, 'w-9 h-9') +
+            '<div class="min-w-0">' +
+              '<p class="text-sm font-semibold text-green-900 truncate">' + esc(usuario.nome || ('Usuário ' + usuario.id)) + '</p>' +
+              '<p class="text-xs text-green-700 truncate">ID ' + esc(usuario.id) + ' · ' + esc((usuario.cidade || 'Sem cidade') + ' / ' + (usuario.estado || '—')) + '</p>' +
+            '</div>' +
+          '</div>' +
+          '<a href="/explorar/perfil/' + esc(usuario.id) + '" target="_blank" class="text-xs text-primary-700 hover:underline">Ver perfil</a>' +
+        '</div>';
+    }
+
+    function renderPetSelecionado(pet) {
+      petSelecionadoCard.classList.remove('hidden');
+      petSelecionadoCard.innerHTML =
+        '<div class="border border-primary-200 bg-primary-50 rounded-lg p-3 flex items-center justify-between gap-3">' +
+          '<div class="flex items-center gap-2 min-w-0">' +
+            avatar(pet.nome, pet.foto, 'w-10 h-10') +
+            '<div class="min-w-0">' +
+              '<p class="text-sm font-semibold text-primary-900 truncate">' + esc(pet.nome || ('Pet ' + pet.id)) + '</p>' +
+              '<p class="text-xs text-primary-700 truncate">' + esc((pet.tipo || 'Tipo não informado') + (pet.raca ? ' · ' + pet.raca : '')) + '</p>' +
+            '</div>' +
+          '</div>' +
+          '<a href="/explorar/pet/' + esc(pet.id) + '" target="_blank" class="text-xs text-primary-700 hover:underline">Ver perfil pet</a>' +
+        '</div>';
     }
 
     function renderUsuarios(usuarios) {
       if (!usuarios.length) {
         usuariosResultado.classList.remove('hidden');
-        usuariosResultado.innerHTML = '<div class="px-3 py-2 text-xs text-gray-400">Nenhum usuário encontrado.</div>';
+        usuariosResultado.innerHTML = '<div class="px-3 py-2 text-xs text-gray-400">Nenhum tutor encontrado.</div>';
         return;
       }
 
       var html = '';
       usuarios.forEach(function (u) {
-        var avatar = u.foto_perfil
-          ? '<img src="' + esc(u.foto_perfil) + '" class="w-8 h-8 rounded-full object-cover">'
-          : '<div class="w-8 h-8 rounded-full bg-gray-200 text-gray-600 text-xs font-semibold flex items-center justify-center">' + esc((u.nome || 'U').charAt(0).toUpperCase()) + '</div>';
-        html += '<button type="button" class="w-full text-left px-3 py-2 hover:bg-gray-50 transition-colors user-result-item" data-id="' + esc(u.id) + '" data-nome="' + esc(u.nome || '') + '" data-foto="' + esc(u.foto_perfil || '') + '" data-cidade="' + esc(u.cidade || '') + '" data-estado="' + esc(u.estado || '') + '"><div class="flex items-center justify-between gap-3"><div class="flex items-center gap-2 min-w-0">' + avatar + '<div class="min-w-0"><p class="text-sm text-gray-800 truncate">' + esc(u.nome || ('Usuário ' + u.id)) + '</p><p class="text-xs text-gray-400 truncate">' + esc((u.cidade || 'Sem cidade') + ' / ' + (u.estado || '—')) + '</p></div></div><span class="text-xs text-primary-600">Selecionar</span></div></button>';
+        html += '<button type="button" class="w-full text-left px-3 py-2 hover:bg-gray-50 transition-colors user-result-item" data-id="' + esc(u.id) + '" data-nome="' + esc(u.nome || '') + '" data-foto="' + esc(u.foto_perfil || '') + '" data-cidade="' + esc(u.cidade || '') + '" data-estado="' + esc(u.estado || '') + '"><div class="flex items-center justify-between gap-3"><div class="flex items-center gap-2 min-w-0">' + avatar(u.nome, u.foto_perfil, 'w-8 h-8') + '<div class="min-w-0"><p class="text-sm text-gray-800 truncate">' + esc(u.nome || ('Usuário ' + u.id)) + '</p><p class="text-xs text-gray-400 truncate">' + esc((u.cidade || 'Sem cidade') + ' / ' + (u.estado || '—')) + '</p></div></div><span class="text-xs text-primary-600">Selecionar</span></div></button>';
       });
       usuariosResultado.classList.remove('hidden');
       usuariosResultado.innerHTML = html;
@@ -283,12 +238,10 @@
         petsResultado.innerHTML = '<div class="col-span-full text-xs text-gray-400">Este tutor não possui pets cadastrados.</div>';
         return;
       }
+
       var html = '';
       pets.forEach(function (p) {
-        var avatar = p.foto
-          ? '<img src="' + esc(p.foto) + '" class="w-10 h-10 rounded-full object-cover">'
-          : '<div class="w-10 h-10 rounded-full bg-gray-200 text-gray-600 text-xs font-semibold flex items-center justify-center">' + esc((p.nome || 'P').charAt(0).toUpperCase()) + '</div>';
-        html += '<label class="border border-gray-200 rounded-lg p-3 flex items-center justify-between gap-3 cursor-pointer hover:border-primary-400"><div class="flex items-center gap-2 min-w-0">' + avatar + '<div class="min-w-0"><p class="text-sm text-gray-800 truncate">' + esc(p.nome || ('Pet ' + p.id)) + '</p><p class="text-xs text-gray-400 truncate">' + esc((p.tipo || 'Tipo não informado') + (p.raca ? ' · ' + p.raca : '')) + '</p></div></div><input type="radio" name="petSelecionado" value="' + esc(p.id) + '" class="pet-radio"></label>';
+        html += '<label class="border border-gray-200 rounded-lg p-3 flex items-center justify-between gap-3 cursor-pointer hover:border-primary-400"><div class="flex items-center gap-2 min-w-0">' + avatar(p.nome, p.foto, 'w-10 h-10') + '<div class="min-w-0"><p class="text-sm text-gray-800 truncate">' + esc(p.nome || ('Pet ' + p.id)) + '</p><p class="text-xs text-gray-400 truncate">' + esc((p.tipo || 'Tipo não informado') + (p.raca ? ' · ' + p.raca : '')) + '</p></div></div><input type="radio" name="petSelecionado" value="' + esc(p.id) + '" data-pet="' + esc(JSON.stringify(p)) + '" class="pet-radio"></label>';
       });
       petsResultado.innerHTML = html;
     }
@@ -323,11 +276,10 @@
       }
       debounceRef = setTimeout(async function () {
         try {
-          var usuarios = await buscarUsuarios(q);
-          renderUsuarios(usuarios);
+          renderUsuarios(await buscarUsuarios(q));
         } catch (_) {
           usuariosResultado.classList.remove('hidden');
-          usuariosResultado.innerHTML = '<div class="px-3 py-2 text-xs text-red-500">Erro ao buscar usuários.</div>';
+          usuariosResultado.innerHTML = '<div class="px-3 py-2 text-xs text-red-500">Erro ao buscar tutores.</div>';
         }
       }, 250);
     });
@@ -335,7 +287,8 @@
     usuariosResultado.addEventListener('click', async function (event) {
       var el = event.target.closest('.user-result-item');
       if (!el) return;
-      var usuario = {
+
+      usuarioSelecionado = {
         id: parseInt(el.getAttribute('data-id'), 10),
         nome: el.getAttribute('data-nome'),
         foto_perfil: el.getAttribute('data-foto'),
@@ -343,60 +296,45 @@
         estado: el.getAttribute('data-estado'),
       };
 
-      selectedUserInput.value = String(usuario.id);
-      if (targetTypeInput.value === 'user') {
-        targetIdInput.value = String(usuario.id);
-      }
-      renderTutorSelecionado(usuario);
-      petsStep.classList.remove('hidden');
+      selectedUserInput.value = String(usuarioSelecionado.id);
+      selectedPetInput.value = '';
+      targetIdInput.value = '';
+      petSelecionadoCard.classList.add('hidden');
+      petSelecionadoCard.innerHTML = '';
+      renderTutorSelecionado(usuarioSelecionado);
       usuariosResultado.classList.add('hidden');
       usuariosResultado.innerHTML = '';
+      petsStep.classList.remove('hidden');
 
-      var pets = await buscarPets(usuario.id);
-      renderPets(pets);
+      try {
+        renderPets(await buscarPets(usuarioSelecionado.id));
+      } catch (_) {
+        petsResultado.innerHTML = '<div class="col-span-full text-xs text-red-500">Erro ao carregar pets do tutor.</div>';
+      }
     });
 
     petsResultado.addEventListener('change', function (event) {
       var el = event.target;
       if (!el.classList.contains('pet-radio')) return;
-      selectedPetInput.value = el.value;
-      if (targetTypeInput.value === 'pet') {
-        targetIdInput.value = el.value;
-      }
-    });
 
-    postTargetInput.addEventListener('input', function () {
-      if (targetTypeInput.value === 'post') {
-        targetIdInput.value = this.value || '';
-      }
-    });
-
-    radioEls.forEach(function (radio) {
-      radio.addEventListener('change', function () {
-        atualizarVisibilidadePorTipo(this.value);
-      });
+      var pet = null;
+      try { pet = JSON.parse(el.getAttribute('data-pet') || '{}'); } catch (_) { pet = {}; }
+      selectedPetInput.value = String(el.value);
+      targetIdInput.value = String(el.value);
+      renderPetSelecionado(pet);
     });
 
     form.addEventListener('submit', function (event) {
-      var tipo = targetTypeInput.value;
-      if (tipo === 'user' && !selectedUserInput.value) {
+      if (!selectedUserInput.value) {
         event.preventDefault();
-        alert('Selecione um tutor para impulsionar o criador.');
+        alert('Selecione um tutor antes de aplicar o patrocinado.');
         return;
       }
-      if (tipo === 'post' && !postTargetInput.value) {
-        event.preventDefault();
-        alert('Informe o ID do post para impulsionar.');
-        return;
-      }
-      if (tipo === 'pet' && !selectedPetInput.value) {
+      if (!selectedPetInput.value) {
         event.preventDefault();
         alert('Selecione um pet para impulsionar.');
-        return;
       }
     });
-
-    atualizarVisibilidadePorTipo('user');
   })();
 </script>
 

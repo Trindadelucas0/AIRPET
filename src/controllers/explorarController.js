@@ -44,6 +44,63 @@ async function autoDeleteSeNecessario(usuarioId) {
   return antiga;
 }
 
+function selecionarPatrocinado(patrocinados, cursor, ultimoPetId) {
+  if (!Array.isArray(patrocinados) || !patrocinados.length) {
+    return { item: null, nextCursor: cursor };
+  }
+
+  let tentativa = 0;
+  let proximoCursor = cursor;
+  let escolhido = null;
+
+  while (tentativa < patrocinados.length) {
+    const candidato = patrocinados[proximoCursor % patrocinados.length];
+    proximoCursor += 1;
+    tentativa += 1;
+    if (!candidato) continue;
+    if (ultimoPetId && candidato.pet_id === ultimoPetId && tentativa < patrocinados.length) continue;
+    escolhido = candidato;
+    break;
+  }
+
+  return { item: escolhido, nextCursor: proximoCursor };
+}
+
+function mesclarPostsComPatrocinados(postsOrganicos, patrocinados, pagina = 1) {
+  if (!Array.isArray(postsOrganicos) || !postsOrganicos.length || !Array.isArray(patrocinados) || !patrocinados.length) {
+    return postsOrganicos;
+  }
+
+  const posicoesBase = pagina === 1 ? [2, 6, 11] : [5, 13];
+  const maxPatrocinados = pagina === 1 ? 3 : 2;
+  const posicoes = posicoesBase.slice(0, Math.min(maxPatrocinados, patrocinados.length));
+  if (!posicoes.length) return postsOrganicos;
+
+  const resultado = [];
+  let cursorPatrocinado = (Math.max(1, pagina) - 1) % patrocinados.length;
+  let ultimoPetPatrocinado = null;
+
+  for (let i = 0; i < postsOrganicos.length; i += 1) {
+    resultado.push(postsOrganicos[i]);
+    const posicaoAtual = i + 1;
+    if (!posicoes.includes(posicaoAtual)) continue;
+
+    const { item, nextCursor } = selecionarPatrocinado(patrocinados, cursorPatrocinado, ultimoPetPatrocinado);
+    cursorPatrocinado = nextCursor;
+    if (!item) continue;
+
+    ultimoPetPatrocinado = item.pet_id;
+    resultado.push({
+      ...item,
+      id: item.id || ('sponsored-' + item.boost_id + '-' + item.pet_id),
+      is_sponsored: true,
+      sponsored_key: 'sponsored-' + item.boost_id + '-' + item.pet_id + '-p' + pagina + '-i' + i,
+    });
+  }
+
+  return resultado;
+}
+
 const FotoPerfilPet = require('../models/FotoPerfilPet');
 
 const explorarController = {
@@ -55,7 +112,9 @@ const explorarController = {
       const limite = 20;
       const offset = (page - 1) * limite;
 
-      const posts = await Publicacao.feedSeguindoPets(uid, limite, offset);
+      const postsOrganicos = await Publicacao.feedSeguindoPets(uid, limite, offset);
+      const patrocinados = await Publicacao.buscarPatrocinadosPetAtivos(uid, 8);
+      const posts = mesclarPostsComPatrocinados(postsOrganicos, patrocinados, page);
 
       const [pets, totalPosts, totalFixadas, recomendacoes, petsRecomendados] = await Promise.all([
         Pet.buscarPorUsuario(uid),
@@ -76,7 +135,7 @@ const explorarController = {
         pets,
         totalPosts,
         totalFixadas,
-        temMais: posts.length === limite,
+        temMais: postsOrganicos.length === limite,
         recomendacoes,
         petsRecomendados,
       });
@@ -94,19 +153,22 @@ const explorarController = {
       const limite = 20;
       const offset = (page - 1) * limite;
 
-      let posts = await Publicacao.feedRegional(uid, limite, offset);
+      let postsOrganicos = await Publicacao.feedRegional(uid, limite, offset);
 
-      if (posts.length < 5) {
-        const cidadePosts = await Publicacao.feedRegionalCidade(uid, limite - posts.length, 0);
-        const idsJaTem = new Set(posts.map(p => p.id));
+      if (postsOrganicos.length < 5) {
+        const cidadePosts = await Publicacao.feedRegionalCidade(uid, limite - postsOrganicos.length, 0);
+        const idsJaTem = new Set(postsOrganicos.map(p => p.id));
         for (const p of cidadePosts) {
-          if (!idsJaTem.has(p.id)) posts.push(p);
+          if (!idsJaTem.has(p.id)) postsOrganicos.push(p);
         }
       }
 
-      if (posts.length === 0) {
-        posts = await Publicacao.feedGeral(limite, offset, uid);
+      if (postsOrganicos.length === 0) {
+        postsOrganicos = await Publicacao.feedGeral(limite, offset, uid);
       }
+
+      const patrocinados = await Publicacao.buscarPatrocinadosPetAtivos(uid, 8);
+      const posts = mesclarPostsComPatrocinados(postsOrganicos, patrocinados, page);
 
       const [pets, totalPosts, totalFixadas, recomendacoes, petsRecomendados] = await Promise.all([
         Pet.buscarPorUsuario(uid),
@@ -127,7 +189,7 @@ const explorarController = {
         pets,
         totalPosts,
         totalFixadas,
-        temMais: posts.length === limite,
+        temMais: postsOrganicos.length === limite,
         recomendacoes,
         petsRecomendados,
       });
