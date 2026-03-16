@@ -859,6 +859,11 @@ const migrations = [
     raio_km DECIMAL(6,2) NOT NULL,
     data_criacao TIMESTAMP DEFAULT NOW()
   );`,
+
+  // Conversas: colunas iniciador_id e tutor_id (esquema usado pelo chatController/Conversa.js)
+  `ALTER TABLE conversas ADD COLUMN IF NOT EXISTS iniciador_id INTEGER REFERENCES usuarios(id);`,
+  `ALTER TABLE conversas ADD COLUMN IF NOT EXISTS tutor_id INTEGER REFERENCES usuarios(id);`,
+  `UPDATE conversas SET tutor_id = dono_id WHERE tutor_id IS NULL AND dono_id IS NOT NULL;`,
 ];
 
 /**

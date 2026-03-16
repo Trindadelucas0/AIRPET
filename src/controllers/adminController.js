@@ -718,6 +718,8 @@ async function excluirUsuario(req, res) {
     await query('UPDATE tag_batches SET criado_por = NULL WHERE criado_por = $1', [id]);
     await query('UPDATE nfc_tags SET user_id = NULL WHERE user_id = $1', [id]);
     await query('UPDATE conversas SET dono_id = NULL WHERE dono_id = $1', [id]);
+    await query('UPDATE conversas SET tutor_id = NULL WHERE tutor_id = $1', [id]);
+    await query('UPDATE conversas SET iniciador_id = NULL WHERE iniciador_id = $1', [id]);
     await query('UPDATE mensagens_chat SET moderado_por = NULL WHERE moderado_por = $1', [id]);
     await query('UPDATE agenda_petshop SET usuario_id = NULL WHERE usuario_id = $1', [id]);
     await query('UPDATE pontos_mapa SET criado_por = NULL WHERE criado_por = $1', [id]);
