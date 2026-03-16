@@ -2,114 +2,72 @@
 <%- include('../partials/admin-layout') %>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
 <style>
-  #mapaRegiao { width: 100%; height: 320px; min-height: 280px; border-radius: 12px; overflow: hidden; }
+  #mapaRegiaoPerfil { width: 100%; height: 320px; min-height: 280px; border-radius: 12px; overflow: hidden; }
   .leaflet-container { z-index: 1; }
-  .tab-regiao { padding: 8px 14px; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.2s; }
-  .tab-regiao:hover { background: rgba(236, 90, 28, 0.08); color: #c2410c; }
-  .tab-regiao.active { background: rgba(236, 90, 28, 0.15); color: #c2410c; }
-  .painel-regiao { display: none; }
-  .painel-regiao.ativo { display: block; }
 </style>
 
 <main class="flex-1">
-  <div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
     <div class="mb-8">
       <a href="<%= adminPath %>" class="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-primary-500 transition-colors mb-3">
         <i class="fa-solid fa-arrow-left text-xs"></i> Dashboard
       </a>
       <h1 class="text-2xl font-bold text-gray-900">Notificação em massa</h1>
-      <p class="text-sm text-gray-500 mt-1">Envie por região no mapa, por região salva ou por cidade(s). Por cidade(s), todos com região cadastrada (cidade/estado) recebem; no mapa/raio, quem tem localização GPS.</p>
+      <p class="text-sm text-gray-500 mt-1">Selecione a região com base no perfil dos usuários. O mapa abaixo é apenas uma visualização aproximada da área escolhida.</p>
     </div>
 
     <form action="<%= adminPath %>/notificacoes/enviar" method="POST" id="formEnviar" class="space-y-6 bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-      <input type="hidden" name="tipo" id="inputTipo" value="mapa">
-      <input type="hidden" name="regiao_id" id="inputRegiaoId" value="">
 
-      <!-- Escolha do modo -->
       <div class="space-y-4">
         <h2 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
-          <i class="fa-solid fa-map-location-dot text-primary-500"></i>
-          Região
+          <i class="fa-solid fa-location-dot text-primary-500"></i>
+          Região do perfil
         </h2>
-        <div class="flex flex-wrap gap-2">
-          <button type="button" class="tab-regiao active" data-mode="mapa" aria-pressed="true">
-            <i class="fa-solid fa-map mr-1.5"></i>No mapa
-          </button>
-          <button type="button" class="tab-regiao" data-mode="regiao_salva">
-            <i class="fa-solid fa-bookmark mr-1.5"></i>Região salva
-          </button>
-          <button type="button" class="tab-regiao" data-mode="cidades">
-            <i class="fa-solid fa-city mr-1.5"></i>Por cidade(s)
-          </button>
-        </div>
 
-        <!-- Painel: No mapa -->
-        <div id="painelMapa" class="painel-regiao ativo">
-          <p class="text-sm text-gray-500 mb-2">Clique no mapa para definir o centro; o círculo mostra o raio em km.</p>
-          <div id="mapaRegiao"></div>
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
-            <div>
-              <label for="latitude" class="block text-sm font-medium text-gray-700 mb-1">Latitude (centro)</label>
-              <input type="text" id="latitude" name="latitude" value="-23.5505" placeholder="-23.5505"
-                     class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm">
-            </div>
-            <div>
-              <label for="longitude" class="block text-sm font-medium text-gray-700 mb-1">Longitude (centro)</label>
-              <input type="text" id="longitude" name="longitude" value="-46.6333" placeholder="-46.6333"
-                     class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm">
-            </div>
-            <div>
-              <label for="raio_km" class="block text-sm font-medium text-gray-700 mb-1">Raio (km)</label>
-              <input type="number" id="raio_km" name="raio_km" value="10" min="0.1" step="0.5" placeholder="10"
-                     class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm">
-            </div>
-          </div>
-        </div>
-
-        <!-- Painel: Região salva -->
-        <div id="painelRegiaoSalva" class="painel-regiao">
-          <p class="text-sm text-gray-500 mb-2">Escolha uma região já cadastrada.</p>
-          <div class="flex flex-wrap items-center gap-2">
-            <select id="regiaoSalva" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-sm min-w-[200px]">
-              <option value="">Selecione uma região</option>
-              <% (regioes || []).forEach(function(r) { %>
-              <option value="<%= r.id %>" data-lat="<%= r.latitude %>" data-lng="<%= r.longitude %>" data-raio="<%= r.raio_km %>"><%= r.nome %> (<%= r.raio_km %> km)</option>
-              <% }); %>
-            </select>
-            <a href="<%= adminPath %>/regioes-notificacao" class="text-sm text-primary-500 hover:text-primary-600 font-medium">Gerenciar regiões</a>
-          </div>
-          <div id="mapaRegiaoSalva" class="mt-3 hidden">
-            <div id="mapaRegiaoSalvaContainer" style="height: 260px; border-radius: 12px; overflow: hidden;"></div>
-          </div>
-        </div>
-
-        <!-- Painel: Por cidade(s) -->
-        <div id="painelCidades" class="painel-regiao">
-          <p class="text-sm text-gray-500 mb-2">Selecione o estado e marque as cidades. Lista todas as cidades em que há usuários com região cadastrada (cidade/estado no perfil).</p>
-          <div class="mb-3">
-            <label for="filtroEstado" class="block text-sm font-medium text-gray-700 mb-1">Estado</label>
-            <select id="filtroEstado" class="w-full sm:w-auto px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-sm">
-              <option value="">Todos</option>
-              <% var estadosUnicos = []; var seen = {}; (cidadesComContagem || []).forEach(function(c) { if (!seen[c.estado]) { seen[c.estado] = true; estadosUnicos.push(c.estado); } }); estadosUnicos.sort(); estadosUnicos.forEach(function(est) { %>
-              <option value="<%= est %>"><%= est %></option>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label for="estado" class="block text-sm font-medium text-gray-700 mb-1">Estado</label>
+            <select id="estado" name="estado" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm">
+              <option value="">Selecione o estado</option>
+              <% (estadosComContagem || []).forEach(function(e) { %>
+              <option value="<%= e.estado %>"><%= e.estado %> (<%= e.total %>)</option>
               <% }); %>
             </select>
           </div>
-          <div id="listaCidades" class="max-h-48 overflow-y-auto border border-gray-200 rounded-lg divide-y divide-gray-100 bg-gray-50/50 p-2">
-            <% (cidadesComContagem || []).forEach(function(c) { %>
-            <label class="flex items-center gap-2 py-2 px-2 hover:bg-white rounded cursor-pointer cidade-item" data-estado="<%= c.estado %>">
-              <input type="checkbox" name="cidades[]" value="<%= c.cidade %>|<%= c.estado %>" class="rounded border-gray-300 text-primary-500 focus:ring-primary-500">
-              <span class="text-sm text-gray-800"><%= c.cidade %> <span class="text-gray-500">(<%= c.total %>)</span></span>
-            </label>
-            <% }); %>
-            <% if (!cidadesComContagem || !cidadesComContagem.length) { %>
-            <p class="text-sm text-gray-500 py-4 text-center">Nenhuma cidade com usuários (região cadastrada) no momento.</p>
-            <% } %>
+          <div>
+            <label for="cidade" class="block text-sm font-medium text-gray-700 mb-1">Cidade</label>
+            <select id="cidade" name="cidade" disabled class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm disabled:bg-gray-50 disabled:text-gray-400">
+              <option value="">Selecione a cidade</option>
+            </select>
+          </div>
+          <div>
+            <label for="bairro" class="block text-sm font-medium text-gray-700 mb-1">Bairro</label>
+            <select id="bairro" name="bairro" disabled class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm disabled:bg-gray-50 disabled:text-gray-400">
+              <option value="">Selecione o bairro</option>
+            </select>
+          </div>
+          <div>
+            <label for="cep" class="block text-sm font-medium text-gray-700 mb-1">CEP (opcional)</label>
+            <input type="text" id="cep" name="cep" placeholder="00000-000"
+                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm">
           </div>
         </div>
 
-        <div class="flex items-center gap-3 pt-2">
+        <div>
+          <label for="endereco" class="block text-sm font-medium text-gray-700 mb-1">Endereço / rua (opcional)</label>
+          <input type="text" id="endereco" name="endereco" placeholder="Rua, avenida, número ou referência"
+                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm">
+        </div>
+
+        <div class="rounded-xl border border-gray-200 overflow-hidden">
+          <div id="mapaRegiaoPerfil"></div>
+          <div class="px-3 py-2 bg-gray-50 border-t border-gray-100 text-xs text-gray-500">
+            O mapa serve apenas para visualizar a área filtrada. O cálculo real usa os dados do perfil dos usuários.
+          </div>
+        </div>
+
+        <div class="flex items-center gap-3">
           <button type="button" id="btnPreview" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors">
             <i class="fa-solid fa-users"></i>
             Ver quantos usuários receberão
@@ -118,7 +76,6 @@
         </div>
       </div>
 
-      <!-- Conteúdo -->
       <div class="space-y-4 border-t border-gray-100 pt-6">
         <h2 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
           <i class="fa-solid fa-bell text-primary-500"></i>
@@ -157,223 +114,206 @@
 <script>
 (function () {
   var adminPath = '<%= adminPath %>';
-  var inputTipo = document.getElementById('inputTipo');
-  var inputRegiaoId = document.getElementById('inputRegiaoId');
-  var latInput = document.getElementById('latitude');
-  var lngInput = document.getElementById('longitude');
-  var raioInput = document.getElementById('raio_km');
-  var regiaoSalva = document.getElementById('regiaoSalva');
+  var cidadesData = <%- JSON.stringify(cidadesComContagem || []) %>;
+  var bairrosData = <%- JSON.stringify(bairrosComContagem || []) %>;
+
+  var form = document.getElementById('formEnviar');
+  var estadoInput = document.getElementById('estado');
+  var cidadeInput = document.getElementById('cidade');
+  var bairroInput = document.getElementById('bairro');
+  var cepInput = document.getElementById('cep');
+  var enderecoInput = document.getElementById('endereco');
   var btnPreview = document.getElementById('btnPreview');
   var previewResult = document.getElementById('previewResult');
-  var formEnviar = document.getElementById('formEnviar');
-  var filtroEstado = document.getElementById('filtroEstado');
-  var listaCidades = document.getElementById('listaCidades');
 
-  var modoAtual = 'mapa';
-
-  document.querySelectorAll('.tab-regiao').forEach(function (btn) {
-    btn.addEventListener('click', function () {
-      var mode = this.getAttribute('data-mode');
-      document.querySelectorAll('.tab-regiao').forEach(function (b) { b.classList.remove('active'); b.setAttribute('aria-pressed', 'false'); });
-      this.classList.add('active');
-      this.setAttribute('aria-pressed', 'true');
-      document.querySelectorAll('.painel-regiao').forEach(function (p) { p.classList.remove('ativo'); });
-      if (mode === 'mapa') {
-        document.getElementById('painelMapa').classList.add('ativo');
-        inputTipo.value = 'mapa';
-        inputRegiaoId.value = '';
-      } else if (mode === 'regiao_salva') {
-        document.getElementById('painelRegiaoSalva').classList.add('ativo');
-        inputTipo.value = 'mapa';
-        onRegiaoSalvaChange();
-      } else {
-        document.getElementById('painelCidades').classList.add('ativo');
-        inputTipo.value = 'cidades';
-        inputRegiaoId.value = '';
-      }
-      modoAtual = mode;
-    });
-  });
-
-  if (filtroEstado) {
-    filtroEstado.addEventListener('change', function () {
-      var est = this.value;
-      document.querySelectorAll('.cidade-item').forEach(function (el) {
-        el.style.display = (!est || el.getAttribute('data-estado') === est) ? '' : 'none';
-      });
-    });
-  }
-
-  var mapaRegiaoSalvaMap = null;
-  var mapaRegiaoSalvaCircle = null;
-  function initMapaRegiaoSalva(lat, lng, raio) {
-    var container = document.getElementById('mapaRegiaoSalvaContainer');
-    if (!container) return;
-    if (!mapaRegiaoSalvaMap) {
-      mapaRegiaoSalvaMap = L.map('mapaRegiaoSalvaContainer', { zoomControl: true }).setView([lat, lng], 12);
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OSM', maxZoom: 19 }).addTo(mapaRegiaoSalvaMap);
-      setTimeout(function () { if (mapaRegiaoSalvaMap) mapaRegiaoSalvaMap.invalidateSize(); }, 350);
-    } else {
-      mapaRegiaoSalvaMap.setView([lat, lng], 12);
-    }
-    if (mapaRegiaoSalvaCircle) mapaRegiaoSalvaMap.removeLayer(mapaRegiaoSalvaCircle);
-    mapaRegiaoSalvaCircle = L.circle([lat, lng], { radius: raio * 1000, color: '#ec5a1c', fillColor: '#ec5a1c', fillOpacity: 0.2, weight: 2 }).addTo(mapaRegiaoSalvaMap);
-  }
-  function onRegiaoSalvaChange() {
-    var opt = regiaoSalva && regiaoSalva.options[regiaoSalva.selectedIndex];
-    if (!opt || !opt.value) {
-      inputRegiaoId.value = '';
-      inputTipo.value = 'mapa';
-      if (latInput) latInput.value = '-23.5505';
-      if (lngInput) lngInput.value = '-46.6333';
-      if (raioInput) raioInput.value = '10';
-      document.getElementById('mapaRegiaoSalva').classList.add('hidden');
-      return;
-    }
-    inputRegiaoId.value = opt.value;
-    inputTipo.value = 'mapa';
-    var lat = parseFloat(opt.getAttribute('data-lat'));
-    var lng = parseFloat(opt.getAttribute('data-lng'));
-    var raio = parseFloat(opt.getAttribute('data-raio'));
-    if (latInput) latInput.value = lat;
-    if (lngInput) lngInput.value = lng;
-    if (raioInput) raioInput.value = raio;
-    document.getElementById('mapaRegiaoSalva').classList.remove('hidden');
-    initMapaRegiaoSalva(lat, lng, raio);
-  }
-  if (regiaoSalva) regiaoSalva.addEventListener('change', onRegiaoSalvaChange);
-
-  function parseCenter() {
-    var lat = parseFloat(latInput && latInput.value);
-    var lng = parseFloat(lngInput && lngInput.value);
-    if (isNaN(lat) || isNaN(lng)) return null;
-    return L.latLng(lat, lng);
-  }
-  function parseRaioKm() {
-    var r = parseFloat(raioInput && raioInput.value);
-    return (isNaN(r) || r <= 0) ? 10 : Math.min(500, r);
-  }
-  var defaultCenter = [-23.5505, -46.6333];
-  var map = L.map('mapaRegiao', { zoomControl: true, tap: true }).setView(defaultCenter, 11);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OSM', maxZoom: 19 }).addTo(map);
+  var map = L.map('mapaRegiaoPerfil', { zoomControl: true, tap: true }).setView([-15.78, -47.93], 4);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OSM',
+    maxZoom: 19
+  }).addTo(map);
   setTimeout(function () { map.invalidateSize(); }, 300);
   window.addEventListener('resize', function () { map.invalidateSize(); });
-  var centerMarker = null;
-  var radiusCircle = null;
-  function atualizarDoMapa(latlng) {
-    if (!latInput || !lngInput) return;
-    latInput.value = latlng.lat.toFixed(6);
-    lngInput.value = latlng.lng.toFixed(6);
-    if (centerMarker) centerMarker.setLatLng(latlng);
-    else {
-      centerMarker = L.marker(latlng, { draggable: true }).addTo(map).bindPopup('Centro');
-      centerMarker.on('dragend', function (ev) { atualizarDoMapa(ev.target.getLatLng()); });
-    }
-    desenharCirculo();
-  }
-  function desenharCirculo() {
-    var center = parseCenter();
-    if (!center) return;
-    var raioKm = parseRaioKm();
-    if (raioInput) raioInput.value = raioKm;
-    if (radiusCircle) map.removeLayer(radiusCircle);
-    radiusCircle = L.circle(center, { radius: raioKm * 1000, color: '#ec5a1c', fillColor: '#ec5a1c', fillOpacity: 0.2, weight: 2 }).addTo(map);
-  }
-  function atualizarDoRaio() { if (raioInput) raioInput.value = parseRaioKm(); desenharCirculo(); }
-  function atualizarDoInputs() {
-    var center = parseCenter();
-    if (!center) return;
-    if (centerMarker) centerMarker.setLatLng(center);
-    else {
-      centerMarker = L.marker(center, { draggable: true }).addTo(map).bindPopup('Centro');
-      centerMarker.on('dragend', function (ev) { atualizarDoMapa(ev.target.getLatLng()); });
-    }
-    desenharCirculo();
-    map.setView(center, map.getZoom());
-  }
-  map.on('click', function (e) { atualizarDoMapa(e.latlng); });
-  if (raioInput) { raioInput.addEventListener('input', atualizarDoRaio); raioInput.addEventListener('change', atualizarDoRaio); }
-  if (latInput) { latInput.addEventListener('blur', atualizarDoInputs); latInput.addEventListener('change', atualizarDoInputs); }
-  if (lngInput) { lngInput.addEventListener('blur', atualizarDoInputs); lngInput.addEventListener('change', atualizarDoInputs); }
-  var initialCenter = parseCenter();
-  if (initialCenter) { map.setView(initialCenter, 11); atualizarDoInputs(); }
-  else atualizarDoMapa(L.latLng(defaultCenter[0], defaultCenter[1]));
 
-  formEnviar.addEventListener('submit', function () {
-    if (modoAtual === 'cidades') {
-      inputTipo.value = 'cidades';
-      inputRegiaoId.value = '';
-      var checks = formEnviar.querySelectorAll('input[name="cidades[]"]:checked');
-      if (checks.length === 0) {
-        alert('Selecione ao menos uma cidade.');
-        return false;
-      }
-    } else if (modoAtual === 'regiao_salva' && regiaoSalva && regiaoSalva.value) {
-      inputRegiaoId.value = regiaoSalva.value;
-      inputTipo.value = 'mapa';
-    } else {
-      inputTipo.value = 'mapa';
-    }
-    return true;
-  });
+  var mapMarker = null;
+  var mapCircle = null;
+  var geocodeRequestId = 0;
 
-  if (btnPreview && previewResult) {
-    btnPreview.addEventListener('click', function () {
-      if (modoAtual === 'cidades') {
-        var checks = formEnviar.querySelectorAll('input[name="cidades[]"]:checked');
-        if (checks.length === 0) {
-          previewResult.textContent = 'Selecione ao menos uma cidade.';
-          previewResult.classList.remove('hidden');
-          return;
-        }
-        var cidades = [];
-        checks.forEach(function (c) {
-          var v = c.value.split('|');
-          cidades.push({ cidade: v[0] || '', estado: v[1] || '' });
-        });
-        previewResult.textContent = 'Consultando...';
-        previewResult.classList.remove('hidden');
-        fetch(adminPath + '/notificacoes/enviar/preview?tipo=cidades&cidades=' + encodeURIComponent(JSON.stringify(cidades)), { credentials: 'same-origin' })
-          .then(function (r) { return r.json(); })
-          .then(function (data) {
-            if (data.sucesso) {
-              previewResult.textContent = data.total + ' usuário(s) na(s) cidade(s) com região cadastrada.';
-            } else {
-              previewResult.textContent = data.mensagem || 'Erro ao consultar.';
-            }
-          })
-          .catch(function () { previewResult.textContent = 'Erro de conexão.'; });
-        return;
-      }
-      var lat = parseFloat(latInput && latInput.value);
-      var lng = parseFloat(lngInput && lngInput.value);
-      var raio = parseFloat(raioInput && raioInput.value);
-      if (modoAtual === 'regiao_salva' && regiaoSalva && regiaoSalva.value) {
-        var o = regiaoSalva.options[regiaoSalva.selectedIndex];
-        lat = parseFloat(o.getAttribute('data-lat'));
-        lng = parseFloat(o.getAttribute('data-lng'));
-        raio = parseFloat(o.getAttribute('data-raio'));
-      }
-      if (isNaN(lat) || isNaN(lng) || isNaN(raio) || raio <= 0) {
-        previewResult.textContent = 'Preencha latitude, longitude e raio válidos ou selecione uma região.';
-        previewResult.classList.remove('hidden');
-        return;
-      }
-      previewResult.textContent = 'Consultando...';
-      previewResult.classList.remove('hidden');
-      var params = new URLSearchParams({ lat: lat, lng: lng, raio_km: raio });
-      fetch(adminPath + '/notificacoes/enviar/preview?' + params.toString(), { credentials: 'same-origin' })
-        .then(function (r) { return r.json(); })
-        .then(function (data) {
-          if (data.sucesso) {
-            previewResult.textContent = data.total + ' usuário(s) na região com localização ativa.';
-          } else {
-            previewResult.textContent = data.mensagem || 'Erro ao consultar.';
-          }
-        })
-        .catch(function () { previewResult.textContent = 'Erro de conexão.'; });
+  function preencherSelect(select, items, placeholder, valueKey, labelBuilder) {
+    var valorAtual = select.value;
+    select.innerHTML = '';
+    var first = document.createElement('option');
+    first.value = '';
+    first.textContent = placeholder;
+    select.appendChild(first);
+
+    items.forEach(function (item) {
+      var option = document.createElement('option');
+      option.value = item[valueKey];
+      option.textContent = labelBuilder(item);
+      if (valorAtual && valorAtual === option.value) option.selected = true;
+      select.appendChild(option);
     });
   }
+
+  function atualizarCidades() {
+    var estado = estadoInput.value.trim();
+    var cidades = cidadesData.filter(function (item) {
+      return !estado || item.estado === estado;
+    });
+
+    preencherSelect(cidadeInput, cidades, 'Selecione a cidade', 'cidade', function (item) {
+      return item.cidade + ' (' + item.total + ')';
+    });
+
+    cidadeInput.disabled = !cidades.length;
+    atualizarBairros();
+  }
+
+  function atualizarBairros() {
+    var estado = estadoInput.value.trim();
+    var cidade = cidadeInput.value.trim();
+    if (!estado || !cidade) {
+      preencherSelect(bairroInput, [], 'Selecione o bairro', 'bairro', function (item) {
+        return item.bairro + ' (' + item.total + ')';
+      });
+      bairroInput.disabled = true;
+      return;
+    }
+
+    var bairros = bairrosData.filter(function (item) {
+      return item.estado === estado && item.cidade === cidade;
+    });
+
+    preencherSelect(bairroInput, bairros, 'Selecione o bairro', 'bairro', function (item) {
+      return item.bairro + ' (' + item.total + ')';
+    });
+
+    bairroInput.disabled = !bairros.length;
+  }
+
+  function montarQueryMapa() {
+    var partes = [];
+    if (enderecoInput.value.trim()) partes.push(enderecoInput.value.trim());
+    if (bairroInput.value.trim()) partes.push(bairroInput.value.trim());
+    if (cidadeInput.value.trim()) partes.push(cidadeInput.value.trim());
+    if (estadoInput.value.trim()) partes.push(estadoInput.value.trim());
+    if (cepInput.value.trim()) partes.push(cepInput.value.trim());
+    if (!partes.length) return '';
+    partes.push('Brasil');
+    return partes.join(', ');
+  }
+
+  function calcularRaioVisual() {
+    if (enderecoInput.value.trim() || cepInput.value.trim()) return 1200;
+    if (bairroInput.value.trim()) return 3500;
+    if (cidadeInput.value.trim()) return 12000;
+    if (estadoInput.value.trim()) return 60000;
+    return 0;
+  }
+
+  function atualizarMapaVisual() {
+    var query = montarQueryMapa();
+    var requestId = ++geocodeRequestId;
+
+    if (!query) {
+      if (mapMarker) { map.removeLayer(mapMarker); mapMarker = null; }
+      if (mapCircle) { map.removeLayer(mapCircle); mapCircle = null; }
+      map.setView([-15.78, -47.93], 4);
+      return;
+    }
+
+    fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&q=' + encodeURIComponent(query) + '&limit=1&countrycodes=br&accept-language=pt-BR')
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (requestId !== geocodeRequestId) return;
+        if (!data || !data.length) return;
+
+        var lat = parseFloat(data[0].lat);
+        var lng = parseFloat(data[0].lon);
+        var radius = calcularRaioVisual();
+
+        if (mapMarker) map.removeLayer(mapMarker);
+        if (mapCircle) map.removeLayer(mapCircle);
+
+        mapMarker = L.marker([lat, lng]).addTo(map).bindPopup(query);
+        if (radius > 0) {
+          mapCircle = L.circle([lat, lng], {
+            radius: radius,
+            color: '#ec5a1c',
+            fillColor: '#ec5a1c',
+            fillOpacity: 0.18,
+            weight: 2
+          }).addTo(map);
+          map.fitBounds(mapCircle.getBounds(), { padding: [30, 30] });
+        } else {
+          map.setView([lat, lng], 12);
+        }
+      })
+      .catch(function () {});
+  }
+
+  function obterFiltros() {
+    return {
+      estado: estadoInput.value.trim(),
+      cidade: cidadeInput.value.trim(),
+      bairro: bairroInput.value.trim(),
+      cep: cepInput.value.trim(),
+      endereco: enderecoInput.value.trim(),
+    };
+  }
+
+  function temAlgumFiltro() {
+    var filtros = obterFiltros();
+    return !!(filtros.estado || filtros.cidade || filtros.bairro || filtros.cep || filtros.endereco);
+  }
+
+  estadoInput.addEventListener('change', function () {
+    atualizarCidades();
+    atualizarMapaVisual();
+  });
+  cidadeInput.addEventListener('change', function () {
+    atualizarBairros();
+    atualizarMapaVisual();
+  });
+  bairroInput.addEventListener('change', atualizarMapaVisual);
+  cepInput.addEventListener('blur', atualizarMapaVisual);
+  enderecoInput.addEventListener('blur', atualizarMapaVisual);
+
+  atualizarCidades();
+  atualizarMapaVisual();
+
+  btnPreview.addEventListener('click', function () {
+    if (!temAlgumFiltro()) {
+      previewResult.textContent = 'Selecione ao menos um filtro de região.';
+      previewResult.classList.remove('hidden');
+      return;
+    }
+
+    previewResult.textContent = 'Consultando...';
+    previewResult.classList.remove('hidden');
+
+    var params = new URLSearchParams(obterFiltros());
+    fetch(adminPath + '/notificacoes/enviar/preview?' + params.toString(), { credentials: 'same-origin' })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (data.sucesso) {
+          previewResult.textContent = data.total + ' usuário(s) com perfil na região filtrada.';
+        } else {
+          previewResult.textContent = data.mensagem || 'Erro ao consultar.';
+        }
+      })
+      .catch(function () {
+        previewResult.textContent = 'Erro de conexão.';
+      });
+  });
+
+  form.addEventListener('submit', function (e) {
+    if (!temAlgumFiltro()) {
+      e.preventDefault();
+      previewResult.textContent = 'Selecione ao menos um filtro de região antes de enviar.';
+      previewResult.classList.remove('hidden');
+    }
+  });
 })();
 </script>
 

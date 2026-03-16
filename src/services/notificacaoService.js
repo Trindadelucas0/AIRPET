@@ -29,6 +29,43 @@ function montarMensagemAlerta(alerta) {
   return base;
 }
 
+function montarWherePerfilRegiao(filtros = {}) {
+  const condicoes = [];
+  const valores = [];
+
+  function adicionarIgual(coluna, valor) {
+    if (!valor || !String(valor).trim()) return;
+    valores.push(String(valor).trim());
+    condicoes.push(`LOWER(TRIM(${coluna})) = LOWER(TRIM($${valores.length}))`);
+  }
+
+  adicionarIgual('estado', filtros.estado);
+  adicionarIgual('cidade', filtros.cidade);
+  adicionarIgual('bairro', filtros.bairro);
+  adicionarIgual('cep', filtros.cep);
+
+  if (filtros.endereco && String(filtros.endereco).trim()) {
+    valores.push(`%${String(filtros.endereco).trim()}%`);
+    condicoes.push(`endereco ILIKE $${valores.length}`);
+  }
+
+  return { condicoes, valores };
+}
+
+async function buscarIdsUsuariosPorPerfilRegiao(filtros = {}) {
+  const { condicoes, valores } = montarWherePerfilRegiao(filtros);
+  if (!condicoes.length) return [];
+
+  const resultado = await query(
+    `SELECT id
+     FROM usuarios
+     WHERE ${condicoes.join(' AND ')}`,
+    valores
+  );
+
+  return resultado.rows.map(row => row.id);
+}
+
 const notificacaoService = {
 
   async criar(usuarioId, tipo, mensagem, link, opcoes = {}) {
@@ -211,6 +248,61 @@ const notificacaoService = {
       tipo: 'sistema',
     }).catch(function (err) {
       logger.error('NotificacaoService', 'Falha ao enviar push em massa (região)', err);
+    });
+
+    if (this._io) {
+      usuarioIds.forEach(uid => {
+        this._io.of('/notificacoes').to('user_' + uid).emit('nova_notificacao', {
+          tipo: 'sistema', mensagem, link: link || null, data: new Date(),
+        });
+      });
+    }
+
+    return notificacoes;
+  },
+
+  /**
+   * Conta usuários pela região cadastrada no perfil.
+   * @param {{estado?: string, cidade?: string, bairro?: string, cep?: string, endereco?: string}} filtros
+   * @returns {Promise<number>}
+   */
+  async contarUsuariosPorPerfilRegiao(filtros) {
+    const usuarioIds = await buscarIdsUsuariosPorPerfilRegiao(filtros);
+    return usuarioIds.length;
+  },
+
+  /**
+   * Envia notificação para usuários filtrados pela região cadastrada no perfil.
+   * @param {{estado?: string, cidade?: string, bairro?: string, cep?: string, endereco?: string}} filtros
+   * @param {string} titulo
+   * @param {string} mensagem
+   * @param {string} [link]
+   * @returns {Promise<Array>}
+   */
+  async notificarPorPerfilRegiao(filtros, titulo, mensagem, link) {
+    const usuarioIds = await buscarIdsUsuariosPorPerfilRegiao(filtros);
+
+    logger.info('NotificacaoService', `Notificar por perfil/região: ${usuarioIds.length} usuário(s)`);
+
+    if (usuarioIds.length === 0) {
+      return [];
+    }
+
+    const notificacoes = await Notificacao.criarParaMultiplos(
+      usuarioIds,
+      'sistema',
+      mensagem,
+      link || null,
+      null
+    );
+
+    pushService.enviarParaMultiplos(usuarioIds, {
+      titulo: titulo || TITULO_MAP.sistema || 'AIRPET',
+      corpo: mensagem,
+      url: link || '/notificacoes',
+      tipo: 'sistema',
+    }).catch(function (err) {
+      logger.error('NotificacaoService', 'Falha ao enviar push em massa (perfil/região)', err);
     });
 
     if (this._io) {

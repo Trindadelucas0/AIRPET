@@ -163,6 +163,83 @@ const Usuario = {
   },
 
   /**
+   * Lista estados com contagem de usuários que possuem região cadastrada.
+   * @returns {Promise<Array<{estado: string, total: string}>>}
+   */
+  async listarEstadosComContagem() {
+    const resultado = await query(
+      `SELECT estado, COUNT(*) AS total
+       FROM usuarios
+       WHERE estado IS NOT NULL AND TRIM(estado) <> ''
+       GROUP BY estado
+       ORDER BY estado`
+    );
+    return resultado.rows;
+  },
+
+  /**
+   * Lista cidades com contagem, opcionalmente filtradas por estado.
+   * @param {string} [estado]
+   * @returns {Promise<Array<{cidade: string, estado: string, total: string}>>}
+   */
+  async listarCidadesPorEstadoComContagem(estado) {
+    const valores = [];
+    const where = [`cidade IS NOT NULL`, `TRIM(cidade) <> ''`, `estado IS NOT NULL`, `TRIM(estado) <> ''`];
+
+    if (estado && String(estado).trim()) {
+      valores.push(String(estado).trim());
+      where.push(`estado = $${valores.length}`);
+    }
+
+    const resultado = await query(
+      `SELECT cidade, estado, COUNT(*) AS total
+       FROM usuarios
+       WHERE ${where.join(' AND ')}
+       GROUP BY cidade, estado
+       ORDER BY estado, cidade`,
+      valores
+    );
+    return resultado.rows;
+  },
+
+  /**
+   * Lista bairros com contagem, opcionalmente filtrados por estado e cidade.
+   * @param {string} [estado]
+   * @param {string} [cidade]
+   * @returns {Promise<Array<{bairro: string, cidade: string, estado: string, total: string}>>}
+   */
+  async listarBairrosPorCidadeEstadoComContagem(estado, cidade) {
+    const valores = [];
+    const where = [
+      `bairro IS NOT NULL`,
+      `TRIM(bairro) <> ''`,
+      `cidade IS NOT NULL`,
+      `TRIM(cidade) <> ''`,
+      `estado IS NOT NULL`,
+      `TRIM(estado) <> ''`,
+    ];
+
+    if (estado && String(estado).trim()) {
+      valores.push(String(estado).trim());
+      where.push(`estado = $${valores.length}`);
+    }
+    if (cidade && String(cidade).trim()) {
+      valores.push(String(cidade).trim());
+      where.push(`cidade = $${valores.length}`);
+    }
+
+    const resultado = await query(
+      `SELECT bairro, cidade, estado, COUNT(*) AS total
+       FROM usuarios
+       WHERE ${where.join(' AND ')}
+       GROUP BY bairro, cidade, estado
+       ORDER BY estado, cidade, bairro`,
+      valores
+    );
+    return resultado.rows;
+  },
+
+  /**
    * Lista cidades e estados com contagem de usuários que têm região cadastrada (para notificação por cidade).
    * Inclui todos com cidade/estado preenchidos, independente de ter GPS (ultima_localizacao).
    * @returns {Promise<Array<{cidade: string, estado: string, total: string}>>}
