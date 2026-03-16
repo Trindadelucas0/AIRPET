@@ -67,7 +67,7 @@ function selecionarPatrocinado(patrocinados, cursor, ultimoPetId) {
 }
 
 function mesclarPostsComPatrocinados(postsOrganicos, patrocinados, pagina = 1) {
-  if (!Array.isArray(postsOrganicos) || !postsOrganicos.length || !Array.isArray(patrocinados) || !patrocinados.length) {
+  if (!Array.isArray(postsOrganicos) || !Array.isArray(patrocinados) || !patrocinados.length) {
     return postsOrganicos;
   }
 
@@ -79,6 +79,7 @@ function mesclarPostsComPatrocinados(postsOrganicos, patrocinados, pagina = 1) {
   const resultado = [];
   let cursorPatrocinado = (Math.max(1, pagina) - 1) % patrocinados.length;
   let ultimoPetPatrocinado = null;
+  let totalInseridos = 0;
 
   for (let i = 0; i < postsOrganicos.length; i += 1) {
     resultado.push(postsOrganicos[i]);
@@ -96,6 +97,20 @@ function mesclarPostsComPatrocinados(postsOrganicos, patrocinados, pagina = 1) {
       is_sponsored: true,
       sponsored_key: 'sponsored-' + item.boost_id + '-' + item.pet_id + '-p' + pagina + '-i' + i,
     });
+    totalInseridos += 1;
+  }
+
+  // Regra mínima: com boost ativo, sempre exibir ao menos 1 patrocinado por página.
+  if (totalInseridos === 0) {
+    const { item } = selecionarPatrocinado(patrocinados, cursorPatrocinado, ultimoPetPatrocinado);
+    if (item) {
+      resultado.unshift({
+        ...item,
+        id: item.id || ('sponsored-' + item.boost_id + '-' + item.pet_id),
+        is_sponsored: true,
+        sponsored_key: 'sponsored-' + item.boost_id + '-' + item.pet_id + '-p' + pagina + '-forced',
+      });
+    }
   }
 
   return resultado;

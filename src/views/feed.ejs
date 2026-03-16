@@ -46,6 +46,7 @@
     <% if (posts && posts.length > 0) { %>
       <% posts.forEach(function(post, idx) { %>
         <% if (post.is_sponsored) { %>
+          <% var hasSponsoredPost = !!post.foto || !!post.legenda || !!post.texto; %>
           <article class="bg-gradient-to-br from-amber-50 to-white rounded-2xl shadow-sm border-2 border-amber-200 overflow-hidden post-enter"
                    style="animation-delay:<%= Math.min(idx * 60, 400) %>ms"
                    id="<%= post.sponsored_key || ('sponsored-' + post.boost_id + '-' + post.pet_id) %>">
@@ -73,12 +74,22 @@
               <% if (post.foto) { %>
                 <img src="<%= post.foto %>" alt="" class="w-full mt-3 rounded-xl max-h-[320px] object-cover" loading="lazy">
               <% } %>
-              <p class="mt-3 text-sm text-gray-700 line-clamp-2"><%= post.legenda || post.texto || 'Conheça este perfil pet patrocinado.' %></p>
+              <% if (hasSponsoredPost) { %>
+                <p class="mt-3 text-sm text-gray-700 line-clamp-2"><%= post.legenda || post.texto || 'Conheça este perfil pet patrocinado.' %></p>
+              <% } else { %>
+                <p class="mt-3 text-sm text-gray-700">Este pet está em campanha patrocinada. Ainda sem publicação no momento — conheça o perfil e siga o tutor.</p>
+              <% } %>
               <div class="mt-3 flex items-center justify-between gap-2">
-                <a href="/explorar/pet/<%= post.pet_id %>" class="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-500 text-white text-xs font-semibold hover:bg-amber-600">
-                  <i class="fa-solid fa-paw"></i>
-                  Ver perfil do pet
-                </a>
+                <div class="flex items-center gap-2">
+                  <a href="/explorar/pet/<%= post.pet_id %>" class="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-500 text-white text-xs font-semibold hover:bg-amber-600">
+                    <i class="fa-solid fa-paw"></i>
+                    Ver perfil do pet
+                  </a>
+                  <a href="/explorar/perfil/<%= post.usuario_id %>" class="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-amber-300 text-amber-700 text-xs font-semibold hover:bg-amber-100">
+                    <i class="fa-solid fa-user-plus"></i>
+                    Ver tutor
+                  </a>
+                </div>
                 <span class="text-[11px] text-gray-400">Entrega publicitária identificada</span>
               </div>
             </div>
@@ -818,7 +829,8 @@
     var sid = p.sponsored_key || ('sponsored-' + (p.boost_id || 'x') + '-' + (p.pet_id || 'x'));
     var petNome = escapeHtml(p.pet_nome || ('Pet ' + (p.pet_id || '')));
     var tutorNome = escapeHtml(p.autor_nome || ('Usuário ' + (p.usuario_id || '')));
-    var legenda = escapeHtml(p.legenda || p.texto || 'Conheça este perfil pet patrocinado.');
+    var hasPost = !!(p.foto || p.legenda || p.texto);
+    var legenda = escapeHtml(hasPost ? (p.legenda || p.texto || 'Conheça este perfil pet patrocinado.') : 'Este pet está em campanha patrocinada. Ainda sem publicação no momento — conheça o perfil e siga o tutor.');
     var fotoPet = p.pet_foto ? '<img src="' + escapeHtml(p.pet_foto) + '" alt="" class="w-12 h-12 rounded-full object-cover ring-2 ring-amber-200">' : '<span class="w-12 h-12 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center"><i class="fa-solid fa-paw"></i></span>';
     var fotoPost = p.foto ? '<img src="' + escapeHtml(p.foto) + '" alt="" class="w-full mt-3 rounded-xl max-h-[320px] object-cover" loading="lazy">' : '';
     return '<article class="bg-gradient-to-br from-amber-50 to-white rounded-2xl shadow-sm border-2 border-amber-200 overflow-hidden post-enter" id="' + sid + '">' +
@@ -826,7 +838,7 @@
       '<div class="p-4"><div class="flex items-center gap-3">' + fotoPet + '<div class="min-w-0 flex-1"><p class="text-sm font-semibold text-gray-900 truncate">' + petNome + '</p><p class="text-xs text-gray-500 truncate">Tutor: ' + tutorNome + '</p></div></div>' +
       fotoPost +
       '<p class="mt-3 text-sm text-gray-700 line-clamp-2">' + legenda + '</p>' +
-      '<div class="mt-3 flex items-center justify-between gap-2"><a href="/explorar/pet/' + escapeHtml(p.pet_id) + '" class="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-500 text-white text-xs font-semibold hover:bg-amber-600"><i class="fa-solid fa-paw"></i>Ver perfil do pet</a><span class="text-[11px] text-gray-400">Entrega publicitária identificada</span></div></div></article>';
+      '<div class="mt-3 flex items-center justify-between gap-2"><div class="flex items-center gap-2"><a href="/explorar/pet/' + escapeHtml(p.pet_id) + '" class="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-500 text-white text-xs font-semibold hover:bg-amber-600"><i class="fa-solid fa-paw"></i>Ver perfil do pet</a><a href="/explorar/perfil/' + escapeHtml(p.usuario_id) + '" class="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-amber-300 text-amber-700 text-xs font-semibold hover:bg-amber-100"><i class="fa-solid fa-user-plus"></i>Ver tutor</a></div><span class="text-[11px] text-gray-400">Entrega publicitária identificada</span></div></div></article>';
   }
 
   function renderPostHTML(p) {
