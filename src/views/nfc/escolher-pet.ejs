@@ -3,14 +3,11 @@
 <%- include('../partials/flash') %>
 
 <main class="flex-1 container mx-auto px-4 py-8 max-w-2xl">
+  <%- include('../partials/page-header', { backHref: '/pets', backLabel: 'Meus Pets', sticky: false }) %>
 
-  <a href="/pets" class="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-[#ec5a1c] transition-colors mb-6">
-    <i class="fa-solid fa-arrow-left text-xs"></i> Meus Pets
-  </a>
-
-  <div class="text-center mb-8">
-    <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-[#ec5a1c]/10 mb-4">
-      <i class="fa-solid fa-link text-3xl text-[#ec5a1c]"></i>
+  <div class="text-center mb-8 mt-6">
+    <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary-500/10 mb-4">
+      <i class="fa-solid fa-link text-3xl text-primary-500"></i>
     </div>
     <h1 class="text-2xl font-bold text-gray-900">Qual pet usara esta tag?</h1>
     <p class="text-gray-500 text-sm mt-2">Selecione o pet que sera vinculado a tag <strong class="font-mono"><%= tag_code %></strong></p>
@@ -22,7 +19,7 @@
         <form action="/tags/<%= tag_code %>/vincular-pet" method="POST">
           <input type="hidden" name="pet_id" value="<%= pet.id %>">
           <button type="submit"
-                  class="w-full card hover:shadow-md hover:border-[#ec5a1c]/30 border-2 border-transparent transition-all group text-left">
+                  class="w-full card hover:shadow-md hover:border-primary-500/30 border-2 border-transparent transition-all group text-left">
             <div class="relative mb-3">
               <% if (pet.foto) { %>
                 <img src="<%= pet.foto %>" alt="<%= pet.nome %>"
@@ -32,7 +29,7 @@
                   <i class="fa-solid fa-paw text-3xl text-gray-300"></i>
                 </div>
               <% } %>
-              <div class="absolute inset-0 rounded-xl bg-[#ec5a1c]/0 group-hover:bg-[#ec5a1c]/10 transition-colors flex items-center justify-center">
+              <div class="absolute inset-0 rounded-xl bg-primary-500/0 group-hover:bg-primary-500/10 transition-colors flex items-center justify-center">
                 <i class="fa-solid fa-check-circle text-3xl text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-lg"></i>
               </div>
             </div>
@@ -57,7 +54,7 @@
 
   <div class="text-center">
     <a href="/pets/cadastro?tag=<%= tag_code %>"
-       class="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold text-[#ec5a1c] border-2 border-[#ec5a1c] hover:bg-[#ec5a1c] hover:text-white transition-colors">
+       class="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold text-primary-500 border-2 border-primary-500 hover:bg-primary-500 hover:text-white transition-colors">
       <i class="fa-solid fa-plus"></i>
       Cadastrar novo pet
     </a>

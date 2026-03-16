@@ -3,14 +3,11 @@
 <%- include('../partials/flash') %>
 
 <main class="flex-1 container mx-auto px-4 py-6 max-w-lg">
+  <%- include('../partials/page-header', { backHref: '/pets/' + pet.id, backLabel: 'Voltar para ' + pet.nome, sticky: false }) %>
 
-  <a href="/pets/<%= pet.id %>" class="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-[#ec5a1c] transition-colors mb-6">
-    <i class="fa-solid fa-arrow-left text-xs"></i> Voltar para <%= pet.nome %>
-  </a>
-
-  <div class="text-center mb-6">
-    <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-[#ec5a1c]/10 mb-4">
-      <i class="fa-solid fa-microchip text-3xl text-[#ec5a1c]"></i>
+  <div class="text-center mb-6 mt-6">
+    <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary-500/10 mb-4">
+      <i class="fa-solid fa-microchip text-3xl text-primary-500"></i>
     </div>
     <h1 class="text-2xl font-bold text-gray-900">Vincular Tag NFC</h1>
     <p class="text-gray-500 text-sm mt-2">
@@ -24,7 +21,7 @@
     <!-- Tabs: Aproximar / Digitar -->
     <div class="flex rounded-xl bg-gray-100 p-1 mb-6">
       <button type="button" id="tabNfc" onclick="trocarTab('nfc')"
-              class="flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all bg-white text-[#ec5a1c] shadow-sm">
+              class="flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all bg-white text-primary-500 shadow-sm">
         <i class="fa-solid fa-wifi mr-1.5"></i>Aproximar
       </button>
       <button type="button" id="tabDigitar" onclick="trocarTab('digitar')"
@@ -37,9 +34,9 @@
     <div id="painelNfc" class="card text-center">
       <div id="nfcDisponivel">
         <div class="relative inline-block mb-4">
-          <div id="nfcPulse" class="w-28 h-28 mx-auto rounded-full bg-[#ec5a1c]/5 flex items-center justify-center animate-pulse">
-            <div class="w-20 h-20 rounded-full bg-[#ec5a1c]/10 flex items-center justify-center">
-              <i class="fa-solid fa-wifi text-3xl text-[#ec5a1c] rotate-45"></i>
+          <div id="nfcPulse" class="w-28 h-28 mx-auto rounded-full bg-primary-500/5 flex items-center justify-center animate-pulse">
+            <div class="w-20 h-20 rounded-full bg-primary-500/10 flex items-center justify-center">
+              <i class="fa-solid fa-wifi text-3xl text-primary-500 rotate-45"></i>
             </div>
           </div>
         </div>
@@ -48,7 +45,7 @@
           Encoste a tag NFC na parte de tras do celular
         </p>
         <button type="button" id="btnIniciarNfc" onclick="iniciarLeituraNfc()"
-                class="w-full px-6 py-4 rounded-2xl text-lg font-bold text-white bg-[#ec5a1c] hover:bg-[#d4500f] active:bg-[#c0470d] shadow-lg transition-all active:scale-[0.98]">
+                class="btn-primary text-lg">
           <i class="fa-solid fa-satellite-dish mr-2"></i>Iniciar leitura NFC
         </button>
         <p class="text-xs text-gray-400 mt-3">
@@ -67,7 +64,7 @@
           Use a aba <strong>"Digitar"</strong> para informar o codigo manualmente.
         </p>
         <button type="button" onclick="trocarTab('digitar')"
-                class="px-6 py-3 rounded-xl text-sm font-semibold text-[#ec5a1c] border-2 border-[#ec5a1c] hover:bg-[#ec5a1c] hover:text-white transition-colors">
+                class="btn-outline inline-flex w-auto px-6 py-3">
           <i class="fa-solid fa-keyboard mr-1.5"></i>Digitar codigo
         </button>
       </div>
@@ -82,11 +79,11 @@
       <div class="mb-4">
         <input type="text" id="inputTagCode" placeholder="PET-XXXXXX"
                class="w-full px-4 py-3 rounded-xl border border-gray-300 text-center text-lg font-mono font-bold tracking-[0.2em] uppercase
-                      focus:ring-2 focus:ring-[#ec5a1c]/30 focus:border-[#ec5a1c] transition-colors placeholder:text-gray-300"
+                      focus:ring-2 focus:ring-primary-500/30 focus:border-primary-500 transition-colors placeholder:text-gray-300"
                autocomplete="off" maxlength="10">
       </div>
       <button type="button" id="btnConfirmarCodigo" onclick="confirmarTagCode()"
-              class="w-full px-6 py-4 rounded-2xl text-lg font-bold text-white bg-[#ec5a1c] hover:bg-[#d4500f] active:bg-[#c0470d] shadow-lg transition-all active:scale-[0.98]">
+              class="btn-primary text-lg">
         <i class="fa-solid fa-arrow-right mr-2"></i>Continuar
       </button>
     </div>
@@ -106,7 +103,7 @@
       </div>
 
       <div class="bg-gray-50 rounded-xl p-4 flex items-center gap-3 mb-5">
-        <span class="w-10 h-10 rounded-lg bg-[#ec5a1c]/10 text-[#ec5a1c] flex items-center justify-center flex-shrink-0">
+        <span class="w-10 h-10 rounded-lg bg-primary-500/10 text-primary-500 flex items-center justify-center flex-shrink-0">
           <i class="fa-solid fa-microchip"></i>
         </span>
         <div>
@@ -136,7 +133,7 @@
           <input type="text" id="codigo_ativacao" name="codigo_ativacao" required
                  placeholder="XXXX-XXXX"
                  class="w-full px-4 py-3 rounded-xl border border-gray-300 text-center text-lg font-mono font-bold tracking-[0.3em] uppercase
-                        focus:ring-2 focus:ring-[#ec5a1c]/30 focus:border-[#ec5a1c] transition-colors placeholder:text-gray-300"
+                        focus:ring-2 focus:ring-primary-500/30 focus:border-primary-500 transition-colors placeholder:text-gray-300"
                  autocomplete="off" maxlength="9">
           <p class="text-xs text-gray-400 mt-1.5">
             <i class="fa-solid fa-circle-info mr-1"></i>
@@ -145,7 +142,7 @@
         </div>
 
         <button type="submit" id="btnAtivar"
-                class="w-full px-6 py-4 rounded-2xl text-lg font-bold text-white bg-[#ec5a1c] hover:bg-[#d4500f] active:bg-[#c0470d] shadow-lg transition-all active:scale-[0.98]">
+                class="btn-primary text-lg">
           <i class="fa-solid fa-link mr-2"></i>Vincular Tag a <%= pet.nome %>
         </button>
       </form>
@@ -162,8 +159,8 @@
   <!-- ========== ETAPA: Lendo NFC (overlay) ========== -->
   <div id="overlayNfc" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
     <div class="bg-white rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl">
-      <div class="w-24 h-24 mx-auto rounded-full bg-[#ec5a1c]/10 flex items-center justify-center mb-4 animate-pulse">
-        <i class="fa-solid fa-wifi text-4xl text-[#ec5a1c] rotate-45"></i>
+      <div class="w-24 h-24 mx-auto rounded-full bg-primary-500/10 flex items-center justify-center mb-4 animate-pulse">
+        <i class="fa-solid fa-wifi text-4xl text-primary-500 rotate-45"></i>
       </div>
       <h2 class="text-xl font-bold text-gray-900 mb-2">Aguardando tag...</h2>
       <p class="text-sm text-gray-500 mb-6">Encoste a tag NFC na parte de tras do celular</p>
@@ -196,12 +193,12 @@
     var painelDigitar = document.getElementById('painelDigitar');
 
     if (tab === 'nfc') {
-      tabNfc.className = 'flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all bg-white text-[#ec5a1c] shadow-sm';
+      tabNfc.className = 'flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all bg-white text-primary-500 shadow-sm';
       tabDigitar.className = 'flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all text-gray-500';
       painelNfc.classList.remove('hidden');
       painelDigitar.classList.add('hidden');
     } else {
-      tabDigitar.className = 'flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all bg-white text-[#ec5a1c] shadow-sm';
+      tabDigitar.className = 'flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all bg-white text-primary-500 shadow-sm';
       tabNfc.className = 'flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all text-gray-500';
       painelDigitar.classList.remove('hidden');
       painelNfc.classList.add('hidden');

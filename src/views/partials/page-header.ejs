@@ -1,0 +1,17 @@
+<% var backHref = typeof backHref !== 'undefined' ? backHref : 'javascript:history.back()'; %>
+<% var backLabel = typeof backLabel !== 'undefined' ? backLabel : 'Voltar'; %>
+<% var title = typeof title !== 'undefined' ? title : ''; %>
+<% var sticky = typeof sticky !== 'undefined' ? sticky : true; %>
+<header class="bg-white border-b border-gray-100 safe-top z-40 <%= sticky ? 'sticky top-0' : '' %>">
+  <div class="max-w-5xl mx-auto px-4 sm:px-6">
+    <div class="flex items-center h-14 gap-3">
+      <a href="<%= backHref %>" class="btn-ghost shrink-0 -ml-2">
+        <i class="fa-solid fa-arrow-left text-xs"></i>
+        <span class="text-sm"><%= backLabel %></span>
+      </a>
+      <% if (title) { %>
+        <h1 class="text-lg font-bold text-gray-900 truncate flex-1 min-w-0"><%= title %></h1>
+      <% } %>
+    </div>
+  </div>
+</header>

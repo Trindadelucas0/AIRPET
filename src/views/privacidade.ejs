@@ -3,8 +3,9 @@
 
 <main class="flex-1">
   <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <%- include('partials/page-header', { backHref: '/', backLabel: 'Voltar à página inicial', sticky: false }) %>
 
-    <div class="text-center mb-10">
+    <div class="text-center mb-10 mt-6">
       <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-primary-50 text-primary-500 mb-4">
         <i class="fa-solid fa-shield-halved text-2xl"></i>
       </div>
@@ -23,7 +24,7 @@
 
       <section>
         <h2 class="text-lg font-semibold text-gray-900 flex items-center gap-2 mb-3">
-          <i class="fa-solid fa-database text-[#ec5a1c]"></i> 1. Dados Coletados
+          <i class="fa-solid fa-database text-primary-500"></i> 1. Dados Coletados
         </h2>
         <p class="text-sm text-gray-600 leading-relaxed mb-2">
           Coletamos os seguintes dados para a prestação do serviço:
@@ -39,7 +40,7 @@
 
       <section>
         <h2 class="text-lg font-semibold text-gray-900 flex items-center gap-2 mb-3">
-          <i class="fa-solid fa-gears text-[#ec5a1c]"></i> 2. Como Usamos Seus Dados
+          <i class="fa-solid fa-gears text-primary-500"></i> 2. Como Usamos Seus Dados
         </h2>
         <p class="text-sm text-gray-600 leading-relaxed mb-2">
           Utilizamos os dados coletados para:
@@ -57,7 +58,7 @@
 
       <section>
         <h2 class="text-lg font-semibold text-gray-900 flex items-center gap-2 mb-3">
-          <i class="fa-solid fa-location-dot text-[#ec5a1c]"></i> 3. Dados de Localização
+          <i class="fa-solid fa-location-dot text-primary-500"></i> 3. Dados de Localização
         </h2>
         <p class="text-sm text-gray-600 leading-relaxed">
           A coleta de dados de localização ocorre apenas quando você autoriza expressamente
@@ -70,7 +71,7 @@
 
       <section>
         <h2 class="text-lg font-semibold text-gray-900 flex items-center gap-2 mb-3">
-          <i class="fa-solid fa-share-nodes text-[#ec5a1c]"></i> 4. Compartilhamento de Dados
+          <i class="fa-solid fa-share-nodes text-primary-500"></i> 4. Compartilhamento de Dados
         </h2>
         <p class="text-sm text-gray-600 leading-relaxed mb-2">
           O AIRPET <strong>não vende</strong> seus dados pessoais. O compartilhamento ocorre apenas nas seguintes situações:
@@ -86,7 +87,7 @@
 
       <section>
         <h2 class="text-lg font-semibold text-gray-900 flex items-center gap-2 mb-3">
-          <i class="fa-solid fa-lock text-[#ec5a1c]"></i> 5. Segurança
+          <i class="fa-solid fa-lock text-primary-500"></i> 5. Segurança
         </h2>
         <p class="text-sm text-gray-600 leading-relaxed">
           Adotamos medidas técnicas e organizacionais para proteger seus dados pessoais contra
@@ -99,7 +100,7 @@
 
       <section>
         <h2 class="text-lg font-semibold text-gray-900 flex items-center gap-2 mb-3">
-          <i class="fa-solid fa-scale-balanced text-[#ec5a1c]"></i> 6. Seus Direitos (LGPD)
+          <i class="fa-solid fa-scale-balanced text-primary-500"></i> 6. Seus Direitos (LGPD)
         </h2>
         <p class="text-sm text-gray-600 leading-relaxed mb-2">
           De acordo com a Lei Geral de Proteção de Dados (LGPD), você tem os seguintes direitos:
@@ -114,13 +115,13 @@
         </ul>
         <p class="text-sm text-gray-600 leading-relaxed mt-2">
           Para exercer qualquer desses direitos, entre em contato pelo e-mail
-          <a href="mailto:privacidade@airpet.com.br" class="text-[#ec5a1c] hover:underline font-medium">privacidade@airpet.com.br</a>.
+          <a href="mailto:privacidade@airpet.com.br" class="text-primary-500 hover:underline font-medium">privacidade@airpet.com.br</a>.
         </p>
       </section>
 
       <section>
         <h2 class="text-lg font-semibold text-gray-900 flex items-center gap-2 mb-3">
-          <i class="fa-solid fa-cookie-bite text-[#ec5a1c]"></i> 7. Cookies e Cache
+          <i class="fa-solid fa-cookie-bite text-primary-500"></i> 7. Cookies e Cache
         </h2>
         <p class="text-sm text-gray-600 leading-relaxed">
           O AIRPET utiliza cookies de sessão para manter seu login ativo e garantir o funcionamento
@@ -132,7 +133,7 @@
 
       <section>
         <h2 class="text-lg font-semibold text-gray-900 flex items-center gap-2 mb-3">
-          <i class="fa-solid fa-clock-rotate-left text-[#ec5a1c]"></i> 8. Retenção de Dados
+          <i class="fa-solid fa-clock-rotate-left text-primary-500"></i> 8. Retenção de Dados
         </h2>
         <p class="text-sm text-gray-600 leading-relaxed">
           Seus dados pessoais são armazenados pelo tempo necessário para a prestação do serviço
@@ -144,7 +145,7 @@
 
       <section>
         <h2 class="text-lg font-semibold text-gray-900 flex items-center gap-2 mb-3">
-          <i class="fa-solid fa-pen-to-square text-[#ec5a1c]"></i> 9. Alterações nesta Política
+          <i class="fa-solid fa-pen-to-square text-primary-500"></i> 9. Alterações nesta Política
         </h2>
         <p class="text-sm text-gray-600 leading-relaxed">
           O AIRPET pode atualizar esta Política de Privacidade periodicamente. Notificaremos os
@@ -156,19 +157,19 @@
 
       <section>
         <h2 class="text-lg font-semibold text-gray-900 flex items-center gap-2 mb-3">
-          <i class="fa-solid fa-envelope text-[#ec5a1c]"></i> 10. Contato
+          <i class="fa-solid fa-envelope text-primary-500"></i> 10. Contato
         </h2>
         <p class="text-sm text-gray-600 leading-relaxed">
           Para dúvidas, solicitações ou reclamações relacionadas à privacidade e proteção de dados,
           entre em contato com nosso Encarregado de Proteção de Dados (DPO) pelo e-mail
-          <a href="mailto:privacidade@airpet.com.br" class="text-[#ec5a1c] hover:underline font-medium">privacidade@airpet.com.br</a>.
+          <a href="mailto:privacidade@airpet.com.br" class="text-primary-500 hover:underline font-medium">privacidade@airpet.com.br</a>.
         </p>
       </section>
 
     </div>
 
     <div class="text-center mt-8">
-      <a href="/" class="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-[#ec5a1c] transition-colors">
+      <a href="/" class="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-primary-500 transition-colors">
         <i class="fa-solid fa-arrow-left"></i> Voltar à página inicial
       </a>
     </div>

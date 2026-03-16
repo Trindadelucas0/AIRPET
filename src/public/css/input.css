@@ -18,6 +18,12 @@
   .btn-success {
     @apply bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold py-3 px-6 rounded-2xl transition-all duration-300 text-center block w-full shadow-lg shadow-green-500/20;
   }
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 text-gray-600 hover:text-primary-500 hover:bg-gray-100 font-medium py-2.5 px-4 rounded-xl transition-all duration-200;
+  }
+  .btn-primary-inline {
+    @apply inline-flex items-center justify-center gap-2 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white font-semibold py-2.5 px-5 rounded-2xl transition-all duration-300 shadow-lg shadow-primary-500/20 hover:shadow-xl hover:shadow-primary-500/30 hover:-translate-y-0.5 active:translate-y-0;
+  }
   .input-field {
     @apply w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 focus:bg-white outline-none transition-all duration-300 placeholder:text-gray-400;
   }

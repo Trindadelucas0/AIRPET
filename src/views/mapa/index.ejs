@@ -6,7 +6,7 @@
 <style>
   #mapaFull { position: absolute; inset: 0; z-index: 0; }
   .mapa-wrapper { position: relative; flex: 1; display: flex; flex-direction: column; }
-  .layer-btn.active { background-color: #ec5a1c; color: white; border-color: #ec5a1c; }
+  .layer-btn.active { background-color: var(--color-primary); color: white; border-color: var(--color-primary); }
   .painel-localizar { max-height: 20rem; transition: max-height 0.25s ease-out, opacity 0.2s; }
   .painel-localizar.collapsed { max-height: 0; overflow: hidden; opacity: 0; pointer-events: none; }
   @media (min-width: 768px) { .painel-localizar.collapsed { max-height: 20rem; overflow: visible; opacity: 1; pointer-events: auto; } }
@@ -47,22 +47,22 @@
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 items-end">
         <div>
           <label for="mapaEstado" class="block text-xs font-medium text-gray-600 mb-0.5">Estado</label>
-          <select id="mapaEstado" class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-[#ec5a1c] focus:ring-1 focus:ring-[#ec5a1c]">
+          <select id="mapaEstado" class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500">
             <option value="">Selecione o estado</option>
           </select>
         </div>
         <div>
           <label for="mapaCidade" class="block text-xs font-medium text-gray-600 mb-0.5">Cidade</label>
-          <select id="mapaCidade" class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-[#ec5a1c] focus:ring-1 focus:ring-[#ec5a1c] disabled:bg-gray-100" disabled>
+          <select id="mapaCidade" class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 disabled:bg-gray-100" disabled>
             <option value="">Selecione a cidade</option>
           </select>
         </div>
         <div>
           <label for="mapaBairro" class="block text-xs font-medium text-gray-600 mb-0.5">Bairro (opcional)</label>
-          <input type="text" id="mapaBairro" placeholder="Ex.: Centro" class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-[#ec5a1c] focus:ring-1 focus:ring-[#ec5a1c]">
+          <input type="text" id="mapaBairro" placeholder="Ex.: Centro" class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500">
         </div>
         <div class="flex gap-2">
-          <button type="button" id="btnMostrarNoMapa" class="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-sm font-semibold text-white bg-[#ec5a1c] hover:bg-[#d4500f] disabled:opacity-50 disabled:cursor-not-allowed transition-all" disabled>
+          <button type="button" id="btnMostrarNoMapa" class="flex-1 btn-primary-inline disabled:opacity-50 disabled:cursor-not-allowed" disabled>
             <i class="fa-solid fa-map-pin"></i> <span id="btnMostrarNoMapaText">Mostrar no mapa</span>
           </button>
         </div>
@@ -74,7 +74,7 @@
   <div id="mapaFull"></div>
 
   <button type="button" id="btnMinhaLocalizacao"
-          class="absolute bottom-6 right-4 z-[1000] w-12 h-12 bg-white rounded-full shadow-lg flex items-center justify-center text-[#ec5a1c] hover:bg-gray-50 active:scale-95 transition-all">
+          class="absolute bottom-6 right-4 z-[1000] w-12 h-12 bg-white rounded-full shadow-lg flex items-center justify-center text-primary-500 hover:bg-gray-50 active:scale-95 transition-all">
     <i class="fa-solid fa-location-crosshairs text-lg"></i>
   </button>
 

@@ -3,8 +3,9 @@
 
 <main class="flex-1">
   <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <%- include('partials/page-header', { backHref: '/', backLabel: 'Voltar à página inicial', sticky: false }) %>
 
-    <div class="text-center mb-10">
+    <div class="text-center mb-10 mt-6">
       <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-primary-50 text-primary-500 mb-4">
         <i class="fa-solid fa-file-contract text-2xl"></i>
       </div>
@@ -16,7 +17,7 @@
 
       <section>
         <h2 class="text-lg font-semibold text-gray-900 flex items-center gap-2 mb-3">
-          <i class="fa-solid fa-check-circle text-[#ec5a1c]"></i> 1. Aceitação dos Termos
+          <i class="fa-solid fa-check-circle text-primary-500"></i> 1. Aceitação dos Termos
         </h2>
         <p class="text-sm text-gray-600 leading-relaxed">
           Ao acessar ou utilizar a plataforma AIRPET, você declara que leu, compreendeu e concorda
@@ -28,7 +29,7 @@
 
       <section>
         <h2 class="text-lg font-semibold text-gray-900 flex items-center gap-2 mb-3">
-          <i class="fa-solid fa-paw text-[#ec5a1c]"></i> 2. Descrição do Serviço
+          <i class="fa-solid fa-paw text-primary-500"></i> 2. Descrição do Serviço
         </h2>
         <p class="text-sm text-gray-600 leading-relaxed">
           O AIRPET é uma plataforma de identificação e proteção de pets por meio de tags NFC. Nosso serviço
@@ -40,7 +41,7 @@
 
       <section>
         <h2 class="text-lg font-semibold text-gray-900 flex items-center gap-2 mb-3">
-          <i class="fa-solid fa-user-shield text-[#ec5a1c]"></i> 3. Cadastro e Conta
+          <i class="fa-solid fa-user-shield text-primary-500"></i> 3. Cadastro e Conta
         </h2>
         <p class="text-sm text-gray-600 leading-relaxed mb-2">
           Para utilizar os recursos da plataforma, é necessário criar uma conta fornecendo informações
@@ -56,7 +57,7 @@
 
       <section>
         <h2 class="text-lg font-semibold text-gray-900 flex items-center gap-2 mb-3">
-          <i class="fa-solid fa-nfc-symbol text-[#ec5a1c]"></i> 4. Tags NFC
+          <i class="fa-solid fa-nfc-symbol text-primary-500"></i> 4. Tags NFC
         </h2>
         <p class="text-sm text-gray-600 leading-relaxed mb-2">
           As tags NFC fornecidas pelo AIRPET são de uso pessoal e intransferível, vinculadas a um único pet.
@@ -72,7 +73,7 @@
 
       <section>
         <h2 class="text-lg font-semibold text-gray-900 flex items-center gap-2 mb-3">
-          <i class="fa-solid fa-list-check text-[#ec5a1c]"></i> 5. Responsabilidades do Usuário
+          <i class="fa-solid fa-list-check text-primary-500"></i> 5. Responsabilidades do Usuário
         </h2>
         <p class="text-sm text-gray-600 leading-relaxed mb-2">
           O usuário compromete-se a:
@@ -88,7 +89,7 @@
 
       <section>
         <h2 class="text-lg font-semibold text-gray-900 flex items-center gap-2 mb-3">
-          <i class="fa-solid fa-store text-[#ec5a1c]"></i> 6. Petshops Parceiros
+          <i class="fa-solid fa-store text-primary-500"></i> 6. Petshops Parceiros
         </h2>
         <p class="text-sm text-gray-600 leading-relaxed">
           O AIRPET disponibiliza uma rede de petshops parceiros que podem ser encontrados no mapa da plataforma.
@@ -100,11 +101,11 @@
 
       <section>
         <h2 class="text-lg font-semibold text-gray-900 flex items-center gap-2 mb-3">
-          <i class="fa-solid fa-lock text-[#ec5a1c]"></i> 7. Privacidade
+          <i class="fa-solid fa-lock text-primary-500"></i> 7. Privacidade
         </h2>
         <p class="text-sm text-gray-600 leading-relaxed">
           A coleta e o tratamento de dados pessoais estão descritos em nossa
-          <a href="/privacidade" class="text-[#ec5a1c] hover:underline font-medium">Política de Privacidade</a>,
+          <a href="/privacidade" class="text-primary-500 hover:underline font-medium">Política de Privacidade</a>,
           que é parte integrante destes Termos de Uso. Ao utilizar a plataforma, você também
           concorda com as práticas descritas na Política de Privacidade.
         </p>
@@ -112,7 +113,7 @@
 
       <section>
         <h2 class="text-lg font-semibold text-gray-900 flex items-center gap-2 mb-3">
-          <i class="fa-solid fa-copyright text-[#ec5a1c]"></i> 8. Propriedade Intelectual
+          <i class="fa-solid fa-copyright text-primary-500"></i> 8. Propriedade Intelectual
         </h2>
         <p class="text-sm text-gray-600 leading-relaxed">
           Todo o conteúdo da plataforma AIRPET, incluindo mas não se limitando a textos, imagens, logotipos,
@@ -124,7 +125,7 @@
 
       <section>
         <h2 class="text-lg font-semibold text-gray-900 flex items-center gap-2 mb-3">
-          <i class="fa-solid fa-triangle-exclamation text-[#ec5a1c]"></i> 9. Limitação de Responsabilidade
+          <i class="fa-solid fa-triangle-exclamation text-primary-500"></i> 9. Limitação de Responsabilidade
         </h2>
         <p class="text-sm text-gray-600 leading-relaxed">
           O AIRPET se esforça para manter a plataforma disponível e funcional, porém não garante que o
@@ -137,7 +138,7 @@
 
       <section>
         <h2 class="text-lg font-semibold text-gray-900 flex items-center gap-2 mb-3">
-          <i class="fa-solid fa-pen-to-square text-[#ec5a1c]"></i> 10. Alterações nos Termos
+          <i class="fa-solid fa-pen-to-square text-primary-500"></i> 10. Alterações nos Termos
         </h2>
         <p class="text-sm text-gray-600 leading-relaxed">
           O AIRPET reserva-se o direito de modificar estes Termos de Uso a qualquer momento. As alterações
@@ -149,19 +150,19 @@
 
       <section>
         <h2 class="text-lg font-semibold text-gray-900 flex items-center gap-2 mb-3">
-          <i class="fa-solid fa-envelope text-[#ec5a1c]"></i> 11. Contato
+          <i class="fa-solid fa-envelope text-primary-500"></i> 11. Contato
         </h2>
         <p class="text-sm text-gray-600 leading-relaxed">
           Em caso de dúvidas, sugestões ou reclamações sobre estes Termos de Uso, entre em contato
           conosco através do e-mail
-          <a href="mailto:contato@airpet.com.br" class="text-[#ec5a1c] hover:underline font-medium">contato@airpet.com.br</a>.
+          <a href="mailto:contato@airpet.com.br" class="text-primary-500 hover:underline font-medium">contato@airpet.com.br</a>.
         </p>
       </section>
 
     </div>
 
     <div class="text-center mt-8">
-      <a href="/" class="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-[#ec5a1c] transition-colors">
+      <a href="/" class="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-primary-500 transition-colors">
         <i class="fa-solid fa-arrow-left"></i> Voltar à página inicial
       </a>
     </div>

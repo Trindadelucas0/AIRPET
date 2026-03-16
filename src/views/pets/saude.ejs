@@ -3,12 +3,9 @@
 <%- include('../partials/flash') %>
 
 <main class="flex-1 container mx-auto px-4 py-6 max-w-3xl">
+  <%- include('../partials/page-header', { backHref: '/pets/' + pet.id, backLabel: 'Perfil de ' + pet.nome, sticky: false }) %>
 
-  <a href="/pets/<%= pet.id %>" class="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-primary-500 transition-colors mb-4">
-    <i class="fa-solid fa-arrow-left text-xs"></i> Perfil de <%= pet.nome %>
-  </a>
-
-  <div class="flex items-center justify-between mb-6">
+  <div class="flex items-center justify-between mb-6 mt-6">
     <div>
       <h1 class="text-2xl font-bold text-gray-900">Carteira de Saúde</h1>
       <p class="text-sm text-gray-500 mt-0.5"><%= pet.nome %></p>

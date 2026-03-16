@@ -27,16 +27,12 @@
 %>
 
 <main class="flex-1 container mx-auto px-4 py-6 max-w-3xl">
+  <%- include('../partials/page-header', { backHref: '/pets/' + pet.id, backLabel: 'Voltar ao perfil', sticky: false }) %>
 
-  <!-- Header -->
-  <a href="/pets/<%= pet.id %>" class="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-[#ec5a1c] transition-colors mb-4">
-    <i class="fa-solid fa-arrow-left text-xs"></i> Voltar ao perfil
-  </a>
-
-  <div class="flex items-end justify-between mb-6">
+  <div class="flex items-end justify-between mb-6 mt-6">
     <div>
       <h1 class="text-2xl sm:text-3xl font-bold text-gray-900">
-        <i class="fa-solid fa-book text-[#ec5a1c] mr-2"></i>Diário de <%= pet.nome %>
+        <i class="fa-solid fa-book text-primary-500 mr-2"></i>Diário de <%= pet.nome %>
       </h1>
       <p class="text-sm text-gray-500 mt-1"><%= dataFormatada %></p>
     </div>
@@ -45,14 +41,14 @@
   <!-- Quick Actions -->
   <section class="mb-8">
     <h2 class="text-lg font-bold text-gray-900 mb-3">
-      <i class="fa-solid fa-bolt text-[#ec5a1c] mr-2"></i>Registrar atividade
+      <i class="fa-solid fa-bolt text-primary-500 mr-2"></i>Registrar atividade
     </h2>
 
     <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
 
       <form method="POST" action="/diario/<%= pet.id %>">
         <input type="hidden" name="tipo" value="alimentacao">
-        <button type="submit" class="card w-full text-center !p-5 hover:shadow-md hover:border-[#ec5a1c]/30 transition-all cursor-pointer group">
+        <button type="submit" class="card w-full text-center !p-5 hover:shadow-md hover:border-primary-500/30 transition-all cursor-pointer group">
           <span class="text-3xl block mb-2 group-hover:scale-110 transition-transform">🍽️</span>
           <span class="text-sm font-semibold text-gray-700">Comeu</span>
         </button>
@@ -60,7 +56,7 @@
 
       <form method="POST" action="/diario/<%= pet.id %>">
         <input type="hidden" name="tipo" value="passeio">
-        <button type="submit" class="card w-full text-center !p-5 hover:shadow-md hover:border-[#ec5a1c]/30 transition-all cursor-pointer group">
+        <button type="submit" class="card w-full text-center !p-5 hover:shadow-md hover:border-primary-500/30 transition-all cursor-pointer group">
           <span class="text-3xl block mb-2 group-hover:scale-110 transition-transform">🚶</span>
           <span class="text-sm font-semibold text-gray-700">Passeou</span>
         </button>
@@ -68,7 +64,7 @@
 
       <form method="POST" action="/diario/<%= pet.id %>">
         <input type="hidden" name="tipo" value="remedio">
-        <button type="submit" class="card w-full text-center !p-5 hover:shadow-md hover:border-[#ec5a1c]/30 transition-all cursor-pointer group">
+        <button type="submit" class="card w-full text-center !p-5 hover:shadow-md hover:border-primary-500/30 transition-all cursor-pointer group">
           <span class="text-3xl block mb-2 group-hover:scale-110 transition-transform">💊</span>
           <span class="text-sm font-semibold text-gray-700">Remédio</span>
         </button>
@@ -76,7 +72,7 @@
 
       <form method="POST" action="/diario/<%= pet.id %>">
         <input type="hidden" name="tipo" value="necessidades">
-        <button type="submit" class="card w-full text-center !p-5 hover:shadow-md hover:border-[#ec5a1c]/30 transition-all cursor-pointer group">
+        <button type="submit" class="card w-full text-center !p-5 hover:shadow-md hover:border-primary-500/30 transition-all cursor-pointer group">
           <span class="text-3xl block mb-2 group-hover:scale-110 transition-transform">💩</span>
           <span class="text-sm font-semibold text-gray-700">Necessidades</span>
         </button>
@@ -87,7 +83,7 @@
         <input type="file" name="foto" accept="image/*" class="hidden" id="inputFotoDiario"
                onchange="document.getElementById('formFoto').submit()">
         <button type="button" onclick="document.getElementById('inputFotoDiario').click()"
-                class="card w-full text-center !p-5 hover:shadow-md hover:border-[#ec5a1c]/30 transition-all cursor-pointer group">
+                class="card w-full text-center !p-5 hover:shadow-md hover:border-primary-500/30 transition-all cursor-pointer group">
           <span class="text-3xl block mb-2 group-hover:scale-110 transition-transform">📸</span>
           <span class="text-sm font-semibold text-gray-700">Foto do dia</span>
         </button>
@@ -95,7 +91,7 @@
 
       <form method="POST" action="/diario/<%= pet.id %>" id="formPeso" class="relative">
         <input type="hidden" name="tipo" value="peso">
-        <div class="card w-full text-center !p-5 hover:shadow-md hover:border-[#ec5a1c]/30 transition-all cursor-pointer group"
+        <div class="card w-full text-center !p-5 hover:shadow-md hover:border-primary-500/30 transition-all cursor-pointer group"
              onclick="this.querySelector('.peso-input').classList.toggle('hidden')">
           <span class="text-3xl block mb-2 group-hover:scale-110 transition-transform">⚖️</span>
           <span class="text-sm font-semibold text-gray-700">Peso</span>
@@ -117,7 +113,7 @@
   <!-- Today's Log -->
   <section class="mb-8">
     <h2 class="text-lg font-bold text-gray-900 mb-3">
-      <i class="fa-solid fa-clock text-[#ec5a1c] mr-2"></i>Hoje
+      <i class="fa-solid fa-clock text-primary-500 mr-2"></i>Hoje
     </h2>
 
     <% if (typeof entradasHoje !== 'undefined' && entradasHoje.length > 0) { %>
@@ -132,7 +128,7 @@
                   <p class="text-xs text-gray-500 mt-0.5 truncate"><%= entry.descricao %></p>
                 <% } %>
                 <% if (entry.valor_numerico != null) { %>
-                  <p class="text-xs text-[#ec5a1c] font-medium mt-0.5"><%= entry.valor_numerico %> kg</p>
+                  <p class="text-xs text-primary-500 font-medium mt-0.5"><%= entry.valor_numerico %> kg</p>
                 <% } %>
               </div>
               <span class="text-xs text-gray-400 flex-shrink-0">
@@ -154,7 +150,7 @@
   <!-- Recent History (last 7 days) -->
   <section class="mb-8">
     <h2 class="text-lg font-bold text-gray-900 mb-3">
-      <i class="fa-solid fa-calendar-days text-[#ec5a1c] mr-2"></i>Últimos 7 dias
+      <i class="fa-solid fa-calendar-days text-primary-500 mr-2"></i>Últimos 7 dias
     </h2>
 
     <% if (typeof historico !== 'undefined' && historico.length > 0) { %>
@@ -184,7 +180,7 @@
                       <p class="text-xs text-gray-400 truncate"><%= entry.descricao %></p>
                     <% } %>
                     <% if (entry.valor_numerico != null) { %>
-                      <p class="text-xs text-[#ec5a1c] font-medium"><%= entry.valor_numerico %> kg</p>
+                      <p class="text-xs text-primary-500 font-medium"><%= entry.valor_numerico %> kg</p>
                     <% } %>
                   </div>
                   <span class="text-xs text-gray-400 flex-shrink-0">

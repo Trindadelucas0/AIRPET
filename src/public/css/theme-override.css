@@ -6,14 +6,20 @@
 
 /* Botão principal (formulários, CTAs) */
 .btn-primary,
+.btn-primary-inline,
 button.btn-primary,
-a.btn-primary {
+a.btn-primary,
+button.btn-primary-inline,
+a.btn-primary-inline {
   background: var(--color-primary) !important;
   background-image: linear-gradient(to right, var(--color-primary), var(--color-primary)) !important;
 }
 .btn-primary:hover,
+.btn-primary-inline:hover,
 button.btn-primary:hover,
-a.btn-primary:hover {
+a.btn-primary:hover,
+button.btn-primary-inline:hover,
+a.btn-primary-inline:hover {
   filter: brightness(0.92);
 }
 

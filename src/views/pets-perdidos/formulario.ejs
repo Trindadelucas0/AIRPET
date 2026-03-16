@@ -4,8 +4,8 @@
 <style>
   #mapaPerdido { height: 300px; border-radius: 12px; z-index: 1; }
   .loc-option { transition: all .2s ease; cursor: pointer; }
-  .loc-option.active { border-color: #ec5a1c !important; background: #fff7ed !important; }
-  .loc-option:hover { border-color: #f97316; }
+  .loc-option.active { border-color: var(--color-primary) !important; background: #fff7ed !important; }
+  .loc-option:hover { border-color: var(--color-primary); }
   .search-results { max-height: 200px; overflow-y: auto; }
 </style>
 ` %>
@@ -13,11 +13,9 @@
 <%- include('../partials/flash') %>
 
 <main class="flex-1 container mx-auto px-4 py-6 max-w-lg">
+  <%- include('../partials/page-header', { backHref: '/pets/' + pet.id, backLabel: 'Voltar ao perfil', sticky: false }) %>
 
-  <div class="mb-6">
-    <a href="/pets/<%= pet.id %>" class="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-[#ec5a1c] transition-colors mb-3">
-      <i class="fa-solid fa-arrow-left text-xs"></i> Voltar ao perfil
-    </a>
+  <div class="mb-6 mt-6">
     <h1 class="text-2xl font-bold text-gray-900">Reportar <%= pet.nome %> como Perdido</h1>
   </div>
 

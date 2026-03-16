@@ -23,13 +23,10 @@
 <%- include('../partials/flash') %>
 
 <main class="flex-1 container mx-auto px-4 py-6 max-w-lg">
-
-  <a href="/pets/<%= pet.id %>" class="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-emerald-600 transition-colors mb-4">
-    <i class="fa-solid fa-arrow-left text-xs"></i> Voltar ao perfil
-  </a>
+  <%- include('../partials/page-header', { backHref: '/pets/' + pet.id, backLabel: 'Voltar ao perfil', sticky: false }) %>
 
   <!-- Header emotivo -->
-  <div class="card mb-6 bg-emerald-50 border border-emerald-200 text-center">
+  <div class="card mb-6 mt-6 bg-emerald-50 border border-emerald-200 text-center">
     <div class="relative inline-block mb-4">
       <% if (pet.foto) { %>
         <img src="<%= pet.foto %>" class="w-24 h-24 rounded-full object-cover ring-4 ring-emerald-400 mx-auto" alt="<%= pet.nome %>">

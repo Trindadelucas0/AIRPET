@@ -86,7 +86,7 @@
   .tab-notif { position:relative; flex:1; text-align:center; padding:12px 0; font-size:14px; font-weight:600; color:#9ca3af; transition:color .2s; cursor:pointer; }
   .tab-notif.active { color:#111827; }
   .tab-notif:hover { color:#6b7280; }
-  .tab-notif-indicator { position:absolute; bottom:0; height:3px; background:linear-gradient(90deg,#ec5a1c,#f17a42); border-radius:3px 3px 0 0; transition:left .3s ease,width .3s ease; }
+  .tab-notif-indicator { position:absolute; bottom:0; height:3px; background: var(--color-primary); border-radius:3px 3px 0 0; transition:left .3s ease,width .3s ease; }
 </style>
 ` %>
 <%- include('../partials/header') %>
@@ -270,8 +270,8 @@
       <p id="modalAlertaRecompensa" class="text-sm font-semibold text-amber-600 mb-4 hidden"></p>
       <p id="modalAlertaDescricao" class="text-xs text-gray-500 mb-4 hidden"></p>
       <div class="flex gap-3">
-        <button type="button" id="modalAlertaFechar" class="flex-1 py-3 rounded-xl font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors">Fechar</button>
-        <a id="modalAlertaVerPerfil" href="#" class="flex-1 py-3 rounded-xl font-bold text-white bg-[#ec5a1c] hover:bg-[#d4500f] text-center transition-colors">Ver perfil</a>
+        <button type="button" id="modalAlertaFechar" class="btn-ghost flex-1">Fechar</button>
+        <a id="modalAlertaVerPerfil" href="#" class="btn-primary flex-1 text-center">Ver perfil</a>
       </div>
     </div>
   </div>
@@ -284,8 +284,8 @@
       <h2 class="text-lg font-bold text-gray-900 mb-2">Notificação</h2>
       <p id="modalNotifMensagem" class="text-sm text-gray-600 mb-4"></p>
       <div class="flex gap-3">
-        <button type="button" id="modalNotifFechar" class="flex-1 py-3 rounded-xl font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors">Fechar</button>
-        <a id="modalNotifVer" href="#" class="flex-1 py-3 rounded-xl font-bold text-white bg-[#ec5a1c] hover:bg-[#d4500f] text-center transition-colors">Ver</a>
+        <button type="button" id="modalNotifFechar" class="btn-ghost flex-1">Fechar</button>
+        <a id="modalNotifVer" href="#" class="btn-primary flex-1 text-center">Ver</a>
       </div>
     </div>
   </div>

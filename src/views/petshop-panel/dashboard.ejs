@@ -65,7 +65,7 @@
         <textarea class="input w-full min-h-20" name="descricao_longa" placeholder="Descrição completa"><%= profile?.descricao_longa || '' %></textarea>
         <input class="input w-full" name="instagram_url" placeholder="Instagram URL" value="<%= profile?.instagram_url || '' %>">
         <input class="input w-full" name="facebook_url" placeholder="Facebook URL" value="<%= profile?.facebook_url || '' %>">
-        <button class="btn btn-primary">Salvar perfil</button>
+        <button class="btn-primary-inline">Salvar perfil</button>
       </form>
     </div>
 
@@ -76,7 +76,7 @@
         <input class="input w-full" type="number" name="duracao_minutos" placeholder="Duração (min)" required>
         <input class="input w-full" type="number" step="0.01" name="preco_base" placeholder="Preço base">
         <textarea class="input w-full min-h-20" name="descricao" placeholder="Descrição"></textarea>
-        <button class="btn btn-primary">Salvar serviço</button>
+        <button class="btn-primary-inline">Salvar serviço</button>
       </form>
     </div>
   </section>
@@ -96,7 +96,7 @@
         <input class="input w-full" type="number" step="0.01" name="preco" placeholder="Preço (se aplicável)">
         <input class="input w-full" name="contato_link" placeholder="Link de contato">
         <input class="input w-full" type="file" name="foto" accept="image/*">
-        <button class="btn btn-primary">Publicar</button>
+        <button class="btn-primary-inline">Publicar</button>
       </form>
     </div>
 
@@ -108,7 +108,7 @@
         <input class="input w-full" name="service_id" placeholder="ID do serviço">
         <input class="input w-full" type="datetime-local" name="data_agendada" required>
         <textarea class="input w-full min-h-20" name="observacoes" placeholder="Observações"></textarea>
-        <button class="btn btn-primary">Criar agendamento</button>
+        <button class="btn-primary-inline">Criar agendamento</button>
       </form>
     </div>
   </section>
@@ -128,7 +128,7 @@
               <option value="recusado">Recusar</option>
               <option value="concluido">Concluir</option>
             </select>
-            <button class="btn btn-primary">Atualizar</button>
+            <button class="btn-primary-inline">Atualizar</button>
           </form>
         </div>
       <% }) %>

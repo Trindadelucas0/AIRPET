@@ -7,10 +7,10 @@
   .leaflet-container { z-index: 1; }
   .form-label { display: block; font-size: 11px; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
   .form-input { width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; outline: none; transition: border-color 0.2s, box-shadow 0.2s; }
-  .form-input:focus { border-color: #ec5a1c; box-shadow: 0 0 0 3px rgba(236,90,28,0.15); }
+  .form-input:focus { border-color: var(--color-primary, #ec5a1c); box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary, #ec5a1c) 15%, transparent); }
   .form-input-ro { background: #f9fafb; color: #6b7280; font-family: monospace; font-size: 13px; }
-  .btn-primary { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 10px 16px; background: #ec5a1c; color: #fff; font-weight: 600; font-size: 14px; border-radius: 8px; border: none; cursor: pointer; transition: background 0.2s; width: 100%; }
-  .btn-primary:hover { background: #d4500f; }
+  .btn-primary { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 10px 16px; background: var(--color-primary, #ec5a1c); color: #fff; font-weight: 600; font-size: 14px; border-radius: 8px; border: none; cursor: pointer; transition: background 0.2s; width: 100%; }
+  .btn-primary:hover { filter: brightness(0.92); }
   .btn-ghost { padding: 10px 16px; background: #f3f4f6; color: #6b7280; font-weight: 600; font-size: 14px; border-radius: 8px; border: none; cursor: pointer; transition: background 0.2s; }
   .btn-ghost:hover { background: #e5e7eb; }
   .card-pt { background: #fff; border-radius: 12px; border: 1px solid #e5e7eb; padding: 14px; transition: box-shadow 0.2s; }
@@ -55,7 +55,7 @@
     <div class="lg:col-span-2 bg-white rounded-xl border border-gray-200 overflow-hidden">
       <div id="adminMap"></div>
       <div class="px-3 py-2 bg-gray-50 border-t border-gray-100 flex items-center gap-2 text-xs text-gray-500">
-        <i class="fa-solid fa-hand-pointer text-[#ec5a1c]"></i>
+        <i class="fa-solid fa-hand-pointer text-primary-500"></i>
         <span>Toque/clique no mapa para posicionar o pin</span>
       </div>
     </div>
@@ -88,7 +88,7 @@
         </div>
 
         <div>
-          <label class="form-label">Endereco <span class="text-[#ec5a1c] font-normal normal-case" id="enderecoStatus"></span></label>
+          <label class="form-label">Endereco <span class="text-primary-500 font-normal normal-case" id="enderecoStatus"></span></label>
           <input type="text" name="endereco" id="pontoEndereco" placeholder="Preenchido automaticamente" class="form-input">
         </div>
 
@@ -155,7 +155,7 @@
               <span class="w-2 h-2 rounded-full flex-shrink-0 mt-1.5 <%= pt.ativo !== false ? 'bg-emerald-400' : 'bg-gray-300' %>"></span>
             </div>
             <% if (pt.endereco) { %>
-              <p class="text-[11px] text-gray-500 mb-2 line-clamp-1"><i class="fa-solid fa-location-dot text-[#ec5a1c] mr-1"></i><%= pt.endereco %></p>
+              <p class="text-[11px] text-gray-500 mb-2 line-clamp-1"><i class="fa-solid fa-location-dot text-primary-500 mr-1"></i><%= pt.endereco %></p>
             <% } %>
             <div class="flex gap-1.5 mt-2">
               <button type="button" class="btn-editar flex-1 px-2 py-1.5 text-[11px] font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
@@ -245,7 +245,7 @@
         res.forEach(function (r) {
           var item = document.createElement('div');
           item.className = 'px-3 py-2.5 hover:bg-orange-50 cursor-pointer text-sm text-gray-700 transition-colors';
-          item.innerHTML = '<i class="fa-solid fa-location-dot text-[#ec5a1c] mr-2"></i>' + r.display_name;
+          item.innerHTML = '<i class="fa-solid fa-location-dot text-primary-500 mr-2"></i>' + r.display_name;
           item.onclick = function () {
             var ll = L.latLng(parseFloat(r.lat), parseFloat(r.lon));
             map.setView(ll, 17);

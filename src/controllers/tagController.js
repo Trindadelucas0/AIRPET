@@ -32,6 +32,7 @@
 const NfcTag = require('../models/NfcTag');
 const TagBatch = require('../models/TagBatch');
 const Pet = require('../models/Pet');
+const Usuario = require('../models/Usuario');
 const { gerarTagCode, gerarActivationCode } = require('../utils/helpers');
 const logger = require('../utils/logger');
 
@@ -255,7 +256,13 @@ async function vincularPet(req, res) {
 async function gerarLote(req, res) {
   try {
     const { codigo_lote, quantidade, fabricante, observacoes } = req.body;
-    const adminId = req.session.usuario.id;
+    /* criado_por deve ser um id existente em usuarios(id) para não violar a FK.
+     * Se o admin entrou só pelo login de admin (env) ou o usuário foi removido, usamos null. */
+    let criadoPor = req.session.usuario?.id ?? null;
+    if (criadoPor) {
+      const usuario = await Usuario.buscarPorId(criadoPor);
+      if (!usuario) criadoPor = null;
+    }
 
     /* Valida a quantidade para evitar geração excessiva */
     const qtd = parseInt(quantidade, 10);
@@ -270,7 +277,7 @@ async function gerarLote(req, res) {
       quantidade: qtd,
       fabricante: fabricante || 'AIRPET',
       observacoes: observacoes || null,
-      criado_por: adminId,
+      criado_por: criadoPor,
     });
 
     /* 2. Gera os dados de cada tag do lote */
@@ -288,7 +295,7 @@ async function gerarLote(req, res) {
     /* 3. Insere todas as tags em uma transação atômica */
     await NfcTag.criarLote(tagsParaCriar, lote.id);
 
-    logger.info('TagController', `Lote gerado: ${lote.codigo_lote} com ${qtd} tags (admin: ${adminId})`);
+    logger.info('TagController', `Lote gerado: ${lote.codigo_lote} com ${qtd} tags (criado_por: ${criadoPor ?? 'n/a'})`);
 
     req.session.flash = { tipo: 'sucesso', mensagem: `Lote "${lote.codigo_lote}" gerado com sucesso! ${qtd} tags criadas. Copie os códigos de ativação abaixo.` };
     return res.redirect(`/tags/admin/lote/${lote.id}`);

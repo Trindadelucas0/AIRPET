@@ -3,14 +3,11 @@
 <%- include('../partials/flash') %>
 
 <main class="flex-1 container mx-auto px-4 py-6 max-w-lg">
+  <%- include('../partials/page-header', { backHref: '/pets/' + pet.id, backLabel: 'Voltar ao perfil', title: 'Editar ' + pet.nome, sticky: false }) %>
 
-  <a href="/pets/<%= pet.id %>" class="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-primary-500 transition-colors mb-4">
-    <i class="fa-solid fa-arrow-left text-xs"></i> Voltar ao perfil
-  </a>
+  <div class="mt-6">
 
-  <h1 class="text-2xl font-bold text-gray-900 mb-6">Editar <%= pet.nome %></h1>
-
-  <form action="/pets/<%= pet.id %>/editar" method="POST" enctype="multipart/form-data" class="space-y-6">
+  <form action="/pets/<%= pet.id %>/editar" method="POST" enctype="multipart/form-data" class="space-y-6 mt-6">
 
     <!-- Foto -->
     <div class="card">
@@ -141,6 +138,7 @@
     </div>
 
   </form>
+  </div>
 </main>
 
 <script>

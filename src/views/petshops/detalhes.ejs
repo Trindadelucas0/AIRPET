@@ -10,8 +10,8 @@
       <img src="/images/petshops/<%= petshop.foto_capa %>" alt="<%= petshop.nome %>"
            class="w-full h-56 sm:h-72 object-cover">
     <% } else { %>
-      <div class="w-full h-56 sm:h-72 bg-gradient-to-br from-[#ec5a1c]/20 to-orange-50 flex items-center justify-center">
-        <i class="fa-solid fa-store text-6xl text-[#ec5a1c]/20"></i>
+      <div class="w-full h-56 sm:h-72 bg-gradient-to-br from-primary-500/20 to-orange-50 flex items-center justify-center">
+        <i class="fa-solid fa-store text-6xl text-primary-500/20"></i>
       </div>
     <% } %>
     <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
@@ -48,7 +48,7 @@
 
       <% if (typeof userSegue !== 'undefined') { %>
         <form action="/petshops/<%= petshop.id %>/seguir" method="POST" class="mb-4">
-          <button class="w-full px-4 py-3 rounded-xl font-semibold <%= userSegue ? 'bg-gray-100 text-gray-700' : 'bg-[#ec5a1c] text-white' %>">
+          <button class="w-full px-4 py-3 rounded-xl font-semibold <%= userSegue ? 'bg-gray-100 text-gray-700' : 'bg-primary-500 text-white hover:bg-primary-600' %>">
             <%= userSegue ? 'Seguindo este petshop' : 'Seguir petshop' %>
           </button>
         </form>
@@ -158,7 +158,7 @@
           <option value="1">⭐</option>
         </select>
         <input class="input" name="pet_id" placeholder="ID do pet (opcional)">
-        <button class="btn btn-primary">Enviar avaliação</button>
+        <button class="btn-primary">Enviar avaliação</button>
         <textarea class="input md:col-span-3 min-h-20" name="comentario" placeholder="Como foi sua experiência?"></textarea>
       </form>
 
@@ -175,7 +175,7 @@
     <% if (petshop.horario_funcionamento) { %>
       <div class="card">
         <h2 class="text-lg font-bold text-gray-900 mb-4">
-          <i class="fa-solid fa-clock text-[#ec5a1c] mr-2"></i>Horarios
+          <i class="fa-solid fa-clock text-primary-500 mr-2"></i>Horarios
         </h2>
         <div class="text-sm text-gray-600 whitespace-pre-line leading-relaxed"><%= petshop.horario_funcionamento %></div>
       </div>
@@ -185,7 +185,7 @@
       <div class="card !p-0 overflow-hidden">
         <div class="p-4 pb-2">
           <h2 class="text-lg font-bold text-gray-900">
-            <i class="fa-solid fa-map text-[#ec5a1c] mr-2"></i>Localizacao
+            <i class="fa-solid fa-map text-primary-500 mr-2"></i>Localizacao
           </h2>
         </div>
         <div class="px-4 pb-4">
@@ -196,7 +196,7 @@
 
     <% if (petshop.agenda_aberta) { %>
       <a href="/petshops/<%= petshop.id %>/agendar"
-         class="flex items-center justify-center gap-2 w-full px-6 py-4 rounded-2xl text-lg font-bold text-white bg-[#ec5a1c] hover:bg-[#d4500f] shadow-lg transition-all active:scale-[0.98]">
+         class="btn-primary text-lg">
         <i class="fa-solid fa-calendar-check"></i>
         Agendar servico
       </a>

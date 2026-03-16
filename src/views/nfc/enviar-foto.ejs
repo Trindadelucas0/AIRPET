@@ -3,14 +3,11 @@
 <%- include('../partials/flash') %>
 
 <main class="flex-1 container mx-auto px-4 py-8 max-w-lg">
+  <%- include('../partials/page-header', { backHref: '/tag/' + tag_code, backLabel: 'Voltar', sticky: false }) %>
 
-  <a href="/tag/<%= tag_code %>" class="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-[#ec5a1c] transition-colors mb-6">
-    <i class="fa-solid fa-arrow-left text-xs"></i> Voltar
-  </a>
-
-  <div class="text-center mb-8">
+  <div class="text-center mb-8 mt-6">
     <div class="flex justify-center mb-4">
-      <div class="w-28 h-28 rounded-full ring-4 ring-[#ec5a1c]/20 shadow-xl overflow-hidden bg-white">
+      <div class="w-28 h-28 rounded-full ring-4 ring-primary-500/20 shadow-xl overflow-hidden bg-white">
         <% if (pet.foto) { %>
           <img src="<%= pet.foto %>" alt="<%= pet.nome %>" class="w-full h-full object-cover">
         <% } else { %>
@@ -30,10 +27,10 @@
       <div>
         <label for="foto"
                class="flex flex-col items-center justify-center gap-3 w-full py-10 border-2 border-dashed border-gray-300 rounded-2xl cursor-pointer
-                      hover:border-[#ec5a1c]/40 hover:bg-orange-50/50 transition-colors"
+                      hover:border-primary-500/40 hover:bg-primary-50/50 transition-colors"
                id="uploadArea">
-          <div class="w-16 h-16 rounded-full bg-[#ec5a1c]/10 flex items-center justify-center" id="uploadIconWrap">
-            <i class="fa-solid fa-camera text-2xl text-[#ec5a1c]" id="uploadIcon"></i>
+          <div class="w-16 h-16 rounded-full bg-primary-500/10 flex items-center justify-center" id="uploadIconWrap">
+            <i class="fa-solid fa-camera text-2xl text-primary-500" id="uploadIcon"></i>
           </div>
           <div class="text-center">
             <p class="text-sm font-semibold text-gray-700" id="uploadTitle">Toque para tirar ou escolher uma foto</p>
@@ -56,7 +53,7 @@
       <input type="hidden" name="pet_id" value="<%= pet.id %>">
 
       <button type="submit" id="btnEnviar" disabled
-              class="w-full px-6 py-4 rounded-2xl text-lg font-bold text-white bg-[#ec5a1c] hover:bg-[#d4500f] active:bg-[#c0470d] shadow-lg transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed">
+              class="btn-primary text-lg disabled:opacity-40 disabled:cursor-not-allowed">
         <i class="fa-solid fa-paper-plane mr-2"></i>Enviar Foto
       </button>
     </form>
@@ -103,7 +100,7 @@
     inputFoto.value = '';
     previewContainer.classList.add('hidden');
     previewImg.src = '';
-    uploadIcon.className = 'fa-solid fa-camera text-2xl text-[#ec5a1c]';
+    uploadIcon.className = 'fa-solid fa-camera text-2xl text-primary-500';
     uploadTitle.textContent = 'Toque para tirar ou escolher uma foto';
     uploadHint.textContent = 'JPG, PNG — ate 5MB';
     btnEnviar.disabled = true;
