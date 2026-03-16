@@ -11,9 +11,16 @@
       : statusAtual === 'em_analise'
         ? 'bg-amber-100 text-amber-700'
         : 'bg-blue-100 text-blue-700'; %>
-  <div class="flex items-center justify-between">
+  <div class="flex items-center justify-between flex-wrap gap-2">
     <h1 class="text-2xl font-bold text-gray-900">Dashboard do Parceiro</h1>
-    <a href="/petshop-panel/auth/logout" class="text-sm text-gray-500 hover:text-gray-800">Sair</a>
+    <div class="flex items-center gap-3">
+      <% if (typeof usuario !== 'undefined' && usuario) { %>
+      <a href="/feed" class="text-sm font-medium text-primary-600 hover:text-primary-700">
+        <i class="fa-solid fa-paw mr-1"></i> Área do usuário
+      </a>
+      <% } %>
+      <a href="/petshop-panel/auth/logout" class="text-sm text-gray-500 hover:text-gray-800">Sair</a>
+    </div>
   </div>
 
   <section class="card space-y-3">

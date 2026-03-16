@@ -62,6 +62,7 @@ app.set('views', path.join(__dirname, 'src', 'views'));
 app.use(async (req, res, next) => {
   const session = req.session || {};
   res.locals.usuario = session.usuario || null;
+  res.locals.petshopAccount = session.petshopAccount || null;
   res.locals.flash = session.flash || null;
   res.locals.verificarPermissoes = session.verificarPermissoes || false;
   res.locals.vapidPublicKey = process.env.VAPID_PUBLIC_KEY || '';

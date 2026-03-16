@@ -1175,6 +1175,14 @@ const migrations = [
   );`,
   `CREATE INDEX IF NOT EXISTS idx_petshop_accounts_petshop ON petshop_accounts (petshop_id);`,
 
+  // Vínculo petshop_accounts -> usuarios (acesso híbrido: dono usa plataforma como tutor)
+  `DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='petshop_accounts' AND column_name='usuario_id') THEN
+      ALTER TABLE petshop_accounts ADD COLUMN usuario_id INTEGER REFERENCES usuarios(id) ON DELETE SET NULL;
+    END IF;
+  END $$;`,
+  `CREATE INDEX IF NOT EXISTS idx_petshop_accounts_usuario ON petshop_accounts (usuario_id) WHERE usuario_id IS NOT NULL;`,
+
   // Perfil estendido, mídias e trilha
   `CREATE TABLE IF NOT EXISTS petshop_profiles (
     id SERIAL PRIMARY KEY,

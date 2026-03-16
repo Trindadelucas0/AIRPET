@@ -1,5 +1,6 @@
 const bcrypt = require('bcrypt');
 const PetshopAccount = require('../models/PetshopAccount');
+const Usuario = require('../models/Usuario');
 const PetshopService = require('../models/PetshopService');
 const PetshopPost = require('../models/PetshopPost');
 const PetshopProduct = require('../models/PetshopProduct');
@@ -36,7 +37,39 @@ const petshopPanelController = {
         id: account.id,
         petshop_id: account.petshop_id,
         email: account.email,
+        status: account.status,
       };
+
+      // Auto-vinculação para contas antigas sem usuario_id (parceiros já aprovados)
+      let usuario = null;
+      if (account.usuario_id) {
+        usuario = await Usuario.buscarPorId(account.usuario_id);
+      } else if (account.status === 'ativo') {
+        usuario = await Usuario.buscarPorEmail(account.email);
+        if (!usuario) {
+          usuario = await Usuario.criar({
+            nome: 'Parceiro',
+            email: account.email,
+            senha_hash: account.password_hash,
+            telefone: null,
+            role: 'tutor',
+          });
+        }
+        await PetshopAccount.atualizarUsuarioId(account.id, usuario.id);
+      }
+
+      if (usuario && !usuario.bloqueado) {
+        const { senha_hash: _, ...usuarioSemSenha } = usuario;
+        req.session.usuario = {
+          id: usuarioSemSenha.id,
+          nome: usuarioSemSenha.nome,
+          email: usuarioSemSenha.email,
+          role: usuarioSemSenha.role || 'tutor',
+          cor_perfil: usuarioSemSenha.cor_perfil || '#ec5a1c',
+          foto_perfil: usuarioSemSenha.foto_perfil,
+        };
+      }
+
       await PetshopAccount.registrarLogin(account.id);
       return res.redirect('/petshop-panel/dashboard');
     } catch (erro) {

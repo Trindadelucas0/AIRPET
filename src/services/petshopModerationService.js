@@ -3,6 +3,7 @@ const { query } = require('../config/database');
 const PetshopAccount = require('../models/PetshopAccount');
 const PetshopPartnerRequest = require('../models/PetshopPartnerRequest');
 const PetshopProfile = require('../models/PetshopProfile');
+const Usuario = require('../models/Usuario');
 
 function toSlug(nome) {
   return String(nome || '')
@@ -111,11 +112,12 @@ const petshopModerationService = {
       );
 
     const petshopId = petshop.rows[0].id;
-    const accountExists = await query(`SELECT id FROM petshop_accounts WHERE petshop_id = $1 LIMIT 1`, [petshopId]);
+    const accountExists = await query(`SELECT * FROM petshop_accounts WHERE petshop_id = $1 LIMIT 1`, [petshopId]);
+    let account;
     if (!accountExists.rows.length) {
       const senhaInicial = Math.random().toString(36).slice(2, 10) + 'A1!';
       const hash = await bcrypt.hash(senhaInicial, 10);
-      await PetshopAccount.criar({
+      account = await PetshopAccount.criar({
         petshop_id: petshopId,
         email: request.email,
         password_hash: hash,
@@ -123,6 +125,23 @@ const petshopModerationService = {
       });
     } else {
       await PetshopAccount.atualizarStatusPorPetshopId(petshopId, 'ativo');
+      account = await PetshopAccount.buscarPorPetshopId(petshopId);
+    }
+
+    // Criar ou vincular conta de usuário comum para acesso híbrido (dono usa plataforma como tutor)
+    if (account && !account.usuario_id) {
+      const emailLogin = account.email;
+      let usuario = await Usuario.buscarPorEmail(emailLogin);
+      if (!usuario) {
+        usuario = await Usuario.criar({
+          nome: request.responsavel_nome || request.empresa_nome || 'Parceiro',
+          email: emailLogin,
+          senha_hash: account.password_hash,
+          telefone: request.telefone || null,
+          role: 'tutor',
+        });
+      }
+      await PetshopAccount.atualizarUsuarioId(account.id, usuario.id);
     }
 
     await PetshopProfile.upsert(petshopId, {

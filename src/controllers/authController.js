@@ -18,6 +18,7 @@
 
 const authService = require('../services/authService');
 const Usuario = require('../models/Usuario');
+const PetshopAccount = require('../models/PetshopAccount');
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
 const logger = require('../utils/logger');
@@ -205,6 +206,17 @@ const authController = {
         cor_perfil: resultado.usuario.cor_perfil || '#ec5a1c',
         foto_perfil: resultado.usuario.foto_perfil || null,
       };
+
+      // Se o usuário tem conta de parceiro com mesmo e-mail e está ativo, preenche petshopAccount para alternância
+      const petshopAccount = await PetshopAccount.buscarPorEmail(resultado.usuario.email);
+      if (petshopAccount && petshopAccount.status === 'ativo') {
+        req.session.petshopAccount = {
+          id: petshopAccount.id,
+          petshop_id: petshopAccount.petshop_id,
+          email: petshopAccount.email,
+          status: petshopAccount.status,
+        };
+      }
 
       /*
        * Define cookie HTTP-only com o JWT.
