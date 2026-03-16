@@ -849,6 +849,16 @@ const migrations = [
   `CREATE INDEX IF NOT EXISTS idx_notificacoes_usuario ON notificacoes (usuario_id, data_criacao DESC);`,
   `CREATE INDEX IF NOT EXISTS idx_notificacoes_pet ON notificacoes (pet_id);`,
   `CREATE INDEX IF NOT EXISTS idx_notificacoes_remetente ON notificacoes (remetente_id);`,
+
+  // Regioes para notificacao em massa (lugares salvos: nome + centro + raio)
+  `CREATE TABLE IF NOT EXISTS regioes_notificacao (
+    id SERIAL PRIMARY KEY,
+    nome VARCHAR(150) NOT NULL,
+    latitude DECIMAL(10,7) NOT NULL,
+    longitude DECIMAL(10,7) NOT NULL,
+    raio_km DECIMAL(6,2) NOT NULL,
+    data_criacao TIMESTAMP DEFAULT NOW()
+  );`,
 ];
 
 /**

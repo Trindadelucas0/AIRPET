@@ -224,6 +224,68 @@ const notificacaoService = {
     return notificacoes;
   },
 
+  /**
+   * Conta usuários por cidade/estado (com localização ativa) para preview no admin.
+   * @param {Array<{cidade: string, estado: string}>} cidades - Lista de pares cidade/estado
+   * @returns {Promise<number>}
+   */
+  async contarUsuariosPorCidadeEstado(cidades) {
+    if (!Array.isArray(cidades) || cidades.length === 0) return 0;
+    const condicoes = cidades.map((_, i) => `(cidade = $${2 * i + 1} AND estado = $${2 * i + 2})`).join(' OR ');
+    const valores = cidades.flatMap(c => [String(c.cidade).trim(), String(c.estado).trim()]);
+    const resultado = await query(
+      `SELECT id FROM usuarios
+       WHERE ultima_localizacao IS NOT NULL AND (${condicoes})`,
+      valores
+    );
+    return resultado.rows.length;
+  },
+
+  /**
+   * Envia notificação para usuários por cidade/estado (admin).
+   * @param {Array<{cidade: string, estado: string}>} cidades
+   * @param {string} titulo
+   * @param {string} mensagem
+   * @param {string} [link]
+   * @returns {Promise<Array>}
+   */
+  async notificarPorCidadeEstado(cidades, titulo, mensagem, link) {
+    if (!Array.isArray(cidades) || cidades.length === 0) return [];
+    const condicoes = cidades.map((_, i) => `(cidade = $${2 * i + 1} AND estado = $${2 * i + 2})`).join(' OR ');
+    const valores = cidades.flatMap(c => [String(c.cidade).trim(), String(c.estado).trim()]);
+    const resultado = await query(
+      `SELECT id FROM usuarios
+       WHERE ultima_localizacao IS NOT NULL AND (${condicoes})`,
+      valores
+    );
+    const usuarioIds = resultado.rows.map(row => row.id);
+    logger.info('NotificacaoService', `Notificar por cidade/estado: ${usuarioIds.length} usuário(s)`);
+    if (usuarioIds.length === 0) return [];
+    const notificacoes = await Notificacao.criarParaMultiplos(
+      usuarioIds,
+      'sistema',
+      mensagem,
+      link || null,
+      null
+    );
+    pushService.enviarParaMultiplos(usuarioIds, {
+      titulo: titulo || TITULO_MAP.sistema || 'AIRPET',
+      corpo: mensagem,
+      url: link || '/notificacoes',
+      tipo: 'sistema',
+    }).catch(function (err) {
+      logger.error('NotificacaoService', 'Falha ao enviar push em massa (cidade/estado)', err);
+    });
+    if (this._io) {
+      usuarioIds.forEach(uid => {
+        this._io.of('/notificacoes').to('user_' + uid).emit('nova_notificacao', {
+          tipo: 'sistema', mensagem, link: link || null, data: new Date(),
+        });
+      });
+    }
+    return notificacoes;
+  },
+
   async notificarTodos(petPerdidoId) {
     logger.info('NotificacaoService', `Notificando todos os usuários — alerta: ${petPerdidoId}`);
 

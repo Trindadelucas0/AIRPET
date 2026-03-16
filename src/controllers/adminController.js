@@ -41,6 +41,7 @@ const Notificacao = require('../models/Notificacao');
 const ConfigSistema = require('../models/ConfigSistema');
 const PontoMapa = require('../models/PontoMapa');
 const Localizacao = require('../models/Localizacao');
+const RegiaoNotificacao = require('../models/RegiaoNotificacao');
 const notificacaoService = require('../services/notificacaoService');
 const logger = require('../utils/logger');
 const { query } = require('../config/database');
@@ -740,8 +741,14 @@ async function excluirUsuario(req, res) {
  */
 async function mostrarEnviarNotificacao(req, res) {
   try {
+    const [regioes, cidadesComContagem] = await Promise.all([
+      RegiaoNotificacao.listar(),
+      Usuario.listarCidadesComContagem(),
+    ]);
     return res.render('admin/enviar-notificacao', {
       titulo: 'Notificação em massa - AIRPET Admin',
+      regioes: regioes || [],
+      cidadesComContagem: cidadesComContagem || [],
     });
   } catch (erro) {
     logger.error('AdminController', 'Erro ao exibir formulário de notificação', erro);
@@ -757,6 +764,24 @@ async function mostrarEnviarNotificacao(req, res) {
  */
 async function previewEnviarNotificacao(req, res) {
   try {
+    if (req.query.tipo === 'cidades') {
+      let cidades = [];
+      if (typeof req.query.cidades === 'string' && req.query.cidades) {
+        try {
+          cidades = JSON.parse(req.query.cidades);
+        } catch (e) {
+          return res.status(400).json({ sucesso: false, total: 0, mensagem: 'Parâmetro cidades inválido.' });
+        }
+      } else if (Array.isArray(req.query.cidades)) {
+        cidades = req.query.cidades.map(c => (typeof c === 'string' ? (() => { const p = c.split('|'); return { cidade: p[0] || '', estado: p[1] || '' }; })() : c));
+      }
+      if (!cidades.length || !cidades.every(c => c && (c.cidade || c.estado))) {
+        return res.status(400).json({ sucesso: false, total: 0, mensagem: 'Selecione ao menos uma cidade.' });
+      }
+      const total = await notificacaoService.contarUsuariosPorCidadeEstado(cidades);
+      return res.json({ sucesso: true, total });
+    }
+
     const lat = parseFloat(req.query.lat);
     const lng = parseFloat(req.query.lng);
     const raioKm = parseFloat(req.query.raio_km);
@@ -785,23 +810,65 @@ async function previewEnviarNotificacao(req, res) {
 async function enviarNotificacaoRegiao(req, res) {
   const adminPath = getAdminPath();
   try {
-    const latitude = parseFloat(req.body.latitude);
-    const longitude = parseFloat(req.body.longitude);
-    const raioKm = parseFloat(req.body.raio_km);
     const titulo = (req.body.titulo || '').trim() || 'AIRPET';
     const mensagem = (req.body.mensagem || '').trim();
     const link = (req.body.link || '').trim() || null;
 
+    if (!mensagem) {
+      req.session.flash = { tipo: 'erro', mensagem: 'A mensagem é obrigatória.' };
+      return res.redirect(adminPath + '/notificacoes/enviar');
+    }
+
+    if (req.body.tipo === 'cidades') {
+      let cidades = [];
+      if (req.body.cidades) {
+        if (Array.isArray(req.body.cidades)) {
+          cidades = req.body.cidades.map(c => {
+            if (typeof c === 'string') {
+              const p = c.split('|');
+              return { cidade: (p[0] || '').trim(), estado: (p[1] || '').trim() };
+            }
+            return { cidade: String(c.cidade || '').trim(), estado: String(c.estado || '').trim() };
+          }).filter(c => c.cidade || c.estado);
+        } else if (typeof req.body.cidades === 'string') {
+          try {
+            cidades = JSON.parse(req.body.cidades);
+          } catch (e) {}
+        }
+      }
+      if (!cidades.length) {
+        req.session.flash = { tipo: 'erro', mensagem: 'Selecione ao menos uma cidade.' };
+        return res.redirect(adminPath + '/notificacoes/enviar');
+      }
+      const notificacoes = await notificacaoService.notificarPorCidadeEstado(cidades, titulo, mensagem, link);
+      if (notificacoes.length === 0) {
+        req.session.flash = { tipo: 'aviso', mensagem: 'Nenhum usuário encontrado nas cidades selecionadas com localização ativa.' };
+      } else {
+        req.session.flash = { tipo: 'sucesso', mensagem: `Notificação enviada para ${notificacoes.length} usuário(s).` };
+      }
+      return res.redirect(adminPath + '/notificacoes/enviar');
+    }
+
+    let latitude = parseFloat(req.body.latitude);
+    let longitude = parseFloat(req.body.longitude);
+    let raioKm = parseFloat(req.body.raio_km);
+
+    const regiaoId = req.body.regiao_id ? parseInt(req.body.regiao_id, 10) : null;
+    if (regiaoId && !isNaN(regiaoId)) {
+      const regiao = await RegiaoNotificacao.buscarPorId(regiaoId);
+      if (regiao) {
+        latitude = parseFloat(regiao.latitude);
+        longitude = parseFloat(regiao.longitude);
+        raioKm = parseFloat(regiao.raio_km);
+      }
+    }
+
     if (isNaN(latitude) || isNaN(longitude) || isNaN(raioKm) || raioKm <= 0) {
-      req.session.flash = { tipo: 'erro', mensagem: 'Informe latitude, longitude e raio (km) válidos.' };
+      req.session.flash = { tipo: 'erro', mensagem: 'Informe latitude, longitude e raio (km) válidos ou selecione uma região salva.' };
       return res.redirect(adminPath + '/notificacoes/enviar');
     }
     if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
       req.session.flash = { tipo: 'erro', mensagem: 'Latitude ou longitude fora do intervalo válido.' };
-      return res.redirect(adminPath + '/notificacoes/enviar');
-    }
-    if (!mensagem) {
-      req.session.flash = { tipo: 'erro', mensagem: 'A mensagem é obrigatória.' };
       return res.redirect(adminPath + '/notificacoes/enviar');
     }
 
