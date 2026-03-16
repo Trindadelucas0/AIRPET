@@ -864,6 +864,227 @@ const migrations = [
   `ALTER TABLE conversas ADD COLUMN IF NOT EXISTS iniciador_id INTEGER REFERENCES usuarios(id);`,
   `ALTER TABLE conversas ADD COLUMN IF NOT EXISTS tutor_id INTEGER REFERENCES usuarios(id);`,
   `UPDATE conversas SET tutor_id = dono_id WHERE tutor_id IS NULL AND dono_id IS NOT NULL;`,
+
+  // === FEED INTELIGENTE: EVENTOS BRUTOS, AGREGAÇÕES, GAMIFICAÇÃO E ANALYTICS ===
+
+  // Índice espacial em usuarios.ultima_localizacao para feeds regionais e proximidade
+  `CREATE INDEX IF NOT EXISTS idx_usuarios_ultima_loc
+     ON usuarios USING GIST (ultima_localizacao)
+     WHERE ultima_localizacao IS NOT NULL;`,
+
+  // Eventos brutos de interação em publicações (append-only)
+  `CREATE TABLE IF NOT EXISTS post_interactions_raw (
+    id BIGSERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+    post_id INTEGER NOT NULL REFERENCES publicacoes(id) ON DELETE CASCADE,
+    actor_user_id INTEGER REFERENCES usuarios(id) ON DELETE SET NULL,
+    event_type VARCHAR(30) NOT NULL, -- like, comment, share, save, repost, view
+    watch_ms INTEGER,
+    profile_id INTEGER REFERENCES usuarios(id) ON DELETE SET NULL,
+    city VARCHAR(100),
+    geo_point GEOGRAPHY(POINT, 4326),
+    created_at TIMESTAMP DEFAULT NOW(),
+    metadata JSONB
+  );`,
+
+  `CREATE INDEX IF NOT EXISTS idx_post_interactions_post ON post_interactions_raw (post_id, created_at DESC);`,
+  `CREATE INDEX IF NOT EXISTS idx_post_interactions_user ON post_interactions_raw (user_id, created_at DESC);`,
+  `CREATE INDEX IF NOT EXISTS idx_post_interactions_type ON post_interactions_raw (event_type, created_at DESC);`,
+
+  // Visitas a perfil (para interesse social e gamificação)
+  `CREATE TABLE IF NOT EXISTS profile_visits_raw (
+    id BIGSERIAL PRIMARY KEY,
+    visitor_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+    profile_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+    source VARCHAR(50), -- feed, search, suggestion, external
+    created_at TIMESTAMP DEFAULT NOW()
+  );`,
+
+  `CREATE INDEX IF NOT EXISTS idx_profile_visits_profile ON profile_visits_raw (profile_id, created_at DESC);`,
+  `CREATE INDEX IF NOT EXISTS idx_profile_visits_visitor ON profile_visits_raw (visitor_id, created_at DESC);`,
+
+  // Eventos de follow/unfollow (para força de relacionamento e detecção de spikes)
+  `CREATE TABLE IF NOT EXISTS follow_events_raw (
+    id BIGSERIAL PRIMARY KEY,
+    follower_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+    followed_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+    event_type VARCHAR(20) NOT NULL, -- follow, unfollow
+    created_at TIMESTAMP DEFAULT NOW()
+  );`,
+
+  `CREATE INDEX IF NOT EXISTS idx_follow_events_followed ON follow_events_raw (followed_id, created_at DESC);`,
+  `CREATE INDEX IF NOT EXISTS idx_follow_events_follower ON follow_events_raw (follower_id, created_at DESC);`,
+
+  // Eventos de moderação e sinalização (para qualidade e risco)
+  `CREATE TABLE IF NOT EXISTS moderation_events_raw (
+    id BIGSERIAL PRIMARY KEY,
+    reporter_id INTEGER REFERENCES usuarios(id) ON DELETE SET NULL,
+    target_user_id INTEGER REFERENCES usuarios(id) ON DELETE SET NULL,
+    post_id INTEGER REFERENCES publicacoes(id) ON DELETE SET NULL,
+    comment_id INTEGER REFERENCES comentarios(id) ON DELETE SET NULL,
+    reason VARCHAR(100),
+    action VARCHAR(50), -- report, block, mute, warning, ban
+    created_at TIMESTAMP DEFAULT NOW()
+  );`,
+
+  `CREATE INDEX IF NOT EXISTS idx_moderation_events_target_user ON moderation_events_raw (target_user_id, created_at DESC);`,
+  `CREATE INDEX IF NOT EXISTS idx_moderation_events_post ON moderation_events_raw (post_id, created_at DESC);`,
+
+  // Perfil de interesse do usuário por espécie/raça
+  `CREATE TABLE IF NOT EXISTS user_interest_profile (
+    id BIGSERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+    species VARCHAR(50) NOT NULL,
+    breed VARCHAR(100),
+    interest_score NUMERIC(12,4) DEFAULT 0,
+    like_count INTEGER DEFAULT 0,
+    comment_count INTEGER DEFAULT 0,
+    watch_ms_sum BIGINT DEFAULT 0,
+    updated_at TIMESTAMP DEFAULT NOW(),
+    UNIQUE (user_id, species, breed)
+  );`,
+
+  `CREATE INDEX IF NOT EXISTS idx_user_interest_user ON user_interest_profile (user_id);`,
+
+  // Agregado de engajamento por publicação (janelas móveis calculadas em worker)
+  `CREATE TABLE IF NOT EXISTS post_engagement_agg (
+    post_id INTEGER PRIMARY KEY REFERENCES publicacoes(id) ON DELETE CASCADE,
+    likes_24h INTEGER DEFAULT 0,
+    comments_24h INTEGER DEFAULT 0,
+    shares_24h INTEGER DEFAULT 0,
+    saves_24h INTEGER DEFAULT 0,
+    reposts_24h INTEGER DEFAULT 0,
+    engagement_score NUMERIC(12,4) DEFAULT 0,
+    velocity_score NUMERIC(12,4) DEFAULT 0,
+    updated_at TIMESTAMP DEFAULT NOW()
+  );`,
+
+  `CREATE INDEX IF NOT EXISTS idx_post_engagement_score ON post_engagement_agg (engagement_score DESC);`,
+
+  // Força de relacionamento entre usuários (proximidade social)
+  `CREATE TABLE IF NOT EXISTS user_relationship_strength (
+    id BIGSERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+    target_user_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+    strength_score NUMERIC(12,4) DEFAULT 0,
+    interactions_30d INTEGER DEFAULT 0,
+    updated_at TIMESTAMP DEFAULT NOW(),
+    UNIQUE (user_id, target_user_id)
+  );`,
+
+  `CREATE INDEX IF NOT EXISTS idx_user_rel_user ON user_relationship_strength (user_id, strength_score DESC);`,
+
+  // Snapshot de score por publicação (componentes para debug/analytics)
+  `CREATE TABLE IF NOT EXISTS post_score_snapshot (
+    post_id INTEGER PRIMARY KEY REFERENCES publicacoes(id) ON DELETE CASCADE,
+    interest_component NUMERIC(12,4) DEFAULT 0,
+    engagement_component NUMERIC(12,4) DEFAULT 0,
+    recency_component NUMERIC(12,4) DEFAULT 0,
+    social_component NUMERIC(12,4) DEFAULT 0,
+    location_component NUMERIC(12,4) DEFAULT 0,
+    quality_component NUMERIC(12,4) DEFAULT 0,
+    manual_boost NUMERIC(12,4) DEFAULT 0,
+    final_score NUMERIC(14,4) DEFAULT 0,
+    scored_at TIMESTAMP DEFAULT NOW()
+  );`,
+
+  `CREATE INDEX IF NOT EXISTS idx_post_score_final ON post_score_snapshot (final_score DESC);`,
+
+  // Pool de candidatos para feed (pré-computado por coorte simples)
+  `CREATE TABLE IF NOT EXISTS feed_candidate_pool (
+    id BIGSERIAL PRIMARY KEY,
+    post_id INTEGER NOT NULL REFERENCES publicacoes(id) ON DELETE CASCADE,
+    segment VARCHAR(100) NOT NULL, -- ex: city:PARACATU, species:dog
+    base_score NUMERIC(12,4) DEFAULT 0,
+    created_at TIMESTAMP DEFAULT NOW()
+  );`,
+
+  `CREATE INDEX IF NOT EXISTS idx_feed_candidate_segment ON feed_candidate_pool (segment, base_score DESC);`,
+
+  // Gamificação do usuário (XP, nível, score de criador)
+  `CREATE TABLE IF NOT EXISTS user_gamification (
+    user_id INTEGER PRIMARY KEY REFERENCES usuarios(id) ON DELETE CASCADE,
+    xp_points BIGINT DEFAULT 0,
+    creator_score NUMERIC(12,4) DEFAULT 0,
+    level INTEGER DEFAULT 1,
+    streak_days INTEGER DEFAULT 0,
+    last_activity_date DATE,
+    profile_completeness_score NUMERIC(5,2) DEFAULT 0,
+    updated_at TIMESTAMP DEFAULT NOW()
+  );`,
+
+  // Catálogo de badges
+  `CREATE TABLE IF NOT EXISTS badges (
+    id SERIAL PRIMARY KEY,
+    code VARCHAR(50) UNIQUE NOT NULL,
+    name VARCHAR(100) NOT NULL,
+    description TEXT,
+    icon VARCHAR(100)
+  );`,
+
+  // Badges conquistados por usuário
+  `CREATE TABLE IF NOT EXISTS user_badges (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+    badge_id INTEGER NOT NULL REFERENCES badges(id) ON DELETE CASCADE,
+    earned_at TIMESTAMP DEFAULT NOW(),
+    UNIQUE (user_id, badge_id)
+  );`,
+
+  // Boost manual aplicado por admin em usuário ou post
+  `CREATE TABLE IF NOT EXISTS manual_boosts (
+    id SERIAL PRIMARY KEY,
+    target_type VARCHAR(20) NOT NULL, -- user, post
+    target_id INTEGER NOT NULL,
+    boost_value NUMERIC(12,4) NOT NULL,
+    reason TEXT,
+    starts_at TIMESTAMP DEFAULT NOW(),
+    ends_at TIMESTAMP,
+    created_by_admin INTEGER,
+    created_at TIMESTAMP DEFAULT NOW()
+  );`,
+
+  `CREATE INDEX IF NOT EXISTS idx_manual_boosts_target ON manual_boosts (target_type, target_id);`,
+
+  // Agregados diários para o painel admin
+  `CREATE TABLE IF NOT EXISTS analytics_daily_agg (
+    id BIGSERIAL PRIMARY KEY,
+    day DATE NOT NULL,
+    city VARCHAR(100),
+    species VARCHAR(50),
+    users_active INTEGER DEFAULT 0,
+    new_users INTEGER DEFAULT 0,
+    posts_created INTEGER DEFAULT 0,
+    interactions_total INTEGER DEFAULT 0,
+    reports_total INTEGER DEFAULT 0,
+    created_at TIMESTAMP DEFAULT NOW(),
+    UNIQUE (day, city, species)
+  );`,
+
+  `CREATE INDEX IF NOT EXISTS idx_analytics_daily_day ON analytics_daily_agg (day);`,
+
+  // Sinais de risco por usuário (para moderação proativa)
+  `CREATE TABLE IF NOT EXISTS user_risk_signals (
+    user_id INTEGER PRIMARY KEY REFERENCES usuarios(id) ON DELETE CASCADE,
+    sudden_follower_growth_score NUMERIC(12,4) DEFAULT 0,
+    spam_probability NUMERIC(5,4) DEFAULT 0,
+    report_rate NUMERIC(5,4) DEFAULT 0,
+    block_rate NUMERIC(5,4) DEFAULT 0,
+    updated_at TIMESTAMP DEFAULT NOW()
+  );`,
+
+  // Posts em alta por dia (para “Trending”)
+  `CREATE TABLE IF NOT EXISTS post_trending_daily (
+    id BIGSERIAL PRIMARY KEY,
+    day DATE NOT NULL,
+    post_id INTEGER NOT NULL REFERENCES publicacoes(id) ON DELETE CASCADE,
+    score NUMERIC(12,4) NOT NULL,
+    rank INTEGER,
+    created_at TIMESTAMP DEFAULT NOW(),
+    UNIQUE (day, post_id)
+  );`,
+
+  `CREATE INDEX IF NOT EXISTS idx_post_trending_day_score ON post_trending_daily (day, score DESC);`,
 ];
 
 /**

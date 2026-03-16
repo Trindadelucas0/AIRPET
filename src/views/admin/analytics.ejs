@@ -1,0 +1,217 @@
+<% locals.titulo = 'Analytics avançado' %>
+<%- include('../partials/admin-layout') %>
+
+<main class="flex-1">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+
+    <div>
+      <h1 class="text-2xl font-bold text-gray-900">Analytics da Rede</h1>
+      <p class="text-sm text-gray-500 mt-1">Visão de influência, risco, conteúdo viral, raças e crescimento.</p>
+    </div>
+
+    <!-- Usuários mais influentes -->
+    <section class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
+          <i class="fa-solid fa-crown text-yellow-500"></i>
+          Usuários mais influentes
+        </h2>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
+        <div>
+          <h3 class="font-semibold text-gray-700 mb-2">Mais seguidores</h3>
+          <ul class="space-y-1 max-h-64 overflow-y-auto">
+            <% (influentes.seguidores || []).forEach(function(r, idx) { %>
+              <li class="flex justify-between">
+                <span class="text-gray-600">#<%= idx + 1 %> Usuário <%= r.usuario_id %></span>
+                <span class="font-medium"><%= r.total %></span>
+              </li>
+            <% }) %>
+            <% if (!(influentes.seguidores || []).length) { %>
+              <li class="text-xs text-gray-400">Sem dados suficientes.</li>
+            <% } %>
+          </ul>
+        </div>
+        <div>
+          <h3 class="font-semibold text-gray-700 mb-2">Mais curtidas recebidas</h3>
+          <ul class="space-y-1 max-h-64 overflow-y-auto">
+            <% (influentes.likes || []).forEach(function(r, idx) { %>
+              <li class="flex justify-between">
+                <span class="text-gray-600">#<%= idx + 1 %> Usuário <%= r.usuario_id %></span>
+                <span class="font-medium"><%= r.total %></span>
+              </li>
+            <% }) %>
+            <% if (!(influentes.likes || []).length) { %>
+              <li class="text-xs text-gray-400">Sem dados suficientes.</li>
+            <% } %>
+          </ul>
+        </div>
+        <div>
+          <h3 class="font-semibold text-gray-700 mb-2">Mais comentários recebidos</h3>
+          <ul class="space-y-1 max-h-64 overflow-y-auto">
+            <% (influentes.comentarios || []).forEach(function(r, idx) { %>
+              <li class="flex justify-between">
+                <span class="text-gray-600">#<%= idx + 1 %> Usuário <%= r.usuario_id %></span>
+                <span class="font-medium"><%= r.total %></span>
+              </li>
+            <% }) %>
+            <% if (!(influentes.comentarios || []).length) { %>
+              <li class="text-xs text-gray-400">Sem dados suficientes.</li>
+            <% } %>
+          </ul>
+        </div>
+        <div>
+          <h3 class="font-semibold text-gray-700 mb-2">Mais visualizações</h3>
+          <ul class="space-y-1 max-h-64 overflow-y-auto">
+            <% (influentes.views || []).forEach(function(r, idx) { %>
+              <li class="flex justify-between">
+                <span class="text-gray-600">#<%= idx + 1 %> Usuário <%= r.usuario_id %></span>
+                <span class="font-medium"><%= r.views %></span>
+              </li>
+            <% }) %>
+            <% if (!(influentes.views || []).length) { %>
+              <li class="text-xs text-gray-400">Sem dados suficientes.</li>
+            <% } %>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- Usuários perigosos -->
+    <section class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+      <h2 class="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+        <i class="fa-solid fa-triangle-exclamation text-red-500"></i>
+        Usuários com risco
+      </h2>
+      <div class="overflow-x-auto">
+        <table class="min-w-full text-sm">
+          <thead>
+            <tr class="text-left text-gray-500 border-b border-gray-100">
+              <th class="pb-2 font-medium">Usuário</th>
+              <th class="pb-2 font-medium">Reports</th>
+              <th class="pb-2 font-medium">Blocks</th>
+              <th class="pb-2 font-medium">Spam Score</th>
+              <th class="pb-2 font-medium">Report Rate</th>
+              <th class="pb-2 font-medium">Block Rate</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% const denunciasMap = new Map(); (perigosos.denuncias || []).forEach(d => denunciasMap.set(d.usuario_id, d.total_reports)); %>
+            <% const bloqueiosMap = new Map(); (perigosos.bloqueios || []).forEach(b => bloqueiosMap.set(b.usuario_id, b.total_blocks)); %>
+            <% (perigosos.riscos || []).forEach(function(r) { %>
+              <tr class="border-b border-gray-50 hover:bg-gray-50/50">
+                <td class="py-2 font-medium text-gray-900">Usuário <%= r.user_id %></td>
+                <td class="py-2"><%= denunciasMap.get(r.user_id) || 0 %></td>
+                <td class="py-2"><%= bloqueiosMap.get(r.user_id) || 0 %></td>
+                <td class="py-2 text-gray-600"><%= r.spam_probability %></td>
+                <td class="py-2 text-gray-600"><%= r.report_rate %></td>
+                <td class="py-2 text-gray-600"><%= r.block_rate %></td>
+              </tr>
+            <% }) %>
+            <% if (!(perigosos.riscos || []).length) { %>
+              <tr><td colspan="6" class="py-3 text-xs text-gray-400">Sem sinais de risco registrados ainda.</td></tr>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Conteúdo viral e raças / cidades -->
+    <section class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <h2 class="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+          <i class="fa-solid fa-fire text-orange-500"></i>
+          Conteúdo viral (último período)
+        </h2>
+        <ul class="space-y-2 max-h-80 overflow-y-auto text-sm">
+          <% (viralHoje.posts || []).forEach(function(p, idx) { %>
+            <li class="flex items-center justify-between border-b border-gray-50 pb-1">
+              <div class="flex items-center gap-2">
+                <span class="text-xs text-gray-400">#<%= idx + 1 %></span>
+                <span class="text-gray-700">Post <%= p.id %> por usuário <%= p.usuario_id %></span>
+              </div>
+              <span class="text-xs text-gray-500">
+                score: <%= p.engagement_score || p.engagement_score_sum || 0 %>
+              </span>
+            </li>
+          <% }) %>
+          <% if (!(viralHoje.posts || []).length) { %>
+            <li class="text-xs text-gray-400">Nenhum post com score de engajamento calculado ainda.</li>
+          <% } %>
+        </ul>
+      </div>
+
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 space-y-4">
+        <div>
+          <h2 class="text-lg font-semibold text-gray-900 mb-2 flex items-center gap-2">
+            <i class="fa-solid fa-dog text-emerald-500"></i>
+            Raças em alta
+          </h2>
+          <ul class="space-y-1 max-h-40 overflow-y-auto text-sm">
+            <% (trendingRacas.racas || []).forEach(function(r, idx) { %>
+              <li class="flex justify-between">
+                <span class="text-gray-700">#<%= idx + 1 %> <%= r.raca || 'Sem raça' %> (<%= r.tipo %>)</span>
+                <span class="font-medium"><%= r.total_interacoes %></span>
+              </li>
+            <% }) %>
+            <% if (!(trendingRacas.racas || []).length) { %>
+              <li class="text-xs text-gray-400">Nenhuma interação registrada por raça ainda.</li>
+            <% } %>
+          </ul>
+        </div>
+        <div>
+          <h2 class="text-lg font-semibold text-gray-900 mb-2 flex items-center gap-2">
+            <i class="fa-solid fa-city text-blue-500"></i>
+            Cidades mais ativas
+          </h2>
+          <ul class="space-y-1 max-h-40 overflow-y-auto text-sm">
+            <% (cidades.usuariosAtivos || []).forEach(function(c, idx) { %>
+              <li class="flex justify-between">
+                <span class="text-gray-700">#<%= idx + 1 %> <%= c.cidade %></span>
+                <span class="text-gray-500"><%= c.total_usuarios %> usuários</span>
+              </li>
+            <% }) %>
+            <% if (!(cidades.usuariosAtivos || []).length) { %>
+              <li class="text-xs text-gray-400">Nenhuma cidade com usuários cadastrados.</li>
+            <% } %>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- Crescimento da rede (tabela simples) -->
+    <section class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+      <h2 class="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+        <i class="fa-solid fa-chart-line text-indigo-500"></i>
+        Crescimento da rede (últimos 30 dias)
+      </h2>
+      <div class="overflow-x-auto">
+        <table class="min-w-full text-xs md:text-sm">
+          <thead>
+            <tr class="text-left text-gray-500 border-b border-gray-100">
+              <th class="pb-2 font-medium">Dia</th>
+              <th class="pb-2 font-medium">Novos usuários</th>
+              <th class="pb-2 font-medium">Novos posts</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% (timeline || []).forEach(function(linha) { %>
+              <tr class="border-b border-gray-50 hover:bg-gray-50/50">
+                <td class="py-1 text-gray-700"><%= new Date(linha.day).toLocaleDateString('pt-BR') %></td>
+                <td class="py-1 text-gray-600"><%= linha.novos_usuarios %></td>
+                <td class="py-1 text-gray-600"><%= linha.novos_posts %></td>
+              </tr>
+            <% }) %>
+            <% if (!(timeline || []).length) { %>
+              <tr><td colspan="3" class="py-3 text-xs text-gray-400">Sem dados de crescimento ainda.</td></tr>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<%- include('../partials/admin-footer') %>
+

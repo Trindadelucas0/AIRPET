@@ -91,6 +91,7 @@ router.get('/logout', (req, res) => {
 });
 
 router.get('/', apenasAdmin, adminController.dashboard);
+router.get('/analytics', apenasAdmin, adminController.mostrarAnalyticsAvancado);
 
 router.get('/usuarios', apenasAdmin, adminController.listarUsuarios);
 router.get('/pets', apenasAdmin, adminController.listarPets);

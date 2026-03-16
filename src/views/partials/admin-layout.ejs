@@ -32,6 +32,9 @@
       <a href="<%= adminPath %>" class="px-3 py-2 rounded-lg text-sm font-medium transition-colors <%= (p === '' || p === '/') ? 'active' : 'text-gray-600' %>">
         <i class="fa-solid fa-chart-line mr-1.5 w-4"></i>Dashboard
       </a>
+      <a href="<%= adminPath %>/analytics" class="px-3 py-2 rounded-lg text-sm font-medium transition-colors <%= p === '/analytics' ? 'active' : 'text-gray-600' %>">
+        <i class="fa-solid fa-chart-pie mr-1.5 w-4"></i>Analytics
+      </a>
       <a href="<%= adminPath %>/usuarios" class="px-3 py-2 rounded-lg text-sm font-medium transition-colors <%= p === '/usuarios' ? 'active' : 'text-gray-600' %>">
         <i class="fa-solid fa-users mr-1.5 w-4"></i>Usuários
       </a>

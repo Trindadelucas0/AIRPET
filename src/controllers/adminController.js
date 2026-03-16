@@ -42,6 +42,7 @@ const ConfigSistema = require('../models/ConfigSistema');
 const PontoMapa = require('../models/PontoMapa');
 const Localizacao = require('../models/Localizacao');
 const notificacaoService = require('../services/notificacaoService');
+const adminAnalyticsService = require('../services/adminAnalyticsService');
 const logger = require('../utils/logger');
 const { query } = require('../config/database');
 
@@ -123,6 +124,46 @@ async function dashboard(req, res) {
     logger.error('AdminController', 'Erro ao carregar dashboard', erro);
     req.session.flash = { tipo: 'erro', mensagem: 'Erro ao carregar o painel administrativo.' };
     return res.redirect('/');
+  }
+}
+
+async function mostrarAnalyticsAvancado(req, res) {
+  try {
+    const periodoInfluentes = req.query.influentes || 'week';
+    const periodoRisco = req.query.risco || 'month';
+    const periodoViral = req.query.viral || 'today';
+    const periodoRacas = req.query.racas || 'week';
+    const periodoCidades = req.query.cidades || 'week';
+
+    const [
+      influentes,
+      perigosos,
+      viralHoje,
+      trendingRacas,
+      cidades,
+      timeline,
+    ] = await Promise.all([
+      adminAnalyticsService.topUsuariosInfluentes(periodoInfluentes, 10),
+      adminAnalyticsService.usuariosPerigosos(periodoRisco, 10),
+      adminAnalyticsService.conteudoViralPorPeriodo(periodoViral, 20),
+      adminAnalyticsService.trendingBreeds(periodoRacas, 15),
+      adminAnalyticsService.cidadesMaisAtivas(periodoCidades, 15),
+      adminAnalyticsService.timelineCrescimento(30),
+    ]);
+
+    return res.render('admin/analytics', {
+      titulo: 'Analytics avançado - AIRPET',
+      influentes,
+      perigosos,
+      viralHoje,
+      trendingRacas,
+      cidades,
+      timeline,
+    });
+  } catch (erro) {
+    logger.error('AdminController', 'Erro ao carregar analytics avançado', erro);
+    req.session.flash = { tipo: 'erro', mensagem: 'Erro ao carregar analytics.' };
+    return res.redirect(getAdminPath());
   }
 }
 
@@ -856,4 +897,5 @@ module.exports = {
   mostrarEnviarNotificacao,
   previewEnviarNotificacao,
   enviarNotificacaoRegiao,
+  mostrarAnalyticsAvancado,
 };
