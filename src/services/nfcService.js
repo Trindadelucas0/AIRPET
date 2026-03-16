@@ -37,6 +37,7 @@ const Pet = require('../models/Pet');
 const Localizacao = require('../models/Localizacao');
 const Notificacao = require('../models/Notificacao');
 const PetPerdido = require('../models/PetPerdido');
+const petshopRecoveryIntegrationService = require('./petshopRecoveryIntegrationService');
 const { query } = require('../config/database');
 const logger = require('../utils/logger');
 
@@ -130,6 +131,7 @@ const nfcService = {
     let dadosPet = null;
     let dadosDono = null;
     let alertaAtivo = null;
+    let petshopMaisProximo = null;
 
     switch (tag.status) {
       /**
@@ -186,6 +188,11 @@ const nfcService = {
           });
 
           logger.info('NfcService', `Localização registrada para pet: ${tag.pet_id}`);
+
+          petshopMaisProximo = await petshopRecoveryIntegrationService.sugerirPetshopMaisProximo(
+            dadosScan.latitude,
+            dadosScan.longitude
+          );
         }
 
         /**
@@ -201,6 +208,13 @@ const nfcService = {
             petPerdido = true;
             logger.info('NfcService', `Pet ${tag.pet_id} está PERDIDO! Alerta ativo: ${alertaAtivo.id}`);
           }
+        }
+
+        if (!petshopMaisProximo && alertaAtivo && alertaAtivo.latitude && alertaAtivo.longitude) {
+          petshopMaisProximo = await petshopRecoveryIntegrationService.sugerirPetshopMaisProximo(
+            alertaAtivo.latitude,
+            alertaAtivo.longitude
+          );
         }
 
         /**
@@ -252,6 +266,7 @@ const nfcService = {
       tela,
       petPerdido,
       petPerdidoAlerta: alertaAtivo,
+      petshopMaisProximo,
     };
   },
 };

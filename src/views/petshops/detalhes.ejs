@@ -31,6 +31,29 @@
   <div class="max-w-3xl mx-auto px-4 py-6 space-y-6">
 
     <div class="card">
+      <div class="grid grid-cols-3 gap-3 mb-4">
+        <div class="bg-gray-50 rounded-xl p-3 text-center">
+          <p class="text-xs text-gray-500">Seguidores</p>
+          <p class="font-bold text-lg"><%= followerCount || 0 %></p>
+        </div>
+        <div class="bg-gray-50 rounded-xl p-3 text-center">
+          <p class="text-xs text-gray-500">Avaliação</p>
+          <p class="font-bold text-lg"><%= Number(reviewSummary?.media || 0).toFixed(1) %> <span class="text-sm">⭐</span></p>
+        </div>
+        <div class="bg-gray-50 rounded-xl p-3 text-center">
+          <p class="text-xs text-gray-500">Produtos</p>
+          <p class="font-bold text-lg"><%= (products || []).length %></p>
+        </div>
+      </div>
+
+      <% if (typeof userSegue !== 'undefined') { %>
+        <form action="/petshops/<%= petshop.id %>/seguir" method="POST" class="mb-4">
+          <button class="w-full px-4 py-3 rounded-xl font-semibold <%= userSegue ? 'bg-gray-100 text-gray-700' : 'bg-[#ec5a1c] text-white' %>">
+            <%= userSegue ? 'Seguindo este petshop' : 'Seguir petshop' %>
+          </button>
+        </form>
+      <% } %>
+
       <div class="space-y-3">
         <% if (petshop.endereco) { %>
           <div class="flex items-start gap-3">
@@ -88,6 +111,66 @@
         </div>
       </div>
     <% } %>
+
+    <% if (products && products.length > 0) { %>
+      <div class="card">
+        <h2 class="text-lg font-bold text-gray-900 mb-4">
+          <i class="fa-solid fa-bag-shopping text-[#ec5a1c] mr-2"></i>Produtos e promoções
+        </h2>
+        <div class="grid sm:grid-cols-2 gap-3">
+          <% products.forEach(function(prod) { %>
+            <div class="border rounded-xl p-3">
+              <p class="font-semibold text-gray-900"><%= prod.nome %></p>
+              <p class="text-sm text-gray-500 line-clamp-2"><%= prod.descricao || 'Sem descrição' %></p>
+              <p class="text-[#ec5a1c] font-bold mt-2">R$ <%= Number(prod.preco || 0).toFixed(2).replace('.', ',') %></p>
+              <% if (prod.contato_link) { %>
+                <a href="<%= prod.contato_link %>" target="_blank" rel="noopener" class="text-sm text-blue-600 hover:underline">Entrar em contato</a>
+              <% } %>
+            </div>
+          <% }); %>
+        </div>
+      </div>
+    <% } %>
+
+    <% if (posts && posts.length > 0) { %>
+      <div class="card">
+        <h2 class="text-lg font-bold text-gray-900 mb-4">Posts do petshop</h2>
+        <div class="space-y-3">
+          <% posts.forEach(function(post) { %>
+            <article class="border rounded-xl p-3">
+              <p class="font-semibold"><%= post.titulo || 'Postagem' %></p>
+              <p class="text-sm text-gray-600 mt-1"><%= post.texto || '' %></p>
+            </article>
+          <% }) %>
+        </div>
+      </div>
+    <% } %>
+
+    <div class="card">
+      <h2 class="text-lg font-bold text-gray-900 mb-4">Avaliações</h2>
+      <form action="/petshops/<%= petshop.id %>/avaliar" method="POST" class="grid md:grid-cols-3 gap-3 mb-5">
+        <select class="input" name="rating" required>
+          <option value="">Sua nota</option>
+          <option value="5">⭐ ⭐ ⭐ ⭐ ⭐</option>
+          <option value="4">⭐ ⭐ ⭐ ⭐</option>
+          <option value="3">⭐ ⭐ ⭐</option>
+          <option value="2">⭐ ⭐</option>
+          <option value="1">⭐</option>
+        </select>
+        <input class="input" name="pet_id" placeholder="ID do pet (opcional)">
+        <button class="btn btn-primary">Enviar avaliação</button>
+        <textarea class="input md:col-span-3 min-h-20" name="comentario" placeholder="Como foi sua experiência?"></textarea>
+      </form>
+
+      <div class="space-y-3">
+        <% (reviews || []).forEach(function(rv) { %>
+          <div class="border rounded-xl p-3">
+            <p class="font-semibold text-sm"><%= rv.usuario_nome %> • <span class="text-amber-500"><%= '⭐ '.repeat(rv.rating) %></span></p>
+            <p class="text-sm text-gray-600 mt-1"><%= rv.comentario || 'Sem comentário.' %></p>
+          </div>
+        <% }) %>
+      </div>
+    </div>
 
     <% if (petshop.horario_funcionamento) { %>
       <div class="card">

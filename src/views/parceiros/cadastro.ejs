@@ -1,0 +1,317 @@
+<% locals.titulo = 'Cadastro de Petshop Parceiro' %>
+<% locals.extraHead = '<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">' %>
+<%- include('../partials/header') %>
+<%- include('../partials/flash') %>
+
+<% const f = typeof formData !== 'undefined' && formData ? formData : {}; %>
+<main class="flex-1 container mx-auto max-w-5xl px-4 py-8">
+  <div class="card space-y-6">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-900 mb-2">Seja um Petshop Parceiro AIRPET</h1>
+      <p class="text-sm text-gray-500">
+        Cadastro rápido e guiado. O status inicial da solicitação será <strong>PENDENTE</strong>.
+      </p>
+    </div>
+    <% if (typeof localError !== 'undefined' && localError) { %>
+      <div class="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+        <%= localError %>
+      </div>
+    <% } %>
+
+    <form id="partnerForm" action="/parceiros/cadastro" method="POST" enctype="multipart/form-data" class="space-y-6">
+      <section class="border border-gray-100 rounded-2xl p-4 md:p-5">
+        <h2 class="font-semibold text-gray-900 mb-3">1) Dados da empresa</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <input name="empresa_nome" required placeholder="Nome da empresa" class="input" value="<%= f.empresa_nome || '' %>" />
+          <input name="empresa_documento" placeholder="CNPJ (opcional)" class="input" value="<%= f.empresa_documento || '' %>" />
+          <input name="responsavel_nome" required placeholder="Responsável" class="input" value="<%= f.responsavel_nome || '' %>" />
+          <input name="responsavel_cargo" placeholder="Cargo" class="input" value="<%= f.responsavel_cargo || '' %>" />
+          <input id="telefoneInput" name="telefone" required placeholder="Telefone/WhatsApp" class="input" value="<%= f.telefone || '' %>" />
+          <input type="email" name="email" required placeholder="E-mail comercial" class="input" value="<%= f.email || '' %>" />
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+          <input type="email" name="email_login" required placeholder="E-mail de acesso ao painel" class="input md:col-span-3" value="<%= f.email_login || '' %>" />
+          <input type="password" name="senha" required minlength="6" placeholder="Crie uma senha" class="input" />
+          <input type="password" name="confirmar_senha" required minlength="6" placeholder="Confirme a senha" class="input md:col-span-2" />
+        </div>
+        <p class="text-xs text-gray-500 mt-2">
+          Você poderá entrar no painel restrito logo após o envio. Recursos públicos serão liberados após aprovação.
+        </p>
+      </section>
+
+      <section class="border border-gray-100 rounded-2xl p-4 md:p-5">
+        <h2 class="font-semibold text-gray-900 mb-3">2) Localização do petshop</h2>
+        <p class="text-sm text-gray-500 mb-4">
+          Você pode usar sua localização atual ou preencher o endereço manualmente.
+        </p>
+
+        <div class="grid md:grid-cols-2 gap-3 mb-4">
+          <label class="border rounded-xl p-3 flex gap-3 items-start">
+            <input type="radio" name="location_mode" value="auto" class="mt-1" checked>
+            <div>
+              <p class="font-medium text-gray-900">Usar minha localização agora</p>
+              <p class="text-xs text-gray-500">Ideal para definir o ponto exato no mapa.</p>
+            </div>
+          </label>
+          <label class="border rounded-xl p-3 flex gap-3 items-start">
+            <input type="radio" name="location_mode" value="manual" class="mt-1">
+            <div>
+              <p class="font-medium text-gray-900">Informar endereço manualmente</p>
+              <p class="text-xs text-gray-500">Buscaremos o endereço e posicionaremos no mapa.</p>
+            </div>
+          </label>
+        </div>
+
+        <div class="flex flex-wrap gap-2 mb-4">
+          <button type="button" id="btnGeoNow" class="btn btn-primary">
+            <i class="fa-solid fa-location-crosshairs mr-2"></i> Usar localização atual
+          </button>
+          <button type="button" id="btnSearchAddress" class="btn">
+            <i class="fa-solid fa-magnifying-glass-location mr-2"></i> Buscar endereço no mapa
+          </button>
+        </div>
+
+        <div id="locationStatus" class="text-sm text-gray-600 mb-3"></div>
+        <div id="locationError" class="hidden text-sm text-red-600 mb-3"></div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <input id="enderecoInput" name="endereco" required placeholder="Endereço completo (rua e número)" class="input md:col-span-2" value="<%= f.endereco || '' %>" />
+          <input name="bairro" placeholder="Bairro" class="input" value="<%= f.bairro || '' %>" />
+          <input name="cidade" placeholder="Cidade" class="input" value="<%= f.cidade || '' %>" />
+          <input id="estadoInput" name="estado" placeholder="UF" class="input" maxlength="2" value="<%= f.estado || '' %>" />
+          <input id="cepInput" name="cep" placeholder="CEP" class="input" value="<%= f.cep || '' %>" />
+        </div>
+
+        <input id="latitudeInput" type="hidden" name="latitude" value="<%= f.latitude || '' %>" />
+        <input id="longitudeInput" type="hidden" name="longitude" value="<%= f.longitude || '' %>" />
+
+        <div class="bg-gray-50 border border-gray-200 rounded-xl p-3 mb-2">
+          <p class="text-xs text-gray-500">Coordenadas selecionadas</p>
+          <p class="font-medium text-gray-800">
+            <span id="latText"><%= f.latitude || '--' %></span>,
+            <span id="lngText"><%= f.longitude || '--' %></span>
+          </p>
+        </div>
+        <div id="partnerMap" class="rounded-xl border border-gray-200" style="height: 320px;"></div>
+      </section>
+
+      <section class="border border-gray-100 rounded-2xl p-4 md:p-5">
+        <h2 class="font-semibold text-gray-900 mb-3">3) Serviços e redes sociais</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <input name="instagram" placeholder="Instagram" class="input" value="<%= f.instagram || '' %>" />
+          <input name="facebook" placeholder="Facebook" class="input" value="<%= f.facebook || '' %>" />
+          <input name="website" placeholder="Website" class="input md:col-span-2" value="<%= f.website || '' %>" />
+          <input name="servicos" placeholder="Serviços oferecidos (separados por vírgula)" class="input md:col-span-2" value="<%= f.servicos || '' %>" />
+          <input name="horario_funcionamento" placeholder="Horário de funcionamento" class="input md:col-span-2" value="<%= f.horario_funcionamento || '' %>" />
+          <textarea name="descricao" placeholder="Descrição do petshop (diferenciais, estrutura, etc.)" class="input md:col-span-2 min-h-24"><%= f.descricao || '' %></textarea>
+        </div>
+      </section>
+
+      <section class="border border-gray-100 rounded-2xl p-4 md:p-5">
+        <h2 class="font-semibold text-gray-900 mb-3">4) Mídia da loja</h2>
+        <div class="grid md:grid-cols-2 gap-4">
+          <label class="text-sm text-gray-600">Logo
+            <input type="file" name="logo" accept="image/*" class="input mt-1" />
+          </label>
+          <label class="text-sm text-gray-600">Fotos da loja (até 6)
+            <input type="file" name="fotos" accept="image/*" multiple class="input mt-1" />
+          </label>
+        </div>
+      </section>
+
+      <div>
+        <button id="submitBtn" class="btn btn-primary w-full">
+          Enviar solicitação de parceria
+        </button>
+        <p class="text-xs text-gray-500 mt-2">
+          Ao enviar, nosso time valida os dados e entra em contato pelo e-mail cadastrado.
+        </p>
+      </div>
+    </form>
+  </div>
+</main>
+
+<% locals.extraScripts = `
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+(function() {
+  var form = document.getElementById('partnerForm');
+  var btnGeoNow = document.getElementById('btnGeoNow');
+  var btnSearchAddress = document.getElementById('btnSearchAddress');
+  var locationStatus = document.getElementById('locationStatus');
+  var locationError = document.getElementById('locationError');
+  var latitudeInput = document.getElementById('latitudeInput');
+  var longitudeInput = document.getElementById('longitudeInput');
+  var latText = document.getElementById('latText');
+  var lngText = document.getElementById('lngText');
+  var enderecoInput = document.getElementById('enderecoInput');
+  var estadoInput = document.getElementById('estadoInput');
+  var cepInput = document.getElementById('cepInput');
+  var telefoneInput = document.getElementById('telefoneInput');
+
+  var initialLat = parseFloat(latitudeInput.value || '');
+  var initialLng = parseFloat(longitudeInput.value || '');
+  var map = L.map('partnerMap').setView(
+    Number.isFinite(initialLat) && Number.isFinite(initialLng) ? [initialLat, initialLng] : [-15.7942, -47.8822],
+    Number.isFinite(initialLat) && Number.isFinite(initialLng) ? 16 : 4
+  );
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap'
+  }).addTo(map);
+
+  var marker = null;
+
+  function setError(msg) {
+    if (!msg) {
+      locationError.classList.add('hidden');
+      locationError.textContent = '';
+      return;
+    }
+    locationError.textContent = msg;
+    locationError.classList.remove('hidden');
+  }
+
+  function setStatus(msg) {
+    locationStatus.textContent = msg || '';
+  }
+
+  function updateCoords(lat, lng, center) {
+    latitudeInput.value = Number(lat).toFixed(7);
+    longitudeInput.value = Number(lng).toFixed(7);
+    latText.textContent = latitudeInput.value;
+    lngText.textContent = longitudeInput.value;
+
+    if (!marker) {
+      marker = L.marker([lat, lng], { draggable: true }).addTo(map);
+      marker.on('dragend', function(e) {
+        var p = e.target.getLatLng();
+        updateCoords(p.lat, p.lng, false);
+        setStatus('Ponto ajustado manualmente no mapa.');
+      });
+    } else {
+      marker.setLatLng([lat, lng]);
+    }
+    if (center !== false) map.setView([lat, lng], 16);
+    setError('');
+  }
+
+  async function reverseGeocode(lat, lng) {
+    try {
+      var url = 'https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=' + encodeURIComponent(lat) + '&lon=' + encodeURIComponent(lng);
+      var res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+      if (!res.ok) return;
+      var data = await res.json();
+      if (data && data.display_name && !enderecoInput.value) enderecoInput.value = data.display_name;
+    } catch (e) {}
+  }
+
+  async function searchAddress() {
+    var query = [
+      document.querySelector('[name="endereco"]').value,
+      document.querySelector('[name="bairro"]').value,
+      document.querySelector('[name="cidade"]').value,
+      document.querySelector('[name="estado"]').value,
+      document.querySelector('[name="cep"]').value,
+      'Brasil'
+    ].filter(Boolean).join(', ');
+
+    if (!query) {
+      setError('Preencha o endereço para buscar no mapa.');
+      return;
+    }
+
+    setStatus('Buscando endereço no mapa...');
+    setError('');
+    try {
+      var url = 'https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&q=' + encodeURIComponent(query);
+      var res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+      var data = await res.json();
+      if (!Array.isArray(data) || !data.length) {
+        setError('Não encontramos esse endereço. Ajuste os dados e tente novamente.');
+        setStatus('');
+        return;
+      }
+      var lat = parseFloat(data[0].lat);
+      var lon = parseFloat(data[0].lon);
+      if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+        setError('Não foi possível obter coordenadas para esse endereço.');
+        setStatus('');
+        return;
+      }
+      updateCoords(lat, lon, true);
+      setStatus('Endereço localizado com sucesso.');
+    } catch (e) {
+      setError('Erro ao buscar endereço. Tente novamente.');
+      setStatus('');
+    }
+  }
+
+  btnGeoNow.addEventListener('click', function() {
+    if (!navigator.geolocation) {
+      setError('Seu navegador não suporta geolocalização. Use o endereço manual.');
+      return;
+    }
+    setStatus('Capturando sua localização atual...');
+    setError('');
+    navigator.geolocation.getCurrentPosition(
+      function(pos) {
+        var lat = pos.coords.latitude;
+        var lng = pos.coords.longitude;
+        updateCoords(lat, lng, true);
+        setStatus('Localização capturada com sucesso.');
+        reverseGeocode(lat, lng);
+      },
+      function() {
+        setStatus('');
+        setError('Não foi possível acessar sua localização. Use o preenchimento manual.');
+      },
+      { enableHighAccuracy: true, timeout: 15000 }
+    );
+  });
+
+  btnSearchAddress.addEventListener('click', searchAddress);
+
+  form.addEventListener('submit', function(e) {
+    var lat = parseFloat(latitudeInput.value || '');
+    var lng = parseFloat(longitudeInput.value || '');
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+      e.preventDefault();
+      setError('Defina a localização no mapa antes de enviar o cadastro.');
+      setStatus('');
+      return;
+    }
+    setError('');
+  });
+
+  if (Number.isFinite(initialLat) && Number.isFinite(initialLng)) {
+    updateCoords(initialLat, initialLng, true);
+  } else {
+    setStatus('Escolha uma opção de localização para definir o ponto da loja.');
+  }
+
+  estadoInput.addEventListener('input', function() {
+    this.value = (this.value || '').toUpperCase().replace(/[^A-Z]/g, '').slice(0, 2);
+  });
+
+  cepInput.addEventListener('input', function() {
+    var v = (this.value || '').replace(/\\D/g, '').slice(0, 8);
+    this.value = v.length > 5 ? v.slice(0, 5) + '-' + v.slice(5) : v;
+  });
+
+  telefoneInput.addEventListener('input', function() {
+    var v = (this.value || '').replace(/\\D/g, '').slice(0, 11);
+    if (v.length <= 10) {
+      this.value = v.replace(/(\\d{2})(\\d{0,4})(\\d{0,4})/, function(_, a, b, c) {
+        return '(' + a + ') ' + b + (c ? '-' + c : '');
+      }).trim();
+    } else {
+      this.value = v.replace(/(\\d{2})(\\d{0,5})(\\d{0,4})/, function(_, a, b, c) {
+        return '(' + a + ') ' + b + (c ? '-' + c : '');
+      }).trim();
+    }
+  });
+})();
+</script>
+` %>
+<%- include('../partials/footer') %>

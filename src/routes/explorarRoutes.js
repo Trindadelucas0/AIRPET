@@ -6,6 +6,7 @@ const path = require('path');
 const crypto = require('crypto');
 
 const explorarController = require('../controllers/explorarController');
+const { estaAutenticadoAPI } = require('../middlewares/authMiddleware');
 
 const postsDir = path.join(__dirname, '..', 'public', 'images', 'posts');
 if (!fs.existsSync(postsDir)) {
@@ -42,24 +43,24 @@ router.post('/post', function (req, res, next) {
     next();
   });
 }, explorarController.criarPost);
-router.post('/post/:id/repost', explorarController.repostar);
+router.post('/post/:id/repost', estaAutenticadoAPI, explorarController.repostar);
 
-router.post('/post/:id/curtir', explorarController.curtir);
-router.delete('/post/:id/curtir', explorarController.descurtir);
+router.post('/post/:id/curtir', estaAutenticadoAPI, explorarController.curtir);
+router.delete('/post/:id/curtir', estaAutenticadoAPI, explorarController.descurtir);
 
 router.get('/post/:id/comentarios', explorarController.comentarios);
 router.get('/post/:id/pets-proximos', explorarController.petsProximosPost);
-router.post('/post/:id/comentar', explorarController.comentar);
-router.post('/api/interactions/view', explorarController.registrarVisualizacao);
-router.delete('/comentario/:id', explorarController.deletarComentario);
+router.post('/post/:id/comentar', estaAutenticadoAPI, explorarController.comentar);
+router.post('/api/interactions/view', estaAutenticadoAPI, explorarController.registrarVisualizacao);
+router.delete('/comentario/:id', estaAutenticadoAPI, explorarController.deletarComentario);
 
-router.post('/post/:id/fixar', explorarController.fixar);
-router.delete('/post/:id/fixar', explorarController.desafixar);
+router.post('/post/:id/fixar', estaAutenticadoAPI, explorarController.fixar);
+router.delete('/post/:id/fixar', estaAutenticadoAPI, explorarController.desafixar);
 
-router.delete('/post/:id', explorarController.deletarPost);
+router.delete('/post/:id', estaAutenticadoAPI, explorarController.deletarPost);
 
-router.post('/seguir/:id', explorarController.seguir);
-router.delete('/seguir/:id', explorarController.deixarDeSeguir);
+router.post('/seguir/:id', estaAutenticadoAPI, explorarController.seguir);
+router.delete('/seguir/:id', estaAutenticadoAPI, explorarController.deixarDeSeguir);
 
 router.get('/perfil/:id', explorarController.perfilPublico);
 router.get('/perfil/:id/seguidores', explorarController.listarSeguidoresUsuario);
@@ -72,9 +73,11 @@ router.get('/pet/:id', explorarController.perfilPet);
 router.get('/api/usuarios', explorarController.buscarUsuarios);
 router.get('/api/pets', explorarController.buscarPets);
 
-router.post('/pet/:id/seguir', explorarController.seguirPet);
-router.delete('/pet/:id/seguir', explorarController.deixarDeSeguirPet);
-router.delete('/pet/:id/seguidor/:usuarioId', explorarController.removerSeguidorPet);
+router.post('/pet/:id/seguir', estaAutenticadoAPI, explorarController.seguirPet);
+router.delete('/pet/:id/seguir', estaAutenticadoAPI, explorarController.deixarDeSeguirPet);
+router.post('/pet/:id/petshops', estaAutenticadoAPI, explorarController.vincularPetshop);
+router.delete('/pet/:id/petshops/:petshopId', estaAutenticadoAPI, explorarController.desvincularPetshop);
+router.delete('/pet/:id/seguidor/:usuarioId', estaAutenticadoAPI, explorarController.removerSeguidorPet);
 
 router.get('/busca', explorarController.paginaBusca);
 

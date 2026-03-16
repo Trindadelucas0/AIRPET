@@ -65,6 +65,14 @@ const Petshop = {
     return resultado.rows[0];
   },
 
+  async buscarPorSlug(slug) {
+    const resultado = await query(
+      `SELECT * FROM petshops WHERE slug = $1`,
+      [slug]
+    );
+    return resultado.rows[0];
+  },
+
   /**
    * Lista apenas os petshops ativos (ativo = true).
    * Exibidos no mapa público e nas buscas de parceiros.

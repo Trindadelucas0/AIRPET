@@ -1,0 +1,114 @@
+<% locals.titulo = 'Solicitações de Petshop' %>
+<%- include('../partials/admin-layout') %>
+<%- include('../partials/flash') %>
+
+<main class="container mx-auto px-4 py-6 space-y-6">
+  <div class="flex items-center justify-between">
+    <h1 class="text-2xl font-bold">Solicitações de parceria</h1>
+    <a href="<%= adminPath %>/petshops" class="text-sm text-gray-600">Ver petshops ativos</a>
+  </div>
+
+  <section class="grid grid-cols-2 md:grid-cols-5 gap-3">
+    <div class="card text-center">
+      <p class="text-xs text-gray-500">Total</p>
+      <p class="text-2xl font-bold"><%= (contagens && contagens.total) || 0 %></p>
+    </div>
+    <div class="card text-center">
+      <p class="text-xs text-gray-500">Pendentes</p>
+      <p class="text-2xl font-bold text-amber-600"><%= (contagens && contagens.pendente) || 0 %></p>
+    </div>
+    <div class="card text-center">
+      <p class="text-xs text-gray-500">Em análise</p>
+      <p class="text-2xl font-bold text-blue-600"><%= (contagens && contagens.em_analise) || 0 %></p>
+    </div>
+    <div class="card text-center">
+      <p class="text-xs text-gray-500">Aprovadas</p>
+      <p class="text-2xl font-bold text-emerald-600"><%= (contagens && contagens.aprovado) || 0 %></p>
+    </div>
+    <div class="card text-center">
+      <p class="text-xs text-gray-500">Rejeitadas</p>
+      <p class="text-2xl font-bold text-red-600"><%= (contagens && contagens.rejeitado) || 0 %></p>
+    </div>
+  </section>
+
+  <div class="card">
+    <form method="GET" class="flex gap-2">
+      <select name="status" class="input">
+        <option value="pendente" <%= filtroStatus === 'pendente' ? 'selected' : '' %>>Pendentes</option>
+        <option value="em_analise" <%= filtroStatus === 'em_analise' ? 'selected' : '' %>>Em análise</option>
+        <option value="rejeitado" <%= filtroStatus === 'rejeitado' ? 'selected' : '' %>>Rejeitadas</option>
+        <option value="aprovado" <%= filtroStatus === 'aprovado' ? 'selected' : '' %>>Aprovadas</option>
+        <option value="todas" <%= filtroStatus === 'todas' ? 'selected' : '' %>>Todas</option>
+      </select>
+      <button class="btn btn-primary">Filtrar</button>
+    </form>
+  </div>
+
+  <section class="space-y-4">
+    <% if ((solicitacoes || []).length === 0) { %>
+      <div class="card text-center py-10">
+        <div class="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-3">
+          <i class="fa-solid fa-store text-gray-400"></i>
+        </div>
+        <p class="font-semibold text-gray-800">Nenhuma solicitação nesse filtro</p>
+        <p class="text-sm text-gray-500 mt-1">Tente trocar o status para visualizar outros cadastros.</p>
+      </div>
+    <% } %>
+
+    <% (solicitacoes || []).forEach(function(s) { %>
+      <% const badgeMap = {
+        pendente: 'bg-amber-100 text-amber-700',
+        em_analise: 'bg-blue-100 text-blue-700',
+        aprovado: 'bg-emerald-100 text-emerald-700',
+        rejeitado: 'bg-red-100 text-red-700'
+      }; %>
+      <div class="card">
+        <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+          <div>
+            <h2 class="font-bold text-lg"><%= s.empresa_nome %></h2>
+            <p class="text-sm text-gray-500"><%= s.email %> • <%= s.telefone %></p>
+            <p class="text-sm text-gray-600 mt-2"><%= s.endereco %></p>
+            <span class="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold mt-3 <%= badgeMap[s.status] || 'bg-gray-100 text-gray-700' %>">
+              <%= s.status %>
+            </span>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <form action="<%= adminPath %>/petshops/<%= s.id %>/aprovar" method="POST">
+              <button class="btn btn-success">Aprovar</button>
+            </form>
+            <form action="<%= adminPath %>/petshops/<%= s.id %>/rejeitar" method="POST" class="flex gap-2">
+              <input name="motivo" class="input" placeholder="Motivo da rejeição">
+              <button class="btn btn-danger">Rejeitar</button>
+            </form>
+            <form action="<%= adminPath %>/petshops/<%= s.id %>/em-analise" method="POST">
+              <button class="btn">Em análise</button>
+            </form>
+            <form action="<%= adminPath %>/petshops/<%= s.id %>/suporte" method="POST">
+              <button class="btn">Acionar suporte</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    <% }) %>
+  </section>
+
+  <section class="card">
+    <h2 class="text-lg font-bold mb-3">Promoções pendentes de moderação</h2>
+    <div class="space-y-3">
+      <% (promocoesPendentes || []).forEach(function(p) { %>
+        <div class="border rounded-xl p-3 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+          <div>
+            <p class="font-semibold"><%= p.titulo || 'Promoção' %> • <%= p.petshop_nome %></p>
+            <p class="text-sm text-gray-500"><%= p.texto || 'Sem descrição' %></p>
+          </div>
+          <div class="flex gap-2">
+            <form method="POST" action="<%= adminPath %>/petshops/promocoes/<%= p.id %>/aprovar"><button class="btn btn-success">Aprovar</button></form>
+            <form method="POST" action="<%= adminPath %>/petshops/promocoes/<%= p.id %>/rejeitar"><button class="btn btn-danger">Rejeitar</button></form>
+          </div>
+        </div>
+      <% }) %>
+    </div>
+  </section>
+</main>
+
+<%- include('../partials/admin-footer') %>

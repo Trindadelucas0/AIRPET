@@ -129,6 +129,7 @@ const nfcController = {
             pet: resultado.pet,
             dono: resultado.dono,
             petPerdido: resultado.petPerdidoAlerta,
+            petshopMaisProximo: resultado.petshopMaisProximo || null,
           });
 
         /*

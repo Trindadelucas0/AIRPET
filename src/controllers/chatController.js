@@ -65,12 +65,12 @@ async function listarConversas(req, res) {
 
 async function mostrarConversa(req, res) {
   try {
-    const { conversa_id } = req.params;
+    const conversaId = req.params.conversaId || req.params.conversa_id;
     const usuarioId = req.session.usuario.id;
     const userRole = req.session.usuario.role;
 
     /* Busca a conversa com dados enriquecidos via JOINs */
-    const conversa = await Conversa.buscarPorId(conversa_id);
+    const conversa = await Conversa.buscarPorId(conversaId);
 
     /* Se a conversa não existe, retorna 404 */
     if (!conversa) {
@@ -98,7 +98,7 @@ async function mostrarConversa(req, res) {
     }
 
     /* Busca as mensagens APROVADAS da conversa (ordem cronológica ASC) */
-    const mensagens = await MensagemChat.buscarPorConversa(conversa_id);
+    const mensagens = await MensagemChat.buscarPorConversa(conversaId);
 
     /* Renderiza a tela de chat com todos os dados */
     return res.render('chat/conversa', {
@@ -195,14 +195,18 @@ async function iniciarConversa(req, res) {
  */
 async function abrirOuIniciarPorPet(req, res) {
   try {
-    const { pet_id } = req.params;
+    const petId = parseInt(req.params.pet_id, 10);
     const usuarioId = req.session.usuario.id;
+    if (!Number.isFinite(petId) || petId <= 0) {
+      req.session.flash = { tipo: 'erro', mensagem: 'Pet inválido para iniciar conversa.' };
+      return res.redirect('/pets');
+    }
 
-    const alerta = await PetPerdido.buscarAtivoPorPet(pet_id);
+    const alerta = await PetPerdido.buscarAtivoPorPet(petId);
 
     if (!alerta) {
       req.session.flash = { tipo: 'erro', mensagem: 'Este pet não está mais como perdido.' };
-      return res.redirect(`/pets/${pet_id}`);
+      return res.redirect(`/pets/${petId}`);
     }
 
     const pet_perdido_id = alerta.id;

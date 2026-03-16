@@ -1,0 +1,35 @@
+<% locals.titulo = 'Mapa de Petshops' %>
+<% locals.extraHead = '<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">' %>
+<%- include('../partials/header') %>
+
+<main class="flex-1 container mx-auto max-w-6xl px-4 py-6">
+  <div class="mb-4">
+    <h1 class="text-2xl font-bold text-gray-900">Mapa de Petshops Parceiros</h1>
+    <p class="text-sm text-gray-500">Veja informações, serviços e acesse o perfil completo.</p>
+  </div>
+  <div id="petshopMap" class="rounded-2xl border border-gray-200" style="height: 70vh;"></div>
+</main>
+
+<% locals.extraScripts = `
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+  (function() {
+    var petshops = ${JSON.stringify(petshops || [])};
+    var map = L.map('petshopMap').setView([-15.7801, -47.9292], 4);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap' }).addTo(map);
+    var bounds = [];
+    petshops.forEach(function(p) {
+      if (!p.latitude || !p.longitude) return;
+      var marker = L.marker([parseFloat(p.latitude), parseFloat(p.longitude)]).addTo(map);
+      marker.bindPopup(
+        '<strong>' + (p.nome || 'Petshop') + '</strong><br>' +
+        (p.endereco || '') + '<br><a href="/petshops/' + (p.slug || p.id) + '">Ver perfil completo</a>'
+      );
+      bounds.push([parseFloat(p.latitude), parseFloat(p.longitude)]);
+    });
+    if (bounds.length) map.fitBounds(bounds, { padding: [30, 30] });
+  })();
+</script>
+` %>
+
+<%- include('../partials/footer') %>

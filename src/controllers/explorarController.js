@@ -8,6 +8,9 @@ const Repost = require('../models/Repost');
 const Pet = require('../models/Pet');
 const Usuario = require('../models/Usuario');
 const SeguidorPet = require('../models/SeguidorPet');
+const PetPetshopLink = require('../models/PetPetshopLink');
+const Petshop = require('../models/Petshop');
+const PetshopFollower = require('../models/PetshopFollower');
 const recomendacaoService = require('../services/recomendacaoService');
 const logger = require('../utils/logger');
 const { query } = require('../config/database');
@@ -138,6 +141,7 @@ const explorarController = {
         page === 1 ? recomendacaoService.recomendarPessoas(uid, 6).catch(() => []) : [],
         page === 1 ? recomendacaoService.petsRecomendados(uid, 8).catch(() => []) : [],
       ]);
+      const petshopDestaques = page === 1 ? (await Petshop.listarAtivos()).slice(0, 6) : [];
 
       if (req.headers.accept && req.headers.accept.includes('application/json')) {
         return res.json({ sucesso: true, posts, totalPosts, totalFixadas });
@@ -153,6 +157,7 @@ const explorarController = {
         temMais: postsOrganicos.length === limite,
         recomendacoes,
         petsRecomendados,
+        petshopDestaques,
       });
     } catch (err) {
       logger.error('EXPLORAR', 'Erro no feed de seguidos', err);
@@ -192,6 +197,7 @@ const explorarController = {
         page === 1 ? recomendacaoService.recomendarPessoas(uid, 6).catch(() => []) : [],
         page === 1 ? recomendacaoService.petsRecomendados(uid, 8).catch(() => []) : [],
       ]);
+      const petshopDestaques = page === 1 ? (await Petshop.listarAtivos()).slice(0, 6) : [];
 
       if (req.headers.accept && req.headers.accept.includes('application/json')) {
         return res.json({ sucesso: true, posts, totalPosts, totalFixadas });
@@ -207,6 +213,7 @@ const explorarController = {
         temMais: postsOrganicos.length === limite,
         recomendacoes,
         petsRecomendados,
+        petshopDestaques,
       });
     } catch (err) {
       logger.error('EXPLORAR', 'Erro no feed regional', err);
@@ -500,12 +507,20 @@ const explorarController = {
         return res.redirect('/explorar');
       }
       const posts = await Publicacao.buscarPorPet(id, uid, 50);
-      const [totalSeguidores, totalSeguindo, estaSeguindo] = await Promise.all([
+      const [totalSeguidores, totalSeguindo, estaSeguindo, petshopsVinculados, petshopsAtivos] = await Promise.all([
         SeguidorPet.contarSeguidores(id),
         SeguidorPet.contarSeguindo(pet.usuario_id),
         uid ? SeguidorPet.estaSeguindo(uid, id) : false,
+        PetPetshopLink.listarPorPet(id),
+        Petshop.listarAtivos(),
       ]);
       const dono = await Usuario.buscarPorId(pet.usuario_id);
+      const petshopsVinculadosComFollow = await Promise.all(
+        (petshopsVinculados || []).map(async (item) => ({
+          ...item,
+          usuario_segue: uid ? await PetshopFollower.usuarioSegue(item.petshop_id, uid) : false,
+        }))
+      );
       res.render('explorar/perfil-pet', {
         titulo: pet.nome,
         pet,
@@ -515,6 +530,8 @@ const explorarController = {
         totalSeguindo,
         estaSeguindo,
         eMeuPet: uid === pet.usuario_id,
+        petshopsVinculados: petshopsVinculadosComFollow,
+        petshopsAtivos: petshopsAtivos || [],
       });
     } catch (err) {
       logger.error('EXPLORAR', 'Erro no perfil do pet', err);
@@ -635,6 +652,46 @@ const explorarController = {
     } catch (err) {
       logger.error('EXPLORAR', 'Erro ao deixar de seguir pet', err);
       res.status(500).json({ sucesso: false });
+    }
+  },
+
+  async vincularPetshop(req, res) {
+    try {
+      const uid = req.session?.usuario?.id;
+      const petId = parseInt(req.params.id, 10);
+      const petshopId = parseInt(req.body?.petshop_id, 10);
+      const tipo = String(req.body?.tipo_vinculo || 'cliente');
+      if (!petId || !petshopId) {
+        return res.status(400).json({ sucesso: false, mensagem: 'Dados inválidos.' });
+      }
+      const pet = await Pet.buscarPorId(petId);
+      if (!pet || pet.usuario_id !== uid) {
+        return res.status(403).json({ sucesso: false, mensagem: 'Você não pode vincular este pet.' });
+      }
+      await PetPetshopLink.vincular({ pet_id: petId, petshop_id: petshopId, tipo_vinculo: tipo });
+      const links = await PetPetshopLink.listarPorPet(petId);
+      return res.json({ sucesso: true, links });
+    } catch (err) {
+      logger.error('EXPLORAR', 'Erro ao vincular petshop ao pet', err);
+      return res.status(500).json({ sucesso: false, mensagem: 'Erro ao vincular petshop.' });
+    }
+  },
+
+  async desvincularPetshop(req, res) {
+    try {
+      const uid = req.session?.usuario?.id;
+      const petId = parseInt(req.params.id, 10);
+      const petshopId = parseInt(req.params.petshopId, 10);
+      const pet = await Pet.buscarPorId(petId);
+      if (!pet || pet.usuario_id !== uid) {
+        return res.status(403).json({ sucesso: false, mensagem: 'Você não pode desvincular este pet.' });
+      }
+      await PetPetshopLink.desvincular(petId, petshopId);
+      const links = await PetPetshopLink.listarPorPet(petId);
+      return res.json({ sucesso: true, links });
+    } catch (err) {
+      logger.error('EXPLORAR', 'Erro ao desvincular petshop do pet', err);
+      return res.status(500).json({ sucesso: false, mensagem: 'Erro ao desvincular petshop.' });
     }
   },
 

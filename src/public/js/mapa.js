@@ -112,6 +112,16 @@
             popup += '<br><a href="tel:' + props.telefone + '" style="color:#ec5a1c;font-size:12px">' +
                      '<i class="fa-solid fa-phone"></i> ' + props.telefone + '</a>';
           }
+          if (props.tipo === 'petshop') {
+            if (props.imagem_url) {
+              popup = '<div style="min-width:190px">' +
+                '<img src="' + props.imagem_url + '" style="width:100%;height:80px;object-fit:cover;border-radius:8px;margin-bottom:6px">' +
+                popup.replace('<div style="min-width:160px">', '');
+            }
+            if (props.perfil_url) {
+              popup += '<br><a href="' + props.perfil_url + '" style="display:inline-block;margin-top:6px;background:#ec5a1c;color:#fff;padding:6px 10px;border-radius:8px;font-size:12px;font-weight:600;text-decoration:none">Ver perfil</a>';
+            }
+          }
           if (props.tipo === 'pet_perdido' && props.foto) {
             popup = '<div style="min-width:180px"><img src="' + props.foto +
                     '" style="width:100%;height:80px;object-fit:cover;border-radius:8px;margin-bottom:6px">' + popup.replace('<div style="min-width:160px">', '');

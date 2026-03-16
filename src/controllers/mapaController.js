@@ -139,6 +139,8 @@ async function buscarPins(req, res) {
           nome: petshop.nome,
           endereco: petshop.endereco,
           telefone: petshop.telefone,
+          imagem_url: petshop.logo_url || petshop.foto_capa_url || null,
+          perfil_url: `/petshops/${petshop.slug || petshop.id}`,
         },
       });
     });

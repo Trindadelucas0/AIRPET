@@ -101,6 +101,13 @@ router.post('/boosts/:id/cancelar', apenasAdmin, adminController.cancelarBoost);
 router.get('/usuarios', apenasAdmin, adminController.listarUsuarios);
 router.get('/pets', apenasAdmin, adminController.listarPets);
 router.get('/petshops', apenasAdmin, adminController.listarPetshops);
+router.get('/petshops/solicitacoes', apenasAdmin, adminController.listarSolicitacoesPetshop);
+router.post('/petshops/:id/aprovar', apenasAdmin, adminController.aprovarSolicitacaoPetshop);
+router.post('/petshops/:id/rejeitar', apenasAdmin, adminController.rejeitarSolicitacaoPetshop);
+router.post('/petshops/:id/em-analise', apenasAdmin, adminController.colocarSolicitacaoPetshopEmAnalise);
+router.post('/petshops/:id/suporte', apenasAdmin, adminController.contatarSuportePetshop);
+router.post('/petshops/promocoes/:id/aprovar', apenasAdmin, adminController.aprovarPromocaoPetshop);
+router.post('/petshops/promocoes/:id/rejeitar', apenasAdmin, adminController.rejeitarPromocaoPetshop);
 
 router.get('/pets-perdidos', apenasAdmin, adminController.listarPerdidos);
 router.post('/pets-perdidos/:id/aprovar', apenasAdmin, adminController.aprovarPerdido);

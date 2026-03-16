@@ -8,10 +8,10 @@
     <a href="/chat" class="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-gray-200 transition-colors flex-shrink-0">
       <i class="fa-solid fa-arrow-left text-sm"></i>
     </a>
-    <% if (pet) { %>
+    <% if (conversa) { %>
       <div class="w-10 h-10 rounded-full overflow-hidden bg-gray-100 flex-shrink-0">
-        <% if (pet.foto) { %>
-          <img src="<%= pet.foto %>" alt="<%= pet.nome %>" class="w-full h-full object-cover">
+        <% if (conversa.pet_foto) { %>
+          <img src="<%= conversa.pet_foto %>" alt="<%= conversa.pet_nome %>" class="w-full h-full object-cover">
         <% } else { %>
           <div class="w-full h-full flex items-center justify-center">
             <i class="fa-solid fa-paw text-gray-300"></i>
@@ -19,7 +19,7 @@
         <% } %>
       </div>
       <div class="min-w-0 flex-1">
-        <p class="text-sm font-bold text-gray-900 truncate"><%= pet.nome %></p>
+        <p class="text-sm font-bold text-gray-900 truncate"><%= conversa.pet_nome || 'Chat' %></p>
         <p class="text-xs text-gray-500">
           <% if (conversa.status === 'ativa') { %>
             <span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1"></span>Ativo
@@ -56,9 +56,7 @@
             </div>
 
             <div class="flex items-center gap-2 mt-1 px-1 <%= isOwner ? 'justify-end' : 'justify-start' %>">
-              <span class="text-[10px] text-gray-400">
-                <%= new Date(msg.createdAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) %>
-              </span>
+              <span class="text-[10px] text-gray-400"><%= new Date(msg.data || msg.createdAt || Date.now()).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) %></span>
               <% if (isOwner && msg.lida) { %>
                 <i class="fa-solid fa-check-double text-[10px] text-blue-400"></i>
               <% } else if (isOwner) { %>
@@ -131,13 +129,21 @@
   var container = document.getElementById('mensagensContainer');
   if (container) container.scrollTop = container.scrollHeight;
 
-  var conversaId = ${conversa.id};
-  var socket = io();
-  socket.emit('entrar_conversa', conversaId);
+  var conversaId = ${JSON.stringify(String(conversa.id))};
+  var usuarioAtualId = ${JSON.stringify(String((typeof usuario !== 'undefined' && usuario && usuario.id) ? usuario.id : '0'))};
+  var socket = io('/chat');
+  socket.emit('entrar_conversa', { conversa_id: conversaId });
 
-  socket.on('nova_mensagem', function(msg) {
+  function escapeHtml(str) {
+    return String(str || '').replace(/[&<>"']/g, function(ch) {
+      return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch];
+    });
+  }
+
+  function appendMensagem(msg, pendente) {
     if (!container) return;
-    var isOwner = msg.remetente_id === ${typeof usuario !== 'undefined' && usuario ? usuario.id : 0};
+    var remetente = (msg.remetente_id != null ? String(msg.remetente_id) : String(msg.remetente || ''));
+    var isOwner = remetente === usuarioAtualId;
     var div = document.createElement('div');
     div.className = 'flex ' + (isOwner ? 'justify-end' : 'justify-start');
 
@@ -147,11 +153,11 @@
 
     var html = '<div class="max-w-[80%] sm:max-w-[70%]">';
     html += '<div class="' + bubbleClass + ' px-4 py-2.5">';
-    if (msg.conteudo) html += '<p class="text-sm leading-relaxed whitespace-pre-wrap">' + msg.conteudo.replace(/</g, '&lt;') + '</p>';
+    if (msg.conteudo) html += '<p class="text-sm leading-relaxed whitespace-pre-wrap">' + escapeHtml(msg.conteudo) + '</p>';
     html += '</div>';
     html += '<div class="flex items-center gap-2 mt-1 px-1 ' + (isOwner ? 'justify-end' : 'justify-start') + '">';
     html += '<span class="text-[10px] text-gray-400">' + new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) + '</span>';
-    if (msg.status === 'pendente') {
+    if (pendente || msg.status === 'pendente') {
       html += '<span class="text-[10px] text-amber-500 font-medium"><i class="fa-solid fa-clock mr-0.5"></i>Aguardando moderacao</span>';
     }
     html += '</div></div>';
@@ -159,6 +165,14 @@
     div.innerHTML = html;
     container.appendChild(div);
     container.scrollTop = container.scrollHeight;
+  }
+
+  socket.on('mensagem_enviada', function(msg) {
+    appendMensagem(msg, true);
+  });
+
+  socket.on('nova_mensagem', function(msg) {
+    appendMensagem(msg, false);
   });
 
   var form = document.getElementById('formMsg');

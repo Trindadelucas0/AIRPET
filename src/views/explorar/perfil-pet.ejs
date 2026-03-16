@@ -62,6 +62,46 @@
           </span>
         </div>
       </section>
+
+      <section class="profile-reveal mt-4 bg-white rounded-2xl border border-gray-100 p-4" style="animation-delay: .08s">
+        <div class="flex items-center justify-between mb-2">
+          <h2 class="font-bold text-gray-900 text-sm">Petshops vinculados</h2>
+          <% if (eMeuPet) { %>
+            <span class="text-xs text-gray-500">Você pode vincular/desvincular</span>
+          <% } %>
+        </div>
+        <div id="petshopLinksWrap" class="space-y-2">
+          <% if ((petshopsVinculados || []).length === 0) { %>
+            <p class="text-xs text-gray-500">Nenhum petshop vinculado até o momento.</p>
+          <% } %>
+          <% (petshopsVinculados || []).forEach(function(link) { %>
+            <div class="rounded-xl border border-gray-100 p-2.5 flex items-center justify-between gap-2" data-linked-petshop-id="<%= link.petshop_id %>">
+              <a href="/petshops/<%= link.petshop_slug || link.petshop_id %>" class="text-sm font-semibold text-gray-800 hover:text-primary-500"><%= link.petshop_nome %></a>
+              <div class="flex items-center gap-2">
+                <button type="button"
+                        class="btn-toggle-follow-petshop text-xs px-2.5 py-1.5 rounded-lg border <%= link.usuario_segue ? 'border-gray-300 text-gray-600' : 'border-primary-500 text-primary-600' %>"
+                        data-petshop-id="<%= link.petshop_id %>">
+                  <%= link.usuario_segue ? 'Seguindo' : 'Seguir' %>
+                </button>
+                <% if (eMeuPet) { %>
+                  <button type="button" class="btn-unlink-petshop text-xs px-2.5 py-1.5 rounded-lg bg-red-50 text-red-600" data-petshop-id="<%= link.petshop_id %>">Desvincular</button>
+                <% } %>
+              </div>
+            </div>
+          <% }) %>
+        </div>
+        <% if (eMeuPet) { %>
+          <div class="mt-3 flex gap-2">
+            <select id="selectPetshopVinculo" class="input text-sm flex-1">
+              <option value="">Selecionar petshop para vincular</option>
+              <% (petshopsAtivos || []).forEach(function(ps) { %>
+                <option value="<%= ps.id %>"><%= ps.nome %></option>
+              <% }) %>
+            </select>
+            <button type="button" id="btnVincularPetshop" class="btn btn-primary text-sm">Vincular</button>
+          </div>
+        <% } %>
+      </section>
     </div>
 
     <div class="px-4 pt-4" id="postsContainer">
@@ -226,6 +266,92 @@
         .catch(function () { btnFollowPet.disabled = false; });
     });
   }
+
+  function toastPetshop(msg) {
+    try { window.alert(msg); } catch (_) {}
+  }
+
+  var btnVincularPetshop = document.getElementById('btnVincularPetshop');
+  if (btnVincularPetshop) {
+    btnVincularPetshop.addEventListener('click', function () {
+      var select = document.getElementById('selectPetshopVinculo');
+      var petshopId = select && select.value ? parseInt(select.value, 10) : null;
+      if (!petshopId) return;
+      btnVincularPetshop.disabled = true;
+      fetch('/explorar/pet/' + petId + '/petshops', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ petshop_id: petshopId, tipo_vinculo: 'cliente' })
+      })
+      .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
+      .then(function (result) {
+        btnVincularPetshop.disabled = false;
+        if (!result.ok || !result.data.sucesso) {
+          toastPetshop(result.data && result.data.mensagem ? result.data.mensagem : 'Não foi possível vincular.');
+          return;
+        }
+        window.location.reload();
+      })
+      .catch(function () {
+        btnVincularPetshop.disabled = false;
+      });
+    });
+  }
+
+  document.querySelectorAll('.btn-unlink-petshop').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var petshopId = btn.getAttribute('data-petshop-id');
+      if (!petshopId) return;
+      btn.disabled = true;
+      fetch('/explorar/pet/' + petId + '/petshops/' + petshopId, {
+        method: 'DELETE',
+        headers: { 'Accept': 'application/json' },
+        credentials: 'same-origin'
+      })
+      .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
+      .then(function (result) {
+        if (!result.ok || !result.data.sucesso) {
+          btn.disabled = false;
+          toastPetshop(result.data && result.data.mensagem ? result.data.mensagem : 'Não foi possível desvincular.');
+          return;
+        }
+        var row = btn.closest('[data-linked-petshop-id]');
+        if (row) row.remove();
+      })
+      .catch(function () {
+        btn.disabled = false;
+      });
+    });
+  });
+
+  document.querySelectorAll('.btn-toggle-follow-petshop').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var petshopId = btn.getAttribute('data-petshop-id');
+      if (!petshopId) return;
+      btn.disabled = true;
+      fetch('/petshops/' + petshopId + '/seguir-json', {
+        method: 'POST',
+        headers: { 'Accept': 'application/json' },
+        credentials: 'same-origin'
+      })
+      .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
+      .then(function (result) {
+        btn.disabled = false;
+        if (!result.ok || !result.data.sucesso) {
+          toastPetshop(result.data && result.data.mensagem ? result.data.mensagem : 'Não foi possível atualizar.');
+          return;
+        }
+        var seguindo = !!result.data.seguindo;
+        btn.textContent = seguindo ? 'Seguindo' : 'Seguir';
+        btn.className = 'btn-toggle-follow-petshop text-xs px-2.5 py-1.5 rounded-lg border ' +
+          (seguindo ? 'border-gray-300 text-gray-600' : 'border-primary-500 text-primary-600');
+      })
+      .catch(function () {
+        btn.disabled = false;
+      });
+    });
+  });
 
   function doLike(postId, btn) {
     var liked = btn.dataset.liked === 'true';

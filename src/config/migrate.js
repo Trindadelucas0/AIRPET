@@ -1085,6 +1085,283 @@ const migrations = [
   );`,
 
   `CREATE INDEX IF NOT EXISTS idx_post_trending_day_score ON post_trending_daily (day, score DESC);`,
+
+  // === PETSHOPS PARCEIROS (onboarding, conta própria, comercial e agenda) ===
+
+  // Slug único e colunas de gestão no petshop
+  `DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='petshops' AND column_name='slug') THEN
+      ALTER TABLE petshops ADD COLUMN slug VARCHAR(180);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='petshops' AND column_name='status_parceria') THEN
+      ALTER TABLE petshops ADD COLUMN status_parceria VARCHAR(30) DEFAULT 'ativo';
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='petshops' AND column_name='email_contato') THEN
+      ALTER TABLE petshops ADD COLUMN email_contato VARCHAR(150);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='petshops' AND column_name='logo_url') THEN
+      ALTER TABLE petshops ADD COLUMN logo_url TEXT;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='petshops' AND column_name='foto_capa_url') THEN
+      ALTER TABLE petshops ADD COLUMN foto_capa_url TEXT;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='petshops' AND column_name='avaliacao_media') THEN
+      ALTER TABLE petshops ADD COLUMN avaliacao_media NUMERIC(3,2) DEFAULT 0;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='petshops' AND column_name='avaliacoes_count') THEN
+      ALTER TABLE petshops ADD COLUMN avaliacoes_count INTEGER DEFAULT 0;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='petshops' AND column_name='data_atualizacao') THEN
+      ALTER TABLE petshops ADD COLUMN data_atualizacao TIMESTAMP;
+    END IF;
+  END $$;`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS idx_petshops_slug_uniq ON petshops (slug) WHERE slug IS NOT NULL;`,
+
+  // Solicitação pública de parceria
+  `CREATE TABLE IF NOT EXISTS petshop_partner_requests (
+    id SERIAL PRIMARY KEY,
+    petshop_id INTEGER REFERENCES petshops(id) ON DELETE CASCADE,
+    status VARCHAR(30) DEFAULT 'pendente',
+    empresa_nome VARCHAR(150) NOT NULL,
+    empresa_documento VARCHAR(30),
+    responsavel_nome VARCHAR(120) NOT NULL,
+    responsavel_cargo VARCHAR(80),
+    telefone VARCHAR(20) NOT NULL,
+    email VARCHAR(150) NOT NULL,
+    endereco TEXT NOT NULL,
+    bairro VARCHAR(120),
+    cidade VARCHAR(100),
+    estado VARCHAR(2),
+    cep VARCHAR(10),
+    latitude DECIMAL(10,7),
+    longitude DECIMAL(10,7),
+    localizacao GEOGRAPHY(POINT, 4326),
+    redes_sociais JSONB,
+    servicos JSONB,
+    horario_funcionamento JSONB,
+    descricao TEXT,
+    logo_url TEXT,
+    fotos_urls TEXT[],
+    motivo_rejeicao TEXT,
+    observacoes_admin TEXT,
+    analisado_por_email VARCHAR(150),
+    analisado_em TIMESTAMP,
+    data_criacao TIMESTAMP DEFAULT NOW(),
+    data_atualizacao TIMESTAMP
+  );`,
+  `DO $$
+   BEGIN
+     IF NOT EXISTS (
+       SELECT 1
+       FROM information_schema.columns
+       WHERE table_name='petshop_partner_requests' AND column_name='petshop_id'
+     ) THEN
+       ALTER TABLE petshop_partner_requests ADD COLUMN petshop_id INTEGER REFERENCES petshops(id) ON DELETE CASCADE;
+     END IF;
+   END$$;`,
+  `CREATE INDEX IF NOT EXISTS idx_petshop_partner_requests_status ON petshop_partner_requests (status, data_criacao DESC);`,
+  `CREATE INDEX IF NOT EXISTS idx_petshop_partner_requests_loc ON petshop_partner_requests USING GIST (localizacao);`,
+
+  // Conta própria do petshop (login separado)
+  `CREATE TABLE IF NOT EXISTS petshop_accounts (
+    id SERIAL PRIMARY KEY,
+    petshop_id INTEGER NOT NULL REFERENCES petshops(id) ON DELETE CASCADE,
+    email VARCHAR(150) NOT NULL UNIQUE,
+    password_hash VARCHAR(255) NOT NULL,
+    status VARCHAR(30) DEFAULT 'pendente_aprovacao',
+    ultimo_login_em TIMESTAMP,
+    data_criacao TIMESTAMP DEFAULT NOW(),
+    data_atualizacao TIMESTAMP
+  );`,
+  `CREATE INDEX IF NOT EXISTS idx_petshop_accounts_petshop ON petshop_accounts (petshop_id);`,
+
+  // Perfil estendido, mídias e trilha
+  `CREATE TABLE IF NOT EXISTS petshop_profiles (
+    id SERIAL PRIMARY KEY,
+    petshop_id INTEGER NOT NULL UNIQUE REFERENCES petshops(id) ON DELETE CASCADE,
+    slogan VARCHAR(180),
+    descricao_curta VARCHAR(280),
+    descricao_longa TEXT,
+    instagram_url TEXT,
+    facebook_url TEXT,
+    website_url TEXT,
+    whatsapp_publico VARCHAR(20),
+    contato_link TEXT,
+    aceita_agendamento BOOLEAN DEFAULT true,
+    data_criacao TIMESTAMP DEFAULT NOW(),
+    data_atualizacao TIMESTAMP
+  );`,
+  `CREATE TABLE IF NOT EXISTS petshop_media (
+    id SERIAL PRIMARY KEY,
+    petshop_id INTEGER NOT NULL REFERENCES petshops(id) ON DELETE CASCADE,
+    tipo VARCHAR(20) NOT NULL,
+    url TEXT NOT NULL,
+    titulo VARCHAR(120),
+    ordem INTEGER DEFAULT 0,
+    ativo BOOLEAN DEFAULT true,
+    data_criacao TIMESTAMP DEFAULT NOW()
+  );`,
+  `CREATE INDEX IF NOT EXISTS idx_petshop_media_petshop ON petshop_media (petshop_id, tipo, ordem);`,
+
+  // Feed/comercial do parceiro
+  `CREATE TABLE IF NOT EXISTS petshop_posts (
+    id SERIAL PRIMARY KEY,
+    petshop_id INTEGER NOT NULL REFERENCES petshops(id) ON DELETE CASCADE,
+    criado_por_account_id INTEGER REFERENCES petshop_accounts(id) ON DELETE SET NULL,
+    post_type VARCHAR(20) NOT NULL DEFAULT 'normal',
+    approval_status VARCHAR(30) NOT NULL DEFAULT 'aprovado',
+    titulo VARCHAR(150),
+    texto TEXT,
+    foto_url TEXT,
+    ativo BOOLEAN DEFAULT true,
+    publicado_em TIMESTAMP DEFAULT NOW(),
+    data_criacao TIMESTAMP DEFAULT NOW(),
+    data_atualizacao TIMESTAMP
+  );`,
+  `CREATE INDEX IF NOT EXISTS idx_petshop_posts_feed ON petshop_posts (petshop_id, post_type, approval_status, publicado_em DESC);`,
+
+  `CREATE TABLE IF NOT EXISTS petshop_products (
+    id SERIAL PRIMARY KEY,
+    petshop_id INTEGER NOT NULL REFERENCES petshops(id) ON DELETE CASCADE,
+    post_id INTEGER REFERENCES petshop_posts(id) ON DELETE SET NULL,
+    nome VARCHAR(150) NOT NULL,
+    preco NUMERIC(10,2) NOT NULL DEFAULT 0,
+    descricao TEXT,
+    foto_url TEXT,
+    contato_link TEXT,
+    is_promocao BOOLEAN DEFAULT false,
+    is_active BOOLEAN DEFAULT true,
+    data_criacao TIMESTAMP DEFAULT NOW(),
+    data_atualizacao TIMESTAMP
+  );`,
+  `CREATE INDEX IF NOT EXISTS idx_petshop_products_active ON petshop_products (petshop_id, is_active, data_criacao DESC);`,
+
+  // Garante no máximo 15 produtos ativos por petshop
+  `CREATE OR REPLACE FUNCTION fn_petshop_products_limit() RETURNS trigger AS $$
+  BEGIN
+    IF NEW.is_active THEN
+      IF (
+        SELECT COUNT(*) FROM petshop_products
+        WHERE petshop_id = NEW.petshop_id
+          AND is_active = true
+          AND (TG_OP = 'INSERT' OR id <> NEW.id)
+      ) >= 15 THEN
+        RAISE EXCEPTION 'Limite de 15 produtos ativos por petshop excedido';
+      END IF;
+    END IF;
+    RETURN NEW;
+  END;
+  $$ LANGUAGE plpgsql;`,
+  `DROP TRIGGER IF EXISTS trg_petshop_products_limit ON petshop_products;`,
+  `CREATE TRIGGER trg_petshop_products_limit
+    BEFORE INSERT OR UPDATE ON petshop_products
+    FOR EACH ROW
+    EXECUTE FUNCTION fn_petshop_products_limit();`,
+
+  // Seguidores, avaliações e vínculo pet <-> petshop
+  `CREATE TABLE IF NOT EXISTS petshop_followers (
+    id SERIAL PRIMARY KEY,
+    petshop_id INTEGER NOT NULL REFERENCES petshops(id) ON DELETE CASCADE,
+    usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+    data_criacao TIMESTAMP DEFAULT NOW(),
+    UNIQUE (petshop_id, usuario_id)
+  );`,
+  `CREATE INDEX IF NOT EXISTS idx_petshop_followers_petshop ON petshop_followers (petshop_id);`,
+  `CREATE INDEX IF NOT EXISTS idx_petshop_followers_usuario ON petshop_followers (usuario_id);`,
+
+  `CREATE TABLE IF NOT EXISTS petshop_reviews (
+    id SERIAL PRIMARY KEY,
+    petshop_id INTEGER NOT NULL REFERENCES petshops(id) ON DELETE CASCADE,
+    usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+    pet_id INTEGER REFERENCES pets(id) ON DELETE SET NULL,
+    rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
+    comentario TEXT,
+    status VARCHAR(20) DEFAULT 'publicado',
+    data_criacao TIMESTAMP DEFAULT NOW(),
+    data_atualizacao TIMESTAMP,
+    UNIQUE (petshop_id, usuario_id, pet_id)
+  );`,
+  `CREATE INDEX IF NOT EXISTS idx_petshop_reviews_petshop ON petshop_reviews (petshop_id, data_criacao DESC);`,
+
+  `CREATE TABLE IF NOT EXISTS pet_petshop_links (
+    id SERIAL PRIMARY KEY,
+    pet_id INTEGER NOT NULL REFERENCES pets(id) ON DELETE CASCADE,
+    petshop_id INTEGER NOT NULL REFERENCES petshops(id) ON DELETE CASCADE,
+    tipo_vinculo VARCHAR(30) DEFAULT 'cliente',
+    ativo BOOLEAN DEFAULT true,
+    data_criacao TIMESTAMP DEFAULT NOW(),
+    data_atualizacao TIMESTAMP,
+    UNIQUE (pet_id, petshop_id)
+  );`,
+  `CREATE INDEX IF NOT EXISTS idx_pet_petshop_links_petshop ON pet_petshop_links (petshop_id, ativo);`,
+
+  // Agenda profissional do petshop
+  `CREATE TABLE IF NOT EXISTS petshop_services (
+    id SERIAL PRIMARY KEY,
+    petshop_id INTEGER NOT NULL REFERENCES petshops(id) ON DELETE CASCADE,
+    nome VARCHAR(120) NOT NULL,
+    descricao TEXT,
+    duracao_minutos INTEGER NOT NULL DEFAULT 30,
+    preco_base NUMERIC(10,2),
+    ativo BOOLEAN DEFAULT true,
+    data_criacao TIMESTAMP DEFAULT NOW(),
+    UNIQUE (petshop_id, nome)
+  );`,
+
+  `CREATE TABLE IF NOT EXISTS petshop_schedule_rules (
+    id SERIAL PRIMARY KEY,
+    petshop_id INTEGER NOT NULL REFERENCES petshops(id) ON DELETE CASCADE,
+    dia_semana INTEGER NOT NULL CHECK (dia_semana >= 0 AND dia_semana <= 6),
+    abre TIME NOT NULL,
+    fecha TIME NOT NULL,
+    intervalo_inicio TIME,
+    intervalo_fim TIME,
+    ativo BOOLEAN DEFAULT true,
+    data_criacao TIMESTAMP DEFAULT NOW(),
+    UNIQUE (petshop_id, dia_semana)
+  );`,
+
+  `CREATE TABLE IF NOT EXISTS petshop_time_slots (
+    id SERIAL PRIMARY KEY,
+    petshop_id INTEGER NOT NULL REFERENCES petshops(id) ON DELETE CASCADE,
+    service_id INTEGER REFERENCES petshop_services(id) ON DELETE SET NULL,
+    slot_inicio TIMESTAMP NOT NULL,
+    slot_fim TIMESTAMP NOT NULL,
+    status VARCHAR(20) DEFAULT 'disponivel',
+    data_criacao TIMESTAMP DEFAULT NOW(),
+    UNIQUE (petshop_id, slot_inicio, slot_fim)
+  );`,
+  `CREATE INDEX IF NOT EXISTS idx_petshop_time_slots_lookup ON petshop_time_slots (petshop_id, slot_inicio, status);`,
+
+  `CREATE TABLE IF NOT EXISTS petshop_appointments (
+    id SERIAL PRIMARY KEY,
+    petshop_id INTEGER NOT NULL REFERENCES petshops(id) ON DELETE CASCADE,
+    service_id INTEGER REFERENCES petshop_services(id) ON DELETE SET NULL,
+    slot_id INTEGER REFERENCES petshop_time_slots(id) ON DELETE SET NULL,
+    usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+    pet_id INTEGER NOT NULL REFERENCES pets(id) ON DELETE CASCADE,
+    status VARCHAR(30) DEFAULT 'pendente',
+    observacoes TEXT,
+    motivo_recusa TEXT,
+    data_agendada TIMESTAMP NOT NULL,
+    data_criacao TIMESTAMP DEFAULT NOW(),
+    data_atualizacao TIMESTAMP
+  );`,
+  `CREATE INDEX IF NOT EXISTS idx_petshop_appointments_panel ON petshop_appointments (petshop_id, status, data_agendada);`,
+
+  // Integração com pet perdido e NFC (auditoria de alertas enviados)
+  `CREATE TABLE IF NOT EXISTS petshop_lost_pet_alerts (
+    id SERIAL PRIMARY KEY,
+    pet_perdido_id INTEGER NOT NULL REFERENCES pets_perdidos(id) ON DELETE CASCADE,
+    petshop_id INTEGER NOT NULL REFERENCES petshops(id) ON DELETE CASCADE,
+    distancia_metros NUMERIC(10,2),
+    origem VARCHAR(30) DEFAULT 'aprovacao_admin',
+    canal VARCHAR(30) DEFAULT 'sistema',
+    status_envio VARCHAR(30) DEFAULT 'enviado',
+    data_criacao TIMESTAMP DEFAULT NOW(),
+    UNIQUE (pet_perdido_id, petshop_id, origem)
+  );`,
+  `CREATE INDEX IF NOT EXISTS idx_petshop_lost_pet_alerts_lookup ON petshop_lost_pet_alerts (pet_perdido_id, data_criacao DESC);`,
 ];
 
 /**
@@ -1129,7 +1406,7 @@ async function runMigrations() {
     }
   }
 
-  ['capa', 'perfil-galeria'].forEach((dir) => {
+  ['capa', 'perfil-galeria', 'petshops', 'perfil', 'pets', 'chat', 'diario'].forEach((dir) => {
     try {
       const full = path.join(__dirname, '..', 'public', 'images', dir);
       fs.mkdirSync(full, { recursive: true });

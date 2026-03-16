@@ -23,6 +23,24 @@
       .driver-popover-description { color:#6b7280 !important; }
       .driver-popover-next-btn { background:linear-gradient(135deg,#ec5a1c,#dd4212) !important; border:none !important; border-radius:10px !important; font-weight:600 !important; }
       .driver-popover-prev-btn { border-radius:10px !important; font-weight:600 !important; }
+      .masonry-feed {
+        column-gap: 0.9rem;
+        columns: 2;
+      }
+      @media (min-width: 768px) {
+        .masonry-feed { columns: 3; }
+      }
+      @media (min-width: 1536px) {
+        .masonry-feed { columns: 4; }
+      }
+      .masonry-card {
+        break-inside: avoid;
+        -webkit-column-break-inside: avoid;
+        page-break-inside: avoid;
+        display: inline-block;
+        width: 100%;
+        margin-bottom: 0.9rem;
+      }
     </style>
   `;
 %>
@@ -35,16 +53,17 @@
 
   <!-- ═══ Header Explorar ═══ -->
   <div class="sticky top-14 z-40 bg-white/90 backdrop-blur-xl border-b border-gray-100">
-    <div class="max-w-4xl mx-auto px-4 py-3">
+    <div class="max-w-7xl mx-auto px-4 py-3">
       <h1 class="text-lg font-bold text-gray-900"><i class="fa-solid fa-compass mr-2 text-primary-500"></i>Explorar</h1>
       <p class="text-xs text-gray-400 mt-0.5">Descubra o que está acontecendo na sua região</p>
     </div>
   </div>
 
-  <div class="max-w-4xl mx-auto flex gap-6 px-4 pt-4">
+  <div class="max-w-7xl mx-auto flex gap-6 px-4 pt-4">
 
   <!-- ═══ Feed (coluna principal) ═══ -->
-  <div id="feedContainer" class="max-w-xl w-full flex-1 space-y-4">
+  <div class="flex-1 min-w-0">
+  <div id="feedContainer" class="masonry-feed">
 
     <!-- Busca mobile -->
     <div class="lg:hidden">
@@ -53,226 +72,166 @@
       </a>
     </div>
 
+    <% if (petshopDestaques && petshopDestaques.length > 0) { %>
+      <section class="masonry-card bg-white rounded-2xl border border-gray-100 p-4">
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="text-sm font-bold text-gray-900">Petshops parceiros</h2>
+          <a href="/petshops" class="text-xs text-primary-500 font-semibold">Ver todos</a>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <% petshopDestaques.slice(0, 4).forEach(function(ps) { %>
+            <a href="/petshops/<%= ps.slug || ps.id %>" class="rounded-xl border border-gray-100 p-2 hover:border-primary-200 transition-colors">
+              <% if (ps.logo_url) { %>
+                <img src="<%= ps.logo_url %>" alt="<%= ps.nome %>" class="w-full h-20 object-cover rounded-lg mb-2">
+              <% } else { %>
+                <div class="w-full h-20 rounded-lg mb-2 bg-gray-100 flex items-center justify-center text-gray-400"><i class="fa-solid fa-store"></i></div>
+              <% } %>
+              <p class="text-xs font-semibold text-gray-800 truncate"><%= ps.nome %></p>
+            </a>
+          <% }) %>
+        </div>
+      </section>
+    <% } %>
+
     <% if (posts && posts.length > 0) { %>
       <% posts.forEach(function(post, idx) { %>
         <% if (post.is_sponsored) { %>
-          <% var hasSponsoredPost = !!post.foto || !!post.legenda || !!post.texto; %>
           <% var sponsoredPostId = Number(post.id); %>
           <% var hasSponsoredPostId = Number.isFinite(sponsoredPostId) && sponsoredPostId > 0; %>
-          <article class="bg-gradient-to-br from-amber-50 to-white rounded-2xl shadow-sm border-2 border-amber-200 overflow-hidden post-enter"
+          <article class="masonry-card bg-gradient-to-b from-amber-50 to-white rounded-2xl shadow-sm border border-amber-200 overflow-hidden post-enter"
                    style="animation-delay:<%= Math.min(idx * 60, 400) %>ms"
                    data-post-id="<%= hasSponsoredPostId ? sponsoredPostId : '' %>"
                    data-view-source="<%= hasSponsoredPostId ? 'sponsored_explorar' : '' %>"
+                   data-author-id="<%= post.usuario_id || '' %>"
                    id="<%= post.sponsored_key || ('sponsored-' + post.boost_id + '-' + post.pet_id) %>">
-            <div class="px-4 py-2 bg-amber-100 border-b border-amber-200 flex items-center justify-between">
-              <span class="inline-flex items-center gap-1 text-[11px] font-bold tracking-wide text-amber-800">
-                <i class="fa-solid fa-bullhorn"></i>
-                <%= post.sponsored_label || 'PATROCINADO' %>
-              </span>
-              <span class="text-[11px] text-amber-700">Anúncio de perfil pet</span>
+            <div class="px-3 py-2 flex items-center justify-between text-[10px] font-bold text-amber-800 uppercase tracking-wide">
+              <span><i class="fa-solid fa-bullhorn mr-1"></i><%= post.sponsored_label || 'Patrocinado' %></span>
+              <a href="/explorar/pet/<%= post.pet_id %>" class="normal-case font-semibold text-amber-700 hover:underline">Ver pet</a>
             </div>
-            <div class="p-4">
-              <div class="flex items-center gap-3">
+
+            <% if (post.foto) { %>
+              <img src="<%= post.foto %>" alt="" class="w-full object-cover post-photo" loading="lazy">
+            <% } %>
+
+            <div class="px-3 py-2">
+              <div class="flex items-center gap-2">
                 <% if (post.pet_foto) { %>
-                  <img src="<%= post.pet_foto %>" alt="" class="w-12 h-12 rounded-full object-cover ring-2 ring-amber-200">
+                  <img src="<%= post.pet_foto %>" alt="" class="w-7 h-7 rounded-full object-cover ring-2 ring-amber-200">
                 <% } else { %>
-                  <span class="w-12 h-12 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center">
+                  <span class="w-7 h-7 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center text-[11px]">
                     <i class="fa-solid fa-paw"></i>
                   </span>
                 <% } %>
-                <div class="min-w-0 flex-1">
-                  <p class="text-sm font-semibold text-gray-900 truncate"><%= post.pet_nome || ('Pet ' + post.pet_id) %></p>
-                  <p class="text-xs text-gray-500 truncate">Tutor: <%= post.autor_nome || ('Usuário ' + post.usuario_id) %></p>
+                <div class="min-w-0">
+                  <p class="text-xs font-semibold text-gray-900 truncate"><%= post.pet_nome || ('Pet ' + post.pet_id) %></p>
+                  <p class="text-[11px] text-gray-500 truncate"><%= post.autor_nome || ('Usuário ' + post.usuario_id) %></p>
                 </div>
               </div>
-              <% if (post.foto) { %>
-                <img src="<%= post.foto %>" alt="" class="w-full mt-3 rounded-xl max-h-[320px] object-cover" loading="lazy">
+              <% var sponsoredTexto = post.texto || post.legenda || ''; %>
+              <% if (sponsoredTexto) { %>
+                <p class="mt-2 text-xs text-gray-700 leading-relaxed line-clamp-2 post-text"><%= sponsoredTexto %></p>
               <% } %>
-              <% if (hasSponsoredPost) { %>
-                <p class="mt-3 text-sm text-gray-700 line-clamp-2"><%= post.legenda || post.texto || 'Conheça este perfil pet patrocinado.' %></p>
-              <% } else { %>
-                <p class="mt-3 text-sm text-gray-700">Este pet está em campanha patrocinada. Ainda sem publicação no momento — conheça o perfil e siga o tutor.</p>
-              <% } %>
-              <div class="mt-3 flex items-center justify-between gap-2">
-                <div class="flex items-center gap-2">
-                  <a href="/explorar/pet/<%= post.pet_id %>" class="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-500 text-white text-xs font-semibold hover:bg-amber-600">
-                    <i class="fa-solid fa-paw"></i>
-                    Ver perfil do pet
-                  </a>
-                  <a href="/explorar/perfil/<%= post.usuario_id %>" class="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-amber-300 text-amber-700 text-xs font-semibold hover:bg-amber-100">
-                    <i class="fa-solid fa-user-plus"></i>
-                    Ver tutor
-                  </a>
+              <% if (hasSponsoredPostId) { %>
+                <div class="mt-2 flex items-center gap-2 border-t border-amber-100 pt-2">
+                  <button type="button" class="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg transition-all text-xs btn-curtir relative <%= post.curtiu ? 'text-red-500' : 'text-gray-500 hover:text-red-500 hover:bg-red-50/70' %>"
+                          data-post-id="<%= sponsoredPostId %>" data-curtiu="<%= post.curtiu ? '1' : '0' %>">
+                    <i class="<%= post.curtiu ? 'fa-solid' : 'fa-regular' %> fa-heart"></i>
+                    <span class="count-curtidas"><%= post.total_curtidas || '' %></span>
+                  </button>
+                  <button type="button" class="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs text-gray-500 hover:text-accent-500 hover:bg-accent-50/70 transition-all btn-comentar"
+                          data-post-id="<%= sponsoredPostId %>">
+                    <i class="fa-regular fa-comment"></i>
+                    <span class="count-comentarios"><%= post.total_comentarios || '' %></span>
+                  </button>
                 </div>
-                <span class="text-[11px] text-gray-400">Entrega publicitária identificada</span>
-              </div>
+              <% } %>
             </div>
           </article>
         <% } else { %>
-        <article class="bg-white rounded-2xl shadow-sm border border-gray-100/80 overflow-hidden post-enter"
-                 style="animation-delay:<%= Math.min(idx * 60, 400) %>ms"
-                 data-post-id="<%= post.id %>" data-author-id="<%= post.usuario_id %>" id="post-<%= post.id %>">
+          <article class="masonry-card bg-white rounded-2xl shadow-sm border border-gray-100/90 overflow-hidden post-enter"
+                   style="animation-delay:<%= Math.min(idx * 60, 400) %>ms"
+                   data-post-id="<%= post.id %>" data-author-id="<%= post.usuario_id %>" id="post-<%= post.id %>">
+            <% var postCor = post.cor_perfil || '#ec5a1c'; %>
 
-          <%/* ── Badges ── */ %>
-          <% if (post.tipo === 'repost') { %>
-            <div class="px-4 pt-3 flex items-center gap-2 text-emerald-500 text-xs font-semibold">
-              <i class="fa-solid fa-retweet text-[11px]"></i>
-              <span><%= post.autor_nome %> repostou</span>
-            </div>
-          <% } %>
-          <% if (post.fixada) { %>
-            <div class="px-4 pt-3 flex items-center gap-2 text-gray-400 text-xs font-semibold">
-              <i class="fa-solid fa-thumbtack text-[11px]"></i>
-              <span>Fixado</span>
-            </div>
-          <% } %>
+            <div class="px-3 pt-2.5 pb-2">
+              <div class="flex items-start gap-2">
+                <a href="/explorar/perfil/<%= post.usuario_id %>" class="shrink-0 rounded-full transition-all" title="Ver perfil de <%= post.autor_nome %>">
+                  <% if (post.foto_perfil) { %>
+                    <img src="<%= post.foto_perfil %>" alt="" class="w-8 h-8 rounded-full object-cover post-author-avatar" style="box-shadow: 0 0 0 2px <%= postCor %>">
+                  <% } else { %>
+                    <span class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white post-author-avatar bg-gray-400"
+                          style="box-shadow: 0 0 0 2px <%= postCor %>">
+                      <%= post.autor_nome ? post.autor_nome.charAt(0).toUpperCase() : 'U' %>
+                    </span>
+                  <% } %>
+                </a>
 
-          <%/* ── Header: avatar = foto do tutor, clique = perfil do tutor ── */ %>
-          <div class="flex items-center gap-3 px-4 pt-3 pb-2">
-            <a href="/explorar/perfil/<%= post.usuario_id %>" class="shrink-0 rounded-full transition-all" title="Ver perfil de <%= post.autor_nome %>">
-              <% var postCor = post.cor_perfil || '#ec5a1c'; %>
-              <% if (post.foto_perfil) { %>
-                <img src="<%= post.foto_perfil %>" alt="" class="w-10 h-10 rounded-full object-cover post-author-avatar" style="box-shadow: 0 0 0 2px <%= postCor %>">
-              <% } else { %>
-                <span class="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white post-author-avatar bg-gray-400"
-                      style="box-shadow: 0 0 0 2px <%= postCor %>">
-                  <%= post.autor_nome ? post.autor_nome.charAt(0).toUpperCase() : 'U' %>
-                </span>
-              <% } %>
-            </a>
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center gap-1">
+                    <a href="/explorar/perfil/<%= post.usuario_id %>" class="font-semibold text-xs text-gray-900 truncate post-author-name"><%= post.autor_nome %></a>
+                    <% if (post.fixada) { %>
+                      <i class="fa-solid fa-thumbtack text-[10px] text-gray-400"></i>
+                    <% } %>
+                    <% if (post.tipo === 'repost') { %>
+                      <i class="fa-solid fa-retweet text-[10px] text-emerald-500"></i>
+                    <% } %>
+                  </div>
+                  <span class="text-[11px] text-gray-400 tempo-relativo" data-time="<%= post.criado_em %>"></span>
+                </div>
 
-            <div class="flex-1 min-w-0">
-              <div class="flex items-center gap-1.5 flex-wrap">
-                <a href="/explorar/perfil/<%= post.usuario_id %>"
-                   class="font-semibold text-sm text-gray-900 hover:underline truncate post-author-name"><%= post.autor_nome %></a>
-                <% if (post.pet_nome && post.pet_id) { %>
-                  <a href="/explorar/pet/<%= post.pet_id %>" class="text-xs text-gray-400 hover:text-primary-500 truncate">
-                    <i class="fa-solid fa-paw text-[9px]"></i> <%= post.pet_nome %>
-                  </a>
+                <% if (isLogado && usuario.id === post.usuario_id) { %>
+                  <div class="relative shrink-0">
+                    <button type="button" class="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors btn-menu-post">
+                      <i class="fa-solid fa-ellipsis text-xs"></i>
+                    </button>
+                    <div class="menu-dropdown hidden absolute right-0 top-full mt-1 w-40 bg-white rounded-xl shadow-lg ring-1 ring-black/5 py-1 z-30">
+                      <button type="button" class="w-full px-3 py-2 text-left text-xs hover:bg-gray-50 flex items-center gap-2 transition-colors btn-fixar"
+                              data-post-id="<%= post.id %>" data-fixada="<%= post.fixada ? '1' : '0' %>">
+                        <i class="fa-solid fa-thumbtack text-gray-400 w-3 text-center"></i>
+                        <span><%= post.fixada ? 'Desafixar' : 'Fixar' %></span>
+                      </button>
+                      <button type="button" class="w-full px-3 py-2 text-left text-xs hover:bg-red-50 text-red-500 flex items-center gap-2 transition-colors btn-deletar"
+                              data-post-id="<%= post.id %>">
+                        <i class="fa-solid fa-trash-can w-3 text-center"></i>
+                        <span>Excluir</span>
+                      </button>
+                    </div>
+                  </div>
                 <% } %>
               </div>
-              <span class="text-xs text-gray-400 tempo-relativo" data-time="<%= post.criado_em %>"></span>
             </div>
 
-            <% if (isLogado && usuario.id === post.usuario_id) { %>
-              <div class="relative shrink-0">
-                <button type="button" class="p-1.5 -mr-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors btn-menu-post">
-                  <i class="fa-solid fa-ellipsis"></i>
-                </button>
-                <div class="menu-dropdown hidden absolute right-0 top-full mt-1 w-44 bg-white rounded-xl shadow-lg ring-1 ring-black/5 py-1 z-30">
-                  <button type="button" class="w-full px-4 py-2.5 text-left text-sm hover:bg-gray-50 flex items-center gap-2.5 transition-colors btn-fixar"
-                          data-post-id="<%= post.id %>" data-fixada="<%= post.fixada ? '1' : '0' %>">
-                    <i class="fa-solid fa-thumbtack text-gray-400 w-4 text-center"></i>
-                    <span><%= post.fixada ? 'Desafixar' : 'Fixar' %></span>
-                  </button>
-                  <button type="button" class="w-full px-4 py-2.5 text-left text-sm hover:bg-red-50 text-red-500 flex items-center gap-2.5 transition-colors btn-deletar"
-                          data-post-id="<%= post.id %>">
-                    <i class="fa-solid fa-trash-can w-4 text-center"></i>
-                    <span>Excluir</span>
-                  </button>
-                </div>
+            <% if (post.foto) { %>
+              <img src="<%= post.foto %>" alt="" class="w-full object-cover post-photo" loading="lazy">
+            <% } %>
+
+            <% var postTexto = post.texto || post.legenda || ''; %>
+            <% if (postTexto) { %>
+              <div class="px-3 pt-2">
+                <p class="text-xs text-gray-700 leading-relaxed line-clamp-3 post-text"><%= postTexto %></p>
+                <button type="button" class="text-accent-500 text-[11px] font-semibold mt-1 btn-ver-mais hidden hover:underline">ver mais</button>
               </div>
             <% } %>
-          </div>
 
-          <%/* ── Text content ── */ %>
-          <% var postTexto = post.texto || post.legenda || ''; %>
-          <% if (postTexto) { %>
-            <div class="px-4 pb-2">
-              <p class="text-[15px] text-gray-800 leading-relaxed line-clamp-3 post-text"><%= postTexto %></p>
-              <button type="button" class="text-accent-500 text-xs font-semibold mt-1 btn-ver-mais hidden hover:underline">ver mais</button>
-            </div>
-          <% } %>
-
-          <%/* ── Photo ── */ %>
-          <% if (post.foto) { %>
-            <div class="mt-1">
-              <img src="<%= post.foto %>" alt="" class="w-full max-h-[500px] object-cover post-photo" loading="lazy">
-            </div>
-          <% } %>
-
-          <%/* ── Quoted repost ── */ %>
-          <% if (post.tipo === 'repost' && post.orig_id) { %>
-            <div class="mx-4 my-3 border border-gray-200 rounded-2xl overflow-hidden hover:bg-gray-50/50 transition-colors">
-              <div class="flex items-center gap-2 px-3 pt-3 pb-1">
-                <% var origCor = post.orig_cor_perfil || '#ec5a1c'; %>
-                <% if (post.orig_foto_perfil) { %>
-                  <img src="<%= post.orig_foto_perfil %>" alt="" class="w-6 h-6 rounded-full object-cover" style="box-shadow: 0 0 0 1px <%= origCor %>">
-                <% } else { %>
-                  <span class="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white bg-gray-400"
-                        style="box-shadow: 0 0 0 1px <%= origCor %>">
-                    <%= post.orig_autor_nome ? post.orig_autor_nome.charAt(0).toUpperCase() : 'U' %>
-                  </span>
-                <% } %>
-                <a href="/explorar/perfil/<%= post.orig_usuario_id %>" class="text-xs font-semibold text-gray-700 hover:underline"><%= post.orig_autor_nome %></a>
-                <span class="text-[11px] text-gray-400 tempo-relativo" data-time="<%= post.orig_criado_em %>"></span>
+            <div class="px-2.5 py-2 mt-1 border-t border-gray-100">
+              <div class="flex items-center gap-1.5">
+                <button type="button" class="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg transition-all text-xs btn-curtir relative <%= post.curtiu ? 'text-red-500' : 'text-gray-500 hover:text-red-500 hover:bg-red-50/70' %>"
+                        data-post-id="<%= post.id %>" data-curtiu="<%= post.curtiu ? '1' : '0' %>">
+                  <i class="<%= post.curtiu ? 'fa-solid' : 'fa-regular' %> fa-heart"></i>
+                  <span class="count-curtidas"><%= post.total_curtidas || '' %></span>
+                </button>
+                <button type="button" class="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg text-xs text-gray-500 hover:text-accent-500 hover:bg-accent-50/70 transition-all btn-comentar"
+                        data-post-id="<%= post.id %>">
+                  <i class="fa-regular fa-comment"></i>
+                  <span class="count-comentarios"><%= post.total_comentarios || '' %></span>
+                </button>
               </div>
-              <% var origTexto = post.orig_texto || post.orig_legenda || ''; %>
-              <% if (origTexto) { %>
-                <p class="px-3 pb-2 text-xs text-gray-600 line-clamp-2"><%= origTexto %></p>
-              <% } %>
-              <% if (post.orig_foto) { %>
-                <img src="<%= post.orig_foto %>" alt="" class="w-full max-h-[200px] object-cover" loading="lazy">
-              <% } %>
             </div>
-          <% } %>
-
-          <%/* ── Action bar ── */ %>
-          <div class="flex items-center px-2 py-1.5 border-t border-gray-50">
-            <button type="button" class="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-gray-400 hover:text-accent-500 hover:bg-accent-50/50 transition-all text-[13px] btn-comentar"
-                    data-post-id="<%= post.id %>">
-              <i class="fa-regular fa-comment"></i>
-              <span class="count-comentarios"><%= post.total_comentarios || '' %></span>
-            </button>
-            <button type="button" class="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl transition-all text-[13px] btn-repost <%= post.repostou ? 'text-emerald-500' : 'text-gray-400 hover:text-emerald-500 hover:bg-emerald-50/50' %>"
-                    data-post-id="<%= post.id %>">
-              <i class="fa-solid fa-retweet"></i>
-              <span class="count-reposts"><%= post.total_reposts || '' %></span>
-            </button>
-            <button type="button" class="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl transition-all text-[13px] btn-curtir relative <%= post.curtiu ? 'text-red-500' : 'text-gray-400 hover:text-red-500 hover:bg-red-50/50' %>"
-                    data-post-id="<%= post.id %>" data-curtiu="<%= post.curtiu ? '1' : '0' %>">
-              <i class="<%= post.curtiu ? 'fa-solid' : 'fa-regular' %> fa-heart"></i>
-              <span class="count-curtidas"><%= post.total_curtidas || '' %></span>
-            </button>
-            <button type="button" class="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-gray-400 hover:text-accent-500 hover:bg-accent-50/50 transition-all text-[13px] btn-share"
-                    data-post-id="<%= post.id %>" data-autor="<%= post.autor_nome %>">
-              <i class="fa-solid fa-share-from-square"></i>
-            </button>
-          </div>
-
-          <%/* ── Comment preview ── */ %>
-          <% if (post.total_comentarios > 0) { %>
-            <div class="px-4 pb-2">
-              <button type="button" class="text-xs text-gray-400 hover:text-accent-500 transition-colors font-medium btn-comentar" data-post-id="<%= post.id %>">
-                Ver todos os <%= post.total_comentarios %> comentários
-              </button>
-            </div>
-          <% } %>
-
-          <%/* ── Inline comment input ── */ %>
-          <% if (isLogado) { %>
-            <div class="flex items-center gap-2 px-4 pb-3">
-              <% var expNavCor = usuario.cor_perfil || '#ec5a1c'; %>
-              <% if (usuario.foto_perfil) { %>
-                <img src="<%= usuario.foto_perfil %>" alt="" class="w-7 h-7 rounded-full object-cover shrink-0" style="box-shadow: 0 0 0 2px <%= expNavCor %>">
-              <% } else { %>
-                <span class="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0 bg-gray-400"
-                      style="box-shadow: 0 0 0 2px <%= expNavCor %>">
-                  <%= usuario.nome ? usuario.nome.charAt(0).toUpperCase() : 'U' %>
-                </span>
-              <% } %>
-              <input type="text" placeholder="Adicionar comentário…"
-                     class="flex-1 text-xs bg-gray-50 rounded-full px-3.5 py-2 border-none outline-none focus:bg-gray-100 focus:ring-2 focus:ring-primary-500/10 transition-all input-comentario-inline"
-                     data-post-id="<%= post.id %>" maxlength="500">
-            </div>
-          <% } %>
-
-        </article>
+          </article>
         <% } %>
       <% }); %>
-
     <% } else { %>
-      <div class="text-center py-20 animate-fadeIn">
+      <div class="masonry-card text-center py-20 animate-fadeIn bg-white rounded-2xl border border-gray-100">
         <div class="w-20 h-20 mx-auto mb-5 rounded-full bg-gradient-to-br from-primary-50 to-orange-50 flex items-center justify-center">
           <i class="fa-solid fa-compass text-3xl text-primary-400"></i>
         </div>
@@ -282,19 +241,19 @@
         </p>
       </div>
     <% } %>
-  </div>
-
-  <!-- ═══ Scroll Sentinel ═══ -->
-  <% if (temMais) { %>
-    <div id="scrollSentinel" class="py-8 flex justify-center">
-      <div class="flex items-center gap-2 text-gray-400 text-sm">
-        <i class="fa-solid fa-spinner fa-spin"></i>
-        <span>Carregando…</span>
-      </div>
-    </div>
-  <% } %>
-
   </div><!-- /feedContainer -->
+  <div>
+    <!-- ═══ Scroll Sentinel ═══ -->
+    <% if (temMais) { %>
+      <div id="scrollSentinel" class="py-8 flex justify-center">
+        <div class="flex items-center gap-2 text-gray-400 text-sm">
+          <i class="fa-solid fa-spinner fa-spin"></i>
+          <span>Carregando…</span>
+        </div>
+      </div>
+    <% } %>
+  </div>
+  </div>
 
   <!-- ═══ Sidebar (desktop only) ═══ -->
   <aside class="hidden lg:block w-80 flex-shrink-0 space-y-4 sticky top-20 self-start">
@@ -1346,16 +1305,24 @@
     var hasSponsoredPostId = !Number.isNaN(sponsoredPostId) && sponsoredPostId > 0;
     var petNome = escapeHtml(p.pet_nome || ('Pet ' + (p.pet_id || '')));
     var tutorNome = escapeHtml(p.autor_nome || ('Usuário ' + (p.usuario_id || '')));
-    var hasPost = !!(p.foto || p.legenda || p.texto);
-    var legenda = escapeHtml(hasPost ? (p.legenda || p.texto || 'Conheça este perfil pet patrocinado.') : 'Este pet está em campanha patrocinada. Ainda sem publicação no momento — conheça o perfil e siga o tutor.');
-    var fotoPet = p.pet_foto ? '<img src="' + escapeHtml(p.pet_foto) + '" alt="" class="w-12 h-12 rounded-full object-cover ring-2 ring-amber-200">' : '<span class="w-12 h-12 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center"><i class="fa-solid fa-paw"></i></span>';
-    var fotoPost = p.foto ? '<img src="' + escapeHtml(p.foto) + '" alt="" class="w-full mt-3 rounded-xl max-h-[320px] object-cover" loading="lazy">' : '';
-    return '<article class="bg-gradient-to-br from-amber-50 to-white rounded-2xl shadow-sm border-2 border-amber-200 overflow-hidden post-enter" data-post-id="' + (hasSponsoredPostId ? sponsoredPostId : '') + '" data-view-source="' + (hasSponsoredPostId ? 'sponsored_explorar' : '') + '" id="' + sid + '">' +
-      '<div class="px-4 py-2 bg-amber-100 border-b border-amber-200 flex items-center justify-between"><span class="inline-flex items-center gap-1 text-[11px] font-bold tracking-wide text-amber-800"><i class="fa-solid fa-bullhorn"></i>' + escapeHtml(p.sponsored_label || 'PATROCINADO') + '</span><span class="text-[11px] text-amber-700">Anúncio de perfil pet</span></div>' +
-      '<div class="p-4"><div class="flex items-center gap-3">' + fotoPet + '<div class="min-w-0 flex-1"><p class="text-sm font-semibold text-gray-900 truncate">' + petNome + '</p><p class="text-xs text-gray-500 truncate">Tutor: ' + tutorNome + '</p></div></div>' +
-      fotoPost +
-      '<p class="mt-3 text-sm text-gray-700 line-clamp-2">' + legenda + '</p>' +
-      '<div class="mt-3 flex items-center justify-between gap-2"><div class="flex items-center gap-2"><a href="/explorar/pet/' + escapeHtml(p.pet_id) + '" class="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-500 text-white text-xs font-semibold hover:bg-amber-600"><i class="fa-solid fa-paw"></i>Ver perfil do pet</a><a href="/explorar/perfil/' + escapeHtml(p.usuario_id) + '" class="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-amber-300 text-amber-700 text-xs font-semibold hover:bg-amber-100"><i class="fa-solid fa-user-plus"></i>Ver tutor</a></div><span class="text-[11px] text-gray-400">Entrega publicitária identificada</span></div></div></article>';
+    var sponsoredText = p.texto || p.legenda || '';
+    var fotoPet = p.pet_foto
+      ? '<img src="' + escapeHtml(p.pet_foto) + '" alt="" class="w-7 h-7 rounded-full object-cover ring-2 ring-amber-200">'
+      : '<span class="w-7 h-7 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center text-[11px]"><i class="fa-solid fa-paw"></i></span>';
+
+    var h = '<article class="masonry-card bg-gradient-to-b from-amber-50 to-white rounded-2xl shadow-sm border border-amber-200 overflow-hidden post-enter" data-post-id="' + (hasSponsoredPostId ? sponsoredPostId : '') + '" data-view-source="' + (hasSponsoredPostId ? 'sponsored_explorar' : '') + '" data-author-id="' + escapeHtml(p.usuario_id || '') + '" id="' + sid + '">';
+    h += '<div class="px-3 py-2 flex items-center justify-between text-[10px] font-bold text-amber-800 uppercase tracking-wide"><span><i class="fa-solid fa-bullhorn mr-1"></i>' + escapeHtml(p.sponsored_label || 'Patrocinado') + '</span><a href="/explorar/pet/' + escapeHtml(p.pet_id) + '" class="normal-case font-semibold text-amber-700 hover:underline">Ver pet</a></div>';
+    if (p.foto) h += '<img src="' + escapeHtml(p.foto) + '" alt="" class="w-full object-cover post-photo" loading="lazy">';
+    h += '<div class="px-3 py-2"><div class="flex items-center gap-2">' + fotoPet + '<div class="min-w-0"><p class="text-xs font-semibold text-gray-900 truncate">' + petNome + '</p><p class="text-[11px] text-gray-500 truncate">' + tutorNome + '</p></div></div>';
+    if (sponsoredText) h += '<p class="mt-2 text-xs text-gray-700 leading-relaxed line-clamp-2 post-text">' + escapeHtml(sponsoredText) + '</p>';
+    if (hasSponsoredPostId) {
+      h += '<div class="mt-2 flex items-center gap-2 border-t border-amber-100 pt-2">';
+      h += '<button type="button" class="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg transition-all text-xs btn-curtir relative ' + (p.curtiu ? 'text-red-500' : 'text-gray-500 hover:text-red-500 hover:bg-red-50/70') + '" data-post-id="' + sponsoredPostId + '" data-curtiu="' + (p.curtiu ? '1' : '0') + '"><i class="' + (p.curtiu ? 'fa-solid' : 'fa-regular') + ' fa-heart"></i><span class="count-curtidas">' + (p.total_curtidas || '') + '</span></button>';
+      h += '<button type="button" class="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs text-gray-500 hover:text-accent-500 hover:bg-accent-50/70 transition-all btn-comentar" data-post-id="' + sponsoredPostId + '"><i class="fa-regular fa-comment"></i><span class="count-comentarios">' + (p.total_comentarios || '') + '</span></button>';
+      h += '</div>';
+    }
+    h += '</div></article>';
+    return h;
   }
 
   function renderPostHTML(p) {
@@ -1366,68 +1333,34 @@
     var pCor = p.cor_perfil || '#ec5a1c';
     var avatarHtml;
     if (p.foto_perfil) {
-      avatarHtml = '<img src="' + escapeHtml(p.foto_perfil) + '" alt="" class="w-10 h-10 rounded-full object-cover post-author-avatar" style="box-shadow:0 0 0 2px ' + escapeHtml(pCor) + '">';
+      avatarHtml = '<img src="' + escapeHtml(p.foto_perfil) + '" alt="" class="w-8 h-8 rounded-full object-cover post-author-avatar" style="box-shadow:0 0 0 2px ' + escapeHtml(pCor) + '">';
     } else {
-      avatarHtml = '<span class="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white post-author-avatar bg-gray-400" style="box-shadow:0 0 0 2px ' + escapeHtml(pCor) + '">' + escapeHtml((p.autor_nome || 'U').charAt(0).toUpperCase()) + '</span>';
+      avatarHtml = '<span class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white post-author-avatar bg-gray-400" style="box-shadow:0 0 0 2px ' + escapeHtml(pCor) + '">' + escapeHtml((p.autor_nome || 'U').charAt(0).toUpperCase()) + '</span>';
     }
-    var myAvatarHtml;
-    if (meuFotoPerfil) {
-      myAvatarHtml = '<img src="' + escapeHtml(meuFotoPerfil) + '" alt="" class="w-7 h-7 rounded-full object-cover shrink-0" style="box-shadow:0 0 0 2px ' + escapeHtml(meuCorPerfil) + '">';
-    } else {
-      myAvatarHtml = '<span class="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0 bg-gray-400" style="box-shadow:0 0 0 2px ' + escapeHtml(meuCorPerfil) + '">' + escapeHtml(meuNome.charAt(0).toUpperCase()) + '</span>';
-    }
-
-    var h = '<article class="bg-white rounded-2xl shadow-sm border border-gray-100/80 overflow-hidden post-enter" data-post-id="' + p.id + '" data-author-id="' + p.usuario_id + '" id="post-' + p.id + '">';
-
-    if (isRepost) h += '<div class="px-4 pt-3 flex items-center gap-2 text-emerald-500 text-xs font-semibold"><i class="fa-solid fa-retweet text-[11px]"></i><span>' + escapeHtml(p.autor_nome) + ' repostou</span></div>';
-    if (p.fixada) h += '<div class="px-4 pt-3 flex items-center gap-2 text-gray-400 text-xs font-semibold"><i class="fa-solid fa-thumbtack text-[11px]"></i><span>Fixado</span></div>';
-
-    h += '<div class="flex items-center gap-3 px-4 pt-3 pb-2">';
+    var h = '<article class="masonry-card bg-white rounded-2xl shadow-sm border border-gray-100/90 overflow-hidden post-enter" data-post-id="' + p.id + '" data-author-id="' + p.usuario_id + '" id="post-' + p.id + '">';
+    h += '<div class="px-3 pt-2.5 pb-2"><div class="flex items-start gap-2">';
     var tutorHref = '/explorar/perfil/' + p.usuario_id;
     h += '<a href="' + tutorHref + '" class="shrink-0 rounded-full transition-all">' + avatarHtml + '</a>';
-    h += '<div class="flex-1 min-w-0"><div class="flex items-center gap-1.5 flex-wrap"><a href="' + tutorHref + '" class="font-semibold text-sm text-gray-900 hover:underline truncate post-author-name">' + escapeHtml(p.autor_nome) + '</a>';
-    if (p.pet_nome && p.pet_id) h += '<a href="/explorar/pet/' + p.pet_id + '" class="text-xs text-gray-400 hover:text-primary-500 truncate"><i class="fa-solid fa-paw text-[9px]"></i> ' + escapeHtml(p.pet_nome) + '</a>';
-    h += '</div><span class="text-xs text-gray-400 tempo-relativo" data-time="' + p.criado_em + '">' + tempoRelativo(p.criado_em) + '</span></div>';
+    h += '<div class="flex-1 min-w-0"><div class="flex items-center gap-1"><a href="' + tutorHref + '" class="font-semibold text-xs text-gray-900 truncate post-author-name">' + escapeHtml(p.autor_nome) + '</a>';
+    if (p.fixada) h += '<i class="fa-solid fa-thumbtack text-[10px] text-gray-400"></i>';
+    if (isRepost) h += '<i class="fa-solid fa-retweet text-[10px] text-emerald-500"></i>';
+    h += '</div><span class="text-[11px] text-gray-400 tempo-relativo" data-time="' + p.criado_em + '">' + tempoRelativo(p.criado_em) + '</span></div>';
 
     if (isMine) {
-      h += '<div class="relative shrink-0"><button type="button" class="p-1.5 -mr-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors btn-menu-post"><i class="fa-solid fa-ellipsis"></i></button>';
-      h += '<div class="menu-dropdown hidden absolute right-0 top-full mt-1 w-44 bg-white rounded-xl shadow-lg ring-1 ring-black/5 py-1 z-30">';
-      h += '<button type="button" class="w-full px-4 py-2.5 text-left text-sm hover:bg-gray-50 flex items-center gap-2.5 transition-colors btn-fixar" data-post-id="' + p.id + '" data-fixada="' + (p.fixada ? '1' : '0') + '"><i class="fa-solid fa-thumbtack text-gray-400 w-4 text-center"></i><span>' + (p.fixada ? 'Desafixar' : 'Fixar') + '</span></button>';
-      h += '<button type="button" class="w-full px-4 py-2.5 text-left text-sm hover:bg-red-50 text-red-500 flex items-center gap-2.5 transition-colors btn-deletar" data-post-id="' + p.id + '"><i class="fa-solid fa-trash-can w-4 text-center"></i><span>Excluir</span></button>';
+      h += '<div class="relative shrink-0"><button type="button" class="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors btn-menu-post"><i class="fa-solid fa-ellipsis text-xs"></i></button>';
+      h += '<div class="menu-dropdown hidden absolute right-0 top-full mt-1 w-40 bg-white rounded-xl shadow-lg ring-1 ring-black/5 py-1 z-30">';
+      h += '<button type="button" class="w-full px-3 py-2 text-left text-xs hover:bg-gray-50 flex items-center gap-2 transition-colors btn-fixar" data-post-id="' + p.id + '" data-fixada="' + (p.fixada ? '1' : '0') + '"><i class="fa-solid fa-thumbtack text-gray-400 w-3 text-center"></i><span>' + (p.fixada ? 'Desafixar' : 'Fixar') + '</span></button>';
+      h += '<button type="button" class="w-full px-3 py-2 text-left text-xs hover:bg-red-50 text-red-500 flex items-center gap-2 transition-colors btn-deletar" data-post-id="' + p.id + '"><i class="fa-solid fa-trash-can w-3 text-center"></i><span>Excluir</span></button>';
       h += '</div></div>';
     }
-    h += '</div>';
+    h += '</div></div>';
 
-    if (txt) h += '<div class="px-4 pb-2"><p class="text-[15px] text-gray-800 leading-relaxed line-clamp-3 post-text">' + escapeHtml(txt) + '</p><button type="button" class="text-accent-500 text-xs font-semibold mt-1 btn-ver-mais hidden hover:underline">ver mais</button></div>';
-    if (p.foto) h += '<div class="mt-1"><img src="' + escapeHtml(p.foto) + '" alt="" class="w-full max-h-[500px] object-cover post-photo" loading="lazy"></div>';
-
-    if (isRepost && p.orig_id) {
-      var oCor = p.orig_cor_perfil || '#ec5a1c';
-      var origAv;
-      if (p.orig_foto_perfil) origAv = '<img src="' + escapeHtml(p.orig_foto_perfil) + '" alt="" class="w-6 h-6 rounded-full object-cover" style="box-shadow:0 0 0 1px ' + escapeHtml(oCor) + '">';
-      else origAv = '<span class="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white bg-gray-400" style="box-shadow:0 0 0 1px ' + escapeHtml(oCor) + '">' + escapeHtml((p.orig_autor_nome || 'U').charAt(0).toUpperCase()) + '</span>';
-      var origTxt = p.orig_texto || p.orig_legenda || '';
-      h += '<div class="mx-4 my-3 border border-gray-200 rounded-2xl overflow-hidden hover:bg-gray-50/50 transition-colors">';
-      h += '<div class="flex items-center gap-2 px-3 pt-3 pb-1">' + origAv + '<a href="/explorar/perfil/' + p.orig_usuario_id + '" class="text-xs font-semibold text-gray-700 hover:underline">' + escapeHtml(p.orig_autor_nome) + '</a><span class="text-[11px] text-gray-400 tempo-relativo" data-time="' + p.orig_criado_em + '">' + tempoRelativo(p.orig_criado_em) + '</span></div>';
-      if (origTxt) h += '<p class="px-3 pb-2 text-xs text-gray-600 line-clamp-2">' + escapeHtml(origTxt) + '</p>';
-      if (p.orig_foto) h += '<img src="' + escapeHtml(p.orig_foto) + '" alt="" class="w-full max-h-[200px] object-cover" loading="lazy">';
-      h += '</div>';
-    }
-
-    h += '<div class="flex items-center px-2 py-1.5 border-t border-gray-50">';
-    h += '<button type="button" class="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-gray-400 hover:text-accent-500 hover:bg-accent-50/50 transition-all text-[13px] btn-comentar" data-post-id="' + p.id + '"><i class="fa-regular fa-comment"></i><span class="count-comentarios">' + (p.total_comentarios || '') + '</span></button>';
-    h += '<button type="button" class="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl transition-all text-[13px] btn-repost ' + (p.repostou ? 'text-emerald-500' : 'text-gray-400 hover:text-emerald-500 hover:bg-emerald-50/50') + '" data-post-id="' + p.id + '"><i class="fa-solid fa-retweet"></i><span class="count-reposts">' + (p.total_reposts || '') + '</span></button>';
-    h += '<button type="button" class="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl transition-all text-[13px] btn-curtir relative ' + (p.curtiu ? 'text-red-500' : 'text-gray-400 hover:text-red-500 hover:bg-red-50/50') + '" data-post-id="' + p.id + '" data-curtiu="' + (p.curtiu ? '1' : '0') + '"><i class="' + (p.curtiu ? 'fa-solid' : 'fa-regular') + ' fa-heart"></i><span class="count-curtidas">' + (p.total_curtidas || '') + '</span></button>';
-    h += '<button type="button" class="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-gray-400 hover:text-accent-500 hover:bg-accent-50/50 transition-all text-[13px] btn-share" data-post-id="' + p.id + '" data-autor="' + escapeHtml(p.autor_nome) + '"><i class="fa-solid fa-share-from-square"></i></button>';
-    h += '</div>';
-
-    if (p.total_comentarios > 0) {
-      h += '<div class="px-4 pb-2"><button type="button" class="text-xs text-gray-400 hover:text-accent-500 transition-colors font-medium btn-comentar" data-post-id="' + p.id + '">Ver todos os ' + p.total_comentarios + ' comentários</button></div>';
-    }
-
-    if (meuId) {
-      h += '<div class="flex items-center gap-2 px-4 pb-3">' + myAvatarHtml + '<input type="text" placeholder="Adicionar comentário…" class="flex-1 text-xs bg-gray-50 rounded-full px-3.5 py-2 border-none outline-none focus:bg-gray-100 focus:ring-2 focus:ring-primary-500/10 transition-all input-comentario-inline" data-post-id="' + p.id + '" maxlength="500"></div>';
-    }
+    if (p.foto) h += '<img src="' + escapeHtml(p.foto) + '" alt="" class="w-full object-cover post-photo" loading="lazy">';
+    if (txt) h += '<div class="px-3 pt-2"><p class="text-xs text-gray-700 leading-relaxed line-clamp-3 post-text">' + escapeHtml(txt) + '</p><button type="button" class="text-accent-500 text-[11px] font-semibold mt-1 btn-ver-mais hidden hover:underline">ver mais</button></div>';
+    h += '<div class="px-2.5 py-2 mt-1 border-t border-gray-100"><div class="flex items-center gap-1.5">';
+    h += '<button type="button" class="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg transition-all text-xs btn-curtir relative ' + (p.curtiu ? 'text-red-500' : 'text-gray-500 hover:text-red-500 hover:bg-red-50/70') + '" data-post-id="' + p.id + '" data-curtiu="' + (p.curtiu ? '1' : '0') + '"><i class="' + (p.curtiu ? 'fa-solid' : 'fa-regular') + ' fa-heart"></i><span class="count-curtidas">' + (p.total_curtidas || '') + '</span></button>';
+    h += '<button type="button" class="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg text-xs text-gray-500 hover:text-accent-500 hover:bg-accent-50/70 transition-all btn-comentar" data-post-id="' + p.id + '"><i class="fa-regular fa-comment"></i><span class="count-comentarios">' + (p.total_comentarios || '') + '</span></button>';
+    h += '</div></div>';
 
     h += '</article>';
     return h;

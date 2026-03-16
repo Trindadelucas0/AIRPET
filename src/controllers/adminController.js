@@ -41,8 +41,13 @@ const Notificacao = require('../models/Notificacao');
 const ConfigSistema = require('../models/ConfigSistema');
 const PontoMapa = require('../models/PontoMapa');
 const Localizacao = require('../models/Localizacao');
+const PetshopPartnerRequest = require('../models/PetshopPartnerRequest');
+const PetshopPost = require('../models/PetshopPost');
 const notificacaoService = require('../services/notificacaoService');
 const adminAnalyticsService = require('../services/adminAnalyticsService');
+const petshopModerationService = require('../services/petshopModerationService');
+const petshopPublishingService = require('../services/petshopPublishingService');
+const petshopRecoveryIntegrationService = require('../services/petshopRecoveryIntegrationService');
 const logger = require('../utils/logger');
 const { query } = require('../config/database');
 
@@ -281,6 +286,127 @@ async function listarPetshops(req, res) {
   }
 }
 
+async function listarSolicitacoesPetshop(req, res) {
+  try {
+    const status = req.query.status || 'pendente';
+    const [solicitacoes, promocoesPendentes, contagens] = await Promise.all([
+      status === 'todas' ? PetshopPartnerRequest.listarTodas() : PetshopPartnerRequest.listarPorStatus(status),
+      PetshopPost.listarModeracaoPendentes(),
+      PetshopPartnerRequest.listarTodas().then((lista) => {
+        return lista.reduce(
+          (acc, item) => {
+            acc.total += 1;
+            if (item.status === 'pendente') acc.pendente += 1;
+            else if (item.status === 'em_analise') acc.em_analise += 1;
+            else if (item.status === 'aprovado') acc.aprovado += 1;
+            else if (item.status === 'rejeitado') acc.rejeitado += 1;
+            return acc;
+          },
+          { total: 0, pendente: 0, em_analise: 0, aprovado: 0, rejeitado: 0 }
+        );
+      }),
+    ]);
+
+    return res.render('admin/petshops-solicitacoes', {
+      titulo: 'Solicitações de Parceria - AIRPET',
+      solicitacoes,
+      promocoesPendentes,
+      filtroStatus: status,
+      contagens,
+    });
+  } catch (erro) {
+    logger.error('AdminController', 'Erro ao listar solicitações de petshop', erro);
+    req.session.flash = { tipo: 'erro', mensagem: 'Erro ao carregar solicitações de petshop.' };
+    return res.redirect(getAdminPath());
+  }
+}
+
+async function aprovarSolicitacaoPetshop(req, res) {
+  try {
+    const { id } = req.params;
+    await petshopModerationService.aprovarSolicitacao(id, req.session.admin && req.session.admin.email);
+    req.session.flash = { tipo: 'sucesso', mensagem: 'Solicitação aprovada e parceiro ativado.' };
+    return res.redirect(getAdminPath() + '/petshops/solicitacoes');
+  } catch (erro) {
+    logger.error('AdminController', 'Erro ao aprovar solicitação de petshop', erro);
+    req.session.flash = { tipo: 'erro', mensagem: erro.message || 'Erro ao aprovar solicitação.' };
+    return res.redirect(getAdminPath() + '/petshops/solicitacoes');
+  }
+}
+
+async function rejeitarSolicitacaoPetshop(req, res) {
+  try {
+    const { id } = req.params;
+    await petshopModerationService.rejeitarSolicitacao(
+      id,
+      req.body.motivo || null,
+      req.session.admin && req.session.admin.email
+    );
+    req.session.flash = { tipo: 'sucesso', mensagem: 'Solicitação rejeitada.' };
+    return res.redirect(getAdminPath() + '/petshops/solicitacoes');
+  } catch (erro) {
+    logger.error('AdminController', 'Erro ao rejeitar solicitação de petshop', erro);
+    req.session.flash = { tipo: 'erro', mensagem: 'Erro ao rejeitar solicitação.' };
+    return res.redirect(getAdminPath() + '/petshops/solicitacoes');
+  }
+}
+
+async function colocarSolicitacaoPetshopEmAnalise(req, res) {
+  try {
+    const { id } = req.params;
+    await petshopModerationService.colocarEmAnalise(
+      id,
+      req.body.observacao || null,
+      req.session.admin && req.session.admin.email
+    );
+    req.session.flash = { tipo: 'sucesso', mensagem: 'Solicitação movida para em análise.' };
+    return res.redirect(getAdminPath() + '/petshops/solicitacoes');
+  } catch (erro) {
+    logger.error('AdminController', 'Erro ao mover solicitação para análise', erro);
+    req.session.flash = { tipo: 'erro', mensagem: 'Erro ao atualizar status da solicitação.' };
+    return res.redirect(getAdminPath() + '/petshops/solicitacoes');
+  }
+}
+
+async function contatarSuportePetshop(req, res) {
+  req.session.flash = {
+    tipo: 'sucesso',
+    mensagem: 'Ticket de suporte registrado para contato com o petshop.',
+  };
+  return res.redirect(getAdminPath() + '/petshops/solicitacoes');
+}
+
+async function aprovarPromocaoPetshop(req, res) {
+  try {
+    const post = await PetshopPost.atualizarAprovacao(req.params.id, 'aprovado');
+    if (post) {
+      await petshopPublishingService.notificarPublicoElegivel(
+        post.petshop_id,
+        post.id,
+        post.titulo || 'Nova promoção'
+      );
+    }
+    req.session.flash = { tipo: 'sucesso', mensagem: 'Promoção aprovada e publicada.' };
+    return res.redirect(getAdminPath() + '/petshops/solicitacoes');
+  } catch (erro) {
+    logger.error('AdminController', 'Erro ao aprovar promoção', erro);
+    req.session.flash = { tipo: 'erro', mensagem: 'Erro ao aprovar promoção.' };
+    return res.redirect(getAdminPath() + '/petshops/solicitacoes');
+  }
+}
+
+async function rejeitarPromocaoPetshop(req, res) {
+  try {
+    await PetshopPost.atualizarAprovacao(req.params.id, 'rejeitado');
+    req.session.flash = { tipo: 'sucesso', mensagem: 'Promoção rejeitada.' };
+    return res.redirect(getAdminPath() + '/petshops/solicitacoes');
+  } catch (erro) {
+    logger.error('AdminController', 'Erro ao rejeitar promoção', erro);
+    req.session.flash = { tipo: 'erro', mensagem: 'Erro ao rejeitar promoção.' };
+    return res.redirect(getAdminPath() + '/petshops/solicitacoes');
+  }
+}
+
 /**
  * listarPerdidos — Lista todos os alertas de pets perdidos
  *
@@ -353,6 +479,13 @@ async function aprovarPerdido(req, res) {
       const raioKm = raioConfig ? parseFloat(raioConfig.valor) : 1;
       if (alerta.latitude && alerta.longitude) {
         await notificacaoService.notificarProximos(id, raioKm);
+        await petshopRecoveryIntegrationService.notificarPetshopsProximos({
+          pet_perdido_id: id,
+          latitude: alerta.latitude,
+          longitude: alerta.longitude,
+          raioMetros: Math.max(1000, raioKm * 1000),
+          origem: 'aprovacao_admin',
+        });
       }
     } catch (e) { logger.error('AdminController', 'Erro notificação proximidade (não crítico)', e); }
 
@@ -412,6 +545,15 @@ async function escalarAlerta(req, res) {
 
     try {
       await notificacaoService.notificarTodos(id);
+      if (alerta.latitude && alerta.longitude) {
+        await petshopRecoveryIntegrationService.notificarPetshopsProximos({
+          pet_perdido_id: id,
+          latitude: alerta.latitude,
+          longitude: alerta.longitude,
+          raioMetros: 12000,
+          origem: 'escalacao_admin',
+        });
+      }
     } catch (e) { logger.error('AdminController', 'Erro notificação escalar', e); }
 
     logger.info('AdminController', `Alerta ${id} escalado para nível ${nivelNumero}`);
@@ -1041,6 +1183,13 @@ module.exports = {
   listarUsuarios,
   listarPets,
   listarPetshops,
+  listarSolicitacoesPetshop,
+  aprovarSolicitacaoPetshop,
+  rejeitarSolicitacaoPetshop,
+  colocarSolicitacaoPetshopEmAnalise,
+  contatarSuportePetshop,
+  aprovarPromocaoPetshop,
+  rejeitarPromocaoPetshop,
   listarPerdidos,
   aprovarPerdido,
   rejeitarPerdido,

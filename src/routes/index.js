@@ -53,6 +53,8 @@ const saudeRoutes = require('./saudeRoutes');
 const agendaRoutes = require('./agendaRoutes');
 const petPerdidoRoutes = require('./petPerdidoRoutes');
 const explorarRoutes = require('./explorarRoutes');
+const partnerRoutes = require('./partnerRoutes');
+const petshopPanelRoutes = require('./petshopPanelRoutes');
 
 router.use(limiterGeral);
 
@@ -96,6 +98,13 @@ router.use('/tag', nfcRoutes);
 router.use('/t', nfcRoutes);
 router.use('/tags', tagRoutes);
 router.use('/petshops', petshopRoutes);
+router.use('/parceiros', partnerRoutes);
+router.use('/petshop-panel', petshopPanelRoutes);
+router.get('/api/petshops/mapa', async (req, res) => {
+  const Petshop = require('../models/Petshop');
+  const petshops = await Petshop.listarAtivos();
+  return res.json({ sucesso: true, petshops });
+});
 router.use('/mapa', mapaRoutes);
 router.use('/chat', chatRoutes);
 

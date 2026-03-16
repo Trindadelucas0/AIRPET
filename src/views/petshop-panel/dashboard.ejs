@@ -1,0 +1,132 @@
+<% locals.titulo = 'Dashboard do Petshop' %>
+<%- include('../partials/header') %>
+<%- include('../partials/flash') %>
+
+<main class="flex-1 container mx-auto max-w-6xl px-4 py-8 space-y-6">
+  <% const statusAtual = (solicitacao && solicitacao.status) || (accountStatus === 'ativo' ? 'aprovado' : 'pendente'); %>
+  <% const statusClasses = statusAtual === 'aprovado'
+    ? 'bg-emerald-100 text-emerald-700'
+    : statusAtual === 'rejeitado'
+      ? 'bg-red-100 text-red-700'
+      : statusAtual === 'em_analise'
+        ? 'bg-amber-100 text-amber-700'
+        : 'bg-blue-100 text-blue-700'; %>
+  <div class="flex items-center justify-between">
+    <h1 class="text-2xl font-bold text-gray-900">Dashboard do Parceiro</h1>
+    <a href="/petshop-panel/auth/logout" class="text-sm text-gray-500 hover:text-gray-800">Sair</a>
+  </div>
+
+  <section class="card space-y-3">
+    <div class="flex items-center justify-between">
+      <h2 class="font-bold text-gray-900">Status da parceria</h2>
+      <span class="px-3 py-1 rounded-full text-xs font-semibold uppercase <%= statusClasses %>"><%= statusAtual.replace('_', ' ') %></span>
+    </div>
+    <p class="text-sm text-gray-600">
+      <% if (statusAtual === 'aprovado') { %>
+        Seu perfil está aprovado e os recursos públicos estão liberados.
+      <% } else if (statusAtual === 'rejeitado') { %>
+        Sua solicitação foi rejeitada. Ajuste os dados e envie nova solicitação.
+      <% } else if (statusAtual === 'em_analise') { %>
+        Seu cadastro está em análise pelo time AIRPET.
+      <% } else { %>
+        Cadastro recebido. Você já pode organizar o perfil no painel restrito.
+      <% } %>
+    </p>
+    <% if (solicitacao && solicitacao.motivo_rejeicao) { %>
+      <div class="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+        Motivo informado pela moderação: <strong><%= solicitacao.motivo_rejeicao %></strong>
+      </div>
+    <% } %>
+    <% if (statusAtual !== 'aprovado') { %>
+      <p class="text-xs text-gray-500">Recursos públicos bloqueados até aprovação: posts públicos, promoções e agenda aberta.</p>
+    <% } %>
+  </section>
+
+  <section class="grid md:grid-cols-4 gap-4">
+    <div class="card"><p class="text-xs text-gray-400">Serviços</p><p class="text-2xl font-bold"><%= (services || []).length %></p></div>
+    <div class="card"><p class="text-xs text-gray-400">Produtos</p><p class="text-2xl font-bold"><%= (products || []).length %>/15</p></div>
+    <div class="card"><p class="text-xs text-gray-400">Posts</p><p class="text-2xl font-bold"><%= (posts || []).length %></p></div>
+    <div class="card"><p class="text-xs text-gray-400">Agendamentos</p><p class="text-2xl font-bold"><%= (appointments || []).length %></p></div>
+  </section>
+
+  <section class="grid lg:grid-cols-2 gap-6">
+    <div class="card">
+      <h2 class="font-bold mb-3">Atualizar perfil público</h2>
+      <form action="/petshop-panel/perfil" method="POST" class="space-y-3">
+        <input class="input w-full" name="slogan" placeholder="Slogan" value="<%= profile?.slogan || '' %>">
+        <input class="input w-full" name="descricao_curta" placeholder="Descrição curta" value="<%= profile?.descricao_curta || '' %>">
+        <textarea class="input w-full min-h-20" name="descricao_longa" placeholder="Descrição completa"><%= profile?.descricao_longa || '' %></textarea>
+        <input class="input w-full" name="instagram_url" placeholder="Instagram URL" value="<%= profile?.instagram_url || '' %>">
+        <input class="input w-full" name="facebook_url" placeholder="Facebook URL" value="<%= profile?.facebook_url || '' %>">
+        <button class="btn btn-primary">Salvar perfil</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <h2 class="font-bold mb-3">Novo serviço</h2>
+      <form action="/petshop-panel/servicos" method="POST" class="space-y-3">
+        <input class="input w-full" name="nome" placeholder="Nome do serviço" required>
+        <input class="input w-full" type="number" name="duracao_minutos" placeholder="Duração (min)" required>
+        <input class="input w-full" type="number" step="0.01" name="preco_base" placeholder="Preço base">
+        <textarea class="input w-full min-h-20" name="descricao" placeholder="Descrição"></textarea>
+        <button class="btn btn-primary">Salvar serviço</button>
+      </form>
+    </div>
+  </section>
+
+  <section class="grid lg:grid-cols-2 gap-6">
+    <div class="card">
+      <h2 class="font-bold mb-3">Nova postagem/produto</h2>
+      <form action="/petshop-panel/posts" method="POST" enctype="multipart/form-data" class="space-y-3">
+        <select class="input w-full" name="post_type">
+          <option value="normal">Post normal (feed)</option>
+          <option value="produto">Produto (catálogo)</option>
+          <option value="promocao">Promoção (com moderação)</option>
+        </select>
+        <input class="input w-full" name="titulo" placeholder="Título" required>
+        <textarea class="input w-full min-h-20" name="texto" placeholder="Texto"></textarea>
+        <input class="input w-full" name="nome_produto" placeholder="Nome do produto (se aplicável)">
+        <input class="input w-full" type="number" step="0.01" name="preco" placeholder="Preço (se aplicável)">
+        <input class="input w-full" name="contato_link" placeholder="Link de contato">
+        <input class="input w-full" type="file" name="foto" accept="image/*">
+        <button class="btn btn-primary">Publicar</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <h2 class="font-bold mb-3">Agendamento (teste interno)</h2>
+      <form action="/petshop-panel/agenda" method="POST" class="space-y-3">
+        <input class="input w-full" name="usuario_id" placeholder="ID do usuário" required>
+        <input class="input w-full" name="pet_id" placeholder="ID do pet" required>
+        <input class="input w-full" name="service_id" placeholder="ID do serviço">
+        <input class="input w-full" type="datetime-local" name="data_agendada" required>
+        <textarea class="input w-full min-h-20" name="observacoes" placeholder="Observações"></textarea>
+        <button class="btn btn-primary">Criar agendamento</button>
+      </form>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2 class="font-bold mb-3">Agendamentos recebidos</h2>
+    <div class="space-y-3">
+      <% (appointments || []).forEach(function(a) { %>
+        <div class="border rounded-xl p-3 flex flex-col md:flex-row md:items-center gap-3 md:justify-between">
+          <div>
+            <p class="font-semibold"><%= a.pet_nome %> • <%= a.servico_nome || 'Serviço' %></p>
+            <p class="text-sm text-gray-500"><%= a.usuario_nome %> • <%= new Date(a.data_agendada).toLocaleString('pt-BR') %></p>
+          </div>
+          <form action="/petshop-panel/agenda/<%= a.id %>/status" method="POST" class="flex gap-2">
+            <select name="status" class="input">
+              <option value="aceito">Aceitar</option>
+              <option value="recusado">Recusar</option>
+              <option value="concluido">Concluir</option>
+            </select>
+            <button class="btn btn-primary">Atualizar</button>
+          </form>
+        </div>
+      <% }) %>
+    </div>
+  </section>
+</main>
+
+<%- include('../partials/footer') %>

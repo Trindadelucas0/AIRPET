@@ -1,13 +1,22 @@
 const multer = require('multer');
 const path = require('path');
 const crypto = require('crypto');
+const fs = require('fs');
 
 const ALLOWED_TYPES = /jpeg|jpg|png|gif|webp/;
 const MAX_SIZE = 5 * 1024 * 1024;
 
 function criarUpload(destino) {
   const storage = multer.diskStorage({
-    destination: (req, file, cb) => cb(null, path.join(__dirname, '..', 'public', 'images', destino)),
+    destination: (req, file, cb) => {
+      const dir = path.join(__dirname, '..', 'public', 'images', destino);
+      try {
+        fs.mkdirSync(dir, { recursive: true });
+        return cb(null, dir);
+      } catch (error) {
+        return cb(error);
+      }
+    },
     filename: (req, file, cb) => cb(null, crypto.randomBytes(16).toString('hex') + path.extname(file.originalname))
   });
 

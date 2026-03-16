@@ -18,6 +18,11 @@
  */
 
 const Petshop = require('../models/Petshop');
+const PetshopProfile = require('../models/PetshopProfile');
+const PetshopProduct = require('../models/PetshopProduct');
+const PetshopPost = require('../models/PetshopPost');
+const PetshopFollower = require('../models/PetshopFollower');
+const PetshopReview = require('../models/PetshopReview');
 const logger = require('../utils/logger');
 
 /**
@@ -34,8 +39,10 @@ const logger = require('../utils/logger');
  */
 async function listar(req, res) {
   try {
-    /* Busca somente petshops ativos — inativos ficam ocultos do público */
-    const petshops = await Petshop.listarAtivos();
+    let petshops = await Petshop.listarAtivos();
+    if (req.query.apoio === '1') {
+      petshops = petshops.filter((p) => p.ponto_de_apoio);
+    }
 
     /* Renderiza a lista de petshops parceiros */
     return res.render('petshops/lista', {
@@ -66,12 +73,17 @@ async function listar(req, res) {
 async function mostrarDetalhes(req, res) {
   try {
     const { id } = req.params;
+    const isNumeric = /^\d+$/.test(String(id));
 
-    /* Busca o petshop pelo ID */
-    const petshop = await Petshop.buscarPorId(id);
+    let petshop = null;
+    if (isNumeric) {
+      petshop = await Petshop.buscarPorId(id);
+    } else {
+      petshop = await Petshop.buscarPorSlug(id);
+    }
 
     /* Se o petshop não existe, exibe 404 */
-    if (!petshop) {
+    if (!petshop || petshop.ativo === false) {
       return res.status(404).render('partials/erro', {
         titulo: 'Petshop não encontrado',
         mensagem: 'O petshop que você procura não existe ou foi removido.',
@@ -79,10 +91,28 @@ async function mostrarDetalhes(req, res) {
       });
     }
 
-    /* Renderiza a página de detalhes com todas as informações */
+    const [profile, products, posts, reviews, reviewSummary, followerCount] = await Promise.all([
+      PetshopProfile.buscarPorPetshopId(petshop.id),
+      PetshopProduct.listarAtivosPorPetshop(petshop.id),
+      PetshopPost.listarPublicosPorPetshop(petshop.id),
+      PetshopReview.listarPorPetshop(petshop.id),
+      PetshopReview.resumoPorPetshop(petshop.id),
+      PetshopFollower.contarSeguidores(petshop.id),
+    ]);
+
+    const usuarioId = req.session && req.session.usuario && req.session.usuario.id;
+    const userSegue = usuarioId ? await PetshopFollower.usuarioSegue(petshop.id, usuarioId) : false;
+
     return res.render('petshops/detalhes', {
       titulo: `${petshop.nome} - AIRPET`,
       petshop,
+      profile,
+      products,
+      posts,
+      reviews,
+      reviewSummary,
+      followerCount,
+      userSegue,
     });
   } catch (erro) {
     logger.error('PetshopController', 'Erro ao exibir detalhes do petshop', erro);
@@ -91,8 +121,86 @@ async function mostrarDetalhes(req, res) {
   }
 }
 
+async function mapa(req, res) {
+  try {
+    const petshops = await Petshop.listarAtivos();
+    return res.render('petshops/mapa', {
+      titulo: 'Mapa de Petshops Parceiros',
+      petshops,
+    });
+  } catch (erro) {
+    logger.error('PetshopController', 'Erro ao carregar mapa de petshops', erro);
+    req.session.flash = { tipo: 'erro', mensagem: 'Não foi possível carregar o mapa de petshops.' };
+    return res.redirect('/petshops');
+  }
+}
+
+async function seguir(req, res) {
+  try {
+    const usuario = req.session && req.session.usuario;
+    const wantsJson = req.xhr || (req.headers.accept || '').includes('application/json');
+    if (!usuario) {
+      if (wantsJson) return res.status(401).json({ sucesso: false, mensagem: 'Sessão expirada. Faça login novamente.' });
+      return res.redirect('/auth/login');
+    }
+
+    const { id } = req.params;
+    const petshopId = parseInt(id, 10);
+    const jaSegue = await PetshopFollower.usuarioSegue(petshopId, usuario.id);
+    if (jaSegue) {
+      await PetshopFollower.deixarDeSeguir(petshopId, usuario.id);
+    } else {
+      await PetshopFollower.seguir(petshopId, usuario.id);
+    }
+    const seguidores = await PetshopFollower.contarSeguidores(petshopId);
+    if (wantsJson) {
+      return res.json({ sucesso: true, seguindo: !jaSegue, seguidores });
+    }
+    req.session.flash = { tipo: 'sucesso', mensagem: jaSegue ? 'Você deixou de seguir este petshop.' : 'Você agora segue este petshop.' };
+    return res.redirect('/petshops/' + id);
+  } catch (erro) {
+    logger.error('PetshopController', 'Erro ao seguir petshop', erro);
+    if (req.xhr || (req.headers.accept || '').includes('application/json')) {
+      return res.status(500).json({ sucesso: false, mensagem: 'Não foi possível atualizar o seguimento.' });
+    }
+    req.session.flash = { tipo: 'erro', mensagem: 'Não foi possível seguir o petshop.' };
+    return res.redirect('/petshops');
+  }
+}
+
+async function avaliar(req, res) {
+  try {
+    const usuario = req.session && req.session.usuario;
+    if (!usuario) return res.redirect('/auth/login');
+    const { id } = req.params;
+    const rating = parseInt(req.body.rating, 10);
+    if (![1, 2, 3, 4, 5].includes(rating)) {
+      req.session.flash = { tipo: 'erro', mensagem: 'Avaliação inválida. Use de 1 a 5 estrelas.' };
+      return res.redirect('/petshops/' + id);
+    }
+
+    await PetshopReview.criarOuAtualizar({
+      petshop_id: parseInt(id, 10),
+      usuario_id: usuario.id,
+      pet_id: req.body.pet_id || null,
+      rating,
+      comentario: req.body.comentario || null,
+    });
+
+    req.session.flash = { tipo: 'sucesso', mensagem: 'Obrigado pela sua avaliação.' };
+    return res.redirect('/petshops/' + id);
+  } catch (erro) {
+    logger.error('PetshopController', 'Erro ao avaliar petshop', erro);
+    req.session.flash = { tipo: 'erro', mensagem: 'Não foi possível salvar sua avaliação.' };
+    return res.redirect('/petshops');
+  }
+}
+
 /* Exporta os métodos do controller */
 module.exports = {
   listar,
   mostrarDetalhes,
+  mapa,
+  seguir,
+  avaliar,
 };
