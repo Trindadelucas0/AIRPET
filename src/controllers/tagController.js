@@ -329,11 +329,12 @@ async function listarTags(req, res) {
       contagens,
       filtroAtual: status || 'todos',
       adminPath: process.env.ADMIN_PATH || '/admin',
+      currentPath: 'tags',
     });
   } catch (erro) {
     logger.error('TagController', 'Erro ao listar tags', erro);
     req.session.flash = { tipo: 'erro', mensagem: 'Erro ao carregar a lista de tags.' };
-    return res.redirect((process.env.ADMIN_PATH || '/admin') + '/dashboard');
+    return res.redirect(process.env.ADMIN_PATH || '/admin');
   }
 }
 
@@ -357,6 +358,8 @@ async function listarLotes(req, res) {
     return res.render('admin/lotes', {
       titulo: 'Lotes de Tags - AIRPET',
       lotes,
+      adminPath: process.env.ADMIN_PATH || '/admin',
+      currentPath: 'tags',
     });
   } catch (erro) {
     logger.error('TagController', 'Erro ao listar lotes', erro);
@@ -395,6 +398,7 @@ async function mostrarLote(req, res) {
       lote,
       tags,
       adminPath: process.env.ADMIN_PATH || '/admin',
+      currentPath: 'tags',
     });
   } catch (erro) {
     logger.error('TagController', 'Erro ao exibir detalhes do lote', erro);

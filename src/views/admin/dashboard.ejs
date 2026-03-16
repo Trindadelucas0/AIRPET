@@ -22,45 +22,45 @@
         <p class="text-xs font-medium text-gray-500 mt-1">Usuários</p>
       </a>
 
-      <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 hover:shadow-md transition-shadow">
+      <a href="<%= adminPath %>/pets" class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 hover:shadow-md hover:border-orange-200 transition-all block">
         <div class="flex items-center justify-center w-10 h-10 rounded-lg bg-orange-50 text-orange-500 mb-3">
           <i class="fa-solid fa-paw text-lg"></i>
         </div>
         <p class="text-2xl font-bold text-gray-900"><%= stats.pets %></p>
         <p class="text-xs font-medium text-gray-500 mt-1">Pets</p>
-      </div>
+      </a>
 
-      <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 hover:shadow-md transition-shadow">
+      <a href="<%= adminPath %>/pets-perdidos" class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 hover:shadow-md hover:border-red-200 transition-all block">
         <div class="flex items-center justify-center w-10 h-10 rounded-lg bg-red-50 text-red-500 mb-3">
           <i class="fa-solid fa-triangle-exclamation text-lg"></i>
         </div>
         <p class="text-2xl font-bold text-gray-900"><%= stats.perdidos %></p>
         <p class="text-xs font-medium text-gray-500 mt-1">Pets Perdidos</p>
-      </div>
+      </a>
 
-      <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 hover:shadow-md transition-shadow">
+      <a href="<%= adminPath %>/petshops" class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 hover:shadow-md hover:border-emerald-200 transition-all block">
         <div class="flex items-center justify-center w-10 h-10 rounded-lg bg-emerald-50 text-emerald-500 mb-3">
           <i class="fa-solid fa-store text-lg"></i>
         </div>
         <p class="text-2xl font-bold text-gray-900"><%= stats.petshops %></p>
         <p class="text-xs font-medium text-gray-500 mt-1">Petshops</p>
-      </div>
+      </a>
 
-      <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 hover:shadow-md transition-shadow">
+      <a href="<%= adminPath %>/moderacao" class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 hover:shadow-md hover:border-yellow-200 transition-all block">
         <div class="flex items-center justify-center w-10 h-10 rounded-lg bg-yellow-50 text-yellow-500 mb-3">
           <i class="fa-solid fa-envelope text-lg"></i>
         </div>
         <p class="text-2xl font-bold text-gray-900"><%= stats.mensagens %></p>
         <p class="text-xs font-medium text-gray-500 mt-1">Msg Pendentes</p>
-      </div>
+      </a>
 
-      <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 hover:shadow-md transition-shadow">
+      <a href="<%= adminPath %>/pets-perdidos" class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 hover:shadow-md hover:border-purple-200 transition-all block">
         <div class="flex items-center justify-center w-10 h-10 rounded-lg bg-purple-50 text-purple-500 mb-3">
-          <i class="fa-solid fa-tag text-lg"></i>
+          <i class="fa-solid fa-bell text-lg"></i>
         </div>
-        <p class="text-2xl font-bold text-gray-900"><%= stats.tags %></p>
-        <p class="text-xs font-medium text-gray-500 mt-1">Tags Ativas</p>
-      </div>
+        <p class="text-2xl font-bold text-gray-900"><%= stats.alertasPendentes %></p>
+        <p class="text-xs font-medium text-gray-500 mt-1">Alertas pendentes</p>
+      </a>
 
     </div>
 
@@ -122,7 +122,13 @@
     <!-- Quick Links -->
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
       <h2 class="text-lg font-semibold text-gray-900 mb-4">Acesso Rápido</h2>
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-3">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+
+        <a href="<%= adminPath %>/analytics"
+           class="flex items-center gap-3 px-4 py-3 rounded-lg border border-gray-200 hover:border-indigo-300 hover:bg-indigo-50 transition-all group">
+          <i class="fa-solid fa-chart-pie text-indigo-400 group-hover:text-indigo-500"></i>
+          <span class="text-sm font-medium text-gray-700 group-hover:text-indigo-700">Analytics</span>
+        </a>
 
         <a href="<%= adminPath %>/usuarios"
            class="flex items-center gap-3 px-4 py-3 rounded-lg border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-all group">
@@ -142,6 +148,12 @@
           <span class="text-sm font-medium text-gray-700 group-hover:text-emerald-700">Cadastros de Petshop</span>
         </a>
 
+        <a href="<%= adminPath %>/notificacoes/enviar"
+           class="flex items-center gap-3 px-4 py-3 rounded-lg border border-gray-200 hover:border-amber-300 hover:bg-amber-50 transition-all group">
+          <i class="fa-solid fa-bell text-amber-400 group-hover:text-amber-500"></i>
+          <span class="text-sm font-medium text-gray-700 group-hover:text-amber-700">Notificação em massa</span>
+        </a>
+
         <a href="<%= adminPath %>/moderacao"
            class="flex items-center gap-3 px-4 py-3 rounded-lg border border-gray-200 hover:border-yellow-300 hover:bg-yellow-50 transition-all group">
           <i class="fa-solid fa-comment-dots text-yellow-400 group-hover:text-yellow-500"></i>
@@ -155,9 +167,9 @@
         </a>
 
         <a href="<%= adminPath %>/gerenciar-mapa"
-           class="flex items-center gap-3 px-4 py-3 rounded-lg border border-gray-200 hover:border-emerald-300 hover:bg-emerald-50 transition-all group">
-          <i class="fa-solid fa-map-location-dot text-emerald-400 group-hover:text-emerald-500"></i>
-          <span class="text-sm font-medium text-gray-700 group-hover:text-emerald-700">Gerenciar Mapa</span>
+           class="flex items-center gap-3 px-4 py-3 rounded-lg border border-gray-200 hover:border-teal-300 hover:bg-teal-50 transition-all group">
+          <i class="fa-solid fa-map-location-dot text-teal-400 group-hover:text-teal-500"></i>
+          <span class="text-sm font-medium text-gray-700 group-hover:text-teal-700">Gerenciar Mapa</span>
         </a>
 
         <a href="<%= adminPath %>/configuracoes"
@@ -170,6 +182,12 @@
            class="flex items-center gap-3 px-4 py-3 rounded-lg border border-gray-200 hover:border-orange-300 hover:bg-orange-50 transition-all group">
           <i class="fa-solid fa-palette text-orange-400 group-hover:text-orange-500"></i>
           <span class="text-sm font-medium text-gray-700 group-hover:text-orange-700">Aparência</span>
+        </a>
+
+        <a href="<%= adminPath %>/boosts"
+           class="flex items-center gap-3 px-4 py-3 rounded-lg border border-gray-200 hover:border-yellow-400 hover:bg-yellow-50 transition-all group">
+          <i class="fa-solid fa-bolt text-yellow-500 group-hover:text-yellow-600"></i>
+          <span class="text-sm font-medium text-gray-700 group-hover:text-yellow-700">Boosts</span>
         </a>
 
       </div>

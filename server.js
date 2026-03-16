@@ -245,7 +245,7 @@ async function iniciar() {
     const migResult = await runMigrations();
 
     logger.secao('Services');
-    schedulerService.iniciar();
+    await schedulerService.iniciar();
     logger.info('SCHEDULER', 'Jobs automaticos iniciados (alertas, vacinas)');
 
     server.listen(PORT, () => {

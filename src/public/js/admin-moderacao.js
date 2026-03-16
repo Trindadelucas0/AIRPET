@@ -32,8 +32,10 @@
       : 'bg-gray-100 text-gray-500';
 
     var conteudoHtml = '';
-    if (msg.tipo === 'foto' && msg.conteudo) {
-      conteudoHtml = '<div class="mb-3"><img src="' + escapeHtml(msg.conteudo) + '" alt="Foto" class="max-h-40 rounded-lg border border-gray-200"></div>';
+    if (msg.tipo === 'foto' && (msg.foto_url || msg.conteudo)) {
+      var imgSrc = msg.foto_url || msg.conteudo;
+      imgSrc = imgSrc.indexOf('/') === 0 ? imgSrc : '/images/chat/' + imgSrc;
+      conteudoHtml = '<div class="mb-3"><img src="' + escapeHtml(imgSrc) + '" alt="Foto" class="max-h-40 rounded-lg border border-gray-200"></div>';
     } else {
       conteudoHtml = '<p class="text-sm text-gray-800 bg-gray-50 rounded-lg px-4 py-3 mb-3">' + escapeHtml(msg.conteudo) + '</p>';
     }

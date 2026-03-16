@@ -100,6 +100,25 @@ const Notificacao = {
 
     return parseInt(resultado.rows[0].total, 10);
   },
+
+  /**
+   * Retorna IDs de usuários que já receberam notificação de alerta para o mesmo pet
+   * nas últimas N horas (evita duplicatas no mesmo alerta).
+   * @param {number} petId - ID do pet do alerta
+   * @param {number} horasDesde - Horas para trás (ex.: 24)
+   * @returns {Promise<number[]>}
+   */
+  async buscarUsuarioIdsJaNotificadosAlerta(petId, horasDesde) {
+    const resultado = await query(
+      `SELECT DISTINCT usuario_id
+       FROM notificacoes
+       WHERE tipo = 'alerta'
+         AND pet_id = $1
+         AND COALESCE(data_criacao, data) >= NOW() - make_interval(hours => $2::numeric)`,
+      [petId, horasDesde]
+    );
+    return resultado.rows.map(row => row.usuario_id);
+  },
 };
 
 module.exports = Notificacao;

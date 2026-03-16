@@ -35,8 +35,8 @@
     <% if (typeof mensagens !== 'undefined' && mensagens.length > 0) { %>
       <% mensagens.forEach(function(msg) { %>
         <%
-          var isOwner = (typeof usuario !== 'undefined' && usuario && msg.remetente_id === usuario.id);
-          var pendente = msg.status === 'pendente';
+          var isOwner = String(msg.remetente || msg.remetente_id || '') === String(typeof usuarioAtualId !== 'undefined' ? usuarioAtualId : '');
+          var pendente = (msg.status_moderacao || msg.status) === 'pendente';
         %>
         <div class="flex <%= isOwner ? 'justify-end' : 'justify-start' %>">
           <div class="max-w-[80%] sm:max-w-[70%]">
@@ -44,8 +44,9 @@
               ? 'bg-[#ec5a1c] text-white rounded-2xl rounded-br-md'
               : 'bg-white text-gray-800 rounded-2xl rounded-bl-md shadow-sm border border-gray-100' %> px-4 py-2.5">
 
-              <% if (msg.tipo === 'imagem' && msg.arquivo) { %>
-                <img src="/images/chat/<%= msg.arquivo %>" alt="Foto"
+              <% var imgSrc = msg.foto_url || msg.arquivo || msg.conteudo; %>
+              <% if ((msg.tipo === 'imagem' || msg.tipo === 'foto') && imgSrc) { %>
+                <img src="<%= imgSrc.indexOf('/') === 0 ? imgSrc : '/images/chat/' + imgSrc %>" alt="Foto"
                      class="rounded-lg max-w-full mb-1 cursor-pointer"
                      onclick="window.open(this.src, '_blank')">
               <% } %>
@@ -130,7 +131,7 @@
   if (container) container.scrollTop = container.scrollHeight;
 
   var conversaId = ${JSON.stringify(String(conversa.id))};
-  var usuarioAtualId = ${JSON.stringify(String((typeof usuario !== 'undefined' && usuario && usuario.id) ? usuario.id : '0'))};
+  var usuarioAtualId = ${JSON.stringify(String(typeof usuarioAtualId !== 'undefined' ? usuarioAtualId : '0'))};
   var socket = io('/chat');
   socket.emit('entrar_conversa', { conversa_id: conversaId });
 
@@ -153,7 +154,12 @@
 
     var html = '<div class="max-w-[80%] sm:max-w-[70%]">';
     html += '<div class="' + bubbleClass + ' px-4 py-2.5">';
-    if (msg.conteudo) html += '<p class="text-sm leading-relaxed whitespace-pre-wrap">' + escapeHtml(msg.conteudo) + '</p>';
+    if ((msg.tipo === 'foto' || msg.tipo === 'imagem') && (msg.foto_url || msg.conteudo)) {
+      var imgSrc = msg.foto_url || msg.conteudo;
+      imgSrc = imgSrc.indexOf('/') === 0 ? imgSrc : '/images/chat/' + imgSrc;
+      html += '<img src="' + escapeHtml(imgSrc) + '" alt="Foto" class="rounded-lg max-w-full mb-1 cursor-pointer" onclick="window.open(this.src,\'_blank\')">';
+    }
+    if (msg.conteudo && msg.tipo !== 'foto' && msg.tipo !== 'imagem') html += '<p class="text-sm leading-relaxed whitespace-pre-wrap">' + escapeHtml(msg.conteudo) + '</p>';
     html += '</div>';
     html += '<div class="flex items-center gap-2 mt-1 px-1 ' + (isOwner ? 'justify-end' : 'justify-start') + '">';
     html += '<span class="text-[10px] text-gray-400">' + new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) + '</span>';

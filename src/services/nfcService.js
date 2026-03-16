@@ -197,16 +197,23 @@ const nfcService = {
 
         /**
          * PASSO 4b: Verifica se o pet está perdido.
-         * Busca alertas aprovados para este pet na tabela pets_perdidos.
-         * Se existir um alerta ativo, sinaliza na resposta.
+         * Mostra "PERDIDO" na tag quando:
+         *   - O pet está marcado como perdido (pets.status = 'perdido'), OU
+         *   - Existe um alerta aprovado em pets_perdidos.
+         * Assim a tag reflete imediatamente quando o tutor reporta, mesmo antes da aprovação do admin.
          */
         if (tag.pet_id) {
           const alertas = await PetPerdido.buscarPorPet(tag.pet_id);
           alertaAtivo = alertas.find(a => a.status === 'aprovado') || null;
 
+          const petMarcadoPerdido = dadosPet && dadosPet.status === 'perdido';
           if (alertaAtivo) {
             petPerdido = true;
-            logger.info('NfcService', `Pet ${tag.pet_id} está PERDIDO! Alerta ativo: ${alertaAtivo.id}`);
+            logger.info('NfcService', `Pet ${tag.pet_id} está PERDIDO! Alerta aprovado: ${alertaAtivo.id}`);
+          } else if (petMarcadoPerdido) {
+            petPerdido = true;
+            alertaAtivo = alertas[0] || null;
+            logger.info('NfcService', `Pet ${tag.pet_id} está PERDIDO (aguardando aprovação do alerta)`);
           }
         }
 

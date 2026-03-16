@@ -28,13 +28,13 @@ const MensagemChat = {
    * @returns {Promise<object>} O registro da mensagem criada
    */
   async criar(dados) {
-    const { conversa_id, remetente, conteudo, tipo } = dados;
+    const { conversa_id, remetente, conteudo, tipo, foto_url } = dados;
 
     const resultado = await query(
-      `INSERT INTO mensagens_chat (conversa_id, remetente, conteudo, tipo)
-       VALUES ($1, $2, $3, $4)
+      `INSERT INTO mensagens_chat (conversa_id, remetente, conteudo, tipo, foto_url)
+       VALUES ($1, $2, $3, $4, $5)
        RETURNING *`,
-      [conversa_id, remetente, conteudo, tipo || 'texto']
+      [conversa_id, remetente, conteudo || '', tipo || 'texto', foto_url || null]
     );
 
     return resultado.rows[0];
@@ -70,8 +70,10 @@ const MensagemChat = {
    */
   async buscarPendentes() {
     const resultado = await query(
-      `SELECT mc.*
+      `SELECT mc.*,
+              u.nome AS remetente_nome
        FROM mensagens_chat mc
+       LEFT JOIN usuarios u ON u.id::text = mc.remetente
        WHERE mc.status_moderacao = 'pendente'
        ORDER BY mc.data ASC`
     );

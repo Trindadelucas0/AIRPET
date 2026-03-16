@@ -252,7 +252,9 @@ const migrations = [
     ('raio_alerta_nivel2_km', '3', 'Nivel 2: raio expandido apos X horas sem encontrar'),
     ('raio_alerta_nivel3_km', '0', 'Nivel 3: 0 = cidade inteira'),
     ('horas_para_nivel2', '6', 'Horas sem encontrar para expandir para nivel 2'),
-    ('horas_para_nivel3', '24', 'Horas sem encontrar para expandir para nivel 3')
+    ('horas_para_nivel3', '24', 'Horas sem encontrar para expandir para nivel 3'),
+    ('alerta_cooldown_horas', '24', 'Horas sem renotificar o mesmo usuario no mesmo alerta'),
+    ('cron_intervalo_alertas_min', '30', 'Intervalo em minutos do cron de escalacao de alertas')
   ON CONFLICT (chave) DO NOTHING;`,
 
   // Seeds de aparência / PWA (ícone, cores, nome do app)
@@ -858,6 +860,25 @@ const migrations = [
     longitude DECIMAL(10,7) NOT NULL,
     raio_km DECIMAL(6,2) NOT NULL,
     data_criacao TIMESTAMP DEFAULT NOW()
+  );`,
+
+  // Opt-in do usuario para alertas de pet perdido
+  `DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='usuarios' AND column_name='receber_alertas_pet_perdido') THEN
+      ALTER TABLE usuarios ADD COLUMN receber_alertas_pet_perdido BOOLEAN DEFAULT true;
+    END IF;
+  END $$;`,
+
+  // Log de execucoes do cron (alertas, vacinas, etc.)
+  `CREATE TABLE IF NOT EXISTS cron_execucoes (
+    id SERIAL PRIMARY KEY,
+    job VARCHAR(50) NOT NULL,
+    iniciado_em TIMESTAMP DEFAULT NOW(),
+    finalizado_em TIMESTAMP,
+    status VARCHAR(20) DEFAULT 'em_andamento',
+    alertas_escalados INTEGER DEFAULT 0,
+    notificacoes_enviadas INTEGER DEFAULT 0,
+    erro TEXT
   );`,
 
   // Conversas: colunas iniciador_id e tutor_id (esquema usado pelo chatController/Conversa.js)

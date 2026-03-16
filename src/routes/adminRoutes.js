@@ -6,7 +6,6 @@ const multer = require('multer');
 
 const adminController = require('../controllers/adminController');
 const pontoMapaController = require('../controllers/pontoMapaController');
-const regiaoNotificacaoController = require('../controllers/regiaoNotificacaoController');
 const { apenasAdmin } = require('../middlewares/adminMiddleware');
 const { limiterLogin } = require('../middlewares/rateLimiter');
 
@@ -131,11 +130,6 @@ router.post('/aparencia', apenasAdmin, uploadPwa.fields([{ name: 'icon_192', max
 router.get('/notificacoes/enviar/preview', apenasAdmin, adminController.previewEnviarNotificacao);
 router.get('/notificacoes/enviar', apenasAdmin, adminController.mostrarEnviarNotificacao);
 router.post('/notificacoes/enviar', apenasAdmin, adminController.enviarNotificacaoRegiao);
-
-router.get('/regioes-notificacao', apenasAdmin, regiaoNotificacaoController.listar);
-router.post('/regioes-notificacao', apenasAdmin, regiaoNotificacaoController.criar);
-router.put('/regioes-notificacao/:id', apenasAdmin, regiaoNotificacaoController.atualizar);
-router.post('/regioes-notificacao/:id/excluir', apenasAdmin, regiaoNotificacaoController.excluir);
 
 router.get('/gerenciar-mapa', apenasAdmin, adminController.mostrarGerenciarMapa);
 router.get('/mapa', apenasAdmin, adminController.mostrarMapa);

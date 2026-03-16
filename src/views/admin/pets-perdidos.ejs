@@ -12,14 +12,51 @@
       <p class="text-sm text-gray-500 mt-1"><%= perdidos.length %> registros</p>
     </div>
 
-    <!-- Acesso rápido: configurações de alertas e notificação em massa -->
+    <!-- Hub de alertas: status do cron, links e log -->
     <div class="mb-8 p-5 bg-white rounded-xl shadow-sm border border-gray-100">
       <h2 class="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
         <i class="fa-solid fa-cog text-primary-500"></i>
         Notificações e alertas
       </h2>
       <p class="text-xs text-gray-500 mb-4">Configure o tempo e o raio (km) para o envio automático de notificações quando um pet está perdido, ou envie uma notificação em massa por região.</p>
-      <div class="flex flex-wrap gap-3">
+
+      <!-- Status do cron -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+        <div class="bg-gray-50 rounded-lg p-3 border border-gray-100">
+          <p class="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">Última execução</p>
+          <p class="text-sm font-medium text-gray-900 mt-0.5">
+            <% if (typeof cronUltima !== 'undefined' && cronUltima && cronUltima.finalizado_em) { %>
+              <%= new Date(cronUltima.finalizado_em).toLocaleString('pt-BR') %>
+            <% } else { %>
+              —
+            <% } %>
+          </p>
+        </div>
+        <div class="bg-gray-50 rounded-lg p-3 border border-gray-100">
+          <p class="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">Próxima (estimada)</p>
+          <p class="text-sm font-medium text-gray-900 mt-0.5">
+            <% if (typeof proximaExecucaoEm !== 'undefined' && proximaExecucaoEm !== null) { %>
+              em <%= proximaExecucaoEm %> min
+            <% } else { %>
+              —
+            <% } %>
+          </p>
+        </div>
+        <div class="bg-gray-50 rounded-lg p-3 border border-gray-100">
+          <p class="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">Status</p>
+          <p class="text-sm font-medium mt-0.5">
+            <% if (typeof cronUltima !== 'undefined' && cronUltima) { %>
+              <span class="<%= cronUltima.status === 'ok' ? 'text-emerald-600' : 'text-red-600' %>">
+                <%= cronUltima.status === 'ok' ? 'OK' : 'Erro' %>
+              </span>
+            <% } else { %>
+              <span class="text-gray-500">—</span>
+            <% } %>
+          </p>
+        </div>
+      </div>
+
+      <div class="flex flex-wrap gap-3 mb-4">
         <a href="<%= adminPath %>/configuracoes" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium bg-primary-50 text-primary-700 hover:bg-primary-100 border border-primary-200 transition-colors">
           <i class="fa-solid fa-clock"></i>
           Configurações de alertas (tempo e raio)
@@ -29,7 +66,42 @@
           Notificação em massa (região e raio)
         </a>
       </div>
-      <p class="text-xs text-gray-400 mt-3">O sistema dispara um cron a cada 30 minutos: a partir do momento em que o pet está perdido, ele cronometra e reenvia notificações conforme as horas e raios configurados (Nível 1 → 2 → 3).</p>
+      <p class="text-xs text-gray-400 mb-4">O cron roda a cada <strong><%= typeof intervaloMin !== 'undefined' ? intervaloMin : '30' %> min</strong>: a partir do momento em que o pet está perdido, o sistema cronometra e reenvia notificações conforme as horas e raios configurados (Nível 1 → 2 → 3).</p>
+
+      <!-- Log recente de execuções -->
+      <% if (typeof cronRecentes !== 'undefined' && cronRecentes && cronRecentes.length > 0) { %>
+      <div class="border-t border-gray-100 pt-4">
+        <h3 class="text-xs font-semibold text-gray-600 mb-2">Últimas execuções do cron</h3>
+        <div class="overflow-x-auto">
+          <table class="w-full text-xs">
+            <thead>
+              <tr class="text-left text-gray-500 border-b border-gray-100">
+                <th class="pb-2 font-medium">Iniciado</th>
+                <th class="pb-2 font-medium">Status</th>
+                <th class="pb-2 font-medium">Alertas escalados</th>
+                <th class="pb-2 font-medium">Notificações</th>
+                <th class="pb-2 font-medium">Erro</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% cronRecentes.forEach(function(r) { %>
+              <tr class="border-b border-gray-50">
+                <td class="py-1.5 text-gray-700"><%= r.iniciado_em ? new Date(r.iniciado_em).toLocaleString('pt-BR') : '—' %></td>
+                <td class="py-1.5">
+                  <span class="<%= r.status === 'ok' ? 'text-emerald-600' : (r.status === 'erro' ? 'text-red-600' : 'text-amber-600') %> font-medium">
+                    <%= r.status === 'em_andamento' ? 'Em andamento' : (r.status === 'ok' ? 'OK' : 'Erro') %>
+                  </span>
+                </td>
+                <td class="py-1.5 text-gray-700"><%= r.alertas_escalados != null ? r.alertas_escalados : '—' %></td>
+                <td class="py-1.5 text-gray-700"><%= r.notificacoes_enviadas != null ? r.notificacoes_enviadas : '—' %></td>
+                <td class="py-1.5 text-gray-500 max-w-[120px] truncate" title="<%= r.erro || '' %>"><%= r.erro ? r.erro : '—' %></td>
+              </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <% } %>
     </div>
 
     <% if (perdidos.length === 0) { %>

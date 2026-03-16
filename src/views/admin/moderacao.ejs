@@ -41,15 +41,15 @@
                   </span>
                 </div>
 
-                <% if (m.tipo === 'foto' && m.conteudo) { %>
+                <% if (m.tipo === 'foto' && (m.foto_url || m.conteudo)) { %>
                   <div class="mb-3">
-                    <img src="<%= m.conteudo %>" alt="Foto" class="max-h-40 rounded-lg border border-gray-200">
+                    <img src="<%= (m.foto_url || m.conteudo).indexOf('/') === 0 ? (m.foto_url || m.conteudo) : '/images/chat/' + (m.foto_url || m.conteudo) %>" alt="Foto" class="max-h-40 rounded-lg border border-gray-200">
                   </div>
                 <% } else { %>
                   <p class="text-sm text-gray-800 bg-gray-50 rounded-lg px-4 py-3 mb-3"><%= m.conteudo %></p>
                 <% } %>
 
-                <p class="text-xs text-gray-400"><%= m.criado_em ? new Date(m.criado_em).toLocaleString('pt-BR') : '' %></p>
+                <p class="text-xs text-gray-400"><%= (m.data || m.criado_em) ? new Date(m.data || m.criado_em).toLocaleString('pt-BR') : '' %></p>
               </div>
 
               <div class="flex flex-col gap-2 flex-shrink-0">

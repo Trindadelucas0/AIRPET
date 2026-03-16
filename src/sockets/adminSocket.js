@@ -22,7 +22,7 @@ module.exports = function (adminNs) {
     // Admin entra na sala de moderacao
     socket.join('moderacao');
 
-    socket.on('aprovar_mensagem', async (mensagemId) => {
+    const handleAprovar = async (mensagemId) => {
       try {
         const { query } = require('../config/database');
 
@@ -61,9 +61,9 @@ module.exports = function (adminNs) {
       } catch (err) {
         socket.emit('erro', { mensagem: 'Erro ao aprovar mensagem' });
       }
-    });
+    };
 
-    socket.on('rejeitar_mensagem', async (mensagemId) => {
+    const handleRejeitar = async (mensagemId) => {
       try {
         const { query } = require('../config/database');
 
@@ -77,6 +77,19 @@ module.exports = function (adminNs) {
       } catch (err) {
         socket.emit('erro', { mensagem: 'Erro ao rejeitar mensagem' });
       }
+    };
+
+    socket.on('moderar_mensagem', async (payload) => {
+      const id = (payload && typeof payload === 'object') ? payload.id : payload;
+      const acao = (payload && typeof payload === 'object') ? payload.acao : 'aprovar';
+      if (acao === 'rejeitar') {
+        await handleRejeitar(id);
+      } else {
+        await handleAprovar(id);
+      }
     });
+
+    socket.on('aprovar_mensagem', handleAprovar);
+    socket.on('rejeitar_mensagem', handleRejeitar);
   });
 };

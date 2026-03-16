@@ -1,6 +1,11 @@
 <% locals.titulo = 'Mapa Admin' %>
 <%- include('../partials/admin-layout') %>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+<div class="max-w-7xl mx-auto px-4 py-2 flex justify-end">
+  <a href="<%= adminPath %>/gerenciar-mapa" class="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-gray-600 bg-white border border-gray-200 hover:bg-gray-50 transition-colors">
+    <i class="fa-solid fa-pen-to-square"></i> Gerenciar pontos
+  </a>
+</div>
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css">
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css">
 <style>

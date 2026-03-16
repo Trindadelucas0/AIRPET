@@ -39,6 +39,7 @@ const PetPerdido = require('../models/PetPerdido');
 const MensagemChat = require('../models/MensagemChat');
 const Notificacao = require('../models/Notificacao');
 const ConfigSistema = require('../models/ConfigSistema');
+const CronExecucao = require('../models/CronExecucao');
 const PontoMapa = require('../models/PontoMapa');
 const Localizacao = require('../models/Localizacao');
 const PetshopPartnerRequest = require('../models/PetshopPartnerRequest');
@@ -97,7 +98,7 @@ async function dashboard(req, res) {
       perdidos,
       petshops,
       mensagens,
-      tags,
+      alertasPendentes,
       usuariosPorEstado,
       ultimosUsuarios,
     ] = await Promise.all([
@@ -120,7 +121,7 @@ async function dashboard(req, res) {
         perdidos,
         petshops,
         mensagens,
-        tags,
+        alertasPendentes,
       },
       usuariosPorEstado,
       ultimosUsuarios,
@@ -421,11 +422,28 @@ async function rejeitarPromocaoPetshop(req, res) {
  */
 async function listarPerdidos(req, res) {
   try {
-    const perdidos = await PetPerdido.listarTodos();
+    const [perdidos, cronRecentes, cronUltima, configs] = await Promise.all([
+      PetPerdido.listarTodos(),
+      CronExecucao.listarRecentes(CronExecucao.JOB_ESCALAR_ALERTAS, 10),
+      CronExecucao.buscarUltima(CronExecucao.JOB_ESCALAR_ALERTAS),
+      ConfigSistema.listarTodas(),
+    ]);
+
+    const intervaloMin = (configs.find(c => c.chave === 'cron_intervalo_alertas_min')?.valor) || '30';
+    const intervaloMs = parseInt(intervaloMin, 10) * 60 * 1000;
+    let proximaExecucaoEm = null;
+    if (cronUltima && cronUltima.finalizado_em) {
+      const proxima = new Date(cronUltima.finalizado_em).getTime() + intervaloMs;
+      proximaExecucaoEm = Math.max(0, Math.round((proxima - Date.now()) / 60000));
+    }
 
     return res.render('admin/pets-perdidos', {
       titulo: 'Pets Perdidos - AIRPET',
       perdidos,
+      cronRecentes: cronRecentes || [],
+      cronUltima: cronUltima || null,
+      proximaExecucaoEm,
+      intervaloMin,
     });
   } catch (erro) {
     logger.error('AdminController', 'Erro ao listar pets perdidos', erro);
@@ -978,9 +996,22 @@ async function mostrarEnviarNotificacao(req, res) {
  */
 async function previewEnviarNotificacao(req, res) {
   try {
+    const modo = (req.query.modo || '').trim();
+
+    if (modo === 'geografico') {
+      const lat = parseFloat(req.query.lat);
+      const lng = parseFloat(req.query.lng);
+      const raioKm = parseFloat(req.query.raio_km);
+      if (Number.isNaN(lat) || Number.isNaN(lng) || Number.isNaN(raioKm) || raioKm <= 0) {
+        return res.status(400).json({ sucesso: false, total: 0, mensagem: 'Informe latitude, longitude e raio (km) válidos.' });
+      }
+      const total = await notificacaoService.contarUsuariosNaRegiao(lat, lng, raioKm);
+      return res.json({ sucesso: true, total });
+    }
+
     const filtros = extrairFiltrosPerfil(req.query);
     if (!temAlgumFiltroPerfil(filtros)) {
-      return res.status(400).json({ sucesso: false, total: 0, mensagem: 'Selecione ao menos um filtro de região.' });
+      return res.status(400).json({ sucesso: false, total: 0, mensagem: 'Selecione ao menos um filtro de região ou use o modo geográfico.' });
     }
     const total = await notificacaoService.contarUsuariosPorPerfilRegiao(filtros);
     return res.json({ sucesso: true, total });
@@ -1002,19 +1033,32 @@ async function enviarNotificacaoRegiao(req, res) {
     const titulo = (req.body.titulo || '').trim() || 'AIRPET';
     const mensagem = (req.body.mensagem || '').trim();
     const link = (req.body.link || '').trim() || null;
-    const filtros = extrairFiltrosPerfil(req.body);
+    const modo = (req.body.modo || '').trim();
 
     if (!mensagem) {
       req.session.flash = { tipo: 'erro', mensagem: 'A mensagem é obrigatória.' };
       return res.redirect(adminPath + '/notificacoes/enviar');
     }
 
-    if (!temAlgumFiltroPerfil(filtros)) {
-      req.session.flash = { tipo: 'erro', mensagem: 'Selecione ao menos um filtro de região antes de enviar.' };
-      return res.redirect(adminPath + '/notificacoes/enviar');
-    }
+    let notificacoes = [];
 
-    const notificacoes = await notificacaoService.notificarPorPerfilRegiao(filtros, titulo, mensagem, link);
+    if (modo === 'geografico') {
+      const lat = parseFloat(req.body.lat);
+      const lng = parseFloat(req.body.lng);
+      const raioKm = parseFloat(req.body.raio_km);
+      if (Number.isNaN(lat) || Number.isNaN(lng) || Number.isNaN(raioKm) || raioKm <= 0) {
+        req.session.flash = { tipo: 'erro', mensagem: 'No modo geográfico, informe latitude, longitude e raio (km) válidos.' };
+        return res.redirect(adminPath + '/notificacoes/enviar');
+      }
+      notificacoes = await notificacaoService.notificarPorRegiao(lat, lng, raioKm, titulo, mensagem, link);
+    } else {
+      const filtros = extrairFiltrosPerfil(req.body);
+      if (!temAlgumFiltroPerfil(filtros)) {
+        req.session.flash = { tipo: 'erro', mensagem: 'Selecione ao menos um filtro de região ou use o modo geográfico.' };
+        return res.redirect(adminPath + '/notificacoes/enviar');
+      }
+      notificacoes = await notificacaoService.notificarPorPerfilRegiao(filtros, titulo, mensagem, link);
+    }
 
     if (notificacoes.length === 0) {
       req.session.flash = { tipo: 'aviso', mensagem: 'Nenhum usuário encontrado para a região filtrada.' };

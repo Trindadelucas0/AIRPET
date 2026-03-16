@@ -47,6 +47,24 @@
       unidade: 'km',
       cor: 'red',
       nivel: 3
+    },
+    cron_intervalo_alertas_min: {
+      label: 'Intervalo do cron de alertas',
+      descAmigavel: 'A cada quantos minutos o sistema verifica e escala alertas. Alteração vale após reiniciar o servidor.',
+      grupo: 'alertas_extra',
+      icone: 'fa-repeat',
+      unidade: 'min',
+      cor: 'amber',
+      nivel: 0
+    },
+    alerta_cooldown_horas: {
+      label: 'Cooldown de notificação (horas)',
+      descAmigavel: 'Não renotificar o mesmo usuário sobre o mesmo alerta antes de passarem esta quantidade de horas.',
+      grupo: 'alertas_extra',
+      icone: 'fa-clock',
+      unidade: 'horas',
+      cor: 'green',
+      nivel: 0
     }
   };
 
@@ -58,6 +76,7 @@
 
   const configsTempo = (configuracoes || []).filter(c => metaDados[c.chave] && metaDados[c.chave].grupo === 'tempo');
   const configsRaio  = (configuracoes || []).filter(c => metaDados[c.chave] && metaDados[c.chave].grupo === 'raio');
+  const configsAlertasExtra = (configuracoes || []).filter(c => metaDados[c.chave] && metaDados[c.chave].grupo === 'alertas_extra');
   const configsOutras = (configuracoes || []).filter(c => !metaDados[c.chave]);
 %>
 
@@ -221,6 +240,51 @@
                   <% if (c.valor === '0' || c.valor === 0) { %>
                     <span class="text-[11px] bg-red-50 text-red-600 font-semibold px-2 py-0.5 rounded-full border border-red-200">= Cidade inteira</span>
                   <% } %>
+                </div>
+                <p class="text-[11px] text-gray-400 mt-1.5">
+                  <code class="bg-gray-100 px-1.5 py-0.5 rounded text-[10px] font-mono"><%= c.chave %></code>
+                </p>
+              </div>
+            </div>
+          </div>
+          <% }); %>
+        </div>
+      </div>
+      <% } %>
+
+      <!-- SEÇÃO: Cron e cooldown de alertas -->
+      <% if (configsAlertasExtra.length > 0) { %>
+      <div class="mb-8">
+        <div class="flex items-center gap-2.5 mb-4">
+          <div class="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center">
+            <i class="fa-solid fa-sliders text-slate-600 text-sm"></i>
+          </div>
+          <div>
+            <h2 class="text-lg font-bold text-gray-900">Cron e cooldown</h2>
+            <p class="text-xs text-gray-500">Intervalo do job automático e tempo mínimo entre notificações do mesmo alerta</p>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 divide-y divide-gray-100">
+          <% configsAlertasExtra.forEach(function(c) {
+               const meta = metaDados[c.chave];
+               const cores = meta && coresMap[meta.cor] ? coresMap[meta.cor] : coresMap.amber;
+          %>
+          <div class="p-5">
+            <div class="flex items-start gap-4">
+              <div class="w-10 h-10 rounded-xl <%= cores.bg %> <%= cores.border %> border flex items-center justify-center flex-shrink-0 mt-0.5">
+                <i class="fa-solid <%= meta ? meta.icone : 'fa-gear' %> <%= cores.text %> text-sm"></i>
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 flex-wrap mb-1">
+                  <label for="config_<%= c.chave %>" class="font-semibold text-gray-800 text-sm"><%= meta ? meta.label : c.chave %></label>
+                </div>
+                <p class="text-xs text-gray-500 mb-3 leading-relaxed"><%= meta ? meta.descAmigavel : '' %></p>
+                <div class="flex items-center gap-2 max-w-xs">
+                  <input type="number" name="config[<%= c.chave %>]" id="config_<%= c.chave %>"
+                         value="<%= c.valor %>" min="0" step="<%= meta && meta.unidade === 'min' ? 1 : 0.5 %>"
+                         class="w-24 px-3 py-2 border border-gray-300 rounded-lg text-sm text-center font-semibold focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none">
+                  <span class="text-sm text-gray-400 font-medium"><%= meta ? meta.unidade : '' %></span>
                 </div>
                 <p class="text-[11px] text-gray-400 mt-1.5">
                   <code class="bg-gray-100 px-1.5 py-0.5 rounded text-[10px] font-mono"><%= c.chave %></code>

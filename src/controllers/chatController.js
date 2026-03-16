@@ -238,10 +238,64 @@ async function abrirOuIniciarPorPet(req, res) {
   }
 }
 
+/**
+ * enviarMensagem — POST /chat/:conversaId/enviar
+ * Fallback quando o Socket não está disponível ou para envio de fotos via formulário.
+ */
+async function enviarMensagem(req, res) {
+  try {
+    const conversaId = req.params.conversaId || req.params.conversa_id;
+    const usuarioId = req.session.usuario.id;
+    const conteudo = (req.body.conteudo || '').trim();
+    const foto = req.file || (req.files && req.files.foto && req.files.foto[0]);
+
+    const conversa = await Conversa.buscarPorId(conversaId);
+    if (!conversa) {
+      req.session.flash = { tipo: 'erro', mensagem: 'Conversa não encontrada.' };
+      return res.redirect('/chat');
+    }
+
+    const ehParticipante = conversa.iniciador_id === usuarioId || conversa.tutor_id === usuarioId;
+    if (!ehParticipante) {
+      req.session.flash = { tipo: 'erro', mensagem: 'Você não tem permissão para enviar nesta conversa.' };
+      return res.redirect('/chat');
+    }
+
+    let tipo = 'texto';
+    let fotoUrl = null;
+
+    if (foto && foto.filename) {
+      tipo = 'foto';
+      fotoUrl = '/images/chat/' + foto.filename;
+    }
+
+    if (!conteudo && !fotoUrl) {
+      req.session.flash = { tipo: 'erro', mensagem: 'Digite uma mensagem ou envie uma foto.' };
+      return res.redirect(`/chat/${conversaId}`);
+    }
+
+    await MensagemChat.criar({
+      conversa_id: conversaId,
+      remetente: String(usuarioId),
+      conteudo: conteudo || (fotoUrl ? 'Foto enviada' : ''),
+      tipo,
+      foto_url: fotoUrl,
+    });
+
+    req.session.flash = { tipo: 'sucesso', mensagem: 'Mensagem enviada. Aguardando moderação.' };
+    return res.redirect(`/chat/${conversaId}`);
+  } catch (erro) {
+    logger.error('ChatController', 'Erro ao enviar mensagem', erro);
+    req.session.flash = { tipo: 'erro', mensagem: 'Erro ao enviar. Tente novamente.' };
+    return res.redirect('/chat');
+  }
+}
+
 /* Exporta os métodos do controller */
 module.exports = {
   listarConversas,
   mostrarConversa,
   iniciarConversa,
   abrirOuIniciarPorPet,
+  enviarMensagem,
 };

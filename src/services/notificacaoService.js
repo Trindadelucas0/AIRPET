@@ -1,6 +1,7 @@
 const { query } = require('../config/database');
 const Notificacao = require('../models/Notificacao');
 const PetPerdido = require('../models/PetPerdido');
+const ConfigSistema = require('../models/ConfigSistema');
 const pushService = require('./pushService');
 const logger = require('../utils/logger');
 
@@ -130,6 +131,7 @@ const notificacaoService = {
        FROM usuarios
        WHERE ultima_localizacao IS NOT NULL
          AND id != $1
+         AND (receber_alertas_pet_perdido IS NULL OR receber_alertas_pet_perdido = true)
          AND ST_DWithin(
                ultima_localizacao,
                ST_SetSRID(ST_MakePoint($3, $2), 4326)::geography,
@@ -138,9 +140,15 @@ const notificacaoService = {
       [alerta.usuario_id, alerta.latitude, alerta.longitude, raioMetros]
     );
 
-    const usuarioIds = resultado.rows.map(row => row.id);
+    let usuarioIds = resultado.rows.map(row => row.id);
 
-    logger.info('NotificacaoService', `Encontrados ${usuarioIds.length} usuário(s) no raio de ${raioKm}km`);
+    const cooldownHoras = await ConfigSistema.buscarPorChave('alerta_cooldown_horas');
+    const horasCooldown = cooldownHoras ? parseInt(cooldownHoras, 10) : 24;
+    const jaNotificados = await Notificacao.buscarUsuarioIdsJaNotificadosAlerta(alerta.pet_id, horasCooldown);
+    const setJaNotificados = new Set(jaNotificados);
+    usuarioIds = usuarioIds.filter(id => !setJaNotificados.has(id));
+
+    logger.info('NotificacaoService', `Encontrados ${usuarioIds.length} usuário(s) no raio de ${raioKm}km (${jaNotificados.length} já notificados no cooldown)`);
 
     if (usuarioIds.length === 0) {
       return [];
@@ -387,13 +395,21 @@ const notificacaoService = {
     }
 
     const resultado = await query(
-      `SELECT id FROM usuarios WHERE id != $1`,
+      `SELECT id FROM usuarios
+       WHERE id != $1
+         AND (receber_alertas_pet_perdido IS NULL OR receber_alertas_pet_perdido = true)`,
       [alerta.usuario_id]
     );
 
-    const usuarioIds = resultado.rows.map(row => row.id);
+    let usuarioIds = resultado.rows.map(row => row.id);
 
-    logger.info('NotificacaoService', `Notificando ${usuarioIds.length} usuário(s) (todos exceto tutor)`);
+    const cooldownHoras = await ConfigSistema.buscarPorChave('alerta_cooldown_horas');
+    const horasCooldown = cooldownHoras ? parseInt(cooldownHoras, 10) : 24;
+    const jaNotificados = await Notificacao.buscarUsuarioIdsJaNotificadosAlerta(alerta.pet_id, horasCooldown);
+    const setJaNotificados = new Set(jaNotificados);
+    usuarioIds = usuarioIds.filter(id => !setJaNotificados.has(id));
+
+    logger.info('NotificacaoService', `Notificando ${usuarioIds.length} usuário(s) (todos exceto tutor; ${jaNotificados.length} já no cooldown)`);
 
     if (usuarioIds.length === 0) {
       return [];

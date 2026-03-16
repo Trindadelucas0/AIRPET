@@ -44,10 +44,11 @@ const perfilController = {
       const fotoCapaFile = files.foto_capa && files.foto_capa[0];
 
       const dados = {};
-      const camposBody = ['nome', 'telefone', 'cor_perfil', 'bio', 'endereco', 'bairro', 'cidade', 'estado', 'cep', 'data_nascimento', 'contato_extra'];
+      const camposBody = ['nome', 'telefone', 'cor_perfil', 'bio', 'endereco', 'bairro', 'cidade', 'estado', 'cep', 'data_nascimento', 'contato_extra', 'receber_alertas_pet_perdido'];
       camposBody.forEach((campo) => {
         if (Object.prototype.hasOwnProperty.call(body, campo)) {
           if (campo === 'cor_perfil') dados[campo] = body[campo] || '#ec5a1c';
+          else if (campo === 'receber_alertas_pet_perdido') dados[campo] = body[campo] === true || body[campo] === 'true' || body[campo] === '1';
           else if (campo === 'data_nascimento' || campo === 'contato_extra') dados[campo] = body[campo] || null;
           else dados[campo] = body[campo];
         }

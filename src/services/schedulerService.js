@@ -2,6 +2,7 @@ const { query } = require('../config/database');
 const ConfigSistema = require('../models/ConfigSistema');
 const PetPerdido = require('../models/PetPerdido');
 const Vacina = require('../models/Vacina');
+const CronExecucao = require('../models/CronExecucao');
 const logger = require('../utils/logger');
 
 let notificacaoService = null;
@@ -11,7 +12,13 @@ function setNotificacaoService(svc) {
 }
 
 async function escalarAlertasAutomaticamente() {
+  let execId = null;
+  const metricas = { alertas_escalados: 0, notificacoes_enviadas: 0 };
+
   try {
+    const registro = await CronExecucao.criar(CronExecucao.JOB_ESCALAR_ALERTAS);
+    execId = registro.id;
+
     const configs = await ConfigSistema.listarTodas();
     const getConfig = (chave, fallback) => {
       const c = configs.find(x => x.chave === chave);
@@ -35,21 +42,32 @@ async function escalarAlertasAutomaticamente() {
 
       if (alerta.nivel_alerta < 3 && horasDesde >= horasNivel3) {
         await PetPerdido.atualizarNivel(alerta.id, 3);
+        metricas.alertas_escalados++;
         if (notificacaoService && alerta.latitude) {
           const raio = raioNivel3 === 0 ? 999 : raioNivel3;
-          try { await notificacaoService.notificarProximos(alerta.id, raio); } catch (e) {}
+          try {
+            const notifs = await notificacaoService.notificarProximos(alerta.id, raio);
+            metricas.notificacoes_enviadas += (notifs && notifs.length) ? notifs.length : 0;
+          } catch (e) {}
         }
         logger.info('Scheduler', `Alerta ${alerta.id} escalado para nível 3`);
       } else if (alerta.nivel_alerta < 2 && horasDesde >= horasNivel2) {
         await PetPerdido.atualizarNivel(alerta.id, 2);
+        metricas.alertas_escalados++;
         if (notificacaoService && alerta.latitude) {
-          try { await notificacaoService.notificarProximos(alerta.id, raioNivel2); } catch (e) {}
+          try {
+            const notifs = await notificacaoService.notificarProximos(alerta.id, raioNivel2);
+            metricas.notificacoes_enviadas += (notifs && notifs.length) ? notifs.length : 0;
+          } catch (e) {}
         }
         logger.info('Scheduler', `Alerta ${alerta.id} escalado para nível 2`);
       }
     }
+
+    if (execId) await CronExecucao.finalizar(execId, 'ok', metricas);
   } catch (erro) {
     logger.error('Scheduler', 'Erro ao escalar alertas', erro);
+    if (execId) await CronExecucao.finalizar(execId, 'erro', metricas, (erro && erro.message) || String(erro));
   }
 }
 
@@ -81,14 +99,18 @@ async function enviarLembretesVacinas() {
 let escalarInterval = null;
 let vacinaInterval = null;
 
-function iniciar() {
-  escalarInterval = setInterval(escalarAlertasAutomaticamente, 30 * 60 * 1000);
+async function iniciar() {
+  const configs = await ConfigSistema.listarTodas();
+  const intervaloAlertas = (configs.find(c => c.chave === 'cron_intervalo_alertas_min')?.valor) || '30';
+  const intervaloMs = Math.max(1, parseInt(intervaloAlertas, 10)) * 60 * 1000;
+
+  escalarInterval = setInterval(escalarAlertasAutomaticamente, intervaloMs);
   vacinaInterval = setInterval(enviarLembretesVacinas, 6 * 60 * 60 * 1000);
 
   setTimeout(escalarAlertasAutomaticamente, 10000);
   setTimeout(enviarLembretesVacinas, 30000);
 
-  logger.info('Scheduler', 'Jobs automáticos iniciados (alertas: 30min, vacinas: 6h)');
+  logger.info('Scheduler', `Jobs automáticos iniciados (alertas: ${intervaloAlertas}min, vacinas: 6h)`);
 }
 
 function parar() {

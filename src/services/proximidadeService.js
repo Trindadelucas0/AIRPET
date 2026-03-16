@@ -30,9 +30,9 @@ const logger = require('../utils/logger');
  * não estão definidas na tabela config_sistema.
  *
  * A tabela config_sistema pode sobrescrever estes valores com as chaves:
- *   - 'alerta_raio_nivel_1': raio em km para nível 1 (padrão: 2)
- *   - 'alerta_raio_nivel_2': raio em km para nível 2 (padrão: 5)
- *   - 'alerta_raio_nivel_3': raio em km para nível 3 (padrão: 15)
+ *   - 'raio_alerta_nivel1_km': raio em km para nível 1 (padrão: 2)
+ *   - 'raio_alerta_nivel2_km': raio em km para nível 2 (padrão: 5)
+ *   - 'raio_alerta_nivel3_km': raio em km para nível 3 (padrão: 15)
  */
 const RAIOS_PADRAO = {
   1: 2,
@@ -179,7 +179,7 @@ const proximidadeService = {
      * Primeiro tenta buscar da tabela config_sistema (configurável pelo admin).
      * Se não encontrar, usa o valor padrão definido em RAIOS_PADRAO.
      */
-    const chaveConfig = `alerta_raio_nivel_${proximoNivel}`;
+    const chaveConfig = `raio_alerta_nivel${proximoNivel}_km`;
     const raioConfigurado = await ConfigSistema.buscarPorChave(chaveConfig);
     const raioKm = raioConfigurado ? parseFloat(raioConfigurado) : RAIOS_PADRAO[proximoNivel];
 
