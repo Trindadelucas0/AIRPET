@@ -842,7 +842,7 @@ async function enviarNotificacaoRegiao(req, res) {
       }
       const notificacoes = await notificacaoService.notificarPorCidadeEstado(cidades, titulo, mensagem, link);
       if (notificacoes.length === 0) {
-        req.session.flash = { tipo: 'aviso', mensagem: 'Nenhum usuário encontrado nas cidades selecionadas com localização ativa.' };
+        req.session.flash = { tipo: 'aviso', mensagem: 'Nenhum usuário encontrado nas cidades selecionadas.' };
       } else {
         req.session.flash = { tipo: 'sucesso', mensagem: `Notificação enviada para ${notificacoes.length} usuário(s).` };
       }

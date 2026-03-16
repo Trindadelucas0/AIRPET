@@ -225,7 +225,8 @@ const notificacaoService = {
   },
 
   /**
-   * Conta usuários por cidade/estado (com localização ativa) para preview no admin.
+   * Conta usuários por cidade/estado (região cadastrada) para preview no admin.
+   * Inclui quem tem cidade/estado preenchidos, com ou sem GPS.
    * @param {Array<{cidade: string, estado: string}>} cidades - Lista de pares cidade/estado
    * @returns {Promise<number>}
    */
@@ -234,8 +235,7 @@ const notificacaoService = {
     const condicoes = cidades.map((_, i) => `(cidade = $${2 * i + 1} AND estado = $${2 * i + 2})`).join(' OR ');
     const valores = cidades.flatMap(c => [String(c.cidade).trim(), String(c.estado).trim()]);
     const resultado = await query(
-      `SELECT id FROM usuarios
-       WHERE ultima_localizacao IS NOT NULL AND (${condicoes})`,
+      `SELECT id FROM usuarios WHERE (${condicoes})`,
       valores
     );
     return resultado.rows.length;
@@ -254,8 +254,7 @@ const notificacaoService = {
     const condicoes = cidades.map((_, i) => `(cidade = $${2 * i + 1} AND estado = $${2 * i + 2})`).join(' OR ');
     const valores = cidades.flatMap(c => [String(c.cidade).trim(), String(c.estado).trim()]);
     const resultado = await query(
-      `SELECT id FROM usuarios
-       WHERE ultima_localizacao IS NOT NULL AND (${condicoes})`,
+      `SELECT id FROM usuarios WHERE (${condicoes})`,
       valores
     );
     const usuarioIds = resultado.rows.map(row => row.id);

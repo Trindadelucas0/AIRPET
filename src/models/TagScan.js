@@ -85,6 +85,40 @@ const TagScan = {
 
     return resultado.rows;
   },
+
+  /**
+   * Lista o último scan com coordenadas por pet dentro de uma bounding box (para pins no mapa).
+   * Apenas tags ativas vinculadas a um pet; um pin por pet (o scan mais recente na caixa).
+   * @param {number} swLat - Latitude canto sul-oeste
+   * @param {number} swLng - Longitude canto sul-oeste
+   * @param {number} neLat - Latitude canto nordeste
+   * @param {number} neLng - Longitude canto nordeste
+   * @returns {Promise<Array<{pet_id, pet_nome, pet_foto, latitude, longitude, cidade, data}>>}
+   */
+  async listarUltimoScanPorPetNaBox(swLat, swLng, neLat, neLng) {
+    const resultado = await query(
+      `SELECT DISTINCT ON (t.pet_id)
+         t.pet_id,
+         p.nome AS pet_nome,
+         p.foto AS pet_foto,
+         ts.latitude,
+         ts.longitude,
+         ts.cidade,
+         ts.data
+       FROM tag_scans ts
+       JOIN nfc_tags t ON t.id = ts.tag_id
+       JOIN pets p ON p.id = t.pet_id
+       WHERE t.status = 'active'
+         AND t.pet_id IS NOT NULL
+         AND ts.latitude IS NOT NULL
+         AND ts.longitude IS NOT NULL
+         AND ts.latitude BETWEEN $1 AND $2
+         AND ts.longitude BETWEEN $3 AND $4
+       ORDER BY t.pet_id, ts.data DESC`,
+      [swLat, neLat, swLng, neLng]
+    );
+    return resultado.rows;
+  },
 };
 
 module.exports = TagScan;

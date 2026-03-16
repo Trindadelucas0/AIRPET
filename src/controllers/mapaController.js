@@ -32,6 +32,7 @@
 const PontoMapa = require('../models/PontoMapa');
 const Petshop = require('../models/Petshop');
 const PetPerdido = require('../models/PetPerdido');
+const TagScan = require('../models/TagScan');
 const logger = require('../utils/logger');
 
 /**
@@ -86,15 +87,14 @@ async function buscarPins(req, res) {
     }
 
     /*
-     * Busca os 3 tipos de dados em paralelo para performance.
-     * Os pontos do mapa são filtrados pela bounding box (PostGIS).
-     * Petshops e pets perdidos são carregados sem filtro espacial
-     * (podem ser filtrados no frontend se necessário).
+     * Busca os 4 tipos de dados em paralelo para performance.
+     * Pontos do mapa e últimos scans por pet são filtrados pela bounding box.
      */
-    const [pontos, petshops, perdidos] = await Promise.all([
+    const [pontos, petshops, perdidos, petScans] = await Promise.all([
       PontoMapa.buscarPorBoundingBox(sw.lat, sw.lng, ne.lat, ne.lng),
       Petshop.listarAtivos(),
       PetPerdido.listarAprovados(),
+      TagScan.listarUltimoScanPorPetNaBox(sw.lat, sw.lng, ne.lat, ne.lng),
     ]);
 
     /*
@@ -164,6 +164,28 @@ async function buscarPins(req, res) {
           },
         });
       }
+    });
+
+    /* Última localização da tag por pet (scan NFC) dentro da bbox */
+    (petScans || []).forEach((row) => {
+      const lat = parseFloat(row.latitude);
+      const lng = parseFloat(row.longitude);
+      if (isNaN(lat) || isNaN(lng)) return;
+      features.push({
+        type: 'Feature',
+        geometry: {
+          type: 'Point',
+          coordinates: [lng, lat],
+        },
+        properties: {
+          id: row.pet_id,
+          tipo: 'pet_scan',
+          nome: row.pet_nome || 'Pet',
+          foto: row.pet_foto || null,
+          cidade: row.cidade || null,
+          data: row.data ? new Date(row.data).toISOString() : null,
+        },
+      });
     });
 
     /* Retorna o FeatureCollection GeoJSON completo */

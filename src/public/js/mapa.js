@@ -25,6 +25,7 @@
     ponto_interesse:{ color: '#3b82f6', icon: 'fa-map-pin' },
     pet_perdido:    { color: '#dc2626', icon: 'fa-triangle-exclamation' },
     avistamento:    { color: '#f59e0b', icon: 'fa-eye' },
+    pet_scan:       { color: '#ec5a1c', icon: 'fa-paw' },
     default:        { color: '#6b7280', icon: 'fa-map-pin' }
   };
 
@@ -32,7 +33,8 @@
     petshops: 'petshop',
     perdidos: 'pet_perdido',
     avistamentos: 'avistamento',
-    pontos: 'ponto_interesse'
+    pontos: 'ponto_interesse',
+    pet_scans: 'pet_scan'
   };
 
   function makeIcon(tipo) {
@@ -49,7 +51,7 @@
 
   var loadedIds = {};
   var markers = {};
-  var activeLayers = { petshops: true, perdidos: true, avistamentos: true, pontos: false };
+  var activeLayers = { petshops: true, perdidos: true, avistamentos: true, pontos: false, pet_scans: true };
   var locMarker = null;
 
   var debounceTimer = null;
@@ -114,7 +116,16 @@
             popup = '<div style="min-width:180px"><img src="' + props.foto +
                     '" style="width:100%;height:80px;object-fit:cover;border-radius:8px;margin-bottom:6px">' + popup.replace('<div style="min-width:160px">', '');
           }
-          popup += '</div>';
+          if (props.tipo === 'pet_scan') {
+            popup = '<div style="min-width:180px">';
+            if (props.foto) {
+              popup += '<img src="' + props.foto + '" style="width:100%;height:80px;object-fit:cover;border-radius:8px;margin-bottom:6px" alt="">';
+            }
+            popup += '<strong>Última leitura da tag</strong><br><span>' + (props.nome || 'Pet') + '</span>';
+            if (props.cidade) popup += '<br><small style="color:#666"><i class="fa-solid fa-map-pin"></i> ' + props.cidade + '</small>';
+            popup += '</div>';
+          }
+          if (props.tipo !== 'pet_scan') popup += '</div>';
 
           marker.bindPopup(popup);
           marker._airpetTipo = tipo;

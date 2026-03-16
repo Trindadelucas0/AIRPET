@@ -163,7 +163,8 @@ const Usuario = {
   },
 
   /**
-   * Lista cidades e estados com contagem de usuários que têm localização ativa (para notificação por cidade).
+   * Lista cidades e estados com contagem de usuários que têm região cadastrada (para notificação por cidade).
+   * Inclui todos com cidade/estado preenchidos, independente de ter GPS (ultima_localizacao).
    * @returns {Promise<Array<{cidade: string, estado: string, total: string}>>}
    */
   async listarCidadesComContagem() {
@@ -172,7 +173,6 @@ const Usuario = {
        FROM usuarios
        WHERE cidade IS NOT NULL AND TRIM(cidade) <> ''
          AND estado IS NOT NULL AND TRIM(estado) <> ''
-         AND ultima_localizacao IS NOT NULL
        GROUP BY cidade, estado
        ORDER BY estado, cidade`
     );
