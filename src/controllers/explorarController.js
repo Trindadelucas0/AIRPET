@@ -794,6 +794,12 @@ const explorarController = {
       const uid = req.session?.usuario?.id;
       if (!uid) return res.status(401).json({ sucesso: false });
 
+      const usuario = await Usuario.buscarPorId(uid);
+      if (!usuario) {
+        logger.warn('EXPLORAR', `Sessão com usuário inexistente (id: ${uid}). Possível usuário excluído.`);
+        return res.status(401).json({ sucesso: false, mensagem: 'Sessão inválida. Faça login novamente.' });
+      }
+
       const postId = parseInt(req.body?.postId, 10);
       const watchMs = Math.max(0, parseInt(req.body?.watchMs || '0', 10) || 0);
       const city = typeof req.body?.city === 'string' ? req.body.city.trim().slice(0, 100) : null;
