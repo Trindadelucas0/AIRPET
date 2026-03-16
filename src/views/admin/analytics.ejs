@@ -275,39 +275,112 @@
       </div>
     </section>
 
-    <!-- Crescimento da rede (tabela simples) -->
+    <!-- Crescimento da rede (gráfico + tabela) -->
     <section class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-      <h2 class="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+      <h2 class="text-lg font-semibold text-gray-900 mb-2 flex items-center gap-2">
         <i class="fa-solid fa-chart-line text-indigo-500"></i>
         Crescimento da rede (últimos 30 dias)
       </h2>
-      <div class="overflow-x-auto">
-        <table class="min-w-full text-xs md:text-sm">
-          <thead>
-            <tr class="text-left text-gray-500 border-b border-gray-100">
-              <th class="pb-2 font-medium">Dia</th>
-              <th class="pb-2 font-medium">Novos usuários</th>
-              <th class="pb-2 font-medium">Novos posts</th>
-            </tr>
-          </thead>
-          <tbody>
-            <% (timeline || []).forEach(function(linha) { %>
-              <tr class="border-b border-gray-50 hover:bg-gray-50/50">
-                <td class="py-1 text-gray-700"><%= new Date(linha.day).toLocaleDateString('pt-BR') %></td>
-                <td class="py-1 text-gray-600"><%= linha.novos_usuarios %></td>
-                <td class="py-1 text-gray-600"><%= linha.novos_posts %></td>
+      <p class="text-xs text-gray-400 mb-3">
+        Linhas mostram quantos usuários e posts novos surgiram em cada dia. A tabela abaixo detalha os valores.
+      </p>
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div class="relative min-h-[220px]">
+          <canvas id="growthChart" class="w-full h-full"></canvas>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="min-w-full text-xs md:text-sm">
+            <thead>
+              <tr class="text-left text-gray-500 border-b border-gray-100">
+                <th class="pb-2 font-medium">Dia</th>
+                <th class="pb-2 font-medium">Novos usuários</th>
+                <th class="pb-2 font-medium">Novos posts</th>
               </tr>
-            <% }) %>
-            <% if (!(timeline || []).length) { %>
-              <tr><td colspan="3" class="py-3 text-xs text-gray-400">Sem dados de crescimento ainda.</td></tr>
-            <% } %>
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              <% (timeline || []).forEach(function(linha) { %>
+                <tr class="border-b border-gray-50 hover:bg-gray-50/50">
+                  <td class="py-1 text-gray-700"><%= new Date(linha.day).toLocaleDateString('pt-BR') %></td>
+                  <td class="py-1 text-gray-600"><%= linha.novos_usuarios %></td>
+                  <td class="py-1 text-gray-600"><%= linha.novos_posts %></td>
+                </tr>
+              <% }) %>
+              <% if (!(timeline || []).length) { %>
+                <tr><td colspan="3" class="py-3 text-xs text-gray-400">Sem dados de crescimento ainda.</td></tr>
+              <% } %>
+            </tbody>
+          </table>
+        </div>
       </div>
     </section>
 
   </div>
 </main>
+
+<script>
+  window.analyticsTimeline = <%- JSON.stringify(timeline || []) %>;
+</script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  (function () {
+    if (!window.analyticsTimeline || !Array.isArray(window.analyticsTimeline) || !window.analyticsTimeline.length) return;
+    var canvas = document.getElementById('growthChart');
+    if (!canvas || !window.Chart) return;
+
+    var labels = window.analyticsTimeline.map(function (p) {
+      return new Date(p.day).toLocaleDateString('pt-BR');
+    });
+    var novosUsuarios = window.analyticsTimeline.map(function (p) {
+      return p.novos_usuarios || 0;
+    });
+    var novosPosts = window.analyticsTimeline.map(function (p) {
+      return p.novos_posts || 0;
+    });
+
+    new Chart(canvas.getContext('2d'), {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            label: 'Novos usuários',
+            data: novosUsuarios,
+            borderColor: 'rgba(59,130,246,1)',
+            backgroundColor: 'rgba(59,130,246,0.1)',
+            borderWidth: 2,
+            tension: 0.25,
+            pointRadius: 2,
+          },
+          {
+            label: 'Novos posts',
+            data: novosPosts,
+            borderColor: 'rgba(16,185,129,1)',
+            backgroundColor: 'rgba(16,185,129,0.1)',
+            borderWidth: 2,
+            tension: 0.25,
+            pointRadius: 2,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: { precision: 0 },
+          },
+        },
+        plugins: {
+          legend: {
+            display: true,
+            position: 'bottom',
+          },
+        },
+      },
+    });
+  })();
+</script>
 
 <%- include('../partials/admin-footer') %>
 
