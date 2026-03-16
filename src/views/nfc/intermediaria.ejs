@@ -139,17 +139,20 @@
           <i class="fa-solid fa-circle-exclamation mr-1"></i> Acoes extras — Pet perdido
         </p>
 
-        <a href="/chat/novo/<%= pet.id %>"
+        <a href="/chat/novo/<%= pet.id %>" target="_blank" rel="noopener"
            class="flex items-center gap-4 w-full bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white rounded-2xl px-6 py-5 shadow-lg transition-all active:scale-[0.98]">
           <span class="w-14 h-14 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0">
             <i class="fa-solid fa-comments text-2xl"></i>
           </span>
           <div class="text-left">
             <span class="block text-lg font-bold">Conversar com o dono</span>
-            <span class="block text-white/70 text-sm">Chat direto e seguro</span>
+            <span class="block text-white/70 text-sm">Chat direto e seguro (abre em nova aba)</span>
           </div>
           <i class="fa-solid fa-arrow-right ml-auto text-white/50"></i>
         </a>
+        <p class="text-white/80 text-xs leading-relaxed px-1 -mt-1">
+          Mantenha o chat aberto e, na primeira mensagem, informe seu e-mail e telefone. Assim o tutor podera entrar em contato se voce nao puder responder.
+        </p>
 
         <a href="/tag/<%= tag.tag_code %>/enviar-foto"
            class="flex items-center gap-4 w-full bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white rounded-2xl px-6 py-5 shadow-lg transition-all active:scale-[0.98]">

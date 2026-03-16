@@ -82,6 +82,14 @@
   </div>
 
   <% if (conversa.status === 'ativa') { %>
+    <% if (typeof usuarioAtualId !== 'undefined' && usuarioAtualId === conversa.iniciador_id) { %>
+      <div class="bg-amber-50 border-t border-amber-200 px-4 py-3 flex-shrink-0">
+        <p class="text-xs text-amber-800 leading-relaxed flex items-start gap-2">
+          <i class="fa-solid fa-circle-info mt-0.5 flex-shrink-0"></i>
+          Para o tutor poder entrar em contato caso voce nao responda, informe seu e-mail e telefone em uma das mensagens.
+        </p>
+      </div>
+    <% } %>
     <div class="bg-white border-t border-gray-200 px-4 py-3 flex-shrink-0">
       <form id="formMsg" class="flex items-end gap-2" action="/chat/<%= conversa.id %>/enviar" method="POST" enctype="multipart/form-data">
 
