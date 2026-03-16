@@ -343,27 +343,91 @@ async function timelineCrescimento(dias = 30) {
 }
 
 async function postsMaisVistos(periodoChave = 'week', limite = 20) {
+  return postsMaisVistosDetalhado(periodoChave, limite);
+}
+
+async function postsMaisVistosDetalhado(periodoChave = 'week', limite = 20) {
   const { sql: since } = resolvePeriodo(periodoChave);
 
   const res = await query(
-    `SELECT p.id AS post_id,
-            p.usuario_id,
-            u.nome AS autor_nome,
-            u.foto_perfil,
+    `WITH views_base AS (
+       SELECT pir.user_id,
+              pir.post_id,
+              pir.created_at,
+              pir.metadata,
+              p.usuario_id,
+              p.pet_id,
+              u.nome AS autor_nome,
+              u.foto_perfil,
+              EXISTS (
+                SELECT 1
+                FROM manual_boosts mb
+                WHERE mb.target_type = 'pet'
+                  AND mb.target_id = p.pet_id
+                  AND mb.starts_at <= pir.created_at
+                  AND (mb.ends_at IS NULL OR mb.ends_at >= pir.created_at)
+              ) AS em_janela_boost
+       FROM post_interactions_raw pir
+       JOIN publicacoes p ON p.id = pir.post_id
+       JOIN usuarios u ON u.id = p.usuario_id
+       WHERE pir.event_type = 'view'
+         AND pir.created_at >= ${since}
+     )
+     SELECT vb.post_id,
+            vb.usuario_id,
+            vb.autor_nome,
+            vb.foto_perfil,
             COUNT(*)::int AS total_views,
-            COUNT(DISTINCT pir.user_id)::int AS usuarios_unicos
-     FROM post_interactions_raw pir
-     JOIN publicacoes p ON p.id = pir.post_id
-     JOIN usuarios u ON u.id = p.usuario_id
-     WHERE pir.event_type = 'view'
-       AND pir.created_at >= ${since}
-     GROUP BY p.id, p.usuario_id, u.nome, u.foto_perfil
+            COUNT(DISTINCT vb.user_id)::int AS usuarios_unicos,
+            SUM(CASE WHEN vb.em_janela_boost THEN 1 ELSE 0 END)::int AS views_boost_janela_ativa,
+            SUM(CASE WHEN NOT vb.em_janela_boost THEN 1 ELSE 0 END)::int AS views_organicas,
+            SUM(CASE WHEN COALESCE(vb.metadata->>'source', '') IN ('sponsored_feed', 'sponsored_explorar') THEN 1 ELSE 0 END)::int AS views_boost_card_patrocinado
+     FROM views_base vb
+     GROUP BY vb.post_id, vb.usuario_id, vb.autor_nome, vb.foto_perfil
      ORDER BY total_views DESC
      LIMIT $1`,
     [limite]
   );
 
   return res.rows;
+}
+
+async function resumoViewsOrganicoBoost(periodoChave = 'week') {
+  const { sql: since } = resolvePeriodo(periodoChave);
+
+  const res = await query(
+    `WITH views_base AS (
+       SELECT pir.post_id,
+              pir.created_at,
+              pir.metadata,
+              p.pet_id,
+              EXISTS (
+                SELECT 1
+                FROM manual_boosts mb
+                WHERE mb.target_type = 'pet'
+                  AND mb.target_id = p.pet_id
+                  AND mb.starts_at <= pir.created_at
+                  AND (mb.ends_at IS NULL OR mb.ends_at >= pir.created_at)
+              ) AS em_janela_boost
+       FROM post_interactions_raw pir
+       JOIN publicacoes p ON p.id = pir.post_id
+       WHERE pir.event_type = 'view'
+         AND pir.created_at >= ${since}
+     )
+     SELECT
+       COUNT(*)::int AS total_views,
+       SUM(CASE WHEN em_janela_boost THEN 1 ELSE 0 END)::int AS total_boost_janela_ativa,
+       SUM(CASE WHEN NOT em_janela_boost THEN 1 ELSE 0 END)::int AS total_organico,
+       SUM(CASE WHEN COALESCE(metadata->>'source', '') IN ('sponsored_feed', 'sponsored_explorar') THEN 1 ELSE 0 END)::int AS total_boost_card_patrocinado
+     FROM views_base`
+  );
+
+  return res.rows[0] || {
+    total_views: 0,
+    total_boost_janela_ativa: 0,
+    total_organico: 0,
+    total_boost_card_patrocinado: 0,
+  };
 }
 
 async function listarBoostsAtivos() {
@@ -395,6 +459,8 @@ module.exports = {
   cidadesMaisAtivas,
   timelineCrescimento,
   postsMaisVistos,
+  postsMaisVistosDetalhado,
+  resumoViewsOrganicoBoost,
   listarBoostsAtivos,
 };
 

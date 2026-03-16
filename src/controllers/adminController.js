@@ -146,6 +146,7 @@ async function mostrarAnalyticsAvancado(req, res) {
       cidades,
       timeline,
       postsVistos,
+      resumoViews,
     ] = await Promise.all([
       adminAnalyticsService.topUsuariosInfluentes(periodoInfluentes, 10),
       adminAnalyticsService.topUsuariosPorEngajamentoMedio(periodoInfluentes, 10),
@@ -155,7 +156,8 @@ async function mostrarAnalyticsAvancado(req, res) {
       adminAnalyticsService.trendingBreeds(periodoRacas, 15),
       adminAnalyticsService.cidadesMaisAtivas(periodoCidades, 15),
       adminAnalyticsService.timelineCrescimento(30),
-      adminAnalyticsService.postsMaisVistos(periodoInfluentes, 20),
+      adminAnalyticsService.postsMaisVistosDetalhado(periodoInfluentes, 20),
+      adminAnalyticsService.resumoViewsOrganicoBoost(periodoInfluentes),
     ]);
 
     return res.render('admin/analytics', {
@@ -169,6 +171,7 @@ async function mostrarAnalyticsAvancado(req, res) {
       cidades,
       timeline,
       postsVistos,
+      resumoViews,
       periodoGlobal,
     });
   } catch (erro) {

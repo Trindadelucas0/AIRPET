@@ -47,8 +47,12 @@
       <% posts.forEach(function(post, idx) { %>
         <% if (post.is_sponsored) { %>
           <% var hasSponsoredPost = !!post.foto || !!post.legenda || !!post.texto; %>
+          <% var sponsoredPostId = Number(post.id); %>
+          <% var hasSponsoredPostId = Number.isFinite(sponsoredPostId) && sponsoredPostId > 0; %>
           <article class="bg-gradient-to-br from-amber-50 to-white rounded-2xl shadow-sm border-2 border-amber-200 overflow-hidden post-enter"
                    style="animation-delay:<%= Math.min(idx * 60, 400) %>ms"
+                   data-post-id="<%= hasSponsoredPostId ? sponsoredPostId : '' %>"
+                   data-view-source="<%= hasSponsoredPostId ? 'sponsored_feed' : '' %>"
                    id="<%= post.sponsored_key || ('sponsored-' + post.boost_id + '-' + post.pet_id) %>">
             <div class="px-4 py-2 bg-amber-100 border-b border-amber-200 flex items-center justify-between">
               <span class="inline-flex items-center gap-1 text-[11px] font-bold tracking-wide text-amber-800">
@@ -561,12 +565,12 @@
   var viewObserver = null;
   var viewedPosts = new Set();
 
-  function registrarVisualizacao(postId, watchMs) {
+  function registrarVisualizacao(postId, watchMs, source) {
     fetch('/explorar/api/interactions/view', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
       credentials: 'same-origin',
-      body: JSON.stringify({ postId: postId, watchMs: watchMs || 1500, source: 'feed' })
+      body: JSON.stringify({ postId: postId, watchMs: watchMs || 1500, source: source || 'feed' })
     }).catch(function () {});
   }
 
@@ -816,7 +820,8 @@
         var postId = parseInt(card.getAttribute('data-post-id'), 10);
         if (!postId || viewedPosts.has(postId)) return;
         viewedPosts.add(postId);
-        registrarVisualizacao(postId, 1500);
+        var source = card.getAttribute('data-view-source') || 'feed';
+        registrarVisualizacao(postId, 1500, source);
         viewObserver.unobserve(card);
       });
     }, { threshold: [0.6] });
@@ -827,13 +832,15 @@
 
   function renderSponsoredHTML(p) {
     var sid = p.sponsored_key || ('sponsored-' + (p.boost_id || 'x') + '-' + (p.pet_id || 'x'));
+    var sponsoredPostId = parseInt(p.id, 10);
+    var hasSponsoredPostId = !Number.isNaN(sponsoredPostId) && sponsoredPostId > 0;
     var petNome = escapeHtml(p.pet_nome || ('Pet ' + (p.pet_id || '')));
     var tutorNome = escapeHtml(p.autor_nome || ('Usuário ' + (p.usuario_id || '')));
     var hasPost = !!(p.foto || p.legenda || p.texto);
     var legenda = escapeHtml(hasPost ? (p.legenda || p.texto || 'Conheça este perfil pet patrocinado.') : 'Este pet está em campanha patrocinada. Ainda sem publicação no momento — conheça o perfil e siga o tutor.');
     var fotoPet = p.pet_foto ? '<img src="' + escapeHtml(p.pet_foto) + '" alt="" class="w-12 h-12 rounded-full object-cover ring-2 ring-amber-200">' : '<span class="w-12 h-12 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center"><i class="fa-solid fa-paw"></i></span>';
     var fotoPost = p.foto ? '<img src="' + escapeHtml(p.foto) + '" alt="" class="w-full mt-3 rounded-xl max-h-[320px] object-cover" loading="lazy">' : '';
-    return '<article class="bg-gradient-to-br from-amber-50 to-white rounded-2xl shadow-sm border-2 border-amber-200 overflow-hidden post-enter" id="' + sid + '">' +
+    return '<article class="bg-gradient-to-br from-amber-50 to-white rounded-2xl shadow-sm border-2 border-amber-200 overflow-hidden post-enter" data-post-id="' + (hasSponsoredPostId ? sponsoredPostId : '') + '" data-view-source="' + (hasSponsoredPostId ? 'sponsored_feed' : '') + '" id="' + sid + '">' +
       '<div class="px-4 py-2 bg-amber-100 border-b border-amber-200 flex items-center justify-between"><span class="inline-flex items-center gap-1 text-[11px] font-bold tracking-wide text-amber-800"><i class="fa-solid fa-bullhorn"></i>' + escapeHtml(p.sponsored_label || 'PATROCINADO') + '</span><span class="text-[11px] text-amber-700">Anúncio de perfil pet</span></div>' +
       '<div class="p-4"><div class="flex items-center gap-3">' + fotoPet + '<div class="min-w-0 flex-1"><p class="text-sm font-semibold text-gray-900 truncate">' + petNome + '</p><p class="text-xs text-gray-500 truncate">Tutor: ' + tutorNome + '</p></div></div>' +
       fotoPost +

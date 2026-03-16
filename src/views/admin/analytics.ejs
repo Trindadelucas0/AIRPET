@@ -203,8 +203,22 @@
         Posts mais visualizados no período
       </h2>
       <p class="text-xs text-gray-400 mb-3">
-        Ranking por visualizações registradas em eventos reais de navegação. Mostra alcance bruto e audiência única por publicação.
+        Ranking por visualizações registradas em eventos reais de navegação, com corte executivo entre orgânico e impacto de boost.
       </p>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+        <div class="rounded-lg border border-gray-100 bg-gray-50 p-3">
+          <p class="text-[11px] text-gray-500 uppercase tracking-wide">Total orgânico</p>
+          <p class="text-lg font-semibold text-gray-900"><%= Number((resumoViews && resumoViews.total_organico) || 0) %></p>
+        </div>
+        <div class="rounded-lg border border-gray-100 bg-gray-50 p-3">
+          <p class="text-[11px] text-gray-500 uppercase tracking-wide">Boost (janela ativa)</p>
+          <p class="text-lg font-semibold text-gray-900"><%= Number((resumoViews && resumoViews.total_boost_janela_ativa) || 0) %></p>
+        </div>
+        <div class="rounded-lg border border-gray-100 bg-gray-50 p-3">
+          <p class="text-[11px] text-gray-500 uppercase tracking-wide">Boost (card patrocinado)</p>
+          <p class="text-lg font-semibold text-gray-900"><%= Number((resumoViews && resumoViews.total_boost_card_patrocinado) || 0) %></p>
+        </div>
+      </div>
       <div class="overflow-x-auto">
         <table class="min-w-full text-xs md:text-sm">
           <thead>
@@ -214,6 +228,9 @@
               <th class="pb-2 font-medium">Autor</th>
               <th class="pb-2 font-medium">Views</th>
               <th class="pb-2 font-medium">Usuários únicos</th>
+              <th class="pb-2 font-medium">Orgânico</th>
+              <th class="pb-2 font-medium">Boost (janela ativa)</th>
+              <th class="pb-2 font-medium">Boost (card patrocinado)</th>
               <th class="pb-2 font-medium">Link</th>
             </tr>
           </thead>
@@ -232,6 +249,9 @@
                 </td>
                 <td class="py-2 font-medium text-gray-900"><%= p.total_views %></td>
                 <td class="py-2 text-gray-600"><%= p.usuarios_unicos %></td>
+                <td class="py-2 text-gray-600"><%= Number(p.views_organicas || 0) %></td>
+                <td class="py-2 text-gray-600"><%= Number(p.views_boost_janela_ativa || 0) %></td>
+                <td class="py-2 text-gray-600"><%= Number(p.views_boost_card_patrocinado || 0) %></td>
                 <td class="py-2">
                   <a href="/explorar#post-<%= p.post_id %>" target="_blank" class="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-gray-200 text-xs text-primary-600 hover:bg-primary-50">
                     Ver post
@@ -241,7 +261,7 @@
             <% }) %>
             <% if (!(postsVistos || []).length) { %>
               <tr>
-                <td colspan="6" class="py-3 text-center text-xs text-gray-400">
+                <td colspan="9" class="py-3 text-center text-xs text-gray-400">
                   Nenhuma visualização registrada no período selecionado.
                 </td>
               </tr>
