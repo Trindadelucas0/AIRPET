@@ -6,35 +6,52 @@
   .follow-btn { transition: all .25s ease; }
   .follow-btn.seguindo { background: transparent; border-color: #d1d5db; color: #6b7280; }
   .follow-btn.seguindo:hover { border-color: #ef4444; color: #ef4444; }
+  .busca-hero { background: linear-gradient(180deg, rgba(236,90,28,.05) 0%, transparent 100%); }
+  .busca-input:focus { box-shadow: 0 0 0 3px rgba(236,90,28,.12); border-color: rgba(236,90,28,.4); }
+  .busca-card { border-radius: 1.25rem; box-shadow: 0 2px 8px rgba(0,0,0,.04); border: 1px solid rgba(0,0,0,.04); transition: box-shadow .2s, transform .2s; }
+  .busca-card:hover { box-shadow: 0 8px 20px -8px rgba(0,0,0,.08); transform: translateY(-1px); }
 </style>
 ` %>
 <%- include('../partials/header') %>
 <%- include('../partials/flash') %>
 
 <main class="flex-1 pb-24 md:pb-6">
-  <div class="max-w-2xl mx-auto px-4 py-6">
+  <div class="max-w-2xl mx-auto px-4 py-6 md:py-8">
 
-    <!-- Search bar -->
-    <form action="/explorar/busca" method="GET" class="relative mb-6">
-      <input type="text" name="q" value="<%= q %>" placeholder="Buscar por nome do pet ou pessoa..."
-             class="w-full pl-12 pr-4 py-3.5 text-sm bg-white border border-gray-200 rounded-2xl shadow-sm focus:ring-2 focus:ring-primary-500/20 focus:border-primary-400 outline-none transition-all"
-             autofocus>
-      <i class="fa-solid fa-magnifying-glass absolute left-4.5 top-1/2 -translate-y-1/2 text-gray-400"></i>
-      <% if (q) { %>
-        <a href="/explorar/busca" class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-          <i class="fa-solid fa-xmark"></i>
-        </a>
-      <% } %>
-    </form>
+    <!-- Header + Search -->
+    <div class="busca-hero rounded-2xl p-4 md:p-6 mb-8">
+      <h1 class="text-2xl font-black text-gray-900 tracking-tight mb-1 flex items-center gap-2">
+        <span class="w-9 h-9 rounded-xl bg-gradient-to-br from-primary-500 to-primary-600 text-white flex items-center justify-center shadow-md shadow-primary-500/20">
+          <i class="fa-solid fa-magnifying-glass text-sm"></i>
+        </span>
+        Buscar
+      </h1>
+      <p class="text-sm text-gray-500 mb-4">Encontre pets e tutores na sua região</p>
+
+      <form action="/explorar/busca" method="GET" class="relative">
+        <input type="text" name="q" value="<%= q %>" placeholder="Nome do pet ou pessoa..."
+               class="busca-input w-full pl-12 pr-12 py-4 text-sm bg-white border border-gray-200 rounded-2xl outline-none transition-all"
+               autofocus>
+        <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+        <% if (q) { %>
+          <a href="/explorar/busca" class="absolute right-4 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors" title="Limpar">
+            <i class="fa-solid fa-xmark"></i>
+          </a>
+        <% } %>
+      </form>
+    </div>
 
     <% if (q && q.length >= 2) { %>
 
       <!-- Resultados de Pessoas -->
       <% if (resultadosUsuarios.length > 0) { %>
-        <h2 class="text-lg font-bold text-gray-900 mb-3"><i class="fa-solid fa-users mr-2 text-primary-500"></i>Pessoas</h2>
-        <div class="space-y-2 mb-8">
+        <h2 class="text-base font-bold text-gray-900 mb-3 flex items-center gap-2">
+          <span class="w-8 h-8 rounded-xl bg-primary-100 text-primary-500 flex items-center justify-center text-sm"><i class="fa-solid fa-users"></i></span>
+          Pessoas
+        </h2>
+        <div class="space-y-3 mb-8">
           <% resultadosUsuarios.forEach(function(u, i) { %>
-            <div class="search-card flex items-center gap-3 bg-white rounded-2xl border border-gray-100 shadow-sm p-4 hover:shadow-md transition-shadow"
+            <div class="search-card busca-card flex items-center gap-3 bg-white p-4"
                  style="animation-delay:<%= i * 50 %>ms">
               <a href="/explorar/perfil/<%= u.id %>" class="shrink-0">
                 <% var uCor = u.cor_perfil || '#ec5a1c'; %>
@@ -73,10 +90,13 @@
 
       <!-- Resultados de Pets -->
       <% if (resultadosPets.length > 0) { %>
-        <h2 class="text-lg font-bold text-gray-900 mb-3"><i class="fa-solid fa-paw mr-2 text-primary-500"></i>Pets</h2>
-        <div class="space-y-2 mb-8">
+        <h2 class="text-base font-bold text-gray-900 mb-3 flex items-center gap-2">
+          <span class="w-8 h-8 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center text-sm"><i class="fa-solid fa-paw"></i></span>
+          Pets
+        </h2>
+        <div class="space-y-3 mb-8">
           <% resultadosPets.forEach(function(pet, i) { %>
-            <div class="search-card flex items-center gap-3 bg-white rounded-2xl border border-gray-100 shadow-sm p-4 hover:shadow-md transition-shadow"
+            <div class="search-card busca-card flex items-center gap-3 bg-white p-4"
                  style="animation-delay:<%= (resultadosUsuarios.length + i) * 50 %>ms">
               <a href="/pets/<%= pet.id %>" class="shrink-0">
                 <% if (pet.foto) { %>
@@ -108,12 +128,13 @@
       <% } %>
 
       <% if (resultadosUsuarios.length === 0 && resultadosPets.length === 0) { %>
-        <div class="text-center py-16">
-          <div class="w-20 h-20 rounded-full bg-gray-50 flex items-center justify-center mx-auto mb-4">
-            <i class="fa-solid fa-magnifying-glass text-3xl text-gray-300"></i>
+        <div class="text-center py-16 px-4 busca-card bg-white inline-block w-full max-w-md mx-auto">
+          <div class="w-20 h-20 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-5">
+            <i class="fa-solid fa-magnifying-glass text-3xl text-gray-400"></i>
           </div>
-          <h3 class="font-bold text-gray-700 text-lg mb-1">Nenhum resultado</h3>
-          <p class="text-sm text-gray-400">Tente buscar por outro nome de pet ou pessoa.</p>
+          <h3 class="font-bold text-gray-800 text-lg mb-2">Nenhum resultado</h3>
+          <p class="text-sm text-gray-500 mb-1">Tente outro nome de pet ou pessoa.</p>
+          <p class="text-xs text-gray-400">A busca considera nomes de tutores e de pets.</p>
         </div>
       <% } %>
 
@@ -123,11 +144,14 @@
 
       <% if (typeof recomendacoes !== 'undefined' && recomendacoes.length > 0) { %>
       <div class="mb-8">
-        <h2 class="text-lg font-bold text-gray-900 mb-1"><i class="fa-solid fa-user-plus mr-2 text-primary-500"></i>Sugestões para você</h2>
-        <p class="text-xs text-gray-400 mb-4">Tutores próximos da sua região</p>
-        <div class="space-y-2">
+        <h2 class="text-base font-bold text-gray-900 mb-1 flex items-center gap-2">
+          <span class="w-8 h-8 rounded-xl bg-primary-100 text-primary-500 flex items-center justify-center text-sm"><i class="fa-solid fa-user-plus"></i></span>
+          Sugestões para você
+        </h2>
+        <p class="text-xs text-gray-500 mb-4">Tutores próximos da sua região</p>
+        <div class="space-y-3">
           <% recomendacoes.forEach(function(rec, i) { %>
-            <div class="search-card flex items-center gap-3 bg-white rounded-2xl border border-gray-100 shadow-sm p-4 hover:shadow-md transition-shadow"
+            <div class="search-card busca-card flex items-center gap-3 bg-white p-4"
                  style="animation-delay:<%= i * 60 %>ms">
               <a href="/explorar/perfil/<%= rec.id %>" class="shrink-0">
                 <% var recCor = rec.cor_perfil || '#ec5a1c'; %>
@@ -162,11 +186,14 @@
 
       <% if (typeof petsRecomendados !== 'undefined' && petsRecomendados.length > 0) { %>
       <div class="mb-8">
-        <h2 class="text-lg font-bold text-gray-900 mb-1"><i class="fa-solid fa-paw mr-2 text-primary-500"></i>Pets populares</h2>
-        <p class="text-xs text-gray-400 mb-4">Conheça pets da comunidade</p>
+        <h2 class="text-base font-bold text-gray-900 mb-1 flex items-center gap-2">
+          <span class="w-8 h-8 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center text-sm"><i class="fa-solid fa-paw"></i></span>
+          Pets populares
+        </h2>
+        <p class="text-xs text-gray-500 mb-4">Conheça pets da comunidade</p>
         <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
           <% petsRecomendados.forEach(function(pet, i) { %>
-            <div class="search-card bg-white rounded-2xl border border-gray-100 shadow-sm p-4 text-center hover:shadow-md transition-shadow"
+            <div class="search-card busca-card bg-white p-4 text-center"
                  style="animation-delay:<%= i * 60 %>ms">
               <a href="/pets/<%= pet.id %>" class="block mb-3">
                 <% if (pet.foto) { %>
@@ -192,13 +219,13 @@
       <% } %>
 
       <% if ((!recomendacoes || recomendacoes.length === 0) && (!petsRecomendados || petsRecomendados.length === 0)) { %>
-        <div class="text-center py-16">
-          <div class="w-20 h-20 rounded-full bg-primary-50 flex items-center justify-center mx-auto mb-4">
-            <i class="fa-solid fa-compass text-3xl text-primary-400"></i>
+        <div class="text-center py-16 px-6 busca-card bg-white max-w-md mx-auto">
+          <div class="w-24 h-24 rounded-2xl bg-gradient-to-br from-primary-50 to-orange-50 flex items-center justify-center mx-auto mb-5 shadow-inner">
+            <i class="fa-solid fa-compass text-4xl text-primary-400"></i>
           </div>
-          <h3 class="font-bold text-gray-700 text-lg mb-1">Descubra a comunidade</h3>
-          <p class="text-sm text-gray-400 max-w-xs mx-auto">Busque por nome de pets ou pessoas para encontrar quem seguir.</p>
-          <p class="text-xs text-gray-300 mt-3">Dica: preencha seu endereço nas <a href="/perfil" class="text-primary-500 hover:underline font-semibold">configurações</a> para ver sugestões próximas.</p>
+          <h3 class="font-bold text-gray-800 text-lg mb-2">Descubra a comunidade</h3>
+          <p class="text-sm text-gray-500 max-w-xs mx-auto mb-3">Digite acima o nome de um pet ou pessoa para buscar.</p>
+          <p class="text-xs text-gray-400">Dica: preencha seu endereço em <a href="/perfil" class="text-primary-500 hover:underline font-semibold">configurações</a> para ver sugestões próximas.</p>
         </div>
       <% } %>
 

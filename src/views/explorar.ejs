@@ -8,6 +8,7 @@
       @keyframes heartPop { 0%{transform:scale(1)} 30%{transform:scale(1.35)} 60%{transform:scale(0.95)} 100%{transform:scale(1)} }
       @keyframes shimmer { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
       @keyframes floatHeart { 0%{opacity:1;transform:translateY(0) scale(1)} 100%{opacity:0;transform:translateY(-60px) scale(1.4)} }
+      @keyframes explorarHero { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
       .animate-heartPop { animation: heartPop 0.4s ease-out; }
       .float-heart { position:absolute; pointer-events:none; animation:floatHeart 0.7s ease-out forwards; color:#ef4444; }
       .skeleton { background:linear-gradient(90deg,#f0f0f0 25%,#e0e0e0 50%,#f0f0f0 75%); background-size:200% 100%; animation:shimmer 1.5s infinite; border-radius:8px; }
@@ -23,24 +24,29 @@
       .driver-popover-description { color:#6b7280 !important; }
       .driver-popover-next-btn { background:linear-gradient(135deg,#ec5a1c,#dd4212) !important; border:none !important; border-radius:10px !important; font-weight:600 !important; }
       .driver-popover-prev-btn { border-radius:10px !important; font-weight:600 !important; }
-      .masonry-feed {
-        column-gap: 0.9rem;
-        columns: 2;
-      }
-      @media (min-width: 768px) {
-        .masonry-feed { columns: 3; }
-      }
-      @media (min-width: 1536px) {
-        .masonry-feed { columns: 4; }
-      }
+      /* Explorar layout */
+      .explorar-hero { background: linear-gradient(180deg, rgba(236,90,28,.06) 0%, transparent 100%); }
+      .explorar-search-bar { transition: box-shadow .2s, border-color .2s; }
+      .explorar-search-bar:focus-within { box-shadow: 0 0 0 3px rgba(236,90,28,.12); border-color: rgba(236,90,28,.4); }
+      .masonry-feed { column-gap: 1rem; columns: 2; }
+      @media (min-width: 768px) { .masonry-feed { columns: 3; } }
+      @media (min-width: 1536px) { .masonry-feed { columns: 4; } }
       .masonry-card {
         break-inside: avoid;
         -webkit-column-break-inside: avoid;
         page-break-inside: avoid;
         display: inline-block;
         width: 100%;
-        margin-bottom: 0.9rem;
+        margin-bottom: 1rem;
+        transition: transform .2s ease, box-shadow .2s ease;
       }
+      .masonry-card:hover { transform: translateY(-2px); box-shadow: 0 12px 24px -8px rgba(0,0,0,.08); }
+      .explorar-card { border-radius: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,.04); border: 1px solid rgba(0,0,0,.04); }
+      .explorar-sidebar-card { border-radius: 1.25rem; box-shadow: 0 2px 8px rgba(0,0,0,.04); border: 1px solid rgba(0,0,0,.04); }
+      .explorar-sidebar-card .divide-y > * + * { border-top: 1px solid rgba(0,0,0,.04); }
+      .btn-seguir-explorar { transition: transform .15s, box-shadow .15s; }
+      .btn-seguir-explorar:hover { transform: scale(1.02); }
+      .btn-seguir-explorar:active { transform: scale(0.98); }
     </style>
   `;
 %>
@@ -52,35 +58,48 @@
 <main class="flex-1 pb-24 md:pb-6">
 
   <!-- ═══ Header Explorar ═══ -->
-  <div class="sticky top-14 z-40 bg-white/90 backdrop-blur-xl border-b border-gray-100">
-    <div class="max-w-7xl mx-auto px-4 py-3">
-      <h1 class="text-lg font-bold text-gray-900"><i class="fa-solid fa-compass mr-2 text-primary-500"></i>Explorar</h1>
-      <p class="text-xs text-gray-400 mt-0.5">Descubra o que está acontecendo na sua região</p>
+  <div class="sticky top-14 z-40 bg-white/95 backdrop-blur-xl border-b border-gray-100/80 explorar-hero">
+    <div class="max-w-7xl mx-auto px-4 py-4 md:py-5">
+      <div class="flex flex-col gap-4">
+        <div class="flex items-baseline justify-between gap-3">
+          <div>
+            <h1 class="text-2xl md:text-[1.75rem] font-black text-gray-900 tracking-tight">
+              <span class="inline-flex items-center justify-center w-9 h-9 rounded-xl bg-gradient-to-br from-primary-500 to-primary-600 text-white text-lg mr-2.5 align-middle shadow-md shadow-primary-500/20"><i class="fa-solid fa-compass"></i></span>
+              Explorar
+            </h1>
+            <p class="text-sm text-gray-500 mt-1">Descubra pets e tutores perto de você</p>
+          </div>
+        </div>
+        <!-- Barra de busca única (mobile + desktop) -->
+        <a href="/explorar/busca" class="explorar-search-bar flex items-center gap-3 w-full bg-white border border-gray-200 rounded-2xl pl-4 pr-4 py-3.5 text-left shadow-sm hover:border-primary-200 hover:shadow-md transition-all duration-200 group">
+          <span class="flex items-center justify-center w-10 h-10 rounded-xl bg-gray-100 text-gray-400 group-hover:bg-primary-50 group-hover:text-primary-500 transition-colors">
+            <i class="fa-solid fa-magnifying-glass"></i>
+          </span>
+          <span class="flex-1 text-sm text-gray-500 group-hover:text-gray-600">Buscar pets ou pessoas...</span>
+          <i class="fa-solid fa-chevron-right text-gray-300 text-xs group-hover:text-primary-400 transition-colors"></i>
+        </a>
+      </div>
     </div>
   </div>
 
-  <div class="max-w-7xl mx-auto flex gap-6 px-4 pt-4">
+  <div class="max-w-7xl mx-auto flex gap-6 px-4 pt-5 pb-2">
 
   <!-- ═══ Feed (coluna principal) ═══ -->
   <div class="flex-1 min-w-0">
   <div id="feedContainer" class="masonry-feed">
 
-    <!-- Busca mobile -->
-    <div class="lg:hidden">
-      <a href="/explorar/busca" class="flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-2xl px-4 py-3 text-gray-400 text-sm hover:bg-gray-100 transition-colors">
-        <i class="fa-solid fa-magnifying-glass text-xs"></i> Buscar pets ou pessoas...
-      </a>
-    </div>
-
     <% if (petshopDestaques && petshopDestaques.length > 0) { %>
-      <section class="masonry-card bg-white rounded-2xl border border-gray-100 p-4">
+      <section class="masonry-card explorar-card bg-white p-4">
         <div class="flex items-center justify-between mb-3">
-          <h2 class="text-sm font-bold text-gray-900">Petshops parceiros</h2>
-          <a href="/petshops" class="text-xs text-primary-500 font-semibold">Ver todos</a>
+          <h2 class="text-sm font-bold text-gray-900 flex items-center gap-2">
+            <span class="w-7 h-7 rounded-lg bg-amber-100 text-amber-600 flex items-center justify-center text-xs"><i class="fa-solid fa-store"></i></span>
+            Petshops parceiros
+          </h2>
+          <a href="/petshops" class="text-xs text-primary-500 font-semibold hover:text-primary-600 hover:underline">Ver todos</a>
         </div>
         <div class="grid grid-cols-2 gap-2">
           <% petshopDestaques.slice(0, 4).forEach(function(ps) { %>
-            <a href="/petshops/<%= ps.slug || ps.id %>" class="rounded-xl border border-gray-100 p-2 hover:border-primary-200 transition-colors">
+            <a href="/petshops/<%= ps.slug || ps.id %>" class="rounded-xl border border-gray-100 p-2.5 hover:border-primary-200 hover:shadow-sm transition-all duration-200">
               <% if (ps.logo_url) { %>
                 <img src="<%= ps.logo_url %>" alt="<%= ps.nome %>" class="w-full h-20 object-cover rounded-lg mb-2">
               <% } else { %>
@@ -98,7 +117,7 @@
         <% if (post.is_sponsored) { %>
           <% var sponsoredPostId = Number(post.id); %>
           <% var hasSponsoredPostId = Number.isFinite(sponsoredPostId) && sponsoredPostId > 0; %>
-          <article class="masonry-card bg-gradient-to-b from-amber-50 to-white rounded-2xl shadow-sm border border-amber-200 overflow-hidden post-enter"
+          <article class="masonry-card explorar-card bg-gradient-to-b from-amber-50/80 to-white overflow-hidden post-enter border-amber-200/60"
                    style="animation-delay:<%= Math.min(idx * 60, 400) %>ms"
                    data-post-id="<%= hasSponsoredPostId ? sponsoredPostId : '' %>"
                    data-view-source="<%= hasSponsoredPostId ? 'sponsored_explorar' : '' %>"
@@ -148,7 +167,7 @@
             </div>
           </article>
         <% } else { %>
-          <article class="masonry-card bg-white rounded-2xl shadow-sm border border-gray-100/90 overflow-hidden post-enter"
+          <article class="masonry-card explorar-card bg-white overflow-hidden post-enter"
                    style="animation-delay:<%= Math.min(idx * 60, 400) %>ms"
                    data-post-id="<%= post.id %>" data-author-id="<%= post.usuario_id %>" id="post-<%= post.id %>">
             <% var postCor = post.cor_perfil || '#ec5a1c'; %>
@@ -231,24 +250,33 @@
         <% } %>
       <% }); %>
     <% } else { %>
-      <div class="masonry-card text-center py-20 animate-fadeIn bg-white rounded-2xl border border-gray-100">
-        <div class="w-20 h-20 mx-auto mb-5 rounded-full bg-gradient-to-br from-primary-50 to-orange-50 flex items-center justify-center">
-          <i class="fa-solid fa-compass text-3xl text-primary-400"></i>
+      <div class="masonry-card explorar-card text-center py-16 px-6 animate-fadeIn bg-white">
+        <div class="w-24 h-24 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-primary-50 to-orange-50 flex items-center justify-center shadow-inner">
+          <i class="fa-solid fa-compass text-4xl text-primary-400"></i>
         </div>
-        <h3 class="text-lg font-bold text-gray-800 mb-1.5">Nenhuma publicação por perto</h3>
-        <p class="text-sm text-gray-400 max-w-xs mx-auto leading-relaxed">
-          Ainda não há publicações na sua região. Seja o primeiro a compartilhar algo! Toque no botão <strong class="text-primary-500">+</strong> para criar um post.
+        <h3 class="text-xl font-bold text-gray-800 mb-2">Nenhuma publicação por perto</h3>
+        <p class="text-sm text-gray-500 max-w-sm mx-auto leading-relaxed mb-6">
+          Ainda não há publicações na sua região. Seja o primeiro a compartilhar uma foto do seu pet!
         </p>
+        <% if (isLogado) { %>
+          <button type="button" onclick="document.getElementById('fabNewPost') && document.getElementById('fabNewPost').click();" class="inline-flex items-center gap-2 px-6 py-3 rounded-2xl text-sm font-bold text-white bg-gradient-to-r from-primary-500 to-primary-600 shadow-lg shadow-primary-500/25 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200">
+            <i class="fa-solid fa-plus"></i> Criar primeira publicação
+          </button>
+        <% } else { %>
+          <a href="/auth/login" class="inline-flex items-center gap-2 px-6 py-3 rounded-2xl text-sm font-bold text-white bg-gradient-to-r from-primary-500 to-primary-600 shadow-lg shadow-primary-500/25 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200">
+            Entrar para publicar
+          </a>
+        <% } %>
       </div>
     <% } %>
   </div><!-- /feedContainer -->
   <div>
     <!-- ═══ Scroll Sentinel ═══ -->
     <% if (temMais) { %>
-      <div id="scrollSentinel" class="py-8 flex justify-center">
-        <div class="flex items-center gap-2 text-gray-400 text-sm">
-          <i class="fa-solid fa-spinner fa-spin"></i>
-          <span>Carregando…</span>
+      <div id="scrollSentinel" class="py-10 flex justify-center">
+        <div class="flex items-center gap-2.5 text-gray-400 text-sm px-4 py-2.5 rounded-2xl bg-gray-50">
+          <i class="fa-solid fa-spinner fa-spin text-primary-500"></i>
+          <span>Carregando mais…</span>
         </div>
       </div>
     <% } %>
@@ -256,88 +284,95 @@
   </div>
 
   <!-- ═══ Sidebar (desktop only) ═══ -->
-  <aside class="hidden lg:block w-80 flex-shrink-0 space-y-4 sticky top-20 self-start">
+  <aside class="hidden lg:block w-80 flex-shrink-0 space-y-5 sticky top-24 self-start">
 
-    <!-- Busca -->
-    <div class="bg-white rounded-2xl border border-gray-100/80 shadow-sm p-4">
-      <form action="/explorar/busca" method="GET" class="relative">
-        <input type="text" name="q" placeholder="Buscar pets ou pessoas..." class="w-full pl-10 pr-4 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500/20 focus:border-primary-400 outline-none transition-all">
-        <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
-      </form>
+    <!-- Busca (desktop: link para página de busca) -->
+    <div class="explorar-sidebar-card bg-white overflow-hidden p-0">
+      <a href="/explorar/busca" class="explorar-search-bar flex items-center gap-3 w-full px-4 py-3.5 text-left border-0 rounded-2xl group hover:bg-gray-50/80 transition-colors">
+        <span class="flex items-center justify-center w-9 h-9 rounded-xl bg-gray-100 text-gray-400 group-hover:bg-primary-50 group-hover:text-primary-500 transition-colors">
+          <i class="fa-solid fa-magnifying-glass text-sm"></i>
+        </span>
+        <span class="flex-1 text-sm text-gray-500 group-hover:text-gray-700">Buscar pets ou pessoas</span>
+        <i class="fa-solid fa-chevron-right text-gray-300 text-xs group-hover:text-primary-400"></i>
+      </a>
     </div>
 
     <% if (typeof recomendacoes !== 'undefined' && recomendacoes.length > 0) { %>
-    <!-- Pessoas perto de voce -->
-    <div class="bg-white rounded-2xl border border-gray-100/80 shadow-sm overflow-hidden">
-      <div class="px-4 pt-4 pb-2">
-        <h3 class="font-bold text-gray-900 text-[15px]"><i class="fa-solid fa-user-plus mr-1.5 text-primary-500"></i>Quem seguir</h3>
-        <p class="text-xs text-gray-400 mt-0.5">Pessoas perto de você</p>
+    <div class="explorar-sidebar-card bg-white overflow-hidden">
+      <div class="px-4 pt-4 pb-3">
+        <h3 class="font-bold text-gray-900 text-[15px] flex items-center gap-2">
+          <span class="w-8 h-8 rounded-xl bg-primary-100 text-primary-500 flex items-center justify-center text-sm"><i class="fa-solid fa-user-plus"></i></span>
+          Quem seguir
+        </h3>
+        <p class="text-xs text-gray-500 mt-1">Pessoas perto de você</p>
       </div>
-      <div class="divide-y divide-gray-50">
+      <div class="divide-y divide-gray-100">
         <% recomendacoes.forEach(function(rec) { %>
-          <div class="flex items-center gap-3 px-4 py-3 hover:bg-gray-50/50 transition-colors">
+          <div class="flex items-center gap-3 px-4 py-3 hover:bg-gray-50/70 transition-colors">
             <a href="/explorar/perfil/<%= rec.id %>" class="shrink-0">
               <% var recCor = rec.cor_perfil || '#ec5a1c'; %>
               <% if (rec.foto_perfil) { %>
-                <img src="<%= rec.foto_perfil %>" alt="" class="w-10 h-10 rounded-full object-cover" style="box-shadow: 0 0 0 2px <%= recCor %>">
+                <img src="<%= rec.foto_perfil %>" alt="" class="w-10 h-10 rounded-full object-cover ring-2 ring-white shadow-sm" style="border: 2px solid <%= recCor %>">
               <% } else { %>
-                <span class="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white bg-gray-400"
+                <span class="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white bg-gray-400 shadow-sm"
                       style="box-shadow: 0 0 0 2px <%= recCor %>">
                   <%= rec.nome ? rec.nome.charAt(0).toUpperCase() : 'U' %>
                 </span>
               <% } %>
             </a>
             <div class="flex-1 min-w-0">
-              <a href="/explorar/perfil/<%= rec.id %>" class="font-semibold text-sm text-gray-900 hover:underline truncate block"><%= rec.nome %></a>
+              <a href="/explorar/perfil/<%= rec.id %>" class="font-semibold text-sm text-gray-900 hover:text-primary-600 hover:underline truncate block"><%= rec.nome %></a>
               <% if (rec.bairro || rec.cidade) { %>
-                <p class="text-xs text-gray-400 truncate"><i class="fa-solid fa-location-dot mr-0.5"></i><%= rec.bairro ? rec.bairro + ', ' : '' %><%= rec.cidade || '' %>
+                <p class="text-xs text-gray-400 truncate mt-0.5"><i class="fa-solid fa-location-dot mr-0.5 text-gray-300"></i><%= rec.bairro ? rec.bairro + ', ' : '' %><%= rec.cidade || '' %>
                   <% if (rec.distancia_km) { %> · <%= rec.distancia_km %>km<% } %>
                 </p>
               <% } %>
             </div>
-            <button class="btn-seguir-sidebar shrink-0 px-3 py-1.5 text-xs font-bold rounded-full bg-gray-900 text-white hover:bg-gray-700 transition-colors"
+            <button class="btn-seguir-sidebar btn-seguir-explorar shrink-0 px-3.5 py-2 text-xs font-bold rounded-xl bg-gray-900 text-white hover:bg-gray-700 shadow-sm"
                     data-user-id="<%= rec.id %>">
               Seguir
             </button>
           </div>
         <% }) %>
       </div>
-      <a href="/explorar/busca" class="block text-center text-sm text-primary-500 font-semibold py-3 hover:bg-primary-50/50 transition-colors border-t border-gray-50">
+      <a href="/explorar/busca" class="block text-center text-sm text-primary-500 font-semibold py-3.5 hover:bg-primary-50/50 transition-colors border-t border-gray-100">
         Ver mais
       </a>
     </div>
     <% } %>
 
     <% if (typeof petsRecomendados !== 'undefined' && petsRecomendados.length > 0) { %>
-    <!-- Pets para seguir -->
-    <div class="bg-white rounded-2xl border border-gray-100/80 shadow-sm overflow-hidden">
-      <div class="px-4 pt-4 pb-2">
-        <h3 class="font-bold text-gray-900 text-[15px]"><i class="fa-solid fa-paw mr-1.5 text-primary-500"></i>Pets populares</h3>
+    <div class="explorar-sidebar-card bg-white overflow-hidden">
+      <div class="px-4 pt-4 pb-3">
+        <h3 class="font-bold text-gray-900 text-[15px] flex items-center gap-2">
+          <span class="w-8 h-8 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center text-sm"><i class="fa-solid fa-paw"></i></span>
+          Pets populares
+        </h3>
       </div>
-      <div class="divide-y divide-gray-50">
+      <div class="divide-y divide-gray-100">
         <% petsRecomendados.slice(0, 5).forEach(function(pet) { %>
-          <div class="flex items-center gap-3 px-4 py-3 hover:bg-gray-50/50 transition-colors">
+          <div class="flex items-center gap-3 px-4 py-3 hover:bg-gray-50/70 transition-colors">
             <a href="/pets/<%= pet.id %>" class="shrink-0">
               <% if (pet.foto) { %>
-                <img src="<%= pet.foto %>" alt="<%= pet.nome %>" class="w-10 h-10 rounded-full object-cover ring-2 ring-primary-100">
+                <img src="<%= pet.foto %>" alt="<%= pet.nome %>" class="w-10 h-10 rounded-full object-cover ring-2 ring-primary-100 shadow-sm">
               <% } else { %>
-                <div class="w-10 h-10 rounded-full bg-primary-50 flex items-center justify-center">
+                <div class="w-10 h-10 rounded-full bg-primary-50 flex items-center justify-center shadow-sm">
                   <i class="fa-solid fa-paw text-primary-400 text-sm"></i>
                 </div>
               <% } %>
             </a>
             <div class="flex-1 min-w-0">
-              <a href="/pets/<%= pet.id %>" class="font-semibold text-sm text-gray-900 hover:underline truncate block"><%= pet.nome %></a>
-              <p class="text-xs text-gray-400 truncate"><%= pet.raca || pet.tipo || '' %> · <%= pet.total_seguidores %> seguidor<%= pet.total_seguidores !== 1 ? 'es' : '' %></p>
+              <a href="/pets/<%= pet.id %>" class="font-semibold text-sm text-gray-900 hover:text-primary-600 hover:underline truncate block"><%= pet.nome %></a>
+              <p class="text-xs text-gray-400 truncate mt-0.5"><%= pet.raca || pet.tipo || '' %> · <%= pet.total_seguidores %> seguidor<%= pet.total_seguidores !== 1 ? 'es' : '' %></p>
             </div>
-            <button class="btn-seguir-pet-sidebar shrink-0 px-3 py-1.5 text-xs font-bold rounded-full border-2 border-primary-500 text-primary-500 hover:bg-primary-500 hover:text-white transition-all"
+            <button class="btn-seguir-pet-sidebar btn-seguir-explorar shrink-0 px-3.5 py-2 text-xs font-bold rounded-xl border-2 border-primary-500 text-primary-500 hover:bg-primary-500 hover:text-white transition-all shadow-sm"
                     data-pet-id="<%= pet.id %>">
               Seguir
             </button>
           </div>
         <% }) %>
       </div>
-      <a href="/explorar/busca" class="block text-center text-sm text-primary-500 font-semibold py-3 hover:bg-primary-50/50 transition-colors border-t border-gray-50">
+      <a href="/explorar/busca" class="block text-center text-sm text-primary-500 font-semibold py-3.5 hover:bg-primary-50/50 transition-colors border-t border-gray-100">
         Buscar pets
       </a>
     </div>
@@ -354,12 +389,12 @@
 <!-- ═══ NEW POST MODAL ═══════════════════════════ -->
 <!-- ══════════════════════════════════════════════ -->
 <div id="newPostModal" class="fixed inset-0 z-[60] hidden">
-  <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" id="newPostOverlay"></div>
-  <div class="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl max-h-[85vh] flex flex-col animate-slideUp safe-bottom
-              md:relative md:top-1/2 md:-translate-y-1/2 md:max-w-lg md:mx-auto md:rounded-2xl md:max-h-[80vh]">
+  <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" id="newPostOverlay"></div>
+  <div class="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl max-h-[85vh] flex flex-col animate-slideUp safe-bottom shadow-2xl
+              md:relative md:top-1/2 md:-translate-y-1/2 md:max-w-lg md:mx-auto md:rounded-2xl md:max-h-[80vh] md:border md:border-gray-100">
 
-    <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-      <h3 class="font-bold text-gray-900">Nova publicação</h3>
+    <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100 bg-gray-50/50">
+      <h3 class="font-bold text-gray-900 text-lg">Nova publicação</h3>
       <div class="flex items-center gap-3">
         <span id="postCounter" class="text-xs font-semibold px-2.5 py-1 rounded-full <%= totalPosts >= 10 ? 'bg-red-50 text-red-500' : 'bg-gray-100 text-gray-500' %>">
           <%= totalPosts %>/10
@@ -1310,7 +1345,7 @@
       ? '<img src="' + escapeHtml(p.pet_foto) + '" alt="" class="w-7 h-7 rounded-full object-cover ring-2 ring-amber-200">'
       : '<span class="w-7 h-7 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center text-[11px]"><i class="fa-solid fa-paw"></i></span>';
 
-    var h = '<article class="masonry-card bg-gradient-to-b from-amber-50 to-white rounded-2xl shadow-sm border border-amber-200 overflow-hidden post-enter" data-post-id="' + (hasSponsoredPostId ? sponsoredPostId : '') + '" data-view-source="' + (hasSponsoredPostId ? 'sponsored_explorar' : '') + '" data-author-id="' + escapeHtml(p.usuario_id || '') + '" id="' + sid + '">';
+    var h = '<article class="masonry-card explorar-card bg-gradient-to-b from-amber-50/80 to-white overflow-hidden post-enter border-amber-200/60" data-post-id="' + (hasSponsoredPostId ? sponsoredPostId : '') + '" data-view-source="' + (hasSponsoredPostId ? 'sponsored_explorar' : '') + '" data-author-id="' + escapeHtml(p.usuario_id || '') + '" id="' + sid + '">';
     h += '<div class="px-3 py-2 flex items-center justify-between text-[10px] font-bold text-amber-800 uppercase tracking-wide"><span><i class="fa-solid fa-bullhorn mr-1"></i>' + escapeHtml(p.sponsored_label || 'Patrocinado') + '</span><a href="/explorar/pet/' + escapeHtml(p.pet_id) + '" class="normal-case font-semibold text-amber-700 hover:underline">Ver pet</a></div>';
     if (p.foto) h += '<img src="' + escapeHtml(p.foto) + '" alt="" class="w-full object-cover post-photo" loading="lazy">';
     h += '<div class="px-3 py-2"><div class="flex items-center gap-2">' + fotoPet + '<div class="min-w-0"><p class="text-xs font-semibold text-gray-900 truncate">' + petNome + '</p><p class="text-[11px] text-gray-500 truncate">' + tutorNome + '</p></div></div>';
@@ -1337,7 +1372,7 @@
     } else {
       avatarHtml = '<span class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white post-author-avatar bg-gray-400" style="box-shadow:0 0 0 2px ' + escapeHtml(pCor) + '">' + escapeHtml((p.autor_nome || 'U').charAt(0).toUpperCase()) + '</span>';
     }
-    var h = '<article class="masonry-card bg-white rounded-2xl shadow-sm border border-gray-100/90 overflow-hidden post-enter" data-post-id="' + p.id + '" data-author-id="' + p.usuario_id + '" id="post-' + p.id + '">';
+    var h = '<article class="masonry-card explorar-card bg-white overflow-hidden post-enter" data-post-id="' + p.id + '" data-author-id="' + p.usuario_id + '" id="post-' + p.id + '">';
     h += '<div class="px-3 pt-2.5 pb-2"><div class="flex items-start gap-2">';
     var tutorHref = '/explorar/perfil/' + p.usuario_id;
     h += '<a href="' + tutorHref + '" class="shrink-0 rounded-full transition-all">' + avatarHtml + '</a>';
