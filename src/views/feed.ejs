@@ -507,6 +507,24 @@
 
   var feedContainer = document.getElementById('feedContainer');
   var scrollSentinel = document.getElementById('scrollSentinel');
+  var viewObserver = null;
+  var viewedPosts = new Set();
+
+  function registrarVisualizacao(postId, watchMs) {
+    fetch('/explorar/api/interactions/view', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      credentials: 'same-origin',
+      body: JSON.stringify({ postId: postId, watchMs: watchMs || 1500, source: 'feed' })
+    }).catch(function () {});
+  }
+
+  function observarCardVisualizacao(card) {
+    if (!card || !viewObserver) return;
+    var postId = parseInt(card.getAttribute('data-post-id'), 10);
+    if (!postId || viewedPosts.has(postId)) return;
+    viewObserver.observe(card);
+  }
 
   function tempoRelativo(dateStr) {
     if (!dateStr) return '';
@@ -711,7 +729,7 @@
       if (!data.sucesso) { toast(data.mensagem || 'Erro.', 'erro'); validarFormPost(); return; }
       fecharModal('newPostModal'); toast('Publicado!');
       totalPostsLocal = data.totalPosts || (totalPostsLocal + 1);
-      if (data.post) { var emptyState = feedContainer.querySelector('.text-center.py-20'); if (emptyState) emptyState.remove(); feedContainer.insertAdjacentHTML('afterbegin', renderPostHTML(data.post)); initVerMaisForCard(feedContainer.firstElementChild); }
+      if (data.post) { var emptyState = feedContainer.querySelector('.text-center.py-20'); if (emptyState) emptyState.remove(); feedContainer.insertAdjacentHTML('afterbegin', renderPostHTML(data.post)); initVerMaisForCard(feedContainer.firstElementChild); observarCardVisualizacao(feedContainer.firstElementChild); }
     }).catch(function () { toast('Erro de conexão.', 'erro'); btnPublicar.textContent = 'Publicar'; validarFormPost(); });
   });
 
@@ -733,10 +751,25 @@
     fetch('/feed?page=' + currentPage, { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (data) {
       isLoading = false;
       if (!data.sucesso || !data.posts || !data.posts.length) { hasMore = false; if (scrollSentinel) scrollSentinel.innerHTML = '<p class="text-xs text-gray-300 text-center">Você chegou ao fim 🐾</p>'; return; }
-      data.posts.forEach(function (post) { feedContainer.insertAdjacentHTML('beforeend', renderPostHTML(post)); initVerMaisForCard(feedContainer.lastElementChild); });
+      data.posts.forEach(function (post) { feedContainer.insertAdjacentHTML('beforeend', renderPostHTML(post)); initVerMaisForCard(feedContainer.lastElementChild); observarCardVisualizacao(feedContainer.lastElementChild); });
       atualizarTempos();
       if (data.posts.length < 20) { hasMore = false; if (scrollSentinel) scrollSentinel.innerHTML = '<p class="text-xs text-gray-300 text-center">Você chegou ao fim 🐾</p>'; }
     }).catch(function () { isLoading = false; });
+  }
+
+  if ('IntersectionObserver' in window) {
+    viewObserver = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (!entry.isIntersecting || entry.intersectionRatio < 0.6) return;
+        var card = entry.target;
+        var postId = parseInt(card.getAttribute('data-post-id'), 10);
+        if (!postId || viewedPosts.has(postId)) return;
+        viewedPosts.add(postId);
+        registrarVisualizacao(postId, 1500);
+        viewObserver.unobserve(card);
+      });
+    }, { threshold: [0.6] });
+    document.querySelectorAll('article[data-post-id]').forEach(observarCardVisualizacao);
   }
 
   if (scrollSentinel && 'IntersectionObserver' in window) { var observer = new IntersectionObserver(function (entries) { if (entries[0].isIntersecting) carregarMaisPosts(); }, { rootMargin: '200px' }); observer.observe(scrollSentinel); }

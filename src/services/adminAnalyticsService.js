@@ -27,42 +27,58 @@ async function topUsuariosInfluentes(periodoChave = 'week', limite = 10) {
     views,
   ] = await Promise.all([
     query(
-      `SELECT seguido_id AS usuario_id, COUNT(*)::int AS total
-       FROM seguidores
-       GROUP BY seguido_id
-       ORDER BY total DESC
-       LIMIT $1`,
-      [limite]
-    ),
-    query(
-      `SELECT p.usuario_id AS usuario_id, COUNT(*)::int AS total
-       FROM curtidas c
-       JOIN publicacoes p ON p.id = c.publicacao_id
-       WHERE c.criado_em >= ${since}
-       GROUP BY p.usuario_id
-       ORDER BY total DESC
-       LIMIT $1`,
-      [limite]
-    ),
-    query(
-      `SELECT p.usuario_id AS usuario_id, COUNT(*)::int AS total
-       FROM comentarios cm
-       JOIN publicacoes p ON p.id = cm.publicacao_id
-       WHERE cm.criado_em >= ${since}
-       GROUP BY p.usuario_id
+      `SELECT s.seguido_id AS usuario_id,
+              u.nome,
+              u.foto_perfil,
+              COUNT(*)::int AS total
+       FROM seguidores s
+       JOIN usuarios u ON u.id = s.seguido_id
+       GROUP BY s.seguido_id, u.nome, u.foto_perfil
        ORDER BY total DESC
        LIMIT $1`,
       [limite]
     ),
     query(
       `SELECT p.usuario_id AS usuario_id,
+              u.nome,
+              u.foto_perfil,
+              COUNT(*)::int AS total
+       FROM curtidas c
+       JOIN publicacoes p ON p.id = c.publicacao_id
+       JOIN usuarios u ON u.id = p.usuario_id
+       WHERE c.criado_em >= ${since}
+       GROUP BY p.usuario_id, u.nome, u.foto_perfil
+       ORDER BY total DESC
+       LIMIT $1`,
+      [limite]
+    ),
+    query(
+      `SELECT p.usuario_id AS usuario_id,
+              u.nome,
+              u.foto_perfil,
+              COUNT(*)::int AS total
+       FROM comentarios cm
+       JOIN publicacoes p ON p.id = cm.publicacao_id
+       JOIN usuarios u ON u.id = p.usuario_id
+       WHERE cm.criado_em >= ${since}
+       GROUP BY p.usuario_id, u.nome, u.foto_perfil
+       ORDER BY total DESC
+       LIMIT $1`,
+      [limite]
+    ),
+    query(
+      `SELECT p.usuario_id AS usuario_id,
+              u.nome,
+              u.foto_perfil,
               COUNT(*)::int AS views,
+              COUNT(*)::int AS total,
               COALESCE(SUM(watch_ms), 0)::bigint AS watch_ms
        FROM post_interactions_raw pir
        JOIN publicacoes p ON p.id = pir.post_id
+       JOIN usuarios u ON u.id = p.usuario_id
        WHERE pir.event_type = 'view'
          AND pir.created_at >= ${since}
-       GROUP BY p.usuario_id
+       GROUP BY p.usuario_id, u.nome, u.foto_perfil
        ORDER BY views DESC
        LIMIT $1`,
       [limite]
@@ -95,7 +111,9 @@ async function topUsuariosPorEngajamentoMedio(periodoChave = 'week', limite = 10
        WHERE p.criado_em >= ${since}
        GROUP BY p.usuario_id
      )
-     SELECT usuario_id,
+     SELECT s.usuario_id,
+            u.nome,
+            u.foto_perfil,
             posts_publicados,
             total_likes,
             total_comentarios,
@@ -104,7 +122,8 @@ async function topUsuariosPorEngajamentoMedio(periodoChave = 'week', limite = 10
               WHEN posts_publicados = 0 THEN 0
               ELSE (total_likes + total_comentarios + total_reposts)::numeric / posts_publicados
             END AS engajamento_medio
-     FROM stats
+     FROM stats s
+     JOIN usuarios u ON u.id = s.usuario_id
      WHERE posts_publicados > 0
      ORDER BY engajamento_medio DESC
      LIMIT $1`,
@@ -135,6 +154,8 @@ async function topUsuariosPorResposta(periodoChave = 'week', limite = 10) {
        GROUP BY usuario_id
      )
      SELECT b.usuario_id,
+            u.nome,
+            u.foto_perfil,
             b.comentarios_recebidos,
             COALESCE(f.comentarios_feitos, 0) AS comentarios_feitos,
             CASE
@@ -143,6 +164,7 @@ async function topUsuariosPorResposta(periodoChave = 'week', limite = 10) {
             END AS taxa_resposta
      FROM base b
      LEFT JOIN feitos f ON f.usuario_id = b.usuario_id
+     JOIN usuarios u ON u.id = b.usuario_id
      ORDER BY taxa_resposta DESC NULLS LAST
      LIMIT $1`,
     [limite]
@@ -320,6 +342,30 @@ async function timelineCrescimento(dias = 30) {
   return res.rows;
 }
 
+async function postsMaisVistos(periodoChave = 'week', limite = 20) {
+  const { sql: since } = resolvePeriodo(periodoChave);
+
+  const res = await query(
+    `SELECT p.id AS post_id,
+            p.usuario_id,
+            u.nome AS autor_nome,
+            u.foto_perfil,
+            COUNT(*)::int AS total_views,
+            COUNT(DISTINCT pir.user_id)::int AS usuarios_unicos
+     FROM post_interactions_raw pir
+     JOIN publicacoes p ON p.id = pir.post_id
+     JOIN usuarios u ON u.id = p.usuario_id
+     WHERE pir.event_type = 'view'
+       AND pir.created_at >= ${since}
+     GROUP BY p.id, p.usuario_id, u.nome, u.foto_perfil
+     ORDER BY total_views DESC
+     LIMIT $1`,
+    [limite]
+  );
+
+  return res.rows;
+}
+
 async function listarBoostsAtivos() {
   const res = await query(
     `SELECT mb.id,
@@ -348,6 +394,7 @@ module.exports = {
   trendingBreeds,
   cidadesMaisAtivas,
   timelineCrescimento,
+  postsMaisVistos,
   listarBoostsAtivos,
 };
 

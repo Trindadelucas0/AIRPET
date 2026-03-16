@@ -50,6 +50,7 @@ router.delete('/post/:id/curtir', explorarController.descurtir);
 router.get('/post/:id/comentarios', explorarController.comentarios);
 router.get('/post/:id/pets-proximos', explorarController.petsProximosPost);
 router.post('/post/:id/comentar', explorarController.comentar);
+router.post('/api/interactions/view', explorarController.registrarVisualizacao);
 router.delete('/comentario/:id', explorarController.deletarComentario);
 
 router.post('/post/:id/fixar', explorarController.fixar);

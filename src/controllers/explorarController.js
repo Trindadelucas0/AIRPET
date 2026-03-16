@@ -10,6 +10,7 @@ const Usuario = require('../models/Usuario');
 const SeguidorPet = require('../models/SeguidorPet');
 const recomendacaoService = require('../services/recomendacaoService');
 const logger = require('../utils/logger');
+const { query } = require('../config/database');
 
 function getNotificacaoService() {
   try { return require('../services/notificacaoService'); } catch (_) { return null; }
@@ -651,6 +652,35 @@ const explorarController = {
     } catch (err) {
       logger.error('EXPLORAR', 'Erro ao listar pets próximos', err);
       res.status(500).json({ lista: [] });
+    }
+  },
+
+  async registrarVisualizacao(req, res) {
+    try {
+      const uid = req.session?.usuario?.id;
+      if (!uid) return res.status(401).json({ sucesso: false });
+
+      const postId = parseInt(req.body?.postId, 10);
+      const watchMs = Math.max(0, parseInt(req.body?.watchMs || '0', 10) || 0);
+      const city = typeof req.body?.city === 'string' ? req.body.city.trim().slice(0, 100) : null;
+      const source = typeof req.body?.source === 'string' ? req.body.source.trim().slice(0, 30) : 'feed';
+
+      if (!postId) {
+        return res.status(400).json({ sucesso: false, mensagem: 'postId inválido.' });
+      }
+
+      await query(
+        `INSERT INTO post_interactions_raw
+           (user_id, post_id, event_type, watch_ms, city, metadata)
+         VALUES
+           ($1, $2, 'view', $3, $4, $5::jsonb)`,
+        [uid, postId, watchMs, city || null, JSON.stringify({ source })]
+      );
+
+      return res.json({ sucesso: true });
+    } catch (err) {
+      logger.error('EXPLORAR', 'Erro ao registrar visualização', err);
+      return res.status(500).json({ sucesso: false });
     }
   },
 

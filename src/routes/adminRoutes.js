@@ -93,6 +93,8 @@ router.get('/logout', (req, res) => {
 router.get('/', apenasAdmin, adminController.dashboard);
 router.get('/analytics', apenasAdmin, adminController.mostrarAnalyticsAvancado);
 router.get('/boosts', apenasAdmin, adminController.listarBoosts);
+router.get('/boosts/buscar-usuarios', apenasAdmin, adminController.buscarUsuariosParaBoost);
+router.get('/boosts/buscar-pets', apenasAdmin, adminController.buscarPetsParaBoost);
 router.post('/boosts', apenasAdmin, adminController.criarBoost);
 router.post('/boosts/:id/cancelar', apenasAdmin, adminController.cancelarBoost);
 

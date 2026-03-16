@@ -35,16 +35,26 @@
           Usuários mais influentes
         </h2>
         <p class="text-xs text-gray-400 max-w-md">
-          Influência baseada em seguidores, likes, comentários e visualizações no período selecionado.
+          Visão consolidada de influência: base de seguidores, reações (curtidas/comentários) e volume de visualizações no período.
         </p>
       </div>
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
         <div>
           <h3 class="font-semibold text-gray-700 mb-2">Mais seguidores</h3>
-          <ul class="space-y-1 max-h-64 overflow-y-auto">
+          <ul class="space-y-2 max-h-64 overflow-y-auto">
             <% (influentes.seguidores || []).forEach(function(r, idx) { %>
-              <li class="flex justify-between">
-                <span class="text-gray-600">#<%= idx + 1 %> Usuário <%= r.usuario_id %></span>
+              <li class="flex items-center justify-between gap-3">
+                <a href="/explorar/perfil/<%= r.usuario_id %>" target="_blank" class="flex items-center gap-2 min-w-0 text-gray-700 hover:text-primary-600">
+                  <span class="text-xs text-gray-400 shrink-0">#<%= idx + 1 %></span>
+                  <% if (r.foto_perfil) { %>
+                    <img src="<%= r.foto_perfil %>" alt="" class="w-6 h-6 rounded-full object-cover">
+                  <% } else { %>
+                    <span class="w-6 h-6 rounded-full bg-gray-200 text-gray-600 text-[10px] flex items-center justify-center font-semibold">
+                      <%= (r.nome || ('U' + r.usuario_id)).charAt(0).toUpperCase() %>
+                    </span>
+                  <% } %>
+                  <span class="truncate"><%= r.nome || ('Usuário ' + r.usuario_id) %></span>
+                </a>
                 <span class="font-medium"><%= r.total %></span>
               </li>
             <% }) %>
@@ -55,10 +65,20 @@
         </div>
         <div>
           <h3 class="font-semibold text-gray-700 mb-2">Mais curtidas recebidas</h3>
-          <ul class="space-y-1 max-h-64 overflow-y-auto">
+          <ul class="space-y-2 max-h-64 overflow-y-auto">
             <% (influentes.likes || []).forEach(function(r, idx) { %>
-              <li class="flex justify-between">
-                <span class="text-gray-600">#<%= idx + 1 %> Usuário <%= r.usuario_id %></span>
+              <li class="flex items-center justify-between gap-3">
+                <a href="/explorar/perfil/<%= r.usuario_id %>" target="_blank" class="flex items-center gap-2 min-w-0 text-gray-700 hover:text-primary-600">
+                  <span class="text-xs text-gray-400 shrink-0">#<%= idx + 1 %></span>
+                  <% if (r.foto_perfil) { %>
+                    <img src="<%= r.foto_perfil %>" alt="" class="w-6 h-6 rounded-full object-cover">
+                  <% } else { %>
+                    <span class="w-6 h-6 rounded-full bg-gray-200 text-gray-600 text-[10px] flex items-center justify-center font-semibold">
+                      <%= (r.nome || ('U' + r.usuario_id)).charAt(0).toUpperCase() %>
+                    </span>
+                  <% } %>
+                  <span class="truncate"><%= r.nome || ('Usuário ' + r.usuario_id) %></span>
+                </a>
                 <span class="font-medium"><%= r.total %></span>
               </li>
             <% }) %>
@@ -69,10 +89,20 @@
         </div>
         <div>
           <h3 class="font-semibold text-gray-700 mb-2">Mais comentários recebidos</h3>
-          <ul class="space-y-1 max-h-64 overflow-y-auto">
+          <ul class="space-y-2 max-h-64 overflow-y-auto">
             <% (influentes.comentarios || []).forEach(function(r, idx) { %>
-              <li class="flex justify-between">
-                <span class="text-gray-600">#<%= idx + 1 %> Usuário <%= r.usuario_id %></span>
+              <li class="flex items-center justify-between gap-3">
+                <a href="/explorar/perfil/<%= r.usuario_id %>" target="_blank" class="flex items-center gap-2 min-w-0 text-gray-700 hover:text-primary-600">
+                  <span class="text-xs text-gray-400 shrink-0">#<%= idx + 1 %></span>
+                  <% if (r.foto_perfil) { %>
+                    <img src="<%= r.foto_perfil %>" alt="" class="w-6 h-6 rounded-full object-cover">
+                  <% } else { %>
+                    <span class="w-6 h-6 rounded-full bg-gray-200 text-gray-600 text-[10px] flex items-center justify-center font-semibold">
+                      <%= (r.nome || ('U' + r.usuario_id)).charAt(0).toUpperCase() %>
+                    </span>
+                  <% } %>
+                  <span class="truncate"><%= r.nome || ('Usuário ' + r.usuario_id) %></span>
+                </a>
                 <span class="font-medium"><%= r.total %></span>
               </li>
             <% }) %>
@@ -82,11 +112,21 @@
           </ul>
         </div>
         <div>
-          <h3 class="font-semibold text-gray-700 mb-2">Mais visualizações</h3>
-          <ul class="space-y-1 max-h-64 overflow-y-auto">
+          <h3 class="font-semibold text-gray-700 mb-2">Mais visualizações por criador</h3>
+          <ul class="space-y-2 max-h-64 overflow-y-auto">
             <% (influentes.views || []).forEach(function(r, idx) { %>
-              <li class="flex justify-between">
-                <span class="text-gray-600">#<%= idx + 1 %> Usuário <%= r.usuario_id %></span>
+              <li class="flex items-center justify-between gap-3">
+                <a href="/explorar/perfil/<%= r.usuario_id %>" target="_blank" class="flex items-center gap-2 min-w-0 text-gray-700 hover:text-primary-600">
+                  <span class="text-xs text-gray-400 shrink-0">#<%= idx + 1 %></span>
+                  <% if (r.foto_perfil) { %>
+                    <img src="<%= r.foto_perfil %>" alt="" class="w-6 h-6 rounded-full object-cover">
+                  <% } else { %>
+                    <span class="w-6 h-6 rounded-full bg-gray-200 text-gray-600 text-[10px] flex items-center justify-center font-semibold">
+                      <%= (r.nome || ('U' + r.usuario_id)).charAt(0).toUpperCase() %>
+                    </span>
+                  <% } %>
+                  <span class="truncate"><%= r.nome || ('Usuário ' + r.usuario_id) %></span>
+                </a>
                 <span class="font-medium"><%= r.views %></span>
               </li>
             <% }) %>
@@ -106,19 +146,19 @@
           Qualidade de engajamento
         </h2>
         <p class="text-xs text-gray-400 max-w-md">
-          Engajamento médio considera interações por post; taxa de resposta compara comentários recebidos x feitos.
+          Engajamento médio por post considera curtidas, comentários e reposts do período. Taxa de resposta compara o quanto cada criador responde em relação ao que recebe.
         </p>
       </div>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
         <div>
           <h3 class="font-semibold text-gray-700 mb-2">Maior engajamento médio por post</h3>
-          <ul class="space-y-1 max-h-64 overflow-y-auto">
+          <ul class="space-y-2 max-h-64 overflow-y-auto">
             <% (engajamentoMedio.usuarios || []).forEach(function(r, idx) { %>
-              <li class="flex justify-between">
-                <span class="text-gray-600">
-                  #<%= idx + 1 %> Usuário <%= r.usuario_id %>
+              <li class="flex items-center justify-between gap-3">
+                <a href="/explorar/perfil/<%= r.usuario_id %>" target="_blank" class="min-w-0 text-gray-600 hover:text-primary-600">
+                  #<%= idx + 1 %> <span class="font-medium"><%= r.nome || ('Usuário ' + r.usuario_id) %></span>
                   <span class="text-xs text-gray-400">(<%= r.posts_publicados %> posts)</span>
-                </span>
+                </a>
                 <span class="font-medium">
                   <%= Number(r.engajamento_medio).toFixed(1) %> / post
                 </span>
@@ -131,15 +171,15 @@
         </div>
         <div>
           <h3 class="font-semibold text-gray-700 mb-2">Melhor taxa de resposta</h3>
-          <ul class="space-y-1 max-h-64 overflow-y-auto">
+          <ul class="space-y-2 max-h-64 overflow-y-auto">
             <% (taxaResposta.usuarios || []).forEach(function(r, idx) { %>
-              <li class="flex justify-between">
-                <span class="text-gray-600">
-                  #<%= idx + 1 %> Usuário <%= r.usuario_id %>
+              <li class="flex items-center justify-between gap-3">
+                <a href="/explorar/perfil/<%= r.usuario_id %>" target="_blank" class="min-w-0 text-gray-600 hover:text-primary-600">
+                  #<%= idx + 1 %> <span class="font-medium"><%= r.nome || ('Usuário ' + r.usuario_id) %></span>
                   <span class="text-xs text-gray-400">
                     (<%= r.comentarios_feitos %> feitos · <%= r.comentarios_recebidos %> recebidos)
                   </span>
-                </span>
+                </a>
                 <span class="font-medium">
                   <% if (r.taxa_resposta === null) { %>
                     —
@@ -154,6 +194,60 @@
             <% } %>
           </ul>
         </div>
+      </div>
+    </section>
+
+    <section class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+      <h2 class="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+        <i class="fa-solid fa-eye text-purple-500"></i>
+        Posts mais visualizados no período
+      </h2>
+      <p class="text-xs text-gray-400 mb-3">
+        Ranking por visualizações registradas em eventos reais de feed. Mostra alcance bruto e pessoas únicas por publicação.
+      </p>
+      <div class="overflow-x-auto">
+        <table class="min-w-full text-xs md:text-sm">
+          <thead>
+            <tr class="text-left text-gray-500 border-b border-gray-100">
+              <th class="pb-2 font-medium">Rank</th>
+              <th class="pb-2 font-medium">Post</th>
+              <th class="pb-2 font-medium">Autor</th>
+              <th class="pb-2 font-medium">Views</th>
+              <th class="pb-2 font-medium">Usuários únicos</th>
+              <th class="pb-2 font-medium">Link</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% (postsVistos || []).forEach(function(p, idx) { %>
+              <tr class="border-b border-gray-50 hover:bg-gray-50/50">
+                <td class="py-2 text-gray-700">#<%= idx + 1 %></td>
+                <td class="py-2 text-gray-700">Post <%= p.post_id %></td>
+                <td class="py-2 text-gray-600">
+                  <a href="/explorar/perfil/<%= p.usuario_id %>" target="_blank" class="inline-flex items-center gap-2 text-primary-600 hover:underline">
+                    <% if (p.foto_perfil) { %>
+                      <img src="<%= p.foto_perfil %>" alt="" class="w-5 h-5 rounded-full object-cover">
+                    <% } %>
+                    <span><%= p.autor_nome || ('Usuário ' + p.usuario_id) %></span>
+                  </a>
+                </td>
+                <td class="py-2 font-medium text-gray-900"><%= p.total_views %></td>
+                <td class="py-2 text-gray-600"><%= p.usuarios_unicos %></td>
+                <td class="py-2">
+                  <a href="/explorar#post-<%= p.post_id %>" target="_blank" class="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-gray-200 text-xs text-primary-600 hover:bg-primary-50">
+                    Ver post
+                  </a>
+                </td>
+              </tr>
+            <% }) %>
+            <% if (!(postsVistos || []).length) { %>
+              <tr>
+                <td colspan="6" class="py-3 text-center text-xs text-gray-400">
+                  Nenhuma visualização registrada no período selecionado.
+                </td>
+              </tr>
+            <% } %>
+          </tbody>
+        </table>
       </div>
     </section>
 
@@ -282,10 +376,10 @@
         Crescimento da rede (últimos 30 dias)
       </h2>
       <p class="text-xs text-gray-400 mb-3">
-        Linhas mostram quantos usuários e posts novos surgiram em cada dia. A tabela abaixo detalha os valores.
+        Evolução diária da rede com duas métricas-chave: aquisição de usuários e ritmo de publicação. Use a tabela como auditoria de valores exatos.
       </p>
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div class="relative min-h-[220px]">
+        <div class="relative min-h-[260px]">
           <canvas id="growthChart" class="w-full h-full"></canvas>
         </div>
         <div class="overflow-x-auto">

@@ -541,6 +541,24 @@
 
   var feedContainer = document.getElementById('feedContainer');
   var scrollSentinel = document.getElementById('scrollSentinel');
+  var viewObserver = null;
+  var viewedPosts = new Set();
+
+  function registrarVisualizacao(postId, watchMs) {
+    fetch('/explorar/api/interactions/view', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      credentials: 'same-origin',
+      body: JSON.stringify({ postId: postId, watchMs: watchMs || 1500, source: 'explorar' })
+    }).catch(function () {});
+  }
+
+  function observarCardVisualizacao(card) {
+    if (!card || !viewObserver) return;
+    var postId = parseInt(card.getAttribute('data-post-id'), 10);
+    if (!postId || viewedPosts.has(postId)) return;
+    viewObserver.observe(card);
+  }
 
   /* ──────────── Utilities ──────────── */
   function tempoRelativo(dateStr) {
@@ -951,6 +969,7 @@
         totalPostsLocal = data.totalPosts || totalPostsLocal;
         feedContainer.insertAdjacentHTML('afterbegin', renderPostHTML(data.post));
         initVerMaisForCard(feedContainer.firstElementChild);
+        observarCardVisualizacao(feedContainer.firstElementChild);
       }
       if (data.removido) {
         var old = document.getElementById('post-' + data.removido);
@@ -1090,6 +1109,7 @@
         if (emptyState) emptyState.remove();
         feedContainer.insertAdjacentHTML('afterbegin', renderPostHTML(data.post));
         initVerMaisForCard(feedContainer.firstElementChild);
+        observarCardVisualizacao(feedContainer.firstElementChild);
       }
       if (data.removido) {
         var old = document.getElementById('post-' + data.removido);
@@ -1230,6 +1250,7 @@
       data.posts.forEach(function (post) {
         feedContainer.insertAdjacentHTML('beforeend', renderPostHTML(post));
         initVerMaisForCard(feedContainer.lastElementChild);
+        observarCardVisualizacao(feedContainer.lastElementChild);
       });
       atualizarTempos();
       if (data.posts.length < 20) {
@@ -1238,6 +1259,21 @@
       }
     })
     .catch(function () { isLoading = false; });
+  }
+
+  if ('IntersectionObserver' in window) {
+    viewObserver = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (!entry.isIntersecting || entry.intersectionRatio < 0.6) return;
+        var card = entry.target;
+        var postId = parseInt(card.getAttribute('data-post-id'), 10);
+        if (!postId || viewedPosts.has(postId)) return;
+        viewedPosts.add(postId);
+        registrarVisualizacao(postId, 1500);
+        viewObserver.unobserve(card);
+      });
+    }, { threshold: [0.6] });
+    document.querySelectorAll('article[data-post-id]').forEach(observarCardVisualizacao);
   }
 
   if (scrollSentinel && 'IntersectionObserver' in window) {

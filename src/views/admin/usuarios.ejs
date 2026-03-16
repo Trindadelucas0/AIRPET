@@ -99,7 +99,7 @@
                     <% } %>
                     <div>
                       <p class="font-medium text-gray-900"><%= u.nome %></p>
-                      <p class="text-xs text-gray-500"><%= u.email %></p>
+                      <p class="text-xs text-gray-500">ID <%= u.id %> · <%= u.email %></p>
                     </div>
                   </div>
                 </td>
@@ -111,11 +111,14 @@
                   <p class="text-xs text-gray-500"><%= u.estado || '—' %> <%= u.bairro ? ' · ' + u.bairro : '' %></p>
                 </td>
                 <td class="px-4 py-3">
-                  <% if (u.role === 'admin') { %>
-                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-purple-100 text-purple-700">admin</span>
-                  <% } else { %>
-                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-600">usuário</span>
-                  <% } %>
+                  <div class="flex flex-col items-start gap-1">
+                    <% if (u.role === 'admin') { %>
+                      <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-purple-100 text-purple-700">admin</span>
+                    <% } else { %>
+                      <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-600">usuário</span>
+                    <% } %>
+                    <a href="/explorar/perfil/<%= u.id %>" target="_blank" class="text-xs text-primary-600 hover:underline">Ver perfil público</a>
+                  </div>
                 </td>
                 <td class="px-4 py-3">
                   <% if (u.bloqueado) { %>

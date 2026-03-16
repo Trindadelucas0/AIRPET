@@ -145,6 +145,7 @@ async function mostrarAnalyticsAvancado(req, res) {
       trendingRacas,
       cidades,
       timeline,
+      postsVistos,
     ] = await Promise.all([
       adminAnalyticsService.topUsuariosInfluentes(periodoInfluentes, 10),
       adminAnalyticsService.topUsuariosPorEngajamentoMedio(periodoInfluentes, 10),
@@ -154,6 +155,7 @@ async function mostrarAnalyticsAvancado(req, res) {
       adminAnalyticsService.trendingBreeds(periodoRacas, 15),
       adminAnalyticsService.cidadesMaisAtivas(periodoCidades, 15),
       adminAnalyticsService.timelineCrescimento(30),
+      adminAnalyticsService.postsMaisVistos(periodoInfluentes, 20),
     ]);
 
     return res.render('admin/analytics', {
@@ -166,6 +168,7 @@ async function mostrarAnalyticsAvancado(req, res) {
       trendingRacas,
       cidades,
       timeline,
+      postsVistos,
       periodoGlobal,
     });
   } catch (erro) {
@@ -885,9 +888,25 @@ async function listarBoosts(req, res) {
   try {
     const { query: dbQuery } = require('../config/database');
     const boostsAtivos = await dbQuery(
-      `SELECT id, target_type, target_id, boost_value, reason, starts_at, ends_at, created_at
-       FROM manual_boosts
-       ORDER BY created_at DESC
+      `SELECT mb.id,
+              mb.target_type,
+              mb.target_id,
+              mb.boost_value,
+              mb.reason,
+              mb.starts_at,
+              mb.ends_at,
+              mb.created_at,
+              u.nome AS usuario_nome,
+              u.foto_perfil AS usuario_foto,
+              p.foto AS post_foto,
+              p.legenda AS post_legenda,
+              pet.nome AS pet_nome,
+              pet.foto AS pet_foto
+       FROM manual_boosts mb
+       LEFT JOIN usuarios u ON mb.target_type = 'user' AND u.id = mb.target_id
+       LEFT JOIN publicacoes p ON mb.target_type = 'post' AND p.id = mb.target_id
+       LEFT JOIN pets pet ON mb.target_type = 'pet' AND pet.id = mb.target_id
+       ORDER BY mb.created_at DESC
        LIMIT 200`
     );
 
@@ -902,17 +921,53 @@ async function listarBoosts(req, res) {
   }
 }
 
+async function buscarUsuariosParaBoost(req, res) {
+  try {
+    const termo = (req.query.q || '').trim().toLowerCase();
+    if (termo.length < 2) return res.json({ sucesso: true, usuarios: [] });
+
+    const resultado = await query(
+      `SELECT id, nome, foto_perfil, cidade, estado
+       FROM usuarios
+       WHERE LOWER(nome) LIKE $1
+       ORDER BY nome
+       LIMIT 20`,
+      [`%${termo}%`]
+    );
+
+    return res.json({ sucesso: true, usuarios: resultado.rows });
+  } catch (erro) {
+    logger.error('AdminController', 'Erro ao buscar usuários para boost', erro);
+    return res.status(500).json({ sucesso: false, usuarios: [] });
+  }
+}
+
+async function buscarPetsParaBoost(req, res) {
+  try {
+    const usuarioId = parseInt(req.query.usuarioId, 10);
+    if (!usuarioId) {
+      return res.status(400).json({ sucesso: false, pets: [], mensagem: 'usuarioId inválido.' });
+    }
+
+    const pets = await Pet.buscarPorUsuario(usuarioId);
+    return res.json({ sucesso: true, pets: pets || [] });
+  } catch (erro) {
+    logger.error('AdminController', 'Erro ao buscar pets para boost', erro);
+    return res.status(500).json({ sucesso: false, pets: [] });
+  }
+}
+
 async function criarBoost(req, res) {
   try {
-    const { target_type, target_id, boost_value, duracao_horas, motivo } = req.body || {};
+    const { target_type, target_id, selected_user_id, selected_pet_id, boost_value, duracao_horas, motivo } = req.body || {};
     const adminPath = getAdminPath();
 
     const tipo = (target_type || '').trim();
-    const idAlvo = parseInt(target_id, 10);
+    const idAlvo = parseInt(target_id || selected_user_id || selected_pet_id, 10);
     const valor = parseFloat(boost_value);
     const horas = parseInt(duracao_horas || '2', 10);
 
-    if (!['user', 'post'].includes(tipo) || !idAlvo || Number.isNaN(valor)) {
+    if (!['user', 'post', 'pet'].includes(tipo) || !idAlvo || Number.isNaN(valor)) {
       req.session.flash = { tipo: 'erro', mensagem: 'Dados inválidos para boost.' };
       return res.redirect(adminPath + '/boosts');
     }
@@ -988,6 +1043,8 @@ module.exports = {
   enviarNotificacaoRegiao,
   mostrarAnalyticsAvancado,
   listarBoosts,
+  buscarUsuariosParaBoost,
+  buscarPetsParaBoost,
   criarBoost,
   cancelarBoost,
 };
