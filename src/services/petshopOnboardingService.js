@@ -64,26 +64,23 @@ const petshopOnboardingService = {
     const senhaHash = await bcrypt.hash(senha, 10);
     const petshopResult = await query(
       `INSERT INTO petshops (
-        nome, endereco, cidade, estado, cep, telefone, whatsapp, email_contato,
+        nome, endereco, telefone, whatsapp, email_contato,
         latitude, longitude, localizacao, ativo, status_parceria, slug, descricao, logo_url, foto_capa_url, data_atualizacao
       )
       VALUES (
-        $1, $2, $3, $4, $5, $6, $6, $7,
-        $8::numeric, $9::numeric,
+        $1, $2, $3, $3, $4,
+        $5::numeric, $6::numeric,
         CASE
-          WHEN $8::numeric IS NOT NULL AND $9::numeric IS NOT NULL
-          THEN ST_SetSRID(ST_MakePoint($9::double precision, $8::double precision), 4326)::geography
+          WHEN $5::numeric IS NOT NULL AND $6::numeric IS NOT NULL
+          THEN ST_SetSRID(ST_MakePoint($6::double precision, $5::double precision), 4326)::geography
           ELSE NULL
         END,
-        false, 'pendente', $10, $11, $12, $13, NOW()
+        false, 'pendente', $7, $8, $9, $10, NOW()
       )
       RETURNING *`,
       [
         reqBody.empresa_nome,
         endereco,
-        cidade || null,
-        estado || null,
-        cep || null,
         reqBody.telefone,
         reqBody.email || null,
         latitude,
