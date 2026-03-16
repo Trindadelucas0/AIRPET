@@ -979,7 +979,10 @@ async function criarBoost(req, res) {
 
     const duracaoSegura = Number.isNaN(horas) || horas <= 0 || horas > 168 ? 2 : horas;
 
-    const createdBy = req.session && req.session.admin ? req.session.admin.email : null;
+    // manual_boosts.created_by_admin é INTEGER; sessão de admin guarda email.
+    // Só gravamos um id numérico válido para evitar erro de tipo no INSERT.
+    const possibleAdminId = Number.parseInt(req.session?.usuario?.id, 10);
+    const createdBy = Number.isInteger(possibleAdminId) && possibleAdminId > 0 ? possibleAdminId : null;
 
     await query(
       `INSERT INTO manual_boosts

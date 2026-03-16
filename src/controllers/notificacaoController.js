@@ -1,6 +1,7 @@
 const Notificacao = require('../models/Notificacao');
 const PushSubscription = require('../models/PushSubscription');
 const Pet = require('../models/Pet');
+const Usuario = require('../models/Usuario');
 const logger = require('../utils/logger');
 
 const TIPOS_MENCOES = ['mencao'];
@@ -117,11 +118,21 @@ async function contarNaoLidas(req, res) {
 
 async function subscribe(req, res) {
   try {
-    const usuarioId = req.session.usuario.id;
+    const usuarioId = req.session?.usuario?.id;
     const { subscription } = req.body;
+
+    if (!usuarioId) {
+      return res.status(401).json({ sucesso: false, mensagem: 'Sessão expirada. Faça login novamente.' });
+    }
 
     if (!subscription || !subscription.endpoint || !subscription.keys) {
       return res.status(400).json({ sucesso: false, mensagem: 'Subscription inválida.' });
+    }
+
+    const usuario = await Usuario.buscarPorId(usuarioId);
+    if (!usuario) {
+      logger.warn('NotificacaoController', `Tentativa de salvar push subscription para usuário inexistente: ${usuarioId}`);
+      return res.status(404).json({ sucesso: false, mensagem: 'Usuário não encontrado.' });
     }
 
     await PushSubscription.salvar(usuarioId, subscription, req.headers['user-agent']);
@@ -129,6 +140,11 @@ async function subscribe(req, res) {
     logger.info('NotificacaoController', `Push subscription salva para usuário: ${usuarioId}`);
     return res.json({ sucesso: true });
   } catch (erro) {
+    if (erro?.code === '23503') {
+      logger.warn('NotificacaoController', `Falha de integridade ao salvar push subscription: ${erro.constraint || 'FK'}`);
+      return res.status(400).json({ sucesso: false, mensagem: 'Usuário inválido para salvar a subscription.' });
+    }
+
     logger.error('NotificacaoController', 'Erro ao salvar push subscription', erro);
     return res.status(500).json({ sucesso: false, mensagem: 'Erro ao salvar subscription.' });
   }
