@@ -179,9 +179,15 @@
     <!-- Seção de Tag NFC -->
     <div class="card mb-6">
       <div class="flex items-center justify-between mb-3">
-        <h2 class="text-lg font-bold text-gray-900">
-          <i class="fa-solid fa-microchip text-primary-500 mr-2"></i>Tag NFC
-        </h2>
+        <div class="flex items-center gap-2">
+          <div class="w-9 h-9 rounded-xl bg-primary-500/10 flex items-center justify-center">
+            <i class="fa-solid fa-microchip text-primary-500"></i>
+          </div>
+          <div>
+            <h2 class="text-lg font-bold text-gray-900">Tag NFC AIRPET</h2>
+            <p class="text-xs text-gray-500">A forma mais rápida de trazer <%= pet.nome %> de volta para casa.</p>
+          </div>
+        </div>
         <% if (typeof tags !== 'undefined' && tags && tags.length > 0) { %>
           <span class="text-xs bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full font-semibold">
             <i class="fa-solid fa-check mr-1"></i><%= tags.length %> tag<%= tags.length > 1 ? 's' : '' %>
@@ -199,7 +205,8 @@
               <div class="flex-1 min-w-0">
                 <p class="text-sm font-bold font-mono text-gray-800"><%= tag.tag_code %></p>
                 <p class="text-xs text-gray-400">
-                  Status: <span class="font-semibold capitalize <%= tag.status === 'active' ? 'text-emerald-600' : 'text-amber-600' %>"><%= tag.status %></span>
+                  Status:
+                  <span class="font-semibold capitalize <%= tag.status === 'active' ? 'text-emerald-600' : 'text-amber-600' %>"><%= tag.status %></span>
                   <% if (pet.status === 'perdido') { %>
                     <span class="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-700">
                       <i class="fa-solid fa-triangle-exclamation"></i> Perdido
@@ -212,20 +219,39 @@
           <% }); %>
         </div>
       <% } else { %>
-        <div class="text-center py-4 mb-4">
-          <div class="w-12 h-12 mx-auto rounded-full bg-gray-100 flex items-center justify-center mb-2">
-            <i class="fa-solid fa-microchip text-xl text-gray-300"></i>
+        <div class="py-4 mb-4">
+          <div class="flex items-center gap-3 mb-3">
+            <div class="w-10 h-10 rounded-full bg-orange-50 flex items-center justify-center">
+              <i class="fa-solid fa-tag text-orange-400"></i>
+            </div>
+            <div>
+              <p class="text-sm font-semibold text-gray-800">Nenhuma tag vinculada ainda</p>
+              <p class="text-xs text-gray-500">
+                Se alguém encontrar <strong><%= pet.nome %></strong> na rua, a tag NFC ajuda essa pessoa a chegar até você
+                em poucos toques no celular.
+              </p>
+            </div>
           </div>
-          <p class="text-sm text-gray-500">Nenhuma tag vinculada</p>
-          <p class="text-xs text-gray-400 mt-1">Vincule uma tag NFC para proteger <%= pet.nome %></p>
+          <ul class="text-xs text-gray-500 space-y-1.5 pl-3 list-disc list-inside">
+            <li>Quem encontra encosta o celular na tag e vê um resumo seguro do perfil.</li>
+            <li>Você recebe uma notificação com o local aproximado onde a tag foi escaneada.</li>
+            <li>É como uma plaquinha de identificação inteligente, sempre atualizada.</li>
+          </ul>
         </div>
       <% } %>
 
-      <a href="/pets/<%= pet.id %>/vincular-tag"
-         class="w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold text-primary-500 border-2 border-primary-500 hover:bg-primary-500 hover:text-white transition-colors">
-        <i class="fa-solid fa-plus"></i>
-        Vincular nova tag
-      </a>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
+        <a href="/pets/<%= pet.id %>/vincular-tag"
+           class="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold text-white bg-primary-500 hover:bg-primary-600 transition-colors">
+          <i class="fa-solid fa-plus"></i>
+          Já tenho uma tag AIRPET
+        </a>
+        <a href="/parceiros"
+           class="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold text-primary-500 border-2 border-primary-100 bg-primary-50 hover:bg-primary-100 transition-colors">
+          <i class="fa-solid fa-store"></i>
+          Quero saber como ter
+        </a>
+      </div>
     </div>
 
     <!-- =====================================================
