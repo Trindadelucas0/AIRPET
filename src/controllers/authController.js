@@ -22,6 +22,7 @@ const PetshopAccount = require('../models/PetshopAccount');
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
 const logger = require('../utils/logger');
+const emailService = require('../services/emailService');
 
 const resetTokens = new Map();
 
@@ -143,6 +144,15 @@ const authController = {
       req.session.verificarPermissoes = true;
 
       logger.info('AUTH_CTRL', `Novo usuário registrado: ${resultado.usuario.email}`);
+
+      try {
+        await emailService.enviarBoasVindas({
+          to: resultado.usuario.email,
+          nome: resultado.usuario.nome,
+        });
+      } catch (emailErro) {
+        logger.error('AUTH_CTRL', 'Falha ao enviar e-mail de boas-vindas', emailErro);
+      }
 
       req.session.flash = { tipo: 'sucesso', mensagem: 'Conta criada com sucesso! Bem-vindo ao AIRPET.' };
       res.redirect('/explorar');
@@ -274,10 +284,21 @@ const authController = {
         const token = crypto.randomBytes(32).toString('hex');
         resetTokens.set(token, { userId: usuario.id, expira: Date.now() + 3600000 });
 
-        logger.info('AUTH_CTRL', `Token de recuperação gerado para ${email}: ${process.env.BASE_URL}/auth/redefinir-senha/${token}`);
+        const linkRedefinir = `${process.env.BASE_URL || 'http://localhost:3000'}/auth/redefinir-senha/${token}`;
+        logger.info('AUTH_CTRL', `Token de recuperação gerado para ${email}`);
+
+        try {
+          await emailService.enviarRedefinirSenha({
+            to: email,
+            nome: usuario.nome,
+            linkRedefinir,
+          });
+        } catch (emailErro) {
+          logger.error('AUTH_CTRL', 'Falha ao enviar e-mail de redefinição de senha', emailErro);
+        }
       }
 
-      req.session.flash = { tipo: 'sucesso', mensagem: 'Se o e-mail estiver cadastrado, você receberá um link de recuperação. Verifique os logs do servidor em ambiente de desenvolvimento.' };
+      req.session.flash = { tipo: 'sucesso', mensagem: 'Se o e-mail estiver cadastrado, você receberá um link de recuperação. Verifique sua caixa de entrada.' };
       res.redirect('/auth/esqueci-senha');
     } catch (erro) {
       logger.error('AUTH_CTRL', 'Erro ao processar recuperação de senha', erro);

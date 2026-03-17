@@ -1,0 +1,95 @@
+<% locals.titulo = 'Minhas Tags' %>
+<%- include('../partials/header') %>
+<%- include('../partials/flash') %>
+
+<main class="flex-1 container mx-auto px-4 py-6 max-w-3xl">
+  <div class="flex items-center justify-between mb-6">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-900">Minhas tags AIRPET</h1>
+      <p class="text-sm text-gray-500 mt-1">
+        Veja o status das suas tags, confirme quando a sua tag chegar e siga para a ativação com segurança.
+      </p>
+    </div>
+    <a href="/pets" class="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-primary-600">
+      <i class="fa-solid fa-paw"></i> Meus pets
+    </a>
+  </div>
+
+  <% if (!tags || tags.length === 0) { %>
+    <div class="card flex items-start gap-3">
+      <span class="mt-1 text-primary-500">
+        <i class="fa-solid fa-microchip"></i>
+      </span>
+      <div>
+        <h2 class="font-semibold text-gray-900 text-sm mb-1">Você ainda não tem tags cadastradas</h2>
+        <p class="text-xs text-gray-500 leading-relaxed">
+          Quando você receber uma tag AIRPET associada à sua conta, ela vai aparecer aqui para que você possa
+          acompanhar o status e ativar com tranquilidade.
+        </p>
+      </div>
+    </div>
+  <% } else { %>
+    <div class="space-y-4">
+      <% tags.forEach(function(tag) { %>
+        <div class="card flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div class="flex items-start gap-3">
+            <div class="w-10 h-10 rounded-xl bg-primary-500/10 flex items-center justify-center flex-shrink-0">
+              <i class="fa-solid fa-microchip text-primary-500"></i>
+            </div>
+            <div>
+              <p class="text-xs text-gray-400 uppercase tracking-wide mb-0.5">Código da tag</p>
+              <p class="font-mono text-sm font-semibold text-gray-900"><%= tag.tag_code %></p>
+              <p class="mt-1 text-xs text-gray-500">
+                <% if (tag.pet_nome) { %>
+                  Vinculada ao pet <span class="font-semibold"><%= tag.pet_nome %></span>
+                <% } else { %>
+                  Ainda não vinculada a nenhum pet.
+                <% } %>
+              </p>
+            </div>
+          </div>
+
+          <div class="flex flex-col items-stretch gap-2 md:items-end">
+            <% let statusLabel = 'Desconhecido'; let statusClass = 'bg-gray-100 text-gray-700'; %>
+            <% if (tag.status === 'manufactured' || tag.status === 'stock') { statusLabel = 'Em preparação'; statusClass = 'bg-gray-100 text-gray-700'; } %>
+            <% if (tag.status === 'reserved') { statusLabel = 'Reservada'; statusClass = 'bg-amber-50 text-amber-700'; } %>
+            <% if (tag.status === 'sent') { statusLabel = 'Enviada para você'; statusClass = 'bg-blue-50 text-blue-700'; } %>
+            <% if (tag.status === 'active') { statusLabel = 'Ativa'; statusClass = 'bg-emerald-50 text-emerald-700'; } %>
+            <% if (tag.status === 'blocked') { statusLabel = 'Bloqueada'; statusClass = 'bg-red-50 text-red-700'; } %>
+
+            <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-semibold <%= statusClass %>">
+              <span class="w-1.5 h-1.5 rounded-full bg-current"></span>
+              <%= statusLabel %>
+            </span>
+
+            <% if (tag.status === 'sent') { %>
+              <form action="/tags/<%= encodeURIComponent(tag.tag_code) %>/chegou" method="POST" class="mt-1">
+                <button type="submit"
+                        class="inline-flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-white bg-primary-500 hover:bg-primary-600 shadow-sm hover:shadow-md transition-all">
+                  <i class="fa-solid fa-envelope-open-text text-[11px]"></i>
+                  Minha tag chegou
+                </button>
+              </form>
+              <p class="text-[11px] text-gray-400 max-w-xs mt-1 text-right">
+                Quando você tocar em “Minha tag chegou”, nós reenviamos com carinho o e-mail com o código da sua tag
+                e abrimos a tela de ativação para você seguir o passo a passo.
+              </p>
+            <% } else if (tag.status === 'active' && tag.pet_id) { %>
+              <a href="/pets/<%= tag.pet_id %>"
+                 class="inline-flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-primary-600 bg-primary-50 hover:bg-primary-100 transition-colors mt-1">
+                <i class="fa-solid fa-paw"></i> Ver pet vinculado
+              </a>
+            <% } else if (tag.status === 'blocked') { %>
+              <p class="text-[11px] text-red-500 mt-1 text-right">
+                Se você acredita que isso é um engano, fale com o suporte para te ajudarmos a revisar esta tag.
+              </p>
+            <% } %>
+          </div>
+        </div>
+      <% }); %>
+    </div>
+  <% } %>
+</main>
+
+<%- include('../partials/footer') %>
+

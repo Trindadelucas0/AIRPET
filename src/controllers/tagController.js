@@ -35,10 +35,102 @@ const Pet = require('../models/Pet');
 const Usuario = require('../models/Usuario');
 const { gerarTagCode, gerarActivationCode } = require('../utils/helpers');
 const logger = require('../utils/logger');
+const emailService = require('../services/emailService');
 
 /* =========================================================================
  * ROTAS DO TUTOR — Ativação e vinculação de tags
  * ========================================================================= */
+
+/**
+ * minhasTags — Lista as tags do usuário logado
+ *
+ * Rota: GET /tags/minhas
+ * View: nfc/minhas-tags
+ */
+async function minhasTags(req, res) {
+  try {
+    const usuarioId = req.session.usuario.id;
+    const tags = await NfcTag.buscarPorUsuario(usuarioId);
+
+    return res.render('nfc/minhas-tags', {
+      titulo: 'Minhas Tags - AIRPET',
+      tags,
+    });
+  } catch (erro) {
+    logger.error('TagController', 'Erro ao listar tags do usuário', erro);
+    req.session.flash = { tipo: 'erro', mensagem: 'Erro ao carregar suas tags.' };
+    return res.redirect('/perfil');
+  }
+}
+
+/**
+ * minhaTagChegou — Fluxo \"minha tag chegou\" acionado pelo tutor
+ *
+ * Rota: POST /tags/:tag_code/chegou
+ *
+ * Reenvia com carinho o e-mail com o código da tag e o código
+ * de ativação, e leva o usuário para a tela de ativação.
+ */
+async function minhaTagChegou(req, res) {
+  try {
+    const { tag_code } = req.params;
+    const usuarioId = req.session.usuario.id;
+
+    const tag = await NfcTag.buscarPorTagCode(tag_code);
+
+    if (!tag) {
+      req.session.flash = { tipo: 'erro', mensagem: 'Tag não encontrada.' };
+      return res.redirect('/tags/minhas');
+    }
+
+    if (tag.user_id !== usuarioId) {
+      req.session.flash = { tipo: 'erro', mensagem: 'Esta tag não pertence à sua conta.' };
+      return res.redirect('/tags/minhas');
+    }
+
+    if (tag.status !== 'sent' && tag.status !== 'active') {
+      req.session.flash = {
+        tipo: 'erro',
+        mensagem: 'Esta tag ainda não foi enviada ou já está em um estado diferente. Confira o status na lista.',
+      };
+      return res.redirect('/tags/minhas');
+    }
+
+    const usuario = await Usuario.buscarPorId(usuarioId);
+    if (usuario && usuario.email) {
+      try {
+        await emailService.enviarTagEnviada({
+          to: usuario.email,
+          nome: usuario.nome,
+          tagCode: tag.tag_code,
+          activationCode: tag.activation_code,
+        });
+        req.session.flash = {
+          tipo: 'sucesso',
+          mensagem:
+            'Reenviamos um e-mail com o código da sua tag e as instruções de ativação. Dá uma olhada na sua caixa de entrada e no spam.',
+        };
+      } catch (emailErro) {
+        logger.error('TagController', 'Falha ao reenviar e-mail de tag enviada no fluxo \"minha tag chegou\"', emailErro);
+        req.session.flash = {
+          tipo: 'erro',
+          mensagem: 'Não conseguimos reenviar o e-mail agora. Tente novamente em alguns instantes.',
+        };
+      }
+    } else {
+      req.session.flash = {
+        tipo: 'erro',
+        mensagem: 'Não encontramos um e-mail válido na sua conta para reenviar as informações da tag.',
+      };
+    }
+
+    return res.redirect(`/tags/${encodeURIComponent(tag_code)}/ativar`);
+  } catch (erro) {
+    logger.error('TagController', 'Erro no fluxo \"minha tag chegou\"', erro);
+    req.session.flash = { tipo: 'erro', mensagem: 'Erro ao processar sua tag. Tente novamente.' };
+    return res.redirect('/tags/minhas');
+  }
+}
 
 /**
  * mostrarAtivacao — Renderiza o formulário de ativação da tag
@@ -428,7 +520,7 @@ async function mostrarLote(req, res) {
 async function reservar(req, res) {
   try {
     const { id } = req.params;
-    const { user_id } = req.body;
+    const { email } = req.body;
 
     /* Verifica se a tag existe */
     const tag = await NfcTag.buscarPorId(id);
@@ -439,9 +531,22 @@ async function reservar(req, res) {
     }
 
     /* Reserva a tag para o usuário informado */
-    await NfcTag.reservar(id, user_id);
+    const tagAtualizada = await NfcTag.reservar(id, null);
 
-    logger.info('TagController', `Tag ${tag.tag_code} reservada para usuário ${user_id}`);
+    logger.info('TagController', `Tag ${tag.tag_code} reservada para contato ${email}`);
+
+    if (email) {
+      try {
+        await emailService.enviarTagReservada({
+          to: String(email).trim().toLowerCase(),
+          nome: tagAtualizada.usuario_nome || 'cliente AIRPET',
+          tagCode: tagAtualizada.tag_code,
+          activationCode: tagAtualizada.activation_code,
+        });
+      } catch (emailErro) {
+        logger.error('TagController', 'Falha ao enviar e-mail de tag reservada', emailErro);
+      }
+    }
 
     req.session.flash = { tipo: 'sucesso', mensagem: `Tag ${tag.tag_code} reservada com sucesso.` };
     return res.redirect('/tags/admin/lista');
@@ -477,9 +582,25 @@ async function enviar(req, res) {
     }
 
     /* Marca como enviada — muda status e registra sent_at */
-    await NfcTag.marcarEnviada(id);
+    const tagAtualizada = await NfcTag.marcarEnviada(id);
 
     logger.info('TagController', `Tag ${tag.tag_code} marcada como enviada`);
+
+    if (tagAtualizada.user_id) {
+      try {
+        const usuario = await Usuario.buscarPorId(tagAtualizada.user_id);
+        if (usuario && usuario.email) {
+          await emailService.enviarTagEnviada({
+            to: usuario.email,
+            nome: usuario.nome,
+            tagCode: tagAtualizada.tag_code,
+            activationCode: tagAtualizada.activation_code,
+          });
+        }
+      } catch (emailErro) {
+        logger.error('TagController', 'Falha ao enviar e-mail de tag enviada', emailErro);
+      }
+    }
 
     req.session.flash = { tipo: 'sucesso', mensagem: `Tag ${tag.tag_code} marcada como enviada.` };
     return res.redirect('/tags/admin/lista');
@@ -534,6 +655,8 @@ async function bloquear(req, res) {
 /* Exporta todos os métodos do controller */
 module.exports = {
   /* Rotas do tutor */
+  minhasTags,
+  minhaTagChegou,
   mostrarAtivacao,
   ativar,
   escolherPet,

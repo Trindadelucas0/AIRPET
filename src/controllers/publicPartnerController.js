@@ -1,6 +1,7 @@
 const petshopOnboardingService = require('../services/petshopOnboardingService');
 const PetshopPartnerRequest = require('../models/PetshopPartnerRequest');
 const logger = require('../utils/logger');
+const emailService = require('../services/emailService');
 
 const publicPartnerController = {
   mostrarFormulario(req, res) {
@@ -12,7 +13,22 @@ const publicPartnerController = {
 
   async enviarSolicitacao(req, res) {
     try {
-      await petshopOnboardingService.criarSolicitacao(req.body || {}, req.files || {});
+      const body = req.body || {};
+      const solicitacao = await petshopOnboardingService.criarSolicitacao(body, req.files || {});
+
+      const emailContato = String(body.email || body.email_login || '').trim().toLowerCase();
+      if (emailContato) {
+        try {
+          await emailService.enviarParceiroRecebido({
+            to: emailContato,
+            empresaNome: body.empresa_nome,
+            responsavelNome: body.responsavel_nome,
+          });
+        } catch (emailErro) {
+          logger.error('PublicPartnerController', 'Falha ao enviar e-mail de confirmação de parceria', emailErro);
+        }
+      }
+
       return res.render('parceiros/sucesso', { titulo: 'Solicitação enviada' });
     } catch (erro) {
       logger.error('PublicPartnerController', 'Erro ao enviar solicitação de parceria', erro);

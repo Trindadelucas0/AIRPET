@@ -13,7 +13,7 @@
       <p class="text-gray-500 mt-1 text-sm">Crie uma nova senha para acessar sua conta.</p>
     </div>
 
-    <form action="/auth/redefinir-senha" method="POST" class="card space-y-5">
+    <form action="/auth/redefinir-senha/<%= typeof token !== 'undefined' ? token : '' %>" method="POST" class="card space-y-5">
 
       <input type="hidden" name="token" value="<%= typeof token !== 'undefined' ? token : '' %>">
 
@@ -33,7 +33,7 @@
       <div>
         <label for="confirmarSenha" class="block text-sm font-medium text-gray-700 mb-1">Confirmar nova senha</label>
         <div class="relative">
-          <input type="password" id="confirmarSenha" name="confirmarSenha" required minlength="6"
+          <input type="password" id="confirmarSenha" name="confirmar_senha" required minlength="6"
                  placeholder="Repita a nova senha"
                  class="input-field pr-11">
           <button type="button" onclick="toggleSenha(this, 'confirmarSenha')"

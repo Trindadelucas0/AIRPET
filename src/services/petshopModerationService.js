@@ -4,6 +4,7 @@ const PetshopAccount = require('../models/PetshopAccount');
 const PetshopPartnerRequest = require('../models/PetshopPartnerRequest');
 const PetshopProfile = require('../models/PetshopProfile');
 const Usuario = require('../models/Usuario');
+const emailService = require('../services/emailService');
 
 function toSlug(nome) {
   return String(nome || '')
@@ -160,6 +161,19 @@ const petshopModerationService = {
       [requestId, petshopId]
     );
     await PetshopPartnerRequest.atualizarStatus(requestId, 'aprovado', 'Solicitação aprovada.', null, adminEmail);
+
+    const contatoEmail = request.email || (account && account.email);
+    if (contatoEmail) {
+      try {
+        await emailService.enviarParceiroAprovado({
+          to: contatoEmail,
+          empresaNome: request.empresa_nome,
+        });
+      } catch (emailErro) {
+        // Não falha a aprovação por erro de e-mail
+      }
+    }
+
     return { petshop: petshop.rows[0] };
   },
 
@@ -174,13 +188,27 @@ const petshopModerationService = {
       );
       await PetshopAccount.atualizarStatusPorPetshopId(request.petshop_id, 'rejeitado');
     }
-    return PetshopPartnerRequest.atualizarStatus(
+    const atualizado = await PetshopPartnerRequest.atualizarStatus(
       requestId,
       'rejeitado',
       'Solicitação rejeitada pela administração.',
       motivo || 'Não informado.',
       adminEmail
     );
+
+    if (request && request.email) {
+      try {
+        await emailService.enviarParceiroRejeitado({
+          to: request.email,
+          empresaNome: request.empresa_nome,
+          motivo: motivo || 'Não informado.',
+        });
+      } catch (emailErro) {
+        // Não falha o fluxo por erro de e-mail
+      }
+    }
+
+    return atualizado;
   },
 
   async colocarEmAnalise(requestId, observacao, adminEmail) {

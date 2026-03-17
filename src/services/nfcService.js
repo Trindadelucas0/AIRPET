@@ -232,12 +232,13 @@ const nfcService = {
         if (tag.user_id) {
           const cidadeTexto = dadosScan.cidade ? ` em ${dadosScan.cidade}` : '';
           const nomeDoAnimal = tag.pet_nome || 'seu pet';
+          const linkPet = `/pet/${tag.pet_id}`;
 
           await Notificacao.criar({
             usuario_id: tag.user_id,
             tipo: 'scan',
             mensagem: `A tag de ${nomeDoAnimal} foi escaneada${cidadeTexto}.`,
-            link: `/pet/${tag.pet_id}`,
+            link: linkPet,
           });
 
           logger.info('NfcService', `Notificação de scan enviada ao dono: ${tag.user_id}`);

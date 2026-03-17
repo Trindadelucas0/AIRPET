@@ -16,6 +16,8 @@ router.post('/admin/:id/enviar', estaAutenticado, apenasAdmin, tagController.env
 router.post('/admin/:id/bloquear', estaAutenticado, apenasAdmin, tagController.bloquear);
 
 // --- Rotas de ativação e vinculação (usuário autenticado) ---
+router.get('/minhas', estaAutenticado, tagController.minhasTags);
+router.post('/:tag_code/chegou', estaAutenticado, tagController.minhaTagChegou);
 router.get('/:tag_code/ativar', estaAutenticado, tagController.mostrarAtivacao);
 router.post('/:tag_code/ativar', estaAutenticado, limiterAtivacao, tagController.ativar);
 router.get('/:tag_code/escolher-pet', estaAutenticado, tagController.escolherPet);

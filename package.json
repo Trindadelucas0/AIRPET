@@ -10,7 +10,8 @@
     "predev": "npm run css:build",
     "start:prod": "npm run css:build && node server.js",
     "css:build": "node node_modules/tailwindcss/lib/cli.js -i ./src/public/css/input.css -o ./src/public/css/output.css --minify",
-    "css:watch": "node node_modules/tailwindcss/lib/cli.js -i ./src/public/css/input.css -o ./src/public/css/output.css --watch"
+    "css:watch": "node node_modules/tailwindcss/lib/cli.js -i ./src/public/css/input.css -o ./src/public/css/output.css --watch",
+    "send:test-emails": "node scripts/debug/send-test-emails-once.js --to=lucasrodrigues4@live.com"
   },
   "keywords": [
     "pet",
@@ -36,6 +37,7 @@
     "morgan": "^1.10.1",
     "multer": "^2.1.1",
     "pg": "^8.20.0",
+    "resend": "^4.8.0",
     "socket.io": "^4.8.3",
     "web-push": "^3.6.7"
   },
