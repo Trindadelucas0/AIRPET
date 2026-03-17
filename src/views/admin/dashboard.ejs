@@ -1,7 +1,7 @@
 <% locals.titulo = 'Admin Dashboard' %>
 <%- include('../partials/admin-layout') %>
 
-<main class="flex-1">
+<main class="flex-1 app-shell">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
     <div class="mb-8">
@@ -12,7 +12,7 @@
     <!-- Stat Cards -->
     <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-10">
 
-      <a href="<%= adminPath %>/usuarios" class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 hover:shadow-md hover:border-blue-200 transition-all block">
+      <a href="<%= adminPath %>/usuarios" class="card hover:shadow-md hover:border-blue-200 transition-all block">
         <div class="flex items-center justify-center w-10 h-10 rounded-lg bg-blue-50 text-blue-500 mb-3">
           <i class="fa-solid fa-users text-lg"></i>
         </div>
@@ -22,7 +22,7 @@
         <p class="text-xs font-medium text-gray-500 mt-1">Usuários</p>
       </a>
 
-      <a href="<%= adminPath %>/pets" class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 hover:shadow-md hover:border-orange-200 transition-all block">
+      <a href="<%= adminPath %>/pets" class="card hover:shadow-md hover:border-orange-200 transition-all block">
         <div class="flex items-center justify-center w-10 h-10 rounded-lg bg-orange-50 text-orange-500 mb-3">
           <i class="fa-solid fa-paw text-lg"></i>
         </div>
@@ -30,7 +30,7 @@
         <p class="text-xs font-medium text-gray-500 mt-1">Pets</p>
       </a>
 
-      <a href="<%= adminPath %>/pets-perdidos" class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 hover:shadow-md hover:border-red-200 transition-all block">
+      <a href="<%= adminPath %>/pets-perdidos" class="card hover:shadow-md hover:border-red-200 transition-all block">
         <div class="flex items-center justify-center w-10 h-10 rounded-lg bg-red-50 text-red-500 mb-3">
           <i class="fa-solid fa-triangle-exclamation text-lg"></i>
         </div>
@@ -38,7 +38,7 @@
         <p class="text-xs font-medium text-gray-500 mt-1">Pets Perdidos</p>
       </a>
 
-      <a href="<%= adminPath %>/petshops" class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 hover:shadow-md hover:border-emerald-200 transition-all block">
+      <a href="<%= adminPath %>/petshops" class="card hover:shadow-md hover:border-emerald-200 transition-all block">
         <div class="flex items-center justify-center w-10 h-10 rounded-lg bg-emerald-50 text-emerald-500 mb-3">
           <i class="fa-solid fa-store text-lg"></i>
         </div>
@@ -46,7 +46,7 @@
         <p class="text-xs font-medium text-gray-500 mt-1">Petshops</p>
       </a>
 
-      <a href="<%= adminPath %>/moderacao" class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 hover:shadow-md hover:border-yellow-200 transition-all block">
+      <a href="<%= adminPath %>/moderacao" class="card hover:shadow-md hover:border-yellow-200 transition-all block">
         <div class="flex items-center justify-center w-10 h-10 rounded-lg bg-yellow-50 text-yellow-500 mb-3">
           <i class="fa-solid fa-envelope text-lg"></i>
         </div>
@@ -54,7 +54,7 @@
         <p class="text-xs font-medium text-gray-500 mt-1">Msg Pendentes</p>
       </a>
 
-      <a href="<%= adminPath %>/pets-perdidos" class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 hover:shadow-md hover:border-purple-200 transition-all block">
+      <a href="<%= adminPath %>/pets-perdidos" class="card hover:shadow-md hover:border-purple-200 transition-all block">
         <div class="flex items-center justify-center w-10 h-10 rounded-lg bg-purple-50 text-purple-500 mb-3">
           <i class="fa-solid fa-bell text-lg"></i>
         </div>
@@ -66,7 +66,7 @@
 
     <!-- Usuários: por região e últimos cadastros -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-10">
-      <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+      <div class="card">
         <h2 class="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
           <i class="fa-solid fa-map-marker-alt text-blue-500"></i>
           Usuários por região
@@ -84,7 +84,7 @@
           <p class="text-sm text-gray-400">Nenhum usuário com região informada.</p>
         <% } %>
       </div>
-      <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+      <div class="card">
         <div class="flex items-center justify-between mb-4">
           <h2 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
             <i class="fa-solid fa-user-clock text-blue-500"></i>
@@ -120,7 +120,7 @@
     </div>
 
     <!-- Quick Links -->
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+    <div class="card">
       <h2 class="text-lg font-semibold text-gray-900 mb-4">Acesso Rápido</h2>
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
 

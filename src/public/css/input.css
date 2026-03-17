@@ -2,6 +2,88 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  :root {
+    --card: #ffffff;
+    --ring: #e05d38;
+    --input: #f4f5f7;
+    --muted: #f9fafb;
+    --accent: #d6e4f0;
+    --border: #dcdfe2;
+    --radius: 0.75rem;
+    --chart-1: #86a7c8;
+    --chart-2: #eea591;
+    --chart-3: #5a7ca6;
+    --chart-4: #466494;
+    --chart-5: #334c82;
+    --popover: #ffffff;
+    --primary: #e05d38;
+    --sidebar: #dddfe2;
+    --font-mono: "JetBrains Mono", monospace;
+    --font-sans: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --secondary: #f3f4f6;
+    --background: #e8ebed;
+    --font-serif: "Source Serif 4", ui-serif, Georgia, "Times New Roman", serif;
+    --foreground: #333333;
+    --destructive: #ef4444;
+    --shadow-blur: 3px;
+    --shadow-color: 0 0 0;
+    --sidebar-ring: #e05d38;
+    --shadow-spread: 0px;
+    --shadow-opacity: 0.1;
+    --sidebar-accent: #d6e4f0;
+    --sidebar-border: #e5e7eb;
+    --card-foreground: #333333;
+    --shadow-offset-x: 0px;
+    --shadow-offset-y: 1px;
+    --sidebar-primary: #e05d38;
+    --muted-foreground: #6b7280;
+    --accent-foreground: #1e3a8a;
+    --popover-foreground: #333333;
+    --primary-foreground: #ffffff;
+    --sidebar-foreground: #333333;
+    --secondary-foreground: #4b5563;
+    --destructive-foreground: #ffffff;
+    --sidebar-accent-foreground: #1e3a8a;
+    --sidebar-primary-foreground: #ffffff;
+  }
+
+  .dark {
+    --card: #2a3040;
+    --ring: #e05d38;
+    --input: #3d4354;
+    --muted: #2a303e;
+    --accent: #2a3656;
+    --border: #3d4354;
+    --chart-1: #86a7c8;
+    --chart-2: #e6a08f;
+    --chart-3: #5a7ca6;
+    --chart-4: #466494;
+    --chart-5: #334c82;
+    --popover: #262b38;
+    --primary: #e05d38;
+    --sidebar: #2a303f;
+    --secondary: #2a303e;
+    --background: #1c2433;
+    --foreground: #e5e5e5;
+    --destructive: #ef4444;
+    --sidebar-ring: #e05d38;
+    --sidebar-accent: #2a3656;
+    --sidebar-border: #3d4354;
+    --card-foreground: #e5e5e5;
+    --sidebar-primary: #e05d38;
+    --muted-foreground: #a3a3a3;
+    --accent-foreground: #bfdbfe;
+    --popover-foreground: #e5e5e5;
+    --primary-foreground: #ffffff;
+    --sidebar-foreground: #e5e5e5;
+    --secondary-foreground: #e5e5e5;
+    --destructive-foreground: #ffffff;
+    --sidebar-accent-foreground: #bfdbfe;
+    --sidebar-primary-foreground: #ffffff;
+  }
+}
+
 @layer components {
   .btn-primary {
     @apply bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white font-semibold py-3 px-6 rounded-2xl transition-all duration-300 text-center block w-full shadow-lg shadow-primary-500/20 hover:shadow-xl hover:shadow-primary-500/30 hover:-translate-y-0.5 active:translate-y-0;
@@ -28,7 +110,12 @@
     @apply w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 focus:bg-white outline-none transition-all duration-300 placeholder:text-gray-400;
   }
   .card {
-    @apply bg-white rounded-3xl shadow-sm shadow-black/5 border border-gray-100/80 p-6 transition-all duration-300;
+    @apply rounded-3xl p-6 transition-all duration-300;
+    background-color: var(--card);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-offset-x) var(--shadow-offset-y) var(--shadow-blur)
+      rgba(0, 0, 0, var(--shadow-opacity));
+    color: var(--card-foreground);
   }
   .card-hover {
     @apply hover:shadow-xl hover:shadow-black/5 hover:-translate-y-1 hover:border-gray-200;
@@ -38,5 +125,32 @@
   }
   .gradient-text {
     @apply bg-gradient-to-r from-primary-500 to-primary-600 bg-clip-text text-transparent;
+  }
+
+  .app-shell {
+    @apply min-h-screen bg-[color:var(--background)] text-[color:var(--foreground)];
+    font-family: var(--font-sans);
+  }
+
+  .card-elevated {
+    @apply rounded-2xl border;
+    background-color: var(--card);
+    border-color: var(--border);
+    box-shadow: var(--shadow-offset-x) var(--shadow-offset-y) var(--shadow-blur)
+      rgba(0, 0, 0, var(--shadow-opacity));
+    color: var(--card-foreground);
+  }
+
+  .input {
+    @apply w-full px-4 py-3 rounded-xl outline-none transition-all duration-200 text-sm;
+    background-color: var(--input);
+    border: 1px solid var(--border);
+    color: var(--foreground);
+  }
+
+  .input:focus {
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--ring) 24%, transparent);
+    border-color: var(--ring);
+    background-color: #ffffff;
   }
 }

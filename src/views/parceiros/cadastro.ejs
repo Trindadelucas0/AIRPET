@@ -4,6 +4,7 @@
 <%- include('../partials/flash') %>
 
 <% const f = typeof formData !== 'undefined' && formData ? formData : {}; %>
+<% const fieldErrorsSafe = typeof fieldErrors !== 'undefined' && fieldErrors ? fieldErrors : {}; %>
 <main class="flex-1 container mx-auto max-w-5xl px-4 py-8">
   <div class="card space-y-6">
     <div>
@@ -30,7 +31,19 @@
           <input type="email" name="email" required placeholder="E-mail comercial" class="input" value="<%= f.email || '' %>" />
         </div>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-          <input type="email" name="email_login" required placeholder="E-mail de acesso ao painel" class="input md:col-span-3" value="<%= f.email_login || '' %>" />
+          <div class="md:col-span-3">
+            <input
+              type="email"
+              name="email_login"
+              required
+              placeholder="E-mail de acesso ao painel"
+              class="input <%= fieldErrorsSafe.email_login ? 'border-red-300 focus:border-red-500 focus:ring-red-500/20' : '' %>"
+              value="<%= f.email_login || '' %>"
+            />
+            <% if (fieldErrorsSafe.email_login) { %>
+              <p class="mt-1 text-xs text-red-600"><%= fieldErrorsSafe.email_login %></p>
+            <% } %>
+          </div>
           <input type="password" name="senha" required minlength="6" placeholder="Crie uma senha" class="input" />
           <input type="password" name="confirmar_senha" required minlength="6" placeholder="Confirme a senha" class="input md:col-span-2" />
         </div>

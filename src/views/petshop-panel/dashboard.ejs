@@ -2,7 +2,7 @@
 <%- include('../partials/header') %>
 <%- include('../partials/flash') %>
 
-<main class="flex-1 container mx-auto max-w-6xl px-4 py-8 space-y-6">
+<main class="flex-1 container mx-auto max-w-6xl px-4 py-8 space-y-6 app-shell">
   <% const statusAtual = (solicitacao && solicitacao.status) || (accountStatus === 'ativo' ? 'aprovado' : 'pendente'); %>
   <% const statusClasses = statusAtual === 'aprovado'
     ? 'bg-emerald-100 text-emerald-700'
@@ -50,14 +50,16 @@
   </section>
 
   <section class="grid md:grid-cols-4 gap-4">
-    <div class="card"><p class="text-xs text-gray-400">Serviços</p><p class="text-2xl font-bold"><%= (services || []).length %></p></div>
-    <div class="card"><p class="text-xs text-gray-400">Produtos</p><p class="text-2xl font-bold"><%= (products || []).length %>/15</p></div>
-    <div class="card"><p class="text-xs text-gray-400">Posts</p><p class="text-2xl font-bold"><%= (posts || []).length %></p></div>
-    <div class="card"><p class="text-xs text-gray-400">Agendamentos</p><p class="text-2xl font-bold"><%= (appointments || []).length %></p></div>
+    <div class="card-elevated"><p class="text-xs text-[color:var(--muted-foreground)]">Serviços</p><p class="text-2xl font-bold"><%= (services || []).length %></p></div>
+    <div class="card-elevated"><p class="text-xs text-[color:var(--muted-foreground)]">Produtos</p><p class="text-2xl font-bold"><%= (products || []).length %>/15</p></div>
+    <div class="card-elevated"><p class="text-xs text-[color:var(--muted-foreground)]">Posts</p><p class="text-2xl font-bold"><%= (posts || []).length %></p></div>
+    <div class="card-elevated"><p class="text-xs text-[color:var(--muted-foreground)]">Agendamentos</p><p class="text-2xl font-bold"><%= (appointments || []).length %></p></div>
   </section>
 
-  <section class="grid lg:grid-cols-2 gap-6">
-    <div class="card">
+  <section class="grid lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1.2fr)] gap-6">
+    <%- include('../partials/petshop-calendar-card') %>
+
+    <div class="card-elevated">
       <h2 class="font-bold mb-3">Atualizar perfil público</h2>
       <form action="/petshop-panel/perfil" method="POST" class="space-y-3">
         <input class="input w-full" name="slogan" placeholder="Slogan" value="<%= profile?.slogan || '' %>">
@@ -69,7 +71,7 @@
       </form>
     </div>
 
-    <div class="card">
+    <div class="card-elevated">
       <h2 class="font-bold mb-3">Novo serviço</h2>
       <form action="/petshop-panel/servicos" method="POST" class="space-y-3">
         <input class="input w-full" name="nome" placeholder="Nome do serviço" required>
@@ -82,7 +84,7 @@
   </section>
 
   <section class="grid lg:grid-cols-2 gap-6">
-    <div class="card">
+    <div class="card-elevated">
       <h2 class="font-bold mb-3">Nova postagem/produto</h2>
       <form action="/petshop-panel/posts" method="POST" enctype="multipart/form-data" class="space-y-3">
         <select class="input w-full" name="post_type">
@@ -100,7 +102,7 @@
       </form>
     </div>
 
-    <div class="card">
+    <div class="card-elevated">
       <h2 class="font-bold mb-3">Agendamento (teste interno)</h2>
       <form action="/petshop-panel/agenda" method="POST" class="space-y-3">
         <input class="input w-full" name="usuario_id" placeholder="ID do usuário" required>
@@ -113,7 +115,7 @@
     </div>
   </section>
 
-  <section class="card">
+  <section class="card-elevated">
     <h2 class="font-bold mb-3">Agendamentos recebidos</h2>
     <div class="space-y-3">
       <% (appointments || []).forEach(function(a) { %>
@@ -135,5 +137,10 @@
     </div>
   </section>
 </main>
+
+<script>
+  window.__agendaDiasResumo = <%- JSON.stringify(typeof agendaDiasResumo !== 'undefined' ? agendaDiasResumo : {}) %>;
+</script>
+<script src="/js/petshop-calendar.js" defer></script>
 
 <%- include('../partials/footer') %>
