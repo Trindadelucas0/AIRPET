@@ -107,6 +107,7 @@ router.post('/petshops/:id/em-analise', apenasAdmin, adminController.colocarSoli
 router.post('/petshops/:id/suporte', apenasAdmin, adminController.contatarSuportePetshop);
 router.post('/petshops/promocoes/:id/aprovar', apenasAdmin, adminController.aprovarPromocaoPetshop);
 router.post('/petshops/promocoes/:id/rejeitar', apenasAdmin, adminController.rejeitarPromocaoPetshop);
+router.post('/petshops/:id/excluir', apenasAdmin, adminController.excluirPetshop);
 
 router.get('/pets-perdidos', apenasAdmin, adminController.listarPerdidos);
 router.post('/pets-perdidos/:id/aprovar', apenasAdmin, adminController.aprovarPerdido);

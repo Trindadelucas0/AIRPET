@@ -287,6 +287,33 @@ async function listarPetshops(req, res) {
   }
 }
 
+/**
+ * excluirPetshop — Remove permanentemente um petshop do sistema.
+ * Rota: POST /admin/petshops/:id/excluir
+ */
+async function excluirPetshop(req, res) {
+  const adminPath = getAdminPath();
+  const { id } = req.params;
+
+  try {
+    const petshop = await Petshop.buscarPorId(id);
+
+    if (!petshop) {
+      req.session.flash = { tipo: 'erro', mensagem: 'Petshop não encontrado.' };
+      return res.redirect(adminPath + '/petshops');
+    }
+
+    await Petshop.deletar(id);
+
+    req.session.flash = { tipo: 'sucesso', mensagem: 'Petshop excluído permanentemente.' };
+    return res.redirect(adminPath + '/petshops');
+  } catch (erro) {
+    logger.error('AdminController', 'Erro ao excluir petshop', erro);
+    req.session.flash = { tipo: 'erro', mensagem: 'Não foi possível excluir o petshop. Tente novamente.' };
+    return res.redirect(adminPath + '/petshops');
+  }
+}
+
 async function listarSolicitacoesPetshop(req, res) {
   try {
     const status = req.query.status || 'pendente';
@@ -1246,6 +1273,7 @@ module.exports = {
   mostrarAparencia,
   salvarAparencia,
   excluirUsuario,
+  excluirPetshop,
   mostrarGerenciarMapa,
   mostrarMapa,
   atualizarRoleUsuario,

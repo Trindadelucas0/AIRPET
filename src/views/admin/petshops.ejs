@@ -24,6 +24,7 @@
               <th class="px-4 py-3 text-left font-semibold text-gray-600">Telefone</th>
               <th class="px-4 py-3 text-left font-semibold text-gray-600">Ponto de Apoio</th>
               <th class="px-4 py-3 text-left font-semibold text-gray-600">Ativo</th>
+              <th class="px-4 py-3 text-left font-semibold text-gray-600">Ações</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-100">
@@ -54,6 +55,13 @@
                   <% } else { %>
                     <span class="inline-flex w-2.5 h-2.5 rounded-full bg-gray-300"></span>
                   <% } %>
+                </td>
+                <td class="px-4 py-3">
+                  <form action="<%= adminPath %>/petshops/<%= ps.id %>/excluir" method="POST" class="inline" onsubmit="return confirm('Tem certeza? Isso remove o petshop de forma permanente e ele deixará de aparecer no mapa e nas listas.');">
+                    <button type="submit" class="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium bg-red-50 text-red-700 hover:bg-red-100 transition-colors" title="Excluir petshop">
+                      <i class="fa-solid fa-trash-can"></i> Excluir
+                    </button>
+                  </form>
                 </td>
               </tr>
             <% }); %>
