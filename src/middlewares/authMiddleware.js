@@ -13,6 +13,8 @@
  */
 
 const jwt = require('jsonwebtoken');
+const Usuario = require('../models/Usuario');
+const logger = require('../utils/logger');
 
 /**
  * Tenta extrair e verificar o token JWT do cookie "token".
@@ -55,32 +57,64 @@ function verificarTokenJWT(req) {
  * @param {object} res - Resposta do Express
  * @param {function} next - Proximo middleware na cadeia
  */
-function estaAutenticado(req, res, next) {
-  // Primeiro verifica a sessao — metodo principal e mais rapido
-  if (req.session && req.session.usuario) {
-    // Usuario esta logado via sessao, pode prosseguir normalmente
-    return next();
+async function estaAutenticado(req, res, next) {
+  try {
+    // Primeiro verifica a sessao — metodo principal e mais rapido
+    if (req.session && req.session.usuario) {
+      const usuario = await Usuario.buscarPorId(req.session.usuario.id);
+      if (!usuario) {
+        logger.warn('AUTH_MW', `Sessao para usuario inexistente, destruindo sessao: ${req.session.usuario.id}`);
+        const idAntigo = req.session.usuario.id;
+        req.session.destroy(() => {});
+        res.clearCookie('airpet_token');
+        res.clearCookie('connect.sid');
+        if (req.session) {
+          req.session.flash = {
+            tipo: 'erro',
+            mensagem: 'Sua conta nao existe mais no AIRPET. Voce pode criar uma nova conta agora.',
+          };
+        }
+        return res.redirect('/auth/registro');
+      }
+      return next();
+    }
+
+    // Sessao nao encontrada — tenta o fallback via JWT
+    const dadosJWT = verificarTokenJWT(req);
+
+    if (dadosJWT) {
+      const usuario = await Usuario.buscarPorId(dadosJWT.id);
+      if (!usuario) {
+        logger.warn('AUTH_MW', `Token JWT para usuario inexistente, limpando cookies: ${dadosJWT.id}`);
+        res.clearCookie('airpet_token');
+        res.clearCookie('connect.sid');
+        if (req.session) {
+          req.session.flash = {
+            tipo: 'erro',
+            mensagem: 'Sua conta nao existe mais no AIRPET. Voce pode criar uma nova conta agora.',
+          };
+        }
+        return res.redirect('/auth/registro');
+      }
+
+      req.session.usuario = {
+        id: usuario.id,
+        nome: usuario.nome,
+        email: usuario.email,
+        role: usuario.role,
+      };
+      return next();
+    }
+
+    if (req.session) req.session.flash = { tipo: 'erro', mensagem: 'Voce precisa estar logado para acessar esta pagina.' };
+    const returnUrl = (req.originalUrl || req.url || '').trim();
+    const q = returnUrl && returnUrl.startsWith('/') ? '?returnUrl=' + encodeURIComponent(returnUrl) : '';
+    return res.redirect('/auth/login' + q);
+  } catch (erro) {
+    logger.error('AUTH_MW', 'Erro inesperado no middleware estaAutenticado', erro);
+    if (req.session) req.session.flash = { tipo: 'erro', mensagem: 'Erro de autenticacao. Faca login novamente.' };
+    return res.redirect('/auth/login');
   }
-
-  // Sessao nao encontrada — tenta o fallback via JWT
-  const dadosJWT = verificarTokenJWT(req);
-
-  if (dadosJWT) {
-    // Token JWT e valido — restaura os dados do usuario na sessao
-    // para que as proximas requisicoes nao precisem verificar o JWT novamente
-    req.session.usuario = {
-      id: dadosJWT.id,
-      nome: dadosJWT.nome,
-      email: dadosJWT.email,
-      role: dadosJWT.role,
-    };
-    return next();
-  }
-
-  if (req.session) req.session.flash = { tipo: 'erro', mensagem: 'Voce precisa estar logado para acessar esta pagina.' };
-  const returnUrl = (req.originalUrl || req.url || '').trim();
-  const q = returnUrl && returnUrl.startsWith('/') ? '?returnUrl=' + encodeURIComponent(returnUrl) : '';
-  return res.redirect('/auth/login' + q);
 }
 
 /**
@@ -95,31 +129,62 @@ function estaAutenticado(req, res, next) {
  * @param {object} res - Resposta do Express
  * @param {function} next - Proximo middleware na cadeia
  */
-function estaAutenticadoAPI(req, res, next) {
-  // Verifica sessao primeiro — mesmo fluxo do middleware web
-  if (req.session && req.session.usuario) {
-    return next();
+async function estaAutenticadoAPI(req, res, next) {
+  try {
+    // Verifica sessao primeiro — mesmo fluxo do middleware web
+    if (req.session && req.session.usuario) {
+      const usuario = await Usuario.buscarPorId(req.session.usuario.id);
+      if (!usuario) {
+        logger.warn('AUTH_MW', `API: sessao para usuario inexistente, destruindo sessao: ${req.session.usuario.id}`);
+        req.session.destroy(() => {});
+        res.clearCookie('airpet_token');
+        res.clearCookie('connect.sid');
+        return res.status(401).json({
+          sucesso: false,
+          motivo: 'usuario_inexistente',
+          mensagem: 'Sua conta nao existe mais. Faca login ou crie uma nova conta.',
+        });
+      }
+      return next();
+    }
+
+    // Tenta fallback via JWT
+    const dadosJWT = verificarTokenJWT(req);
+
+    if (dadosJWT) {
+      const usuario = await Usuario.buscarPorId(dadosJWT.id);
+      if (!usuario) {
+        logger.warn('AUTH_MW', `API: token JWT para usuario inexistente, limpando cookies: ${dadosJWT.id}`);
+        res.clearCookie('airpet_token');
+        res.clearCookie('connect.sid');
+        return res.status(401).json({
+          sucesso: false,
+          motivo: 'usuario_inexistente',
+          mensagem: 'Sua conta nao existe mais. Faca login ou crie uma nova conta.',
+        });
+      }
+
+      req.session.usuario = {
+        id: usuario.id,
+        nome: usuario.nome,
+        email: usuario.email,
+        role: usuario.role,
+      };
+      return next();
+    }
+
+    // Sem autenticacao — retorna erro JSON com status 401
+    return res.status(401).json({
+      sucesso: false,
+      mensagem: 'Autenticacao necessaria. Faca login para continuar.',
+    });
+  } catch (erro) {
+    logger.error('AUTH_MW', 'Erro inesperado no middleware estaAutenticadoAPI', erro);
+    return res.status(401).json({
+      sucesso: false,
+      mensagem: 'Erro de autenticacao. Faca login novamente.',
+    });
   }
-
-  // Tenta fallback via JWT
-  const dadosJWT = verificarTokenJWT(req);
-
-  if (dadosJWT) {
-    // Restaura sessao a partir do JWT para consistencia
-    req.session.usuario = {
-      id: dadosJWT.id,
-      nome: dadosJWT.nome,
-      email: dadosJWT.email,
-      role: dadosJWT.role,
-    };
-    return next();
-  }
-
-  // Sem autenticacao — retorna erro JSON com status 401
-  return res.status(401).json({
-    sucesso: false,
-    mensagem: 'Autenticacao necessaria. Faca login para continuar.',
-  });
 }
 
 module.exports = {
