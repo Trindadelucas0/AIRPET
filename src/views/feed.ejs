@@ -709,24 +709,109 @@
   document.getElementById('closeComment').addEventListener('click', function () { fecharModal('commentModal'); });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { fecharModal('newPostModal'); fecharModal('repostModal'); fecharModal('commentModal'); } });
 
+  var LIKE_DEBOUNCE_MS = 350;
+  var likeCoalesceState = new Map(); // postId -> { timer, inFlight, desiredLiked, btn }
+
+  function sendLikeRequest(postId) {
+    var state = likeCoalesceState.get(postId);
+    if (!state || state.inFlight) return;
+
+    state.inFlight = true;
+    state.timer = null;
+
+    var desiredLikedSnap = !!state.desiredLiked;
+    var methodSnap = desiredLikedSnap ? 'POST' : 'DELETE';
+    var btnSnap = state.btn;
+    var countEl = btnSnap ? btnSnap.querySelector('.count-curtidas') : null;
+    var url = '/explorar/post/' + postId + '/curtir';
+    var key = 'like:' + postId + ':' + (desiredLikedSnap ? '1' : '0');
+
+    var coordinator = window.AIRPET_REQ_COORDINATOR;
+    var fetchFn = function (signal) {
+      return fetch(url, {
+        method: methodSnap,
+        headers: { 'Accept': 'application/json' },
+        credentials: 'same-origin',
+        signal: signal
+      }).then(function (r) { return r.json(); });
+    };
+
+    var p;
+    if (coordinator && coordinator.enqueue) {
+      p = coordinator.enqueue({
+        key: key,
+        priority: coordinator.PRIORITY ? coordinator.PRIORITY.HIGH : 'HIGH',
+        group: 'likeActions',
+        fetchFn: fetchFn
+      });
+    } else {
+      p = fetchFn(null);
+    }
+
+    Promise.resolve(p).then(function (data) {
+      if (data && data.sucesso && countEl) countEl.textContent = data.total || '';
+    }).catch(function () { }).finally(function () {
+      var s2 = likeCoalesceState.get(postId);
+      if (!s2) return;
+      s2.inFlight = false;
+
+      // Se o usuário clicou durante a requisição, manda UMA nova (depois do debounce).
+      if (s2.desiredLiked !== desiredLikedSnap) {
+        scheduleLikeRequest(postId);
+      }
+    });
+  }
+
+  function scheduleLikeRequest(postId) {
+    var state = likeCoalesceState.get(postId);
+    if (!state || state.inFlight) return;
+    if (state.timer) clearTimeout(state.timer);
+    state.timer = setTimeout(function () { sendLikeRequest(postId); }, LIKE_DEBOUNCE_MS);
+  }
+
   function curtirPost(postId, btn) {
     var curtiu = btn.getAttribute('data-curtiu') === '1';
-    var method = curtiu ? 'DELETE' : 'POST';
+    var desiredLiked = !curtiu;
+
+    // Atualiza UI otimista imediatamente.
     var icon = btn.querySelector('i');
     var countEl = btn.querySelector('.count-curtidas');
-    btn.setAttribute('data-curtiu', curtiu ? '0' : '1');
-    if (curtiu) { btn.classList.remove('text-red-500'); btn.classList.add('text-gray-400'); icon.className = 'fa-regular fa-heart'; }
-    else { btn.classList.remove('text-gray-400'); btn.classList.add('text-red-500'); icon.className = 'fa-solid fa-heart animate-heartPop'; var heart = document.createElement('i'); heart.className = 'fa-solid fa-heart float-heart'; heart.style.left = '50%'; heart.style.bottom = '100%'; btn.appendChild(heart); setTimeout(function () { if (heart.parentNode) heart.parentNode.removeChild(heart); }, 800); }
-    fetch('/explorar/post/' + postId + '/curtir', { method: method, headers: { 'Accept': 'application/json' }, credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (data) { if (data.sucesso) countEl.textContent = data.total || ''; }).catch(function () {});
+    btn.setAttribute('data-curtiu', desiredLiked ? '1' : '0');
+    if (desiredLiked) {
+      btn.classList.remove('text-gray-400'); btn.classList.add('text-red-500');
+      icon.className = 'fa-solid fa-heart animate-heartPop';
+      var heart = document.createElement('i');
+      heart.className = 'fa-solid fa-heart float-heart';
+      heart.style.left = '50%'; heart.style.bottom = '100%';
+      btn.appendChild(heart);
+      setTimeout(function () { if (heart.parentNode) heart.parentNode.removeChild(heart); }, 800);
+    } else {
+      btn.classList.remove('text-red-500'); btn.classList.add('text-gray-400');
+      icon.className = 'fa-regular fa-heart';
+    }
+
+    // Coalesce: vários cliques viram UMA requisição no final do burst.
+    var state = likeCoalesceState.get(postId);
+    if (!state) { state = { timer: null, inFlight: false, desiredLiked: desiredLiked, btn: btn }; }
+    state.desiredLiked = desiredLiked;
+    state.btn = btn;
+    likeCoalesceState.set(postId, state);
+    scheduleLikeRequest(postId);
   }
 
   function abrirComentarios(postId) { commentPostId = postId; var input = document.getElementById('commentInput'); input.setAttribute('data-post-id', postId); input.value = ''; document.getElementById('btnEnviarComentario').disabled = true; abrirModal('commentModal'); carregarComentarios(postId); }
 
   function carregarComentarios(postId) {
     var list = document.getElementById('commentList');
-    list.innerHTML = '<div class="space-y-3"><div class="skeleton h-12 w-full"></div><div class="skeleton h-12 w-3/4"></div></div>';
-    fetch('/explorar/post/' + postId + '/comentarios', { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (data) {
-      if (!data.sucesso) return;
+    var cacheTimeMs = 1800000; // 30 min
+    var staleTimeMs = 300000; // 5 min
+    var key = 'comments:' + postId;
+    var group = 'commentsModal';
+
+    try { if (window.AIRPET_REQ_COORDINATOR && window.AIRPET_REQ_COORDINATOR.cancelGroup) window.AIRPET_REQ_COORDINATOR.cancelGroup(group); } catch (_) {}
+
+    function renderData(data) {
+      if (!data || !data.sucesso) return;
       if (!data.comentarios || data.comentarios.length === 0) { list.innerHTML = '<div class="text-center py-10"><p class="text-sm text-gray-400">Nenhum comentário ainda.</p></div>'; return; }
       var html = '<div class="space-y-4">';
       data.comentarios.forEach(function (c) { html += renderComentario(c); });
@@ -734,7 +819,55 @@
       list.innerHTML = html;
       var tempos = list.querySelectorAll('.tempo-relativo');
       for (var i = 0; i < tempos.length; i++) { var t = tempos[i].getAttribute('data-time'); if (t) tempos[i].textContent = tempoRelativo(t); }
-    }).catch(function () { list.innerHTML = '<div class="text-center py-8"><p class="text-sm text-red-400">Erro ao carregar.</p></div>'; });
+    }
+
+    // 1) render imediato do cache (sem skeleton), se existir
+    var hasCached = false;
+    if (window.AIRPET_SWR_CACHE && window.AIRPET_SWR_CACHE.getCached) {
+      var cached = window.AIRPET_SWR_CACHE.getCached(key, cacheTimeMs);
+      if (cached && cached.value) renderData(cached.value);
+      if (cached && cached.value) hasCached = true;
+    }
+
+    // 2) se não tiver cache, mostra skeleton
+    if (!hasCached) {
+      list.innerHTML = '<div class="space-y-3"><div class="skeleton h-12 w-full"></div><div class="skeleton h-12 w-3/4"></div></div>';
+    }
+
+    // 3) revalida em background se cache estiver stale
+    if (typeof swrFetchGet === 'function') {
+      swrFetchGet({
+        key: key,
+        url: '/explorar/post/' + postId + '/comentarios',
+        priority: window.AIRPET_REQ_COORDINATOR && window.AIRPET_REQ_COORDINATOR.PRIORITY ? window.AIRPET_REQ_COORDINATOR.PRIORITY.HIGH : 'HIGH',
+        staleTimeMs: staleTimeMs,
+        cacheTimeMs: cacheTimeMs,
+        group: group,
+        onUpdate: function (data) {
+          if (commentPostId !== postId) return;
+          renderData(data);
+        }
+      }).then(function (res) {
+        if (commentPostId !== postId) return;
+        renderData(res.data);
+      }).catch(function () {
+        if (commentPostId !== postId) return;
+        list.innerHTML = '<div class="text-center py-8"><p class="text-sm text-red-400">Erro ao carregar.</p></div>';
+      });
+      return;
+    }
+
+    // fallback
+    fetch('/explorar/post/' + postId + '/comentarios', { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (commentPostId !== postId) return;
+        renderData(data);
+      })
+      .catch(function () {
+        if (commentPostId !== postId) return;
+        list.innerHTML = '<div class="text-center py-8"><p class="text-sm text-red-400">Erro ao carregar.</p></div>';
+      });
   }
 
   function renderComentario(c) {
@@ -770,8 +903,55 @@
     var query = (match[1] || '').trim(); clearTimeout(searchTimeout);
     searchTimeout = setTimeout(function () {
       var url = '/explorar/api/usuarios?seguindo=1';
+      var qKey = query.toLowerCase();
       if (query.length) url += '&q=' + encodeURIComponent(query);
-      fetch(url, { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (users) { if (!users || !users.length) { mentionDropdown.classList.add('hidden'); return; } var html = ''; users.forEach(function (u) { var uCor = u.cor_perfil || '#ec5a1c'; var av = u.foto_perfil ? '<img src="' + escapeHtml(u.foto_perfil) + '" class="w-7 h-7 rounded-full object-cover" style="box-shadow:0 0 0 2px ' + escapeHtml(uCor) + '">' : '<span class="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold text-white bg-gray-400" style="box-shadow:0 0 0 2px ' + escapeHtml(uCor) + '">' + escapeHtml((u.nome || 'U').charAt(0).toUpperCase()) + '</span>'; html += '<div class="autocomplete-item" data-nome="' + escapeHtml(u.nome) + '">' + av + '<span class="font-medium text-gray-700">' + escapeHtml(u.nome) + '</span></div>'; }); mentionDropdown.innerHTML = html; mentionDropdown.classList.remove('hidden'); }).catch(function () { mentionDropdown.classList.add('hidden'); });
+
+      // Cancela requests anteriores de sugestões quando o usuário continua digitando.
+      try { if (window.AIRPET_REQ_COORDINATOR && window.AIRPET_REQ_COORDINATOR.cancelGroup) window.AIRPET_REQ_COORDINATOR.cancelGroup('mentionAutocomplete'); } catch (_) {}
+
+      if (typeof swrFetchGet === 'function') {
+        var uidPart = (typeof meuId !== 'undefined' && meuId !== null && meuId !== undefined) ? String(meuId) : 'anon';
+        var key = 'mentionUsers:' + uidPart + ':' + qKey;
+        swrFetchGet({
+          key: key,
+          url: url,
+          priority: window.AIRPET_REQ_COORDINATOR && window.AIRPET_REQ_COORDINATOR.PRIORITY
+            ? window.AIRPET_REQ_COORDINATOR.PRIORITY.MEDIUM
+            : 'MEDIUM',
+          staleTimeMs: 300000, // 5 min
+          cacheTimeMs: 1800000, // 30 min
+          serveStale: false,
+          group: 'mentionAutocomplete'
+        }).then(function (res) {
+          var users = res && res.data ? res.data : res;
+          if (!users || !users.length) { mentionDropdown.classList.add('hidden'); return; }
+          var html = '';
+          users.forEach(function (u) {
+            var uCor = u.cor_perfil || '#ec5a1c';
+            var av = u.foto_perfil ? '<img src="' + escapeHtml(u.foto_perfil) + '" class="w-7 h-7 rounded-full object-cover" style="box-shadow:0 0 0 2px ' + escapeHtml(uCor) + '">' : '<span class="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold text-white bg-gray-400" style="box-shadow:0 0 0 2px ' + escapeHtml(uCor) + '">' + escapeHtml((u.nome || 'U').charAt(0).toUpperCase()) + '</span>';
+            html += '<div class="autocomplete-item" data-nome="' + escapeHtml(u.nome) + '">' + av + '<span class="font-medium text-gray-700">' + escapeHtml(u.nome) + '</span></div>';
+          });
+          mentionDropdown.innerHTML = html;
+          mentionDropdown.classList.remove('hidden');
+        }).catch(function () { mentionDropdown.classList.add('hidden'); });
+        return;
+      }
+
+      // fallback
+      fetch(url, { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
+        .then(function (r) { return r.json(); })
+        .then(function (users) {
+          if (!users || !users.length) { mentionDropdown.classList.add('hidden'); return; }
+          var html = '';
+          users.forEach(function (u) {
+            var uCor = u.cor_perfil || '#ec5a1c';
+            var av = u.foto_perfil ? '<img src="' + escapeHtml(u.foto_perfil) + '" class="w-7 h-7 rounded-full object-cover" style="box-shadow:0 0 0 2px ' + escapeHtml(uCor) + '">' : '<span class="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold text-white bg-gray-400" style="box-shadow:0 0 0 2px ' + escapeHtml(uCor) + '">' + escapeHtml((u.nome || 'U').charAt(0).toUpperCase()) + '</span>';
+            html += '<div class="autocomplete-item" data-nome="' + escapeHtml(u.nome) + '">' + av + '<span class="font-medium text-gray-700">' + escapeHtml(u.nome) + '</span></div>';
+          });
+          mentionDropdown.innerHTML = html;
+          mentionDropdown.classList.remove('hidden');
+        })
+        .catch(function () { mentionDropdown.classList.add('hidden'); });
     }, query.length ? 250 : 100);
   }
   mentionDropdown.addEventListener('click', function (e) { var item = e.target.closest('.autocomplete-item'); if (!item) return; var nome = item.getAttribute('data-nome'); var val = commentInput.value; var cursor = commentInput.selectionStart; var before = val.substring(0, cursor); var after = val.substring(cursor); var replaced = before.replace(/@(\w*)$/, '@' + nome + ' '); commentInput.value = replaced + after; commentInput.focus(); commentInput.setSelectionRange(replaced.length, replaced.length); mentionDropdown.classList.add('hidden'); });
@@ -964,7 +1144,7 @@
   if (fabBtn) fabBtn.addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); abrirNovoPost(); });
 
   function fixarPost(postId, estaFixada) { fetch('/explorar/post/' + postId + '/fixar', { method: estaFixada ? 'DELETE' : 'POST', headers: { 'Accept': 'application/json' }, credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (data) { if (!data.sucesso) { toast(data.mensagem || 'Erro.', 'erro'); return; } toast(data.fixada ? 'Post fixado!' : 'Post desafixado!'); setTimeout(function () { window.location.reload(); }, 600); }).catch(function () { toast('Erro.', 'erro'); }); }
-  function deletarPost(postId) { if (!confirm('Excluir esta publicação?')) return; fetch('/explorar/post/' + postId, { method: 'DELETE', headers: { 'Accept': 'application/json' }, credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (data) { if (!data.sucesso) { toast('Erro.', 'erro'); return; } var card = document.getElementById('post-' + postId); if (card) { card.classList.add('fade-out'); setTimeout(function () { if (card.parentNode) card.parentNode.removeChild(card); }, 400); } totalPostsLocal = Math.max(0, totalPostsLocal - 1); toast('Publicação excluída.'); }).catch(function () { toast('Erro.', 'erro'); }); }
+  function deletarPost(postId) { if (!confirm('Excluir esta publicação?')) return; fetch('/explorar/post/' + postId, { method: 'DELETE', headers: { 'Accept': 'application/json' }, credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (data) { if (!data.sucesso) { toast(data.mensagem || 'Não foi possível excluir agora. Tente novamente.', 'erro'); return; } var card = document.getElementById('post-' + postId); if (card) { card.classList.add('fade-out'); setTimeout(function () { if (card.parentNode) card.parentNode.removeChild(card); }, 400); } totalPostsLocal = Math.max(0, totalPostsLocal - 1); toast('Publicação excluída.'); }).catch(function () { toast('Erro de conexão. Tente novamente.', 'erro'); }); }
   function compartilhar(postId, autor) { var url = window.location.origin + '/feed#post-' + postId; window.open('https://wa.me/?text=' + encodeURIComponent('Veja o post de ' + autor + ' no AIRPET! 🐾 ' + url), '_blank'); }
   function fecharMenus() { var menus = document.querySelectorAll('.menu-dropdown'); for (var i = 0; i < menus.length; i++) menus[i].classList.add('hidden'); }
   function toggleMenu(btn) { var dropdown = btn.parentElement.querySelector('.menu-dropdown'); if (!dropdown) return; var wasHidden = dropdown.classList.contains('hidden'); fecharMenus(); if (wasHidden) dropdown.classList.remove('hidden'); }
@@ -975,13 +1155,53 @@
   function carregarMaisPosts() {
     if (isLoading || !hasMore) return;
     isLoading = true; currentPage++;
-    fetch('/feed?page=' + currentPage, { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (data) {
-      isLoading = false;
-      if (!data.sucesso || !data.posts || !data.posts.length) { hasMore = false; if (scrollSentinel) scrollSentinel.innerHTML = '<p class="text-xs text-gray-300 text-center">Você chegou ao fim 🐾</p>'; return; }
-      data.posts.forEach(function (post) { feedContainer.insertAdjacentHTML('beforeend', renderPostHTML(post)); initVerMaisForCard(feedContainer.lastElementChild); observarCardVisualizacao(feedContainer.lastElementChild); });
-      atualizarTempos();
-      if (data.posts.length < 20) { hasMore = false; if (scrollSentinel) scrollSentinel.innerHTML = '<p class="text-xs text-gray-300 text-center">Você chegou ao fim 🐾</p>'; }
-    }).catch(function () { isLoading = false; });
+    var uidKey = meuId ? String(meuId) : 'anon';
+    var pageKey = 'feed:' + uidKey + ':' + currentPage;
+
+    if (typeof swrFetchGet === 'function') {
+      swrFetchGet({
+        key: pageKey,
+        url: '/feed?page=' + currentPage,
+        priority: window.AIRPET_REQ_COORDINATOR && window.AIRPET_REQ_COORDINATOR.PRIORITY
+          ? window.AIRPET_REQ_COORDINATOR.PRIORITY.HIGH
+          : 'HIGH',
+        staleTimeMs: 300000, // 5 min
+        cacheTimeMs: 1800000, // 30 min
+        group: 'feedInfinite'
+      }).then(function (res) {
+        isLoading = false;
+        var data = res && res.data ? res.data : res;
+        if (!data || !data.sucesso || !data.posts || !data.posts.length) {
+          hasMore = false;
+          if (scrollSentinel) scrollSentinel.innerHTML = '<p class="text-xs text-gray-300 text-center">Você chegou ao fim 🐾</p>';
+          return;
+        }
+        data.posts.forEach(function (post) {
+          feedContainer.insertAdjacentHTML('beforeend', renderPostHTML(post));
+          initVerMaisForCard(feedContainer.lastElementChild);
+          observarCardVisualizacao(feedContainer.lastElementChild);
+        });
+        atualizarTempos();
+        if (data.posts.length < 20) {
+          hasMore = false;
+          if (scrollSentinel) scrollSentinel.innerHTML = '<p class="text-xs text-gray-300 text-center">Você chegou ao fim 🐾</p>';
+        }
+      }).catch(function () {
+        isLoading = false;
+      });
+      return;
+    }
+
+    // fallback
+    fetch('/feed?page=' + currentPage, { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        isLoading = false;
+        if (!data.sucesso || !data.posts || !data.posts.length) { hasMore = false; if (scrollSentinel) scrollSentinel.innerHTML = '<p class="text-xs text-gray-300 text-center">Você chegou ao fim 🐾</p>'; return; }
+        data.posts.forEach(function (post) { feedContainer.insertAdjacentHTML('beforeend', renderPostHTML(post)); initVerMaisForCard(feedContainer.lastElementChild); observarCardVisualizacao(feedContainer.lastElementChild); });
+        atualizarTempos();
+        if (data.posts.length < 20) { hasMore = false; if (scrollSentinel) scrollSentinel.innerHTML = '<p class="text-xs text-gray-300 text-center">Você chegou ao fim 🐾</p>'; }
+      }).catch(function () { isLoading = false; });
   }
 
   if ('IntersectionObserver' in window) {

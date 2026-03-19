@@ -23,6 +23,9 @@
   <style>:root { --color-primary: <%= typeof primaryColor !== 'undefined' ? primaryColor : '#ec5a1c' %>; }</style>
   <link rel="stylesheet" href="/css/output.css">
   <link rel="stylesheet" href="/css/theme-override.css">
+  <!-- RequestCoordinator + SWR-like cache (client-side performance) -->
+  <script src="/js/airpet/requestCoordinator.js"></script>
+  <script src="/js/airpet/swrCache.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">

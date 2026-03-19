@@ -798,6 +798,15 @@ const migrations = [
     IF target_post_id IS NULL THEN
       RETURN COALESCE(NEW, OLD);
     END IF;
+
+    -- Durante cascata de DELETE do post (publicacoes), triggers em curtidas/comentarios/reposts podem disparar
+    -- quando o post_id do pai já não existe mais. Nesse cenário, evitar upsert em post_stats previne
+    -- violação de chave estrangeira.
+    IF NOT EXISTS (SELECT 1 FROM publicacoes WHERE id = target_post_id) THEN
+      DELETE FROM post_stats WHERE post_id = target_post_id;
+      RETURN COALESCE(NEW, OLD);
+    END IF;
+
     INSERT INTO post_stats (post_id, like_count, comment_count, repost_count, updated_at)
     VALUES (
       target_post_id,

@@ -708,7 +708,10 @@ const explorarController = {
       res.json({ sucesso: true });
     } catch (err) {
       logger.error('EXPLORAR', 'Erro ao deletar post', err);
-      res.status(500).json({ sucesso: false });
+      res.status(500).json({
+        sucesso: false,
+        mensagem: 'Não foi possível excluir a publicação agora. Tente novamente em alguns instantes.'
+      });
     }
   },
 

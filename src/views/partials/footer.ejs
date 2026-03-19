@@ -25,6 +25,8 @@
   (function () {
     'use strict';
 
+    var usuarioId = <%= usuario && usuario.id ? JSON.stringify(usuario.id) : 'null' %>;
+
     function atualizarBadges(total) {
       document.querySelectorAll('[data-notif-badge]').forEach(function (el) {
         if (total > 0) {
@@ -36,7 +38,41 @@
       });
     }
 
-    function fetchCount() {
+    var lastBadgeRefreshAt = 0;
+    function fetchCount(force) {
+      if (!usuarioId && usuarioId !== 0) return;
+
+      var now = Date.now();
+      if (!force && now - lastBadgeRefreshAt < 10000) return; // evita spam mesmo sem socket
+      lastBadgeRefreshAt = now;
+
+      if (typeof swrFetchGet === 'function') {
+        var key = 'notifCount:' + usuarioId;
+        var staleTimeMs = force ? 0 : 120000; // 2 min
+        var cacheTimeMs = 1800000; // 30 min
+
+        swrFetchGet({
+          key: key,
+          url: '/notificacoes/api/count',
+          priority: window.AIRPET_REQ_COORDINATOR && window.AIRPET_REQ_COORDINATOR.PRIORITY
+            ? window.AIRPET_REQ_COORDINATOR.PRIORITY.MEDIUM
+            : 'MEDIUM',
+          staleTimeMs: staleTimeMs,
+          cacheTimeMs: cacheTimeMs,
+          group: 'notifBadge',
+          onUpdate: function (data) {
+            if (!data) return;
+            atualizarBadges(data.total || 0);
+          }
+        }).then(function (res) {
+          var data = res && res.data ? res.data : res;
+          atualizarBadges((data && data.total) ? data.total : 0);
+        }).catch(function () {});
+
+        return;
+      }
+
+      // fallback (caso SWR-like não carregou)
       fetch('/notificacoes/api/count', { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
         .then(function (r) { return r.json(); })
         .then(function (data) { atualizarBadges(data.total); })
@@ -49,7 +85,7 @@
         var notifSocket = io('/notificacoes', { transports: ['websocket', 'polling'] });
         notifSocket.on('connect', function () { socketOk = true; });
         notifSocket.on('nova_notificacao', function (data) {
-          fetchCount();
+          fetchCount(true);
           if ('Notification' in window && Notification.permission === 'granted' && document.hidden) {
             try {
               new Notification(data.tipo === 'alerta' ? 'Pet Perdido!' : 'AIRPET', {
@@ -62,8 +98,8 @@
       }
     } catch (e) {}
 
-    setInterval(function () { if (!socketOk) fetchCount(); }, 30000);
-    fetchCount();
+    setInterval(function () { if (!socketOk) fetchCount(false); }, 300000); // 5 min
+    fetchCount(false);
   })();
   </script>
   <% } %>

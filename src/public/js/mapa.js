@@ -62,6 +62,14 @@
     };
   }
 
+  function quantizeCoord(n, digits) {
+    var d = digits == null ? 2 : digits;
+    var factor = Math.pow(10, d);
+    return Math.round(n * factor) / factor;
+  }
+
+  var currentBBoxKey = null;
+
   function fetchPins() {
     var bounds = map.getBounds();
     var params = new URLSearchParams({
@@ -71,13 +79,29 @@
       neLng: bounds.getNorthEast().lng
     });
 
-    fetch('/mapa/api/pins?' + params.toString())
-      .then(function (res) { return res.json(); })
-      .then(function (data) {
-        var features = data.features || data || [];
-        if (!Array.isArray(features)) return;
+    var swLat = bounds.getSouthWest().lat;
+    var swLng = bounds.getSouthWest().lng;
+    var neLat = bounds.getNorthEast().lat;
+    var neLng = bounds.getNorthEast().lng;
 
-        features.forEach(function (feature) {
+    var bboxKey = [
+      quantizeCoord(swLat), quantizeCoord(swLng),
+      quantizeCoord(neLat), quantizeCoord(neLng)
+    ].join(',');
+
+    currentBBoxKey = bboxKey;
+    var requestKey = 'mapPins:' + bboxKey;
+
+    // Cancel older in-flight pins requests when bbox changes.
+    if (globalThis.AIRPET_REQ_COORDINATOR && requestKey) {
+      // Abort only the previous map group. Latest render will be guarded by currentBBoxKey.
+      try { globalThis.AIRPET_REQ_COORDINATOR.cancelGroup('mapPins'); } catch (_) {}
+    }
+
+    function renderFeatures(data) {
+      var features = data && (data.features || data) ? (data.features || data) : [];
+      if (!Array.isArray(features)) return;
+      features.forEach(function (feature) {
           var props = feature.properties || feature;
           var geom = feature.geometry;
 
@@ -146,7 +170,35 @@
             clusterGroup.addLayer(marker);
           }
         });
-      })
+    }
+
+    if (typeof swrFetchGet === 'function') {
+      swrFetchGet({
+        key: requestKey,
+        url: '/mapa/api/pins?' + params.toString(),
+        priority: globalThis.AIRPET_REQ_COORDINATOR && globalThis.AIRPET_REQ_COORDINATOR.PRIORITY
+          ? globalThis.AIRPET_REQ_COORDINATOR.PRIORITY.HIGH
+          : 'HIGH',
+        staleTimeMs: 300000, // 5 min
+        cacheTimeMs: 1800000, // 30 min
+        group: 'mapPins',
+        onUpdate: function (data) {
+          // Only render if this update corresponds to the current bbox.
+          if (!currentBBoxKey || requestKey !== ('mapPins:' + currentBBoxKey)) return;
+          renderFeatures(data);
+        }
+      }).then(function (res) {
+        renderFeatures(res.data);
+      }).catch(function () {
+        // Ignore aborts/offline. Keep last known map state.
+      });
+      return;
+    }
+
+    // Fallback (should not happen, since scripts are loaded in header).
+    fetch('/mapa/api/pins?' + params.toString())
+      .then(function (res) { return res.json(); })
+      .then(renderFeatures)
       .catch(function (err) {
         console.error('[MAPA] Erro ao carregar pins:', err);
       });

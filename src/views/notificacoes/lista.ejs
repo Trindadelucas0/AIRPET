@@ -295,6 +295,8 @@
 (function () {
   'use strict';
 
+  var usuarioId = <%= (typeof usuario !== 'undefined' && usuario && usuario.id) ? JSON.stringify(usuario.id) : 'null' %>;
+
   function tempoRelativo(dataStr) {
     var agora = Date.now();
     var data = new Date(dataStr).getTime();
@@ -321,12 +323,45 @@
   });
 
   window.marcarLida = function (id, btn) {
-    fetch('/notificacoes/' + id + '/lida', {
-      method: 'POST',
-      headers: { 'Accept': 'application/json' },
-      credentials: 'same-origin'
-    })
-    .then(function () {
+    var key = 'notifLida:' + id;
+    var coordinator = window.AIRPET_REQ_COORDINATOR;
+
+    function safeParseResponse(res) {
+      return res.text().then(function (t) {
+        if (!t) return {};
+        try { return JSON.parse(t); } catch (_) { return {}; }
+      }).catch(function () { return {}; });
+    }
+
+    var fetchFn = function (signal) {
+      return fetch('/notificacoes/' + id + '/lida', {
+        method: 'POST',
+        headers: { 'Accept': 'application/json' },
+        credentials: 'same-origin',
+        signal: signal
+      }).then(function (r) { return safeParseResponse(r); });
+    };
+
+    var p;
+    if (coordinator && coordinator.enqueue) {
+      p = coordinator.enqueue({
+        key: key,
+        priority: coordinator.PRIORITY ? coordinator.PRIORITY.HIGH : 'HIGH',
+        group: 'notifActions',
+        fetchFn: fetchFn
+      });
+    } else {
+      p = fetch('/notificacoes/' + id + '/lida', {
+        method: 'POST',
+        headers: { 'Accept': 'application/json' },
+        credentials: 'same-origin'
+      }).then(function (r) { return safeParseResponse(r); });
+    }
+
+    Promise.resolve(p).then(function (data) {
+      // Se backend retornar sucesso=false, não mexe no UI.
+      if (data && typeof data.sucesso !== 'undefined' && data.sucesso === false) return;
+
       var card = document.querySelector('[data-notif-id="' + id + '"]');
       if (card) {
         var link = card.querySelector('a');
@@ -340,16 +375,47 @@
         if (dot) dot.remove();
       }
       atualizarBadgeGlobal();
-    })
-    .catch(function () {});
+    }).catch(function () {});
   };
 
   window.marcarLidaNav = function (id, event) {
-    fetch('/notificacoes/' + id + '/lida', {
-      method: 'POST',
-      headers: { 'Accept': 'application/json' },
-      credentials: 'same-origin'
-    }).then(function () {
+    var key = 'notifLida:' + id;
+    var coordinator = window.AIRPET_REQ_COORDINATOR;
+
+    function safeParseResponse(res) {
+      return res.text().then(function (t) {
+        if (!t) return {};
+        try { return JSON.parse(t); } catch (_) { return {}; }
+      }).catch(function () { return {}; });
+    }
+
+    var fetchFn = function (signal) {
+      return fetch('/notificacoes/' + id + '/lida', {
+        method: 'POST',
+        headers: { 'Accept': 'application/json' },
+        credentials: 'same-origin',
+        signal: signal
+      }).then(function (r) { return safeParseResponse(r); });
+    };
+
+    var p;
+    if (coordinator && coordinator.enqueue) {
+      p = coordinator.enqueue({
+        key: key,
+        priority: coordinator.PRIORITY ? coordinator.PRIORITY.HIGH : 'HIGH',
+        group: 'notifActions',
+        fetchFn: fetchFn
+      });
+    } else {
+      p = fetch('/notificacoes/' + id + '/lida', {
+        method: 'POST',
+        headers: { 'Accept': 'application/json' },
+        credentials: 'same-origin'
+      }).then(function (r) { return safeParseResponse(r); });
+    }
+
+    Promise.resolve(p).then(function (data) {
+      if (data && typeof data.sucesso !== 'undefined' && data.sucesso === false) return;
       atualizarBadgeGlobal();
     }).catch(function () {});
   };
@@ -357,14 +423,43 @@
   var btnMarcarTodas = document.getElementById('btnMarcarTodasLidas');
   if (btnMarcarTodas) {
     btnMarcarTodas.addEventListener('click', function () {
-      fetch('/notificacoes/marcar-todas-lidas', {
-        method: 'POST',
-        headers: { 'Accept': 'application/json' },
-        credentials: 'same-origin'
-      })
-      .then(function (r) { return r.json(); })
-      .then(function (data) {
-        if (data.sucesso) {
+      var coordinator = window.AIRPET_REQ_COORDINATOR;
+      var key = 'notifMarkAllLidas';
+
+      function safeParseResponse(res) {
+        return res.text().then(function (t) {
+          if (!t) return {};
+          try { return JSON.parse(t); } catch (_) { return {}; }
+        }).catch(function () { return {}; });
+      }
+
+      var fetchFn = function (signal) {
+        return fetch('/notificacoes/marcar-todas-lidas', {
+          method: 'POST',
+          headers: { 'Accept': 'application/json' },
+          credentials: 'same-origin',
+          signal: signal
+        }).then(function (r) { return safeParseResponse(r); });
+      };
+
+      var p;
+      if (coordinator && coordinator.enqueue) {
+        p = coordinator.enqueue({
+          key: key,
+          priority: coordinator.PRIORITY ? coordinator.PRIORITY.HIGH : 'HIGH',
+          group: 'notifActions',
+          fetchFn: fetchFn
+        });
+      } else {
+        p = fetch('/notificacoes/marcar-todas-lidas', {
+          method: 'POST',
+          headers: { 'Accept': 'application/json' },
+          credentials: 'same-origin'
+        }).then(function (r) { return safeParseResponse(r); });
+      }
+
+      Promise.resolve(p).then(function (data) {
+        if (data && data.sucesso) {
           document.querySelectorAll('.dot-unread').forEach(function (dot) { dot.remove(); });
           document.querySelectorAll('[data-notif-id] a').forEach(function (link) {
             link.classList.remove('bg-primary-50/40', 'border-primary-100/50');
@@ -376,27 +471,46 @@
           btnMarcarTodas.closest('.flex').innerHTML = '<span class="text-xs text-emerald-500 font-semibold"><i class="fa-solid fa-check mr-1"></i>Todas lidas</span>';
           atualizarBadgeGlobal();
         }
-      })
-      .catch(function () {});
+      }).catch(function () {});
     });
   }
 
   function atualizarBadgeGlobal() {
-    fetch('/notificacoes/api/count', {
-      headers: { 'Accept': 'application/json' },
-      credentials: 'same-origin'
-    })
-    .then(function (r) { return r.json(); })
-    .then(function (data) {
+    // Usa cache stale-while-revalidate para reduzir GETs repetidos após cliques rápidos.
+    var apply = function (total) {
       document.querySelectorAll('[data-notif-badge]').forEach(function (el) {
-        if (data.total > 0) {
-          el.textContent = data.total > 9 ? '9+' : data.total;
+        if (total > 0) {
+          el.textContent = total > 9 ? '9+' : total;
           el.classList.remove('hidden');
         } else {
           el.classList.add('hidden');
         }
       });
+    };
+
+    if (typeof swrFetchGet === 'function' && usuarioId !== null) {
+      swrFetchGet({
+        key: 'notifCount:' + usuarioId,
+        url: '/notificacoes/api/count',
+        priority: window.AIRPET_REQ_COORDINATOR && window.AIRPET_REQ_COORDINATOR.PRIORITY
+          ? window.AIRPET_REQ_COORDINATOR.PRIORITY.MEDIUM
+          : 'MEDIUM',
+        staleTimeMs: 120000, // 2 min
+        cacheTimeMs: 1800000, // 30 min
+        group: 'notifBadge'
+      }).then(function (res) {
+        var data = res && res.data ? res.data : res;
+        apply((data && data.total) ? data.total : 0);
+      }).catch(function () {});
+      return;
+    }
+
+    fetch('/notificacoes/api/count', {
+      headers: { 'Accept': 'application/json' },
+      credentials: 'same-origin'
     })
+    .then(function (r) { return r.json(); })
+    .then(function (data) { apply(data.total || 0); })
     .catch(function () {});
   }
 

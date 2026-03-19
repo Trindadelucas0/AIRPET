@@ -753,46 +753,95 @@
   });
 
   /* ──────────── Like ──────────── */
-  function curtirPost(postId, btn) {
+  var LIKE_DEBOUNCE_MS = 350;
+  var likeCoalesceState = new Map(); // postId -> { timer, inFlight, desiredLiked, btn }
+
+  function scheduleLikeRequest(postId) {
+    var state = likeCoalesceState.get(postId);
+    if (!state || state.inFlight) return;
+    if (state.timer) clearTimeout(state.timer);
+    state.timer = setTimeout(function () { sendLikeRequest(postId); }, LIKE_DEBOUNCE_MS);
+  }
+
+  function sendLikeRequest(postId) {
+    var state = likeCoalesceState.get(postId);
+    if (!state || state.inFlight) return;
+
+    state.inFlight = true;
+    state.timer = null;
+
+    var desiredLikedSnap = !!state.desiredLiked;
+    var methodSnap = desiredLikedSnap ? 'POST' : 'DELETE';
+    var btnSnap = state.btn;
+    var countEl = btnSnap ? btnSnap.querySelector('.count-curtidas') : null;
+
     var isPetshop = String(postId || '').includes(':');
-    var curtiu = btn.getAttribute('data-curtiu') === '1';
-    var method = curtiu ? 'DELETE' : 'POST';
-    var icon = btn.querySelector('i');
-    var countEl = btn.querySelector('.count-curtidas');
-
-    btn.setAttribute('data-curtiu', curtiu ? '0' : '1');
-    if (curtiu) {
-      btn.classList.remove('text-red-500');
-      btn.classList.add('text-gray-400');
-      icon.className = 'fa-regular fa-heart';
-    } else {
-      btn.classList.remove('text-gray-400');
-      btn.classList.add('text-red-500');
-      icon.className = 'fa-solid fa-heart animate-heartPop';
-      var heart = document.createElement('i');
-      heart.className = 'fa-solid fa-heart float-heart';
-      heart.style.left = '50%';
-      heart.style.bottom = '100%';
-      btn.appendChild(heart);
-      setTimeout(function () { if (heart.parentNode) heart.parentNode.removeChild(heart); }, 800);
-    }
-
     var url = isPetshop
       ? '/explorar/petshops-post/' + encodeURIComponent(postId) + '/curtir'
       : '/explorar/post/' + postId + '/curtir';
 
-    fetch(url, {
-      method: method,
-      headers: { 'Accept': 'application/json' },
-      credentials: 'same-origin'
-    })
-    .then(function (r) { return r.json(); })
-    .then(function (data) {
-      if (data.sucesso) {
-        countEl.textContent = data.total || '';
+    var coordinator = window.AIRPET_REQ_COORDINATOR;
+    var fetchFn = function (signal) {
+      return fetch(url, {
+        method: methodSnap,
+        headers: { 'Accept': 'application/json' },
+        credentials: 'same-origin',
+        signal: signal
+      }).then(function (r) { return r.json(); });
+    };
+
+    var key = 'like:' + postId + ':' + (desiredLikedSnap ? '1' : '0');
+    var p;
+    if (coordinator && coordinator.enqueue) {
+      p = coordinator.enqueue({
+        key: key,
+        priority: coordinator.PRIORITY ? coordinator.PRIORITY.HIGH : 'HIGH',
+        group: 'likeActions',
+        fetchFn: fetchFn
+      });
+    } else {
+      p = fetchFn(null);
+    }
+
+    Promise.resolve(p).then(function (data) {
+      if (data && data.sucesso && countEl) countEl.textContent = data.total || '';
+    }).catch(function () { }).finally(function () {
+      var s2 = likeCoalesceState.get(postId);
+      if (!s2) return;
+      s2.inFlight = false;
+      if (s2.desiredLiked !== desiredLikedSnap) {
+        scheduleLikeRequest(postId);
       }
-    })
-    .catch(function () {});
+    });
+  }
+
+  function curtirPost(postId, btn) {
+    var curtiu = btn.getAttribute('data-curtiu') === '1';
+    var desiredLiked = !curtiu;
+
+    // Atualiza UI otimista imediatamente.
+    var icon = btn.querySelector('i');
+    var countEl = btn.querySelector('.count-curtidas');
+    btn.setAttribute('data-curtiu', desiredLiked ? '1' : '0');
+    if (desiredLiked) {
+      btn.classList.remove('text-gray-400'); btn.classList.add('text-red-500');
+      icon.className = 'fa-solid fa-heart animate-heartPop';
+      var heart = document.createElement('i');
+      heart.className = 'fa-solid fa-heart float-heart';
+      heart.style.left = '50%'; heart.style.bottom = '100%';
+      btn.appendChild(heart);
+      setTimeout(function () { if (heart.parentNode) heart.parentNode.removeChild(heart); }, 800);
+    } else {
+      btn.classList.remove('text-red-500'); btn.classList.add('text-gray-400');
+      icon.className = 'fa-regular fa-heart';
+    }
+
+    var state = likeCoalesceState.get(postId);
+    if (!state) { state = { timer: null, inFlight: false, desiredLiked: desiredLiked, btn: btn }; }
+    state.desiredLiked = desiredLiked;
+    state.btn = btn;
+    likeCoalesceState.set(postId, state);
+    scheduleLikeRequest(postId);
   }
 
   /* ──────────── Comments ──────────── */
@@ -809,6 +858,13 @@
   function carregarComentarios(postId) {
     var list = document.getElementById('commentList');
     var isPetshop = String(postId || '').includes(':');
+    var cacheTimeMs = 1800000; // 30 min
+    var staleTimeMs = 300000; // 5 min
+    var key = 'comments:' + postId;
+    var group = 'commentsModal';
+
+    try { if (window.AIRPET_REQ_COORDINATOR && window.AIRPET_REQ_COORDINATOR.cancelGroup) window.AIRPET_REQ_COORDINATOR.cancelGroup(group); } catch (_) {}
+
     list.innerHTML = '<div class="space-y-3"><div class="skeleton h-12 w-full"></div><div class="skeleton h-12 w-3/4"></div><div class="skeleton h-12 w-5/6"></div></div>';
 
     var petsContainer = document.getElementById('petsProximosContainer');
@@ -820,13 +876,15 @@
       ? '/explorar/petshops-post/' + encodeURIComponent(postId) + '/comentarios'
       : '/explorar/post/' + postId + '/comentarios';
 
-    fetch(url, {
-      headers: { 'Accept': 'application/json' },
-      credentials: 'same-origin'
-    })
-    .then(function (r) { return r.json(); })
-    .then(function (data) {
-      if (!data.sucesso) return;
+    var didLoadPets = false;
+    function maybeLoadPets() {
+      if (didLoadPets) return;
+      didLoadPets = true;
+      if (!isPetshop) carregarPetsProximos(postId);
+    }
+
+    function renderData(data) {
+      if (!data || !data.sucesso) return;
       if (!data.comentarios || data.comentarios.length === 0) {
         list.innerHTML = '<div class="text-center py-10"><p class="text-sm text-gray-400">Nenhum comentário ainda.</p><p class="text-xs text-gray-300 mt-1">Seja o primeiro a comentar!</p></div>';
       } else {
@@ -840,12 +898,55 @@
           if (t) tempos[i].textContent = tempoRelativo(t);
         }
       }
-      if (!isPetshop) carregarPetsProximos(postId);
+      maybeLoadPets();
+    }
+
+    // Cache imediato (sem skeleton), se existir.
+    if (window.AIRPET_SWR_CACHE && window.AIRPET_SWR_CACHE.getCached) {
+      var cached = window.AIRPET_SWR_CACHE.getCached(key, cacheTimeMs);
+      if (cached && cached.value) renderData(cached.value);
+    }
+
+    if (typeof swrFetchGet === 'function') {
+      swrFetchGet({
+        key: key,
+        url: url,
+        priority: window.AIRPET_REQ_COORDINATOR && window.AIRPET_REQ_COORDINATOR.PRIORITY
+          ? window.AIRPET_REQ_COORDINATOR.PRIORITY.HIGH
+          : 'HIGH',
+        staleTimeMs: staleTimeMs,
+        cacheTimeMs: cacheTimeMs,
+        group: group,
+        onUpdate: function (data) {
+          if (commentPostId !== postId) return;
+          renderData(data);
+        }
+      }).then(function (res) {
+        if (commentPostId !== postId) return;
+        renderData(res.data);
+      }).catch(function () {
+        if (commentPostId !== postId) return;
+        list.innerHTML = '<div class="text-center py-8"><p class="text-sm text-red-400">Erro ao carregar comentários.</p></div>';
+        maybeLoadPets();
+      });
+      return;
+    }
+
+    // fallback
+    fetch(url, {
+      headers: { 'Accept': 'application/json' },
+      credentials: 'same-origin'
     })
-    .catch(function () {
-      list.innerHTML = '<div class="text-center py-8"><p class="text-sm text-red-400">Erro ao carregar comentários.</p></div>';
-      if (!isPetshop) carregarPetsProximos(postId);
-    });
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (commentPostId !== postId) return;
+        renderData(data);
+      })
+      .catch(function () {
+        if (commentPostId !== postId) return;
+        list.innerHTML = '<div class="text-center py-8"><p class="text-sm text-red-400">Erro ao carregar comentários.</p></div>';
+        maybeLoadPets();
+      });
   }
 
   function carregarPetsProximos(postId) {
@@ -1008,7 +1109,43 @@
     clearTimeout(searchTimeout);
     searchTimeout = setTimeout(function () {
       var url = '/explorar/api/usuarios?seguindo=1';
+      var qKey = query.toLowerCase();
       if (query.length) url += '&q=' + encodeURIComponent(query);
+
+      // Cancela requests anteriores de sugestões quando o usuário continua digitando.
+      try { if (window.AIRPET_REQ_COORDINATOR && window.AIRPET_REQ_COORDINATOR.cancelGroup) window.AIRPET_REQ_COORDINATOR.cancelGroup('mentionAutocomplete'); } catch (_) {}
+
+      if (typeof swrFetchGet === 'function') {
+        var uidPart = (typeof meuId !== 'undefined' && meuId !== null && meuId !== undefined) ? String(meuId) : 'anon';
+        var key = 'mentionUsers:' + uidPart + ':' + qKey;
+        swrFetchGet({
+          key: key,
+          url: url,
+          priority: window.AIRPET_REQ_COORDINATOR && window.AIRPET_REQ_COORDINATOR.PRIORITY
+            ? window.AIRPET_REQ_COORDINATOR.PRIORITY.MEDIUM
+            : 'MEDIUM',
+          staleTimeMs: 300000, // 5 min
+          cacheTimeMs: 1800000, // 30 min
+          serveStale: false,
+          group: 'mentionAutocomplete'
+        }).then(function (res) {
+          var users = res && res.data ? res.data : res;
+          if (!users || !users.length) { mentionDropdown.classList.add('hidden'); return; }
+          var html = '';
+          users.forEach(function (u) {
+            var uCor = u.cor_perfil || '#ec5a1c';
+            var av = u.foto_perfil
+              ? '<img src="' + escapeHtml(u.foto_perfil) + '" class="w-7 h-7 rounded-full object-cover" style="box-shadow:0 0 0 2px ' + escapeHtml(uCor) + '">'
+              : '<span class="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold text-white bg-gray-400" style="box-shadow:0 0 0 2px ' + escapeHtml(uCor) + '">' + escapeHtml((u.nome || 'U').charAt(0).toUpperCase()) + '</span>';
+            html += '<div class="autocomplete-item" data-nome="' + escapeHtml(u.nome) + '">' + av + '<span class="font-medium text-gray-700">' + escapeHtml(u.nome) + '</span></div>';
+          });
+          mentionDropdown.innerHTML = html;
+          mentionDropdown.classList.remove('hidden');
+        }).catch(function () { mentionDropdown.classList.add('hidden'); });
+        return;
+      }
+
+      // fallback
       fetch(url, {
         headers: { 'Accept': 'application/json' },
         credentials: 'same-origin'
@@ -1388,7 +1525,7 @@
     })
     .then(function (r) { return r.json(); })
     .then(function (data) {
-      if (!data.sucesso) { toast('Erro ao excluir.', 'erro'); return; }
+      if (!data.sucesso) { toast(data.mensagem || 'Não foi possível excluir agora. Tente novamente.', 'erro'); return; }
       var card = document.getElementById('post-' + postId);
       if (card) {
         card.classList.add('fade-out');
@@ -1397,7 +1534,7 @@
       totalPostsLocal = Math.max(0, totalPostsLocal - 1);
       toast('Publicação excluída.');
     })
-    .catch(function () { toast('Erro de conexão.', 'erro'); });
+    .catch(function () { toast('Erro de conexão. Tente novamente.', 'erro'); });
   }
 
   /* ──────────── Share ──────────── */
