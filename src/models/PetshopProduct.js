@@ -4,19 +4,23 @@ const PetshopProduct = {
   async criar(dados) {
     const result = await query(
       `INSERT INTO petshop_products (
-        petshop_id, post_id, nome, preco, descricao, foto_url, contato_link, is_promocao, is_active
+        petshop_id, post_id, service_id, nome, preco, descricao, foto_url, contato_link, is_promocao, is_active,
+        is_highlighted, highlight_rank
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, true)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, true, $10, $11)
       RETURNING *`,
       [
         dados.petshop_id,
         dados.post_id || null,
+        dados.service_id || null,
         dados.nome,
         dados.preco || 0,
         dados.descricao || null,
         dados.foto_url || null,
         dados.contato_link || null,
         !!dados.is_promocao,
+        !!dados.is_highlighted,
+        dados.highlight_rank != null ? Number(dados.highlight_rank) : 0,
       ]
     );
     return result.rows[0];
@@ -68,6 +72,8 @@ const PetshopProduct = {
          pr.foto_url,
          pr.contato_link,
          pr.data_criacao AS validade,
+        pr.is_highlighted,
+        pr.highlight_rank,
          p.id AS petshop_id,
          p.nome AS petshop_nome,
          p.slug AS petshop_slug,

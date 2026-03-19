@@ -430,10 +430,10 @@
 <!-- NEW POST MODAL -->
 <div id="newPostModal" class="fixed inset-0 z-[60] hidden">
   <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" id="newPostOverlay"></div>
-  <div class="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl max-h-[85vh] flex flex-col animate-slideUp safe-bottom
-              md:relative md:top-1/2 md:-translate-y-1/2 md:max-w-lg md:mx-auto md:rounded-2xl md:max-h-[80vh]">
+  <div id="newPostSheet" class="new-post-sheet absolute bottom-0 left-0 right-0 bg-white flex flex-col animate-slideUp safe-bottom
+              md:relative md:top-1/2 md:-translate-y-1/2">
 
-    <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+    <div class="new-post-header flex items-center justify-between px-4 sm:px-5 py-3.5 border-b border-gray-100">
       <h3 class="font-bold text-gray-900">Nova publicação</h3>
       <div class="flex items-center gap-3">
         <span id="postCounter" class="text-xs font-semibold px-2.5 py-1 rounded-full <%= totalPosts >= 10 ? 'bg-red-50 text-red-500' : 'bg-gray-100 text-gray-500' %>">
@@ -445,7 +445,7 @@
       </div>
     </div>
 
-    <div class="flex-1 overflow-y-auto px-5 py-4 space-y-4 scrollbar-hide">
+    <div class="new-post-body flex-1 px-4 sm:px-5 py-3.5 space-y-3.5 scrollbar-hide">
       <% if (totalPosts >= 10) { %>
         <div class="flex items-center gap-2 px-4 py-3 rounded-xl bg-red-50 text-red-600 text-xs font-medium">
           <i class="fa-solid fa-circle-exclamation"></i>
@@ -454,13 +454,13 @@
       <% } %>
 
       <div id="uploadArea"
-           class="border-2 border-dashed border-gray-200 rounded-2xl p-8 text-center cursor-pointer hover:border-primary-300 hover:bg-primary-50/30 transition-all duration-200">
+           class="upload-dropzone hidden p-5 text-center cursor-pointer hover:border-primary-300 hover:bg-primary-50/30 duration-200">
         <div id="uploadPlaceholder">
           <div class="w-14 h-14 mx-auto mb-3 rounded-full bg-primary-50 flex items-center justify-center">
             <i class="fa-solid fa-camera text-xl text-primary-400"></i>
           </div>
-          <p class="text-sm font-medium text-gray-600">Toque para adicionar foto</p>
-          <p class="text-xs text-gray-400 mt-1">ou arraste uma imagem aqui</p>
+          <p class="text-sm font-medium text-gray-600">Adicionar foto (opcional)</p>
+          <p class="text-xs text-gray-400 mt-1">toque, cole (Ctrl+V) ou arraste uma imagem</p>
         </div>
         <div id="uploadPreview" class="hidden relative min-h-[180px] flex items-center justify-center">
           <img id="previewImg" src="" alt="Preview" class="max-h-60 w-full max-w-full mx-auto rounded-xl object-contain">
@@ -472,19 +472,34 @@
       </div>
       <input type="file" id="photoInput" accept="image/jpeg,image/png,image/gif,image/webp" class="hidden">
 
-      <div>
-      <label for="novoPostTexto" class="block text-xs font-medium text-gray-500 mb-1.5">Legenda</label>
-      <textarea id="novoPostTexto" rows="3" maxlength="500"
-                placeholder="Conte algo sobre essa foto…"
-                class="w-full resize-none border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-primary-500/20 focus:border-primary-400 outline-none transition-all"></textarea>
-      <div class="text-right mt-1">
+      <div id="composerCard" class="composer-card px-3 py-2.5">
+      <div class="flex gap-2.5 items-start">
+        <% if (isLogado && usuario.foto_perfil) { %>
+          <img src="<%= usuario.foto_perfil %>" alt="" class="w-8 h-8 rounded-full object-cover shrink-0 mt-0.5">
+        <% } else { %>
+          <span class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0 mt-0.5"
+                style="background:<%= (isLogado && (usuario.cor_perfil || '#ec5a1c')) || '#ec5a1c' %>">
+            <%= (isLogado && usuario.nome ? usuario.nome.charAt(0).toUpperCase() : 'U') %>
+          </span>
+        <% } %>
+        <textarea id="novoPostTexto" rows="1" maxlength="500"
+                placeholder="O que seu pet aprontou hoje?"
+                class="composer-textarea w-full resize-none bg-transparent border-0 px-0 py-1 text-sm text-gray-800 placeholder-gray-400 outline-none"></textarea>
+      </div>
+      <div id="composerActions" class="hidden mt-2 pt-2 border-t border-gray-200 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <button type="button" id="btnOpenImagePicker" class="w-8 h-8 rounded-full text-gray-500 hover:text-primary-500 hover:bg-primary-50 transition-colors" title="Adicionar imagem">
+            <i class="fa-regular fa-image"></i>
+          </button>
+          <span class="text-[11px] text-gray-400">Texto rápido ou imagem opcional</span>
+        </div>
         <span id="charCount" class="text-[11px] text-gray-300">0/500</span>
       </div>
       </div>
 
       <% if (pets && pets.length > 0) { %>
         <div>
-          <label class="text-xs font-medium text-gray-500 mb-1.5 block">Em qual perfil (pet) postar?</label>
+          <label class="text-[11px] font-medium text-gray-500 mb-1.5 block">Perfil do post (opcional)</label>
           <select id="novoPostPet" required
                   class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-800 focus:ring-2 focus:ring-primary-500/20 focus:border-primary-400 outline-none bg-white transition-all">
             <% pets.forEach(function(p, i) { %>
@@ -505,9 +520,9 @@
       <% } %>
     </div>
 
-    <div class="px-5 py-4 border-t border-gray-100">
+    <div class="new-post-footer px-4 sm:px-5 py-3 border-t border-gray-100">
       <button type="button" id="btnPublicar" disabled
-              class="w-full py-3 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-primary-500 to-primary-600 shadow-lg shadow-primary-500/20 hover:shadow-xl hover:shadow-primary-500/30 hover:-translate-y-0.5 transition-all duration-300 disabled:opacity-40 disabled:shadow-none disabled:translate-y-0 disabled:cursor-not-allowed">
+              class="w-full py-3 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-primary-500 to-primary-600 shadow-lg shadow-primary-500/20 hover:shadow-xl hover:shadow-primary-500/30 hover:-translate-y-0 transition-all duration-300 disabled:opacity-40 disabled:shadow-none disabled:translate-y-0 disabled:cursor-not-allowed">
         Publicar
       </button>
     </div>
@@ -773,19 +788,61 @@
   var novoPostTexto = document.getElementById('novoPostTexto');
   var charCount = document.getElementById('charCount');
   var btnPublicar = document.getElementById('btnPublicar');
+  var composerCard = document.getElementById('composerCard');
+  var composerActions = document.getElementById('composerActions');
+  var btnOpenImagePicker = document.getElementById('btnOpenImagePicker');
+  var newPostSheet = document.getElementById('newPostSheet');
+  var isSubmittingPost = false;
+  var recentPayloadHashes = new Map();
 
   function abrirNovoPost() {
     var petSelect = document.getElementById('novoPostPet');
+    isSubmittingPost = false;
     selectedFile = null; photoInput.value = ''; novoPostTexto.value = ''; charCount.textContent = '0/500'; uploadPlaceholder.classList.remove('hidden'); uploadPreview.classList.add('hidden');
+    if (uploadArea) uploadArea.classList.add('hidden');
+    if (composerActions) composerActions.classList.add('hidden');
+    if (composerCard) composerCard.classList.remove('is-active');
+    if (btnPublicar) btnPublicar.textContent = 'Publicar';
     if (petSelect && petSelect.options.length) petSelect.selectedIndex = 0;
     validarFormPost(); abrirModal('newPostModal');
+    ajustarSheetViewport();
+    setTimeout(function () { if (novoPostTexto) novoPostTexto.focus(); }, 80);
+  }
+  function autoResizeComposer() {
+    if (!novoPostTexto) return;
+    novoPostTexto.style.height = 'auto';
+    novoPostTexto.style.height = Math.min(novoPostTexto.scrollHeight, 180) + 'px';
+  }
+  function ativarComposer() {
+    if (composerActions) composerActions.classList.remove('hidden');
+    if (composerCard) composerCard.classList.add('is-active');
+  }
+  function ajustarSheetViewport() {
+    if (!newPostSheet) return;
+    var vv = window.visualViewport;
+    var vh = vv ? Math.floor(vv.height) : window.innerHeight;
+    if (vh > 0) newPostSheet.style.maxHeight = Math.max(380, vh - 10) + 'px';
+  }
+  function generateIdempotencyKey() {
+    return 'post_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 10);
+  }
+  function payloadHash(texto, petId, file) {
+    return [texto || '', petId || '', file ? file.size : 0, file ? file.name : ''].join('|');
+  }
+  function isRecentDuplicate(hash) {
+    var now = Date.now();
+    var ts = recentPayloadHashes.get(hash);
+    if (!ts) return false;
+    return (now - ts) < 15000;
   }
   function validarFormPost() {
     var petOk = true;
     var ps = document.getElementById('novoPostPet');
     if (ps && ps.tagName === 'SELECT') petOk = !!ps.value;
     if (!btnPublicar) return;
-    btnPublicar.disabled = (!selectedFile || !novoPostTexto.value.trim() || totalPostsLocal >= 10 || !petOk);
+    var temTexto = !!novoPostTexto.value.trim();
+    var temMidia = !!selectedFile;
+    btnPublicar.disabled = (isSubmittingPost || (!temTexto && !temMidia) || totalPostsLocal >= 10 || !petOk);
   }
   uploadArea.addEventListener('click', function () { photoInput.click(); });
   uploadArea.addEventListener('dragover', function (e) { e.preventDefault(); this.classList.add('border-primary-400', 'bg-primary-50/50'); });
@@ -829,23 +886,78 @@
     reader.readAsDataURL(file);
   }
   document.getElementById('removePhoto').addEventListener('click', function (e) { e.stopPropagation(); selectedFile = null; photoInput.value = ''; uploadPlaceholder.classList.remove('hidden'); uploadPreview.classList.add('hidden'); validarFormPost(); });
-  novoPostTexto.addEventListener('input', function () { charCount.textContent = this.value.length + '/500'; validarFormPost(); });
+  novoPostTexto.addEventListener('focus', ativarComposer);
+  novoPostTexto.addEventListener('input', function () { autoResizeComposer(); charCount.textContent = this.value.length + '/500'; validarFormPost(); });
+  novoPostTexto.addEventListener('paste', function (e) {
+    if (!e.clipboardData || !e.clipboardData.items) return;
+    for (var i = 0; i < e.clipboardData.items.length; i++) {
+      var item = e.clipboardData.items[i];
+      if (item.type && item.type.indexOf('image/') === 0) {
+        var file = item.getAsFile();
+        if (file) {
+          e.preventDefault();
+          handleFile(file);
+          break;
+        }
+      }
+    }
+  });
+  novoPostTexto.addEventListener('keydown', function (e) {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+      e.preventDefault();
+      if (!btnPublicar.disabled) btnPublicar.click();
+    }
+  });
+  if (btnOpenImagePicker) {
+    btnOpenImagePicker.addEventListener('click', function () {
+      ativarComposer();
+      if (uploadArea && uploadArea.classList.contains('hidden')) {
+        uploadArea.classList.remove('hidden');
+      }
+      photoInput.click();
+    });
+  }
+  window.addEventListener('resize', ajustarSheetViewport);
+  if (window.visualViewport) window.visualViewport.addEventListener('resize', ajustarSheetViewport);
   var ps = document.getElementById('novoPostPet');
   if (ps) ps.addEventListener('change', validarFormPost);
 
   btnPublicar.addEventListener('click', function () {
-    if (!selectedFile || !novoPostTexto.value.trim()) return;
+    if (isSubmittingPost) return;
+    var textoPayload = novoPostTexto.value.trim();
+    if (!selectedFile && !textoPayload) return;
     var petSelect = document.getElementById('novoPostPet');
+    var petPayload = (petSelect && petSelect.value) ? petSelect.value : '';
+    var hash = payloadHash(textoPayload, petPayload, selectedFile);
+    if (isRecentDuplicate(hash)) {
+      toast('Publicação já enviada recentemente. Aguarde alguns segundos.', 'erro');
+      return;
+    }
+    isSubmittingPost = true;
     this.disabled = true; this.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>Publicando…';
-    var formData = new FormData(); formData.append('foto', selectedFile); formData.append('texto', novoPostTexto.value.trim());
+    var formData = new FormData();
+    if (selectedFile) formData.append('foto', selectedFile);
+    if (textoPayload) formData.append('texto', textoPayload);
     if (petSelect && petSelect.value) formData.append('pet_id', petSelect.value);
-    fetch('/explorar/post', { method: 'POST', credentials: 'same-origin', body: formData }).then(function (r) { return r.json(); }).then(function (data) {
+    fetch('/explorar/post', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Idempotency-Key': generateIdempotencyKey() },
+      body: formData
+    }).then(function (r) { return r.json(); }).then(function (data) {
+      isSubmittingPost = false;
       btnPublicar.textContent = 'Publicar';
       if (!data.sucesso) { toast(data.mensagem || 'Erro.', 'erro'); validarFormPost(); return; }
+      recentPayloadHashes.set(hash, Date.now());
       fecharModal('newPostModal'); toast('Publicado!');
       totalPostsLocal = data.totalPosts || (totalPostsLocal + 1);
       if (data.post) { var emptyState = feedContainer.querySelector('.text-center.py-20'); if (emptyState) emptyState.remove(); feedContainer.insertAdjacentHTML('afterbegin', renderPostHTML(data.post)); initVerMaisForCard(feedContainer.firstElementChild); observarCardVisualizacao(feedContainer.firstElementChild); }
-    }).catch(function () { toast('Erro de conexão.', 'erro'); btnPublicar.textContent = 'Publicar'; validarFormPost(); });
+    }).catch(function () {
+      isSubmittingPost = false;
+      toast('Erro de conexão.', 'erro');
+      btnPublicar.textContent = 'Publicar';
+      validarFormPost();
+    });
   });
 
   var fabBtn = document.getElementById('fabNewPost');

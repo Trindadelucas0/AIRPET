@@ -8,6 +8,13 @@ const petshopPublishingService = {
   async criarPost(petshopId, accountId, dados) {
     const postType = dados.post_type || 'normal';
     const approval_status = postType === 'promocao' ? 'pendente' : 'aprovado';
+    const isHighlighted = dados.is_highlighted === true || dados.is_highlighted === 'on' || dados.is_highlighted === '1';
+    const highlightRank = dados.highlight_rank != null && String(dados.highlight_rank).trim() !== ''
+      ? parseInt(dados.highlight_rank, 10)
+      : 0;
+    const serviceId = dados.service_id != null && String(dados.service_id).trim() !== ''
+      ? parseInt(dados.service_id, 10)
+      : null;
 
     const post = await PetshopPost.criar({
       petshop_id: petshopId,
@@ -17,6 +24,8 @@ const petshopPublishingService = {
       titulo: dados.titulo,
       texto: dados.texto,
       foto_url: dados.foto_url,
+      is_highlighted: isHighlighted,
+      highlight_rank: Number.isFinite(highlightRank) ? highlightRank : 0,
     });
 
     if (postType === 'produto' || postType === 'promocao') {
@@ -30,6 +39,9 @@ const petshopPublishingService = {
         foto_url: dados.foto_url || null,
         contato_link: dados.contato_link || null,
         is_promocao: postType === 'promocao',
+        service_id: serviceId,
+        is_highlighted: isHighlighted,
+        highlight_rank: Number.isFinite(highlightRank) ? highlightRank : 0,
       });
     }
 

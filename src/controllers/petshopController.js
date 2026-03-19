@@ -21,8 +21,10 @@ const Petshop = require('../models/Petshop');
 const PetshopProfile = require('../models/PetshopProfile');
 const PetshopProduct = require('../models/PetshopProduct');
 const PetshopPost = require('../models/PetshopPost');
+const PetshopPublication = require('../models/PetshopPublication');
 const PetshopFollower = require('../models/PetshopFollower');
 const PetshopReview = require('../models/PetshopReview');
+const PetshopService = require('../models/PetshopService');
 const logger = require('../utils/logger');
 
 /**
@@ -91,10 +93,12 @@ async function mostrarDetalhes(req, res) {
       });
     }
 
-    const [profile, products, posts, reviews, reviewSummary, followerCount] = await Promise.all([
+    const [profile, servicos, products, posts, publicacoes, reviews, reviewSummary, followerCount] = await Promise.all([
       PetshopProfile.buscarPorPetshopId(petshop.id),
+      PetshopService.listarAtivos(petshop.id).catch(() => []),
       PetshopProduct.listarAtivosPorPetshop(petshop.id),
       PetshopPost.listarPublicosPorPetshop(petshop.id),
+      PetshopPublication.listarPublicacoesParaGradePorPetshop(petshop.id).catch(() => []),
       PetshopReview.listarPorPetshop(petshop.id),
       PetshopReview.resumoPorPetshop(petshop.id),
       PetshopFollower.contarSeguidores(petshop.id),
@@ -107,8 +111,10 @@ async function mostrarDetalhes(req, res) {
       titulo: `${petshop.nome} - AIRPET`,
       petshop,
       profile,
+      servicos,
       products,
       posts,
+      publicacoes,
       reviews,
       reviewSummary,
       followerCount,

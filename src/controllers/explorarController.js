@@ -12,27 +12,95 @@ const PetPetshopLink = require('../models/PetPetshopLink');
 const Petshop = require('../models/Petshop');
 const PetshopFollower = require('../models/PetshopFollower');
 const PetshopProduct = require('../models/PetshopProduct');
+const PetshopPublication = require('../models/PetshopPublication');
+const PetshopPostLike = require('../models/PetshopPostLike');
+const PetshopPostComment = require('../models/PetshopPostComment');
 const recomendacaoService = require('../services/recomendacaoService');
 const logger = require('../utils/logger');
 const { query } = require('../config/database');
+const PostMention = require('../models/PostMention');
+const CommentMention = require('../models/CommentMention');
+const PostTag = require('../models/PostTag');
+const PostMedia = require('../models/PostMedia');
 
 function getNotificacaoService() {
   try { return require('../services/notificacaoService'); } catch (_) { return null; }
 }
 
-async function notificarMencoes(texto, autorId, publicacaoId) {
-  const nomes = Comentario.extrairMencoes(texto);
+async function notificarMencoes(texto, autorId, publicacaoId, contexto = 'publicacao') {
+  const nomes = PostMention.extrairMencoes(texto);
   if (!nomes.length) return;
-  const usuarios = await Comentario.resolverMencoes(nomes);
+  const usuarios = await PostMention.resolverUsuariosPorNome(nomes);
   const svc = getNotificacaoService();
   if (!svc) return;
   const autor = await Usuario.buscarPorId(autorId);
   for (const u of usuarios) {
     if (u.id === autorId) continue;
     try {
-      await svc.criar(u.id, 'mencao', `${autor.nome} mencionou você em um comentário.`, `/explorar#post-${publicacaoId}`, { remetente_id: autorId, publicacao_id: publicacaoId });
+      const mensagem = contexto === 'comentario'
+        ? `${autor.nome} mencionou você em um comentário.`
+        : `${autor.nome} mencionou você em uma publicação.`;
+      await svc.criar(u.id, 'mencao', mensagem, `/explorar#post-${publicacaoId}`, { remetente_id: autorId, publicacao_id: publicacaoId });
     } catch (_) {}
   }
+}
+
+function buildPostRequestHash(payload) {
+  return Buffer.from(JSON.stringify(payload)).toString('base64').slice(0, 80);
+}
+
+function parsePetshopPublicationKey(raw) {
+  const value = String(raw || '').trim();
+  if (!value) return null;
+
+  // Formatos esperados:
+  // - post:123
+  // - product:456
+  // - post-123 / product-456 (fallback)
+  const parts = value.includes(':') ? value.split(':') : value.split('-');
+  if (!parts || parts.length < 2) return null;
+  const typePart = String(parts[0]).toLowerCase();
+  const idPart = String(parts.slice(1).join('-')).trim();
+  const publicationId = parseInt(idPart, 10);
+  if (!Number.isFinite(publicationId) || publicationId <= 0) return null;
+
+  if (typePart === 'post' || typePart === 'petshop_post') return { publicationType: 'petshop_post', publicationId };
+  if (typePart === 'product' || typePart === 'petshop_product') return { publicationType: 'petshop_product', publicationId };
+  return null;
+}
+
+async function tryGetIdempotentResponse(uid, idempotencyKey, requestHash) {
+  if (!idempotencyKey) return null;
+  await query(`DELETE FROM post_idempotency_keys WHERE expires_at < NOW()`);
+  const row = await query(
+    `SELECT response_body, status_code, request_hash
+       FROM post_idempotency_keys
+      WHERE user_id = $1
+        AND idempotency_key = $2
+        AND expires_at > NOW()
+      LIMIT 1`,
+    [uid, idempotencyKey]
+  );
+  const existing = row.rows[0];
+  if (!existing) return null;
+  if (existing.request_hash && requestHash && existing.request_hash !== requestHash) {
+    return { status: 409, payload: { sucesso: false, mensagem: 'Idempotency-Key reutilizada com payload diferente.' } };
+  }
+  return { status: existing.status_code || 200, payload: existing.response_body || { sucesso: true } };
+}
+
+async function saveIdempotentResponse(uid, idempotencyKey, requestHash, statusCode, payload) {
+  if (!idempotencyKey) return;
+  await query(
+    `INSERT INTO post_idempotency_keys (user_id, idempotency_key, request_hash, response_body, status_code, expires_at)
+     VALUES ($1, $2, $3, $4::jsonb, $5, NOW() + interval '60 seconds')
+     ON CONFLICT (user_id, idempotency_key) DO UPDATE
+     SET request_hash = EXCLUDED.request_hash,
+         response_body = EXCLUDED.response_body,
+         status_code = EXCLUDED.status_code,
+         expires_at = EXCLUDED.expires_at`,
+    [uid, idempotencyKey, requestHash || null, JSON.stringify(payload || {}), statusCode || 200]
+  );
 }
 
 async function autoDeleteSeNecessario(usuarioId) {
@@ -137,6 +205,40 @@ function mesclarPostsComPromocoes(posts, promocoes, pagina = 1) {
   return out;
 }
 
+function mesclarPostsComPetshopPublicacoes(posts, petshopPublicacoes, pagina = 1) {
+  if (pagina !== 1) return posts;
+  if (!Array.isArray(posts) || !Array.isArray(petshopPublicacoes) || !petshopPublicacoes.length) return posts;
+
+  // Mantém o feed limpo: adiciona só alguns cards do parceiro no início.
+  const cards = petshopPublicacoes.slice(0, 3);
+  if (!cards.length) return posts;
+
+  const posicoesBase = [3, 7, 12]; // posições 1-based no array final já com patrocinados
+  const out = [];
+  let inseridos = 0;
+
+  for (let i = 0; i < posts.length; i += 1) {
+    out.push(posts[i]);
+    const posicaoAtual = i + 1;
+    if (inseridos < cards.length && posicoesBase.includes(posicaoAtual)) {
+      out.push(cards[inseridos]);
+      inseridos += 1;
+    }
+    if (inseridos >= cards.length) break;
+  }
+
+  if (inseridos < cards.length) {
+    out.push(...cards.slice(inseridos));
+  }
+
+  // Se interrompeu cedo, mantém o resto de posts.
+  if (out.length < posts.length + inseridos) {
+    out.push(...posts.slice(out.length - inseridos));
+  }
+
+  return out.slice(0, Math.max(posts.length, out.length));
+}
+
 const FotoPerfilPet = require('../models/FotoPerfilPet');
 
 const explorarController = {
@@ -209,7 +311,27 @@ const explorarController = {
       }
 
       const patrocinados = await Publicacao.buscarPatrocinadosPetAtivos(uid, 8);
-      const posts = mesclarPostsComPatrocinados(postsOrganicos, patrocinados, page);
+      let posts = mesclarPostsComPatrocinados(postsOrganicos, patrocinados, page);
+
+      // Injeta cards de publicações de petshops (parceiros) no feed.
+      if (page === 1) {
+        const usuario = await Usuario.buscarPorId(uid);
+        const lat = usuario && usuario.ultima_lat;
+        const lng = usuario && usuario.ultima_lng;
+        const petshopPublicacoes = await PetshopPublication.listarCardsPublicacoesParaExplorar({
+          usuarioId: uid,
+          lat,
+          lng,
+          limite: 6,
+        }).catch(() => []);
+
+        const petshopPublicacoesMarcadas = (petshopPublicacoes || []).map((p) => ({
+          ...p,
+          is_petshop_publication: true,
+        }));
+
+        posts = mesclarPostsComPetshopPublicacoes(posts, petshopPublicacoesMarcadas, page);
+      }
 
       const [pets, totalPosts, totalFixadas, recomendacoes, petsRecomendados] = await Promise.all([
         Pet.buscarPorUsuario(uid),
@@ -252,12 +374,10 @@ const explorarController = {
       const { texto, pet_id } = req.body || {};
       const foto = req.file ? `/images/posts/${req.file.filename}` : null;
 
-      if (!foto) {
-        return res.status(400).json({ sucesso: false, mensagem: 'Envie uma foto.' });
+      if (!texto && !foto) {
+        return res.status(400).json({ sucesso: false, mensagem: 'Escreva algo ou envie uma imagem.' });
       }
-      if (!texto || !String(texto).trim()) {
-        return res.status(400).json({ sucesso: false, mensagem: 'Escreva uma legenda.' });
-      }
+      const textoLimpo = String(texto || '').trim();
       const petId = pet_id ? parseInt(pet_id, 10) : null;
       if (petId) {
         const pet = await Pet.buscarPorId(petId);
@@ -266,15 +386,51 @@ const explorarController = {
         }
       }
 
+      const requestHash = buildPostRequestHash({
+        texto: textoLimpo,
+        pet_id: petId || null,
+        foto_nome: req.file?.originalname || '',
+        foto_tamanho: req.file?.size || 0,
+      });
+      const idempotencyKey = String(req.get('Idempotency-Key') || req.get('X-Idempotency-Key') || '').trim().slice(0, 120);
+      const idempotente = await tryGetIdempotentResponse(uid, idempotencyKey, requestHash);
+      if (idempotente) {
+        return res.status(idempotente.status).json(idempotente.payload);
+      }
+
+      const ultimo = await Publicacao.ultimoPostDoUsuario(uid);
+      if (ultimo && (Date.now() - new Date(ultimo.criado_em).getTime()) < 3000) {
+        const payload = { sucesso: false, mensagem: 'Aguarde alguns segundos antes de publicar novamente.' };
+        await saveIdempotentResponse(uid, idempotencyKey, requestHash, 429, payload);
+        return res.status(429).json(payload);
+      }
+      const repetido = await Publicacao.buscarRecenteIgual(uid, textoLimpo, petId || null, 15);
+      if (repetido) {
+        const postExistente = await Publicacao.buscarPorId(repetido.id, uid);
+        const totalPostsExistente = await Publicacao.contarAtivas(uid);
+        const payload = { sucesso: true, post: postExistente, totalPosts: totalPostsExistente, removido: null, duplicado: true };
+        await saveIdempotentResponse(uid, idempotencyKey, requestHash, 200, payload);
+        return res.json(payload);
+      }
+
       const removido = await autoDeleteSeNecessario(uid);
 
       const post = await Publicacao.criar({
-        usuario_id: uid, pet_id: petId || null, foto, legenda: String(texto).trim(), texto: String(texto).trim(),
+        usuario_id: uid, pet_id: petId || null, foto, legenda: textoLimpo || null, texto: textoLimpo || null,
       });
+      if (foto) {
+        await PostMedia.criar(post.id, foto, 'image', 0, 'ready');
+      }
+      const nomesMencionados = PostMention.extrairMencoes(textoLimpo);
+      const usuariosMencionados = await PostMention.resolverUsuariosPorNome(nomesMencionados);
+      await PostMention.criarEmLote(post.id, uid, usuariosMencionados.map((u) => u.id));
+      await notificarMencoes(textoLimpo, uid, post.id, 'publicacao');
+
       const completo = await Publicacao.buscarPorId(post.id, uid);
       const totalPosts = await Publicacao.contarAtivas(uid);
-
-      res.json({ sucesso: true, post: completo, totalPosts, removido: removido ? removido.id : null });
+      const payload = { sucesso: true, post: completo, totalPosts, removido: removido ? removido.id : null };
+      await saveIdempotentResponse(uid, idempotencyKey, requestHash, 200, payload);
+      res.json(payload);
     } catch (err) {
       logger.error('EXPLORAR', 'Erro ao criar post', err);
       const msg = process.env.NODE_ENV === 'production'
@@ -381,9 +537,11 @@ const explorarController = {
         return res.status(400).json({ sucesso: false, mensagem: 'Escreva algo.' });
       }
 
-      await Comentario.criar({ usuario_id: uid, publicacao_id: id, texto: texto.trim() });
-
-      notificarMencoes(texto.trim(), uid, id).catch(() => {});
+      const novo = await Comentario.criar({ usuario_id: uid, publicacao_id: id, texto: texto.trim() });
+      const nomesMencionados = PostMention.extrairMencoes(texto.trim());
+      const usuariosMencionados = await PostMention.resolverUsuariosPorNome(nomesMencionados);
+      await CommentMention.criarEmLote(novo.id, uid, usuariosMencionados.map((u) => u.id));
+      notificarMencoes(texto.trim(), uid, id, 'comentario').catch(() => {});
 
       const svc = getNotificacaoService();
       if (svc) {
@@ -399,6 +557,78 @@ const explorarController = {
     } catch (err) {
       logger.error('EXPLORAR', 'Erro ao comentar', err);
       res.status(500).json({ sucesso: false });
+    }
+  },
+
+  async curtirPetshopPublicacao(req, res) {
+    try {
+      const uid = req.session.usuario.id;
+      const { id } = req.params; // publicaçãoKey (post:123 / product:456)
+      const parsed = parsePetshopPublicationKey(id);
+      if (!parsed) return res.status(400).json({ sucesso: false, mensagem: 'Publicação inválida.' });
+
+      await PetshopPostLike.curtir(uid, parsed.publicationType, parsed.publicationId);
+      const total = await PetshopPostLike.contar(parsed.publicationType, parsed.publicationId);
+      return res.json({ sucesso: true, curtiu: true, total });
+    } catch (err) {
+      logger.error('EXPLORAR', 'Erro ao curtir publicação petshop', err);
+      return res.status(500).json({ sucesso: false });
+    }
+  },
+
+  async descurtirPetshopPublicacao(req, res) {
+    try {
+      const uid = req.session.usuario.id;
+      const { id } = req.params;
+      const parsed = parsePetshopPublicationKey(id);
+      if (!parsed) return res.status(400).json({ sucesso: false, mensagem: 'Publicação inválida.' });
+
+      await PetshopPostLike.descurtir(uid, parsed.publicationType, parsed.publicationId);
+      const total = await PetshopPostLike.contar(parsed.publicationType, parsed.publicationId);
+      return res.json({ sucesso: true, curtiu: false, total });
+    } catch (err) {
+      logger.error('EXPLORAR', 'Erro ao descurtir publicação petshop', err);
+      return res.status(500).json({ sucesso: false });
+    }
+  },
+
+  async comentariosPetshopPublicacao(req, res) {
+    try {
+      const { id } = req.params; // publicaçãoKey
+      const parsed = parsePetshopPublicationKey(id);
+      if (!parsed) return res.status(400).json({ sucesso: false, mensagem: 'Publicação inválida.' });
+
+      const lista = await PetshopPostComment.listarPorPublicacao(parsed.publicationType, parsed.publicationId);
+      return res.json({ sucesso: true, comentarios: lista });
+    } catch (err) {
+      logger.error('EXPLORAR', 'Erro ao listar comentários petshop', err);
+      return res.status(500).json({ sucesso: false });
+    }
+  },
+
+  async comentarPetshopPublicacao(req, res) {
+    try {
+      const uid = req.session.usuario.id;
+      const { id } = req.params;
+      const parsed = parsePetshopPublicationKey(id);
+      if (!parsed) return res.status(400).json({ sucesso: false, mensagem: 'Publicação inválida.' });
+
+      const { texto } = req.body || {};
+      if (!texto || !texto.trim()) {
+        return res.status(400).json({ sucesso: false, mensagem: 'Escreva algo.' });
+      }
+
+      const novo = await PetshopPostComment.criar({
+        usuario_id: uid,
+        publicationType: parsed.publicationType,
+        publicationId: parsed.publicationId,
+        texto: String(texto).trim(),
+      });
+      const total = await PetshopPostComment.contarPorPublicacao(parsed.publicationType, parsed.publicationId);
+      return res.json({ sucesso: true, comentario: novo, total });
+    } catch (err) {
+      logger.error('EXPLORAR', 'Erro ao comentar publicação petshop', err);
+      return res.status(500).json({ sucesso: false });
     }
   },
 
@@ -639,6 +869,201 @@ const explorarController = {
     } catch (err) {
       logger.error('EXPLORAR', 'Erro ao buscar usuários', err);
       res.json([]);
+    }
+  },
+
+  async buscarUsuariosV2(req, res) {
+    try {
+      const q = String(req.query.q || '').replace(/^@/, '').trim().toLowerCase();
+      const uid = req.session?.usuario?.id;
+      if (!q || q.length < 1) return res.json({ sucesso: true, usuarios: [] });
+      const params = ['%' + q + '%'];
+      let whereExtra = '';
+      if (uid) {
+        params.push(uid);
+        whereExtra = ` OR u.id IN (SELECT seguido_id FROM seguidores WHERE seguidor_id = $2) `;
+      }
+      const r = await query(
+        `SELECT u.id, u.nome, u.foto_perfil, u.cor_perfil
+           FROM usuarios u
+          WHERE LOWER(u.nome) LIKE $1 ${whereExtra}
+          ORDER BY u.nome
+          LIMIT 10`,
+        params
+      );
+      res.json({ sucesso: true, usuarios: r.rows });
+    } catch (err) {
+      logger.error('EXPLORAR', 'Erro busca usuários v2', err);
+      res.status(500).json({ sucesso: false, usuarios: [] });
+    }
+  },
+
+  async criarPostV2(req, res) {
+    try {
+      const uid = req.session?.usuario?.id;
+      if (!uid) return res.status(401).json({ sucesso: false, mensagem: 'Faça login para publicar.' });
+
+      const texto = String(req.body?.text || req.body?.texto || '').trim();
+      const petId = req.body?.pet_id ? parseInt(req.body.pet_id, 10) : null;
+      const taggedUserIds = Array.isArray(req.body?.taggedUserIds) ? req.body.taggedUserIds : [];
+
+      const mediaFiles = Array.isArray(req.files) ? req.files : [];
+      if (!texto && mediaFiles.length === 0) {
+        return res.status(400).json({ sucesso: false, mensagem: 'Escreva algo ou envie mídia.' });
+      }
+      if (petId) {
+        const pet = await Pet.buscarPorId(petId);
+        if (!pet || pet.usuario_id !== uid) {
+          return res.status(400).json({ sucesso: false, mensagem: 'Pet inválido para publicação.' });
+        }
+      }
+
+      const idempotencyKey = String(req.get('Idempotency-Key') || req.get('X-Idempotency-Key') || '').trim().slice(0, 120);
+      const requestHash = buildPostRequestHash({
+        texto,
+        pet_id: petId || null,
+        media: mediaFiles.map((f) => `${f.originalname}:${f.size}`).join('|'),
+      });
+      const idem = await tryGetIdempotentResponse(uid, idempotencyKey, requestHash);
+      if (idem) return res.status(idem.status).json(idem.payload);
+
+      const post = await Publicacao.criar({
+        usuario_id: uid,
+        pet_id: petId || null,
+        foto: mediaFiles[0] ? `/images/posts/${mediaFiles[0].filename}` : null,
+        legenda: texto || null,
+        texto: texto || null,
+      });
+      for (let i = 0; i < mediaFiles.length; i += 1) {
+        const f = mediaFiles[i];
+        await PostMedia.criar(post.id, `/images/posts/${f.filename}`, 'image', i, 'ready');
+      }
+
+      const nomesMencionados = PostMention.extrairMencoes(texto);
+      const usuariosMencionados = await PostMention.resolverUsuariosPorNome(nomesMencionados);
+      await PostMention.criarEmLote(post.id, uid, usuariosMencionados.map((u) => u.id));
+      await notificarMencoes(texto, uid, post.id, 'publicacao');
+
+      const tags = await PostTag.criarPendentes(post.id, uid, taggedUserIds);
+      const svc = getNotificacaoService();
+      if (svc && tags.length) {
+        const autor = await Usuario.buscarPorId(uid);
+        for (const t of tags) {
+          if (t.tagged_user_id === uid) continue;
+          svc.criar(
+            t.tagged_user_id,
+            'tag_post',
+            `${autor.nome} marcou você em uma publicação.`,
+            `/explorar#post-${post.id}`,
+            { remetente_id: uid, publicacao_id: post.id }
+          ).catch(() => {});
+        }
+      }
+
+      const completo = await Publicacao.buscarPorId(post.id, uid);
+      const payload = {
+        sucesso: true,
+        post: completo,
+        media_count: mediaFiles.length,
+        mentions_count: usuariosMencionados.length,
+        tags_pending: tags.length,
+      };
+      await saveIdempotentResponse(uid, idempotencyKey, requestHash, 200, payload);
+      return res.json(payload);
+    } catch (err) {
+      logger.error('EXPLORAR', 'Erro criar post v2', err);
+      return res.status(500).json({ sucesso: false, mensagem: 'Erro ao publicar.' });
+    }
+  },
+
+  async feedV2(req, res) {
+    try {
+      const uid = req.session?.usuario?.id;
+      if (!uid) return res.status(401).json({ sucesso: false, mensagem: 'Não autenticado.' });
+      const limit = Math.min(parseInt(req.query.limit, 10) || 20, 50);
+      const beforeId = req.query.cursor ? parseInt(req.query.cursor, 10) : null;
+      const posts = await Publicacao.feedPorCursor(uid, limit, beforeId);
+      const nextCursor = posts.length ? posts[posts.length - 1].id : null;
+      return res.json({ sucesso: true, posts, next_cursor: nextCursor });
+    } catch (err) {
+      logger.error('EXPLORAR', 'Erro feed v2', err);
+      return res.status(500).json({ sucesso: false, posts: [] });
+    }
+  },
+
+  async comentarV2(req, res) {
+    try {
+      const uid = req.session?.usuario?.id;
+      if (!uid) return res.status(401).json({ sucesso: false, mensagem: 'Não autenticado.' });
+      const postId = parseInt(req.params.id, 10);
+      const texto = String(req.body?.texto || req.body?.text || '').trim();
+      if (!postId || !texto) return res.status(400).json({ sucesso: false, mensagem: 'Dados inválidos.' });
+      const novo = await Comentario.criar({ usuario_id: uid, publicacao_id: postId, texto });
+      const nomes = PostMention.extrairMencoes(texto);
+      const usuarios = await PostMention.resolverUsuariosPorNome(nomes);
+      await CommentMention.criarEmLote(novo.id, uid, usuarios.map((u) => u.id));
+      await notificarMencoes(texto, uid, postId, 'comentario');
+      return res.json({ sucesso: true, comentario: novo });
+    } catch (err) {
+      logger.error('EXPLORAR', 'Erro comentar v2', err);
+      return res.status(500).json({ sucesso: false });
+    }
+  },
+
+  async responderTagPost(req, res) {
+    try {
+      const uid = req.session?.usuario?.id;
+      if (!uid) return res.status(401).json({ sucesso: false, mensagem: 'Não autenticado.' });
+      const tagId = parseInt(req.body?.tagId || req.params?.id, 10);
+      const action = String(req.body?.action || '').trim().toLowerCase();
+      if (!tagId || !['approve', 'reject'].includes(action)) {
+        return res.status(400).json({ sucesso: false, mensagem: 'Ação inválida.' });
+      }
+      const resultado = await PostTag.responder(tagId, uid, action);
+      if (!resultado) return res.status(404).json({ sucesso: false, mensagem: 'Marcação pendente não encontrada.' });
+      const svc = getNotificacaoService();
+      if (svc && resultado.tagged_by_user_id && resultado.tagged_by_user_id !== uid) {
+        const eu = await Usuario.buscarPorId(uid);
+        const acaoTxt = action === 'approve' ? 'aceitou' : 'recusou';
+        svc.criar(
+          resultado.tagged_by_user_id,
+          'tag_post_resposta',
+          `${eu.nome} ${acaoTxt} a marcação na publicação.`,
+          `/explorar#post-${resultado.post_id}`,
+          { remetente_id: uid, publicacao_id: resultado.post_id }
+        ).catch(() => {});
+      }
+      return res.json({ sucesso: true, tag: resultado });
+    } catch (err) {
+      if (err.code === 'TAG_LIMIT') {
+        return res.status(409).json({ sucesso: false, mensagem: err.message });
+      }
+      logger.error('EXPLORAR', 'Erro responder tag', err);
+      return res.status(500).json({ sucesso: false });
+    }
+  },
+
+  async minhasMarcacoes(req, res) {
+    try {
+      const uid = req.session?.usuario?.id;
+      if (!uid) return res.status(401).json({ sucesso: false, mensagem: 'Não autenticado.' });
+      const posts = await PostTag.listarAprovados(uid, 50);
+      return res.json({ sucesso: true, posts });
+    } catch (err) {
+      logger.error('EXPLORAR', 'Erro minhas marcações', err);
+      return res.status(500).json({ sucesso: false, posts: [] });
+    }
+  },
+
+  async minhasMarcacoesPendentes(req, res) {
+    try {
+      const uid = req.session?.usuario?.id;
+      if (!uid) return res.status(401).json({ sucesso: false, mensagem: 'Não autenticado.' });
+      const pendentes = await PostTag.listarPendentes(uid, 50);
+      return res.json({ sucesso: true, pendentes });
+    } catch (err) {
+      logger.error('EXPLORAR', 'Erro marcações pendentes', err);
+      return res.status(500).json({ sucesso: false, pendentes: [] });
     }
   },
 

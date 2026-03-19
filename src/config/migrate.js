@@ -727,6 +727,119 @@ const migrations = [
 
   `CREATE INDEX IF NOT EXISTS idx_reposts_pub ON reposts (publicacao_id);`,
 
+  // === SOCIAL V2: mídia, menções, marcações, idempotência e stats de post ===
+  `CREATE TABLE IF NOT EXISTS post_media (
+    id SERIAL PRIMARY KEY,
+    post_id INTEGER NOT NULL REFERENCES publicacoes(id) ON DELETE CASCADE,
+    media_url TEXT NOT NULL,
+    media_type VARCHAR(20) NOT NULL DEFAULT 'image',
+    width INTEGER,
+    height INTEGER,
+    order_index INTEGER DEFAULT 0,
+    status VARCHAR(20) NOT NULL DEFAULT 'ready',
+    created_at TIMESTAMP DEFAULT NOW()
+  );`,
+  `CREATE INDEX IF NOT EXISTS idx_post_media_post ON post_media (post_id, order_index);`,
+
+  `CREATE TABLE IF NOT EXISTS post_mentions (
+    id SERIAL PRIMARY KEY,
+    post_id INTEGER NOT NULL REFERENCES publicacoes(id) ON DELETE CASCADE,
+    mentioned_user_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+    author_user_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+    created_at TIMESTAMP DEFAULT NOW(),
+    UNIQUE (post_id, mentioned_user_id)
+  );`,
+  `CREATE INDEX IF NOT EXISTS idx_post_mentions_mentioned ON post_mentions (mentioned_user_id, created_at DESC);`,
+
+  `CREATE TABLE IF NOT EXISTS comment_mentions (
+    id SERIAL PRIMARY KEY,
+    comment_id INTEGER NOT NULL REFERENCES comentarios(id) ON DELETE CASCADE,
+    mentioned_user_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+    author_user_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+    created_at TIMESTAMP DEFAULT NOW(),
+    UNIQUE (comment_id, mentioned_user_id)
+  );`,
+  `CREATE INDEX IF NOT EXISTS idx_comment_mentions_mentioned ON comment_mentions (mentioned_user_id, created_at DESC);`,
+
+  `CREATE TABLE IF NOT EXISTS post_tags (
+    id SERIAL PRIMARY KEY,
+    post_id INTEGER NOT NULL REFERENCES publicacoes(id) ON DELETE CASCADE,
+    tagged_user_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+    tagged_by_user_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+    status VARCHAR(20) NOT NULL DEFAULT 'pending',
+    responded_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT NOW(),
+    UNIQUE (post_id, tagged_user_id)
+  );`,
+  `CREATE INDEX IF NOT EXISTS idx_post_tags_tagged_user ON post_tags (tagged_user_id, status, created_at DESC);`,
+  `CREATE INDEX IF NOT EXISTS idx_post_tags_post ON post_tags (post_id, status);`,
+
+  `CREATE TABLE IF NOT EXISTS post_stats (
+    post_id INTEGER PRIMARY KEY REFERENCES publicacoes(id) ON DELETE CASCADE,
+    like_count INTEGER NOT NULL DEFAULT 0,
+    comment_count INTEGER NOT NULL DEFAULT 0,
+    repost_count INTEGER NOT NULL DEFAULT 0,
+    updated_at TIMESTAMP DEFAULT NOW()
+  );`,
+  `INSERT INTO post_stats (post_id, like_count, comment_count, repost_count, updated_at)
+   SELECT p.id,
+          COALESCE((SELECT COUNT(*) FROM curtidas c WHERE c.publicacao_id = p.id), 0),
+          COALESCE((SELECT COUNT(*) FROM comentarios c WHERE c.publicacao_id = p.id), 0),
+          COALESCE((SELECT COUNT(*) FROM reposts r WHERE r.publicacao_id = p.id), 0),
+          NOW()
+     FROM publicacoes p
+   ON CONFLICT (post_id) DO NOTHING;`,
+
+  `CREATE OR REPLACE FUNCTION fn_sync_post_stats() RETURNS trigger AS $$
+  DECLARE
+    target_post_id INTEGER;
+  BEGIN
+    target_post_id := COALESCE(NEW.publicacao_id, OLD.publicacao_id);
+    IF target_post_id IS NULL THEN
+      RETURN COALESCE(NEW, OLD);
+    END IF;
+    INSERT INTO post_stats (post_id, like_count, comment_count, repost_count, updated_at)
+    VALUES (
+      target_post_id,
+      COALESCE((SELECT COUNT(*) FROM curtidas WHERE publicacao_id = target_post_id), 0),
+      COALESCE((SELECT COUNT(*) FROM comentarios WHERE publicacao_id = target_post_id), 0),
+      COALESCE((SELECT COUNT(*) FROM reposts WHERE publicacao_id = target_post_id), 0),
+      NOW()
+    )
+    ON CONFLICT (post_id) DO UPDATE SET
+      like_count = EXCLUDED.like_count,
+      comment_count = EXCLUDED.comment_count,
+      repost_count = EXCLUDED.repost_count,
+      updated_at = NOW();
+    RETURN COALESCE(NEW, OLD);
+  END;
+  $$ LANGUAGE plpgsql;`,
+  `DROP TRIGGER IF EXISTS trg_sync_post_stats_curtidas ON curtidas;`,
+  `CREATE TRIGGER trg_sync_post_stats_curtidas
+    AFTER INSERT OR DELETE ON curtidas
+    FOR EACH ROW EXECUTE FUNCTION fn_sync_post_stats();`,
+  `DROP TRIGGER IF EXISTS trg_sync_post_stats_comentarios ON comentarios;`,
+  `CREATE TRIGGER trg_sync_post_stats_comentarios
+    AFTER INSERT OR DELETE ON comentarios
+    FOR EACH ROW EXECUTE FUNCTION fn_sync_post_stats();`,
+  `DROP TRIGGER IF EXISTS trg_sync_post_stats_reposts ON reposts;`,
+  `CREATE TRIGGER trg_sync_post_stats_reposts
+    AFTER INSERT OR DELETE ON reposts
+    FOR EACH ROW EXECUTE FUNCTION fn_sync_post_stats();`,
+
+  `CREATE TABLE IF NOT EXISTS post_idempotency_keys (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+    idempotency_key VARCHAR(120) NOT NULL,
+    request_hash VARCHAR(80),
+    response_body JSONB,
+    status_code INTEGER NOT NULL DEFAULT 200,
+    created_at TIMESTAMP DEFAULT NOW(),
+    expires_at TIMESTAMP NOT NULL,
+    UNIQUE (user_id, idempotency_key)
+  );`,
+  `CREATE INDEX IF NOT EXISTS idx_post_idempotency_exp ON post_idempotency_keys (expires_at);`,
+
   // Colunas de controle de tentativas de ativacao em nfc_tags
   `DO $$ BEGIN
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='nfc_tags' AND column_name='tentativas_ativacao') THEN
@@ -1249,6 +1362,10 @@ const migrations = [
   );`,
   `CREATE INDEX IF NOT EXISTS idx_petshop_posts_feed ON petshop_posts (petshop_id, post_type, approval_status, publicado_em DESC);`,
 
+  // Destaques (grade/explorar) para posts do petshop
+  `ALTER TABLE petshop_posts ADD COLUMN IF NOT EXISTS is_highlighted BOOLEAN DEFAULT false;`,
+  `ALTER TABLE petshop_posts ADD COLUMN IF NOT EXISTS highlight_rank INTEGER DEFAULT 0;`,
+
   `CREATE TABLE IF NOT EXISTS petshop_products (
     id SERIAL PRIMARY KEY,
     petshop_id INTEGER NOT NULL REFERENCES petshops(id) ON DELETE CASCADE,
@@ -1264,6 +1381,13 @@ const migrations = [
     data_atualizacao TIMESTAMP
   );`,
   `CREATE INDEX IF NOT EXISTS idx_petshop_products_active ON petshop_products (petshop_id, is_active, data_criacao DESC);`,
+
+  // Destaques (grade/explorar) para promoções/produtos do petshop
+  `ALTER TABLE petshop_products ADD COLUMN IF NOT EXISTS is_highlighted BOOLEAN DEFAULT false;`,
+  `ALTER TABLE petshop_products ADD COLUMN IF NOT EXISTS highlight_rank INTEGER DEFAULT 0;`,
+
+  // Vincular produto/oferta a um serviço específico do petshop (quando marcado como "Serviço" no painel)
+  `ALTER TABLE petshop_products ADD COLUMN IF NOT EXISTS service_id INTEGER;`,
 
   // Garante no máximo 15 produtos ativos por petshop
   `CREATE OR REPLACE FUNCTION fn_petshop_products_limit() RETURNS trigger AS $$
@@ -1286,6 +1410,32 @@ const migrations = [
     BEFORE INSERT OR UPDATE ON petshop_products
     FOR EACH ROW
     EXECUTE FUNCTION fn_petshop_products_limit();`,
+
+  // Likes/Comments de publicações do petshop (posts e promoções)
+  // Observação: como publicações vêm de duas tabelas distintas (petshop_posts e petshop_products),
+  // aqui usamos (publication_type, publication_id) sem FK direta para manter o migration simples.
+  `CREATE TABLE IF NOT EXISTS petshop_publication_likes (
+    id SERIAL PRIMARY KEY,
+    usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+    publication_type VARCHAR(30) NOT NULL, -- 'petshop_post' | 'petshop_product'
+    publication_id INTEGER NOT NULL,
+    created_em TIMESTAMP DEFAULT NOW(),
+    UNIQUE (usuario_id, publication_type, publication_id)
+  );`,
+  `CREATE INDEX IF NOT EXISTS idx_petshop_publication_likes_pub ON petshop_publication_likes (publication_type, publication_id);`,
+  `CREATE INDEX IF NOT EXISTS idx_petshop_publication_likes_user ON petshop_publication_likes (usuario_id, publication_type, publication_id);`,
+
+  `CREATE TABLE IF NOT EXISTS petshop_publication_comments (
+    id SERIAL PRIMARY KEY,
+    usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+    publication_type VARCHAR(30) NOT NULL, -- 'petshop_post' | 'petshop_product'
+    publication_id INTEGER NOT NULL,
+    texto TEXT NOT NULL,
+    created_em TIMESTAMP DEFAULT NOW(),
+    data_atualizacao TIMESTAMP
+  );`,
+  `CREATE INDEX IF NOT EXISTS idx_petshop_publication_comments_pub ON petshop_publication_comments (publication_type, publication_id, created_em DESC);`,
+  `CREATE INDEX IF NOT EXISTS idx_petshop_publication_comments_user ON petshop_publication_comments (usuario_id, created_em DESC);`,
 
   // Seguidores, avaliações e vínculo pet <-> petshop
   `CREATE TABLE IF NOT EXISTS petshop_followers (

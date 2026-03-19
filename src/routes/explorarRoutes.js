@@ -31,8 +31,24 @@ const upload = multer({
   },
 });
 
+const postRateWindowMs = 15 * 1000;
+const postRateMax = 6;
+const postRateMap = new Map();
+function postRateLimit(req, res, next) {
+  const key = `${req.ip}:${req.session?.usuario?.id || 'anon'}`;
+  const now = Date.now();
+  const data = postRateMap.get(key) || [];
+  const recent = data.filter((ts) => now - ts <= postRateWindowMs);
+  if (recent.length >= postRateMax) {
+    return res.status(429).json({ sucesso: false, mensagem: 'Muitas tentativas em pouco tempo. Aguarde alguns segundos.' });
+  }
+  recent.push(now);
+  postRateMap.set(key, recent);
+  next();
+}
+
 router.get('/', explorarController.feed);
-router.post('/post', function (req, res, next) {
+router.post('/post', estaAutenticadoAPI, postRateLimit, function (req, res, next) {
   upload.single('foto')(req, res, function (err) {
     if (err) {
       const msg = err.code === 'LIMIT_FILE_SIZE'
@@ -43,6 +59,24 @@ router.post('/post', function (req, res, next) {
     next();
   });
 }, explorarController.criarPost);
+
+router.post('/api/v2/posts', estaAutenticadoAPI, postRateLimit, function (req, res, next) {
+  upload.array('media', 4)(req, res, function (err) {
+    if (err) {
+      const msg = err.code === 'LIMIT_FILE_SIZE'
+        ? 'Imagem muito grande (máx. 10 MB).'
+        : 'Envie imagens válidas (JPEG, PNG, GIF ou WebP).';
+      return res.status(400).json({ sucesso: false, mensagem: msg });
+    }
+    next();
+  });
+}, explorarController.criarPostV2);
+router.get('/api/v2/feed', estaAutenticadoAPI, explorarController.feedV2);
+router.post('/api/v2/posts/:id/comments', estaAutenticadoAPI, postRateLimit, explorarController.comentarV2);
+router.get('/api/v2/users/search', estaAutenticadoAPI, explorarController.buscarUsuariosV2);
+router.post('/api/v2/posts/:id/tags/respond', estaAutenticadoAPI, explorarController.responderTagPost);
+router.get('/api/v2/me/tagged-posts', estaAutenticadoAPI, explorarController.minhasMarcacoes);
+router.get('/api/v2/me/tagged-posts/pending', estaAutenticadoAPI, explorarController.minhasMarcacoesPendentes);
 router.post('/post/:id/repost', estaAutenticadoAPI, explorarController.repostar);
 
 router.post('/post/:id/curtir', estaAutenticadoAPI, explorarController.curtir);
@@ -53,6 +87,12 @@ router.get('/post/:id/pets-proximos', explorarController.petsProximosPost);
 router.post('/post/:id/comentar', estaAutenticadoAPI, explorarController.comentar);
 router.post('/api/interactions/view', estaAutenticadoAPI, explorarController.registrarVisualizacao);
 router.delete('/comentario/:id', estaAutenticadoAPI, explorarController.deletarComentario);
+
+// Interações sociais em publicações do petshop (cards no explorar)
+router.post('/petshops-post/:id/curtir', estaAutenticadoAPI, explorarController.curtirPetshopPublicacao);
+router.delete('/petshops-post/:id/curtir', estaAutenticadoAPI, explorarController.descurtirPetshopPublicacao);
+router.get('/petshops-post/:id/comentarios', explorarController.comentariosPetshopPublicacao);
+router.post('/petshops-post/:id/comentar', estaAutenticadoAPI, explorarController.comentarPetshopPublicacao);
 
 router.post('/post/:id/fixar', estaAutenticadoAPI, explorarController.fixar);
 router.delete('/post/:id/fixar', estaAutenticadoAPI, explorarController.desafixar);

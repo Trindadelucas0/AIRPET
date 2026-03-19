@@ -91,7 +91,85 @@
 
     <% if (posts && posts.length > 0) { %>
       <% posts.forEach(function(post, idx) { %>
-        <% if (post.is_sponsored) { %>
+        <% if (post.is_petshop_publication) { %>
+          <article class="masonry-card explorar-card bg-gradient-to-b from-emerald-50/70 to-white overflow-hidden post-enter border-emerald-200/60"
+                   style="animation-delay:<%= Math.min(idx * 60, 400) %>ms"
+                   data-post-id="<%= post.publicationKey || '' %>" data-view-source="petshop_explorar"
+                   data-author-id="<%= post.petshop_id || '' %>"
+                   id="petshop-publication-<%= String(post.publicationKey || '').replace(/[^a-zA-Z0-9]/g, '-') %>">
+            <div class="px-3 py-2 flex items-center justify-between text-[10px] font-bold text-emerald-800 uppercase tracking-wide">
+              <span><i class="fa-solid fa-shield-check mr-1"></i>Parceiro</span>
+              <a href="/petshops/<%= post.petshop_id %>" class="normal-case font-semibold text-emerald-700 hover:underline">Ver petshop</a>
+            </div>
+
+            <a href="/petshops/<%= post.petshop_id %>" class="block">
+              <% if (post.foto_url) { %>
+                <img src="<%= post.foto_url %>" alt="" class="w-full object-cover post-photo" loading="lazy">
+              <% } else { %>
+                <div class="w-full h-40 bg-gradient-to-br from-emerald-500/10 to-orange-500/10 flex items-center justify-center">
+                  <i class="fa-solid fa-paw text-4xl text-emerald-500/30"></i>
+                </div>
+              <% } %>
+            </a>
+
+            <div class="px-3 py-2">
+              <div class="flex items-center gap-2">
+                <% if (post.petshop_logo_url) { %>
+                  <img src="<%= post.petshop_logo_url %>" alt="" class="w-7 h-7 rounded-full object-cover ring-2 ring-emerald-200">
+                <% } else { %>
+                  <span class="w-7 h-7 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-[11px]">
+                    <i class="fa-solid fa-paw"></i>
+                  </span>
+                <% } %>
+                <div class="min-w-0">
+                  <p class="text-xs font-semibold text-gray-900 truncate"><%= post.petshop_nome || ('Petshop ' + post.petshop_id) %></p>
+                  <span class="text-[11px] text-gray-500 truncate">
+                    <% if (post.publicationType === 'promocao' || post.is_promocao) { %>
+                      Promoção
+                    <% } else { %>
+                      Post
+                    <% } %>
+                  </span>
+                </div>
+              </div>
+
+              <% if (post.publicationType === 'promocao' || post.is_promocao) { %>
+                <% if (post.preco != null) { %>
+                  <p class="text-[#ec5a1c] font-extrabold mt-2">
+                    R$ <%= Number(post.preco || 0).toFixed(2).replace('.', ',') %>
+                  </p>
+                <% } %>
+              <% } %>
+
+              <% var petTexto = post.texto || '';%>
+              <% if (petTexto) { %>
+                <p class="mt-2 text-xs text-gray-700 leading-relaxed line-clamp-2 post-text"><%= petTexto %></p>
+              <% } %>
+
+              <% if (post.created_em) { %>
+                <span class="text-[11px] text-gray-400 tempo-relativo mt-2 block" data-time="<%= post.created_em %>"></span>
+              <% } %>
+
+              <div class="px-2.5 py-2 mt-3 border-t border-gray-100">
+                <div class="flex items-center gap-1.5">
+                  <button type="button"
+                          class="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg transition-all text-xs btn-curtir relative <%= post.curtiu ? 'text-red-500' : 'text-gray-500 hover:text-red-500 hover:bg-red-50/70' %>"
+                          data-post-id="<%= post.publicationKey %>" data-curtiu="<%= post.curtiu ? '1' : '0' %>">
+                    <i class="<%= post.curtiu ? 'fa-solid' : 'fa-regular' %> fa-heart"></i>
+                    <span class="count-curtidas"><%= post.like_count || '' %></span>
+                  </button>
+
+                  <button type="button"
+                          class="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg text-xs text-gray-500 hover:text-accent-500 hover:bg-accent-50/70 transition-all btn-comentar"
+                          data-post-id="<%= post.publicationKey %>">
+                    <i class="fa-regular fa-comment"></i>
+                    <span class="count-comentarios"><%= post.comment_count || '' %></span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </article>
+        <% } else if (post.is_sponsored) { %>
           <% var sponsoredPostId = Number(post.id); %>
           <% var hasSponsoredPostId = Number.isFinite(sponsoredPostId) && sponsoredPostId > 0; %>
           <article class="masonry-card explorar-card bg-gradient-to-b from-amber-50/80 to-white overflow-hidden post-enter border-amber-200/60"
@@ -367,10 +445,10 @@
 <!-- ══════════════════════════════════════════════ -->
 <div id="newPostModal" class="fixed inset-0 z-[60] hidden">
   <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" id="newPostOverlay"></div>
-  <div class="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl max-h-[85vh] flex flex-col animate-slideUp safe-bottom shadow-2xl
-              md:relative md:top-1/2 md:-translate-y-1/2 md:max-w-lg md:mx-auto md:rounded-2xl md:max-h-[80vh] md:border md:border-gray-100">
+  <div id="newPostSheet" class="new-post-sheet absolute bottom-0 left-0 right-0 bg-white flex flex-col animate-slideUp safe-bottom shadow-2xl
+              md:relative md:top-1/2 md:-translate-y-1/2 md:border md:border-gray-100">
 
-    <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100 bg-gray-50/50">
+    <div class="new-post-header flex items-center justify-between px-4 sm:px-5 py-3.5 border-b border-gray-100 bg-gray-50/50">
       <h3 class="font-bold text-gray-900 text-lg">Nova publicação</h3>
       <div class="flex items-center gap-3">
         <span id="postCounter" class="text-xs font-semibold px-2.5 py-1 rounded-full <%= totalPosts >= 10 ? 'bg-red-50 text-red-500' : 'bg-gray-100 text-gray-500' %>">
@@ -382,7 +460,7 @@
       </div>
     </div>
 
-    <div class="flex-1 overflow-y-auto px-5 py-4 space-y-4 scrollbar-hide">
+    <div class="new-post-body flex-1 px-4 sm:px-5 py-3.5 space-y-3.5 scrollbar-hide">
       <% if (totalPosts >= 10) { %>
         <div class="flex items-center gap-2 px-4 py-3 rounded-xl bg-amber-50 text-amber-700 text-xs font-medium">
           <i class="fa-solid fa-info-circle"></i>
@@ -391,13 +469,13 @@
       <% } %>
 
       <div id="uploadArea"
-           class="border-2 border-dashed border-gray-200 rounded-2xl p-8 text-center cursor-pointer hover:border-primary-300 hover:bg-primary-50/30 transition-all duration-200">
+           class="upload-dropzone hidden p-5 text-center cursor-pointer hover:border-primary-300 hover:bg-primary-50/30 duration-200">
         <div id="uploadPlaceholder">
           <div class="w-14 h-14 mx-auto mb-3 rounded-full bg-primary-50 flex items-center justify-center">
             <i class="fa-solid fa-camera text-xl text-primary-400"></i>
           </div>
-          <p class="text-sm font-medium text-gray-600">Toque para adicionar foto</p>
-          <p class="text-xs text-gray-400 mt-1">ou arraste uma imagem aqui</p>
+          <p class="text-sm font-medium text-gray-600">Adicionar foto (opcional)</p>
+          <p class="text-xs text-gray-400 mt-1">toque, cole (Ctrl+V) ou arraste uma imagem</p>
         </div>
         <div id="uploadPreview" class="hidden relative min-h-[180px] flex items-center justify-center">
           <img id="previewImg" src="" alt="Preview" class="max-h-60 w-full max-w-full mx-auto rounded-xl object-contain">
@@ -409,19 +487,34 @@
       </div>
       <input type="file" id="photoInput" accept="image/jpeg,image/png,image/gif,image/webp" class="hidden">
 
-      <div>
-        <label for="novoPostTexto" class="block text-xs font-medium text-gray-500 mb-1.5">Legenda</label>
-        <textarea id="novoPostTexto" rows="3" maxlength="500"
-                  placeholder="Conte algo sobre essa foto…"
-                  class="w-full resize-none border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-primary-500/20 focus:border-primary-400 outline-none transition-all"></textarea>
-        <div class="text-right mt-1">
+      <div id="composerCard" class="composer-card px-3 py-2.5">
+        <div class="flex gap-2.5 items-start">
+          <% if (isLogado && usuario.foto_perfil) { %>
+            <img src="<%= usuario.foto_perfil %>" alt="" class="w-8 h-8 rounded-full object-cover shrink-0 mt-0.5">
+          <% } else { %>
+            <span class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0 mt-0.5"
+                  style="background:<%= (isLogado && (usuario.cor_perfil || '#ec5a1c')) || '#ec5a1c' %>">
+              <%= (isLogado && usuario.nome ? usuario.nome.charAt(0).toUpperCase() : 'U') %>
+            </span>
+          <% } %>
+          <textarea id="novoPostTexto" rows="1" maxlength="500"
+                  placeholder="O que seu pet aprontou hoje?"
+                  class="composer-textarea w-full resize-none bg-transparent border-0 px-0 py-1 text-sm text-gray-800 placeholder-gray-400 outline-none"></textarea>
+        </div>
+        <div id="composerActions" class="hidden mt-2 pt-2 border-t border-gray-200 flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <button type="button" id="btnOpenImagePicker" class="w-8 h-8 rounded-full text-gray-500 hover:text-primary-500 hover:bg-primary-50 transition-colors" title="Adicionar imagem">
+              <i class="fa-regular fa-image"></i>
+            </button>
+            <span class="text-[11px] text-gray-400">Texto rápido ou imagem opcional</span>
+          </div>
           <span id="charCount" class="text-[11px] text-gray-300">0/500</span>
         </div>
       </div>
 
       <% if (pets && pets.length > 0) { %>
         <div>
-          <label class="text-xs font-medium text-gray-500 mb-1.5 block">Em qual perfil (pet) postar? (opcional)</label>
+          <label class="text-[11px] font-medium text-gray-500 mb-1.5 block">Perfil do post (opcional)</label>
           <select id="novoPostPet" class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-800 focus:ring-2 focus:ring-primary-500/20 focus:border-primary-400 outline-none bg-white transition-all">
             <option value="">Meu perfil (sem pet)</option>
             <% pets.forEach(function(p) { %>
@@ -435,9 +528,9 @@
       <% } %>
     </div>
 
-    <div class="px-5 py-4 border-t border-gray-100">
+    <div class="new-post-footer px-4 sm:px-5 py-3 border-t border-gray-100">
       <button type="button" id="btnPublicar" disabled
-              class="w-full py-3 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-primary-500 to-primary-600 shadow-lg shadow-primary-500/20 hover:shadow-xl hover:shadow-primary-500/30 hover:-translate-y-0.5 transition-all duration-300 disabled:opacity-40 disabled:shadow-none disabled:translate-y-0 disabled:cursor-not-allowed">
+              class="w-full py-3 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-primary-500 to-primary-600 shadow-lg shadow-primary-500/20 hover:shadow-xl hover:shadow-primary-500/30 hover:-translate-y-0 transition-all duration-300 disabled:opacity-40 disabled:shadow-none disabled:translate-y-0 disabled:cursor-not-allowed">
         Publicar
       </button>
     </div>
@@ -661,6 +754,7 @@
 
   /* ──────────── Like ──────────── */
   function curtirPost(postId, btn) {
+    var isPetshop = String(postId || '').includes(':');
     var curtiu = btn.getAttribute('data-curtiu') === '1';
     var method = curtiu ? 'DELETE' : 'POST';
     var icon = btn.querySelector('i');
@@ -683,7 +777,11 @@
       setTimeout(function () { if (heart.parentNode) heart.parentNode.removeChild(heart); }, 800);
     }
 
-    fetch('/explorar/post/' + postId + '/curtir', {
+    var url = isPetshop
+      ? '/explorar/petshops-post/' + encodeURIComponent(postId) + '/curtir'
+      : '/explorar/post/' + postId + '/curtir';
+
+    fetch(url, {
       method: method,
       headers: { 'Accept': 'application/json' },
       credentials: 'same-origin'
@@ -710,6 +808,7 @@
 
   function carregarComentarios(postId) {
     var list = document.getElementById('commentList');
+    var isPetshop = String(postId || '').includes(':');
     list.innerHTML = '<div class="space-y-3"><div class="skeleton h-12 w-full"></div><div class="skeleton h-12 w-3/4"></div><div class="skeleton h-12 w-5/6"></div></div>';
 
     var petsContainer = document.getElementById('petsProximosContainer');
@@ -717,7 +816,11 @@
     petsContainer.classList.add('hidden');
     petsList.innerHTML = '';
 
-    fetch('/explorar/post/' + postId + '/comentarios', {
+    var url = isPetshop
+      ? '/explorar/petshops-post/' + encodeURIComponent(postId) + '/comentarios'
+      : '/explorar/post/' + postId + '/comentarios';
+
+    fetch(url, {
       headers: { 'Accept': 'application/json' },
       credentials: 'same-origin'
     })
@@ -737,11 +840,11 @@
           if (t) tempos[i].textContent = tempoRelativo(t);
         }
       }
-      carregarPetsProximos(postId);
+      if (!isPetshop) carregarPetsProximos(postId);
     })
     .catch(function () {
       list.innerHTML = '<div class="text-center py-8"><p class="text-sm text-red-400">Erro ao carregar comentários.</p></div>';
-      carregarPetsProximos(postId);
+      if (!isPetshop) carregarPetsProximos(postId);
     });
   }
 
@@ -805,7 +908,9 @@
     } else {
       avatar = '<span class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0 bg-gray-400" style="box-shadow:0 0 0 2px ' + escapeHtml(cCor) + '">' + escapeHtml((c.nome || c.autor_nome || 'U').charAt(0).toUpperCase()) + '</span>';
     }
-    var podeApagar = (c.usuario_id === meuId);
+    // Para comentários de petshop, ainda não implementamos DELETE no backend
+    // (eles vêm de `petshop_publication_comments`, não de `comentarios`).
+    var podeApagar = (c.usuario_id === meuId) && (c.publicacao_id != null);
     return '<div class="flex gap-3 group" data-comment-id="' + c.id + '">' +
       '<a href="/explorar/perfil/' + c.usuario_id + '" class="shrink-0">' + avatar + '</a>' +
       '<div class="flex-1 min-w-0">' +
@@ -821,7 +926,12 @@
 
   function enviarComentario(postId, texto, inputEl) {
     if (!texto) return;
-    fetch('/explorar/post/' + postId + '/comentar', {
+    var isPetshop = String(postId || '').includes(':');
+    var url = isPetshop
+      ? '/explorar/petshops-post/' + encodeURIComponent(postId) + '/comentar'
+      : '/explorar/post/' + postId + '/comentar';
+
+    fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
       credentials: 'same-origin',
@@ -1014,28 +1124,71 @@
   var novoPostTexto = document.getElementById('novoPostTexto');
   var charCount = document.getElementById('charCount');
   var btnPublicar = document.getElementById('btnPublicar');
+  var composerCard = document.getElementById('composerCard');
+  var composerActions = document.getElementById('composerActions');
+  var btnOpenImagePicker = document.getElementById('btnOpenImagePicker');
+  var newPostSheet = document.getElementById('newPostSheet');
+  var isSubmittingPost = false;
+  var recentPayloadHashes = new Map();
 
   function abrirNovoPost() {
     var petSelect = document.getElementById('novoPostPet');
+    isSubmittingPost = false;
     selectedFile = null;
     photoInput.value = '';
     novoPostTexto.value = '';
     charCount.textContent = '0/500';
     uploadPlaceholder.classList.remove('hidden');
     uploadPreview.classList.add('hidden');
+    if (uploadArea) uploadArea.classList.add('hidden');
+    if (composerActions) composerActions.classList.add('hidden');
+    if (composerCard) composerCard.classList.remove('is-active');
     if (petSelect && petSelect.options && petSelect.options.length) petSelect.selectedIndex = 0;
     if (btnPublicar) { btnPublicar.disabled = false; btnPublicar.innerHTML = 'Publicar'; }
     validarFormPost();
     abrirModal('newPostModal');
+    ajustarSheetViewport();
+    setTimeout(function () { if (novoPostTexto) novoPostTexto.focus(); }, 80);
     var counter = document.getElementById('postCounter');
     if (counter) counter.textContent = totalPostsLocal + '/10';
+  }
+  function autoResizeComposer() {
+    if (!novoPostTexto) return;
+    novoPostTexto.style.height = 'auto';
+    novoPostTexto.style.height = Math.min(novoPostTexto.scrollHeight, 180) + 'px';
+  }
+
+  function ativarComposer() {
+    if (composerActions) composerActions.classList.remove('hidden');
+    if (composerCard) composerCard.classList.add('is-active');
+  }
+  function ajustarSheetViewport() {
+    if (!newPostSheet) return;
+    var vv = window.visualViewport;
+    var vh = vv ? Math.floor(vv.height) : window.innerHeight;
+    if (vh > 0) newPostSheet.style.maxHeight = Math.max(380, vh - 10) + 'px';
+  }
+
+  function generateIdempotencyKey() {
+    return 'post_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 10);
+  }
+
+  function payloadHash(texto, petId, file) {
+    return [texto || '', petId || '', file ? file.size : 0, file ? file.name : ''].join('|');
+  }
+
+  function isRecentDuplicate(hash) {
+    var now = Date.now();
+    var ts = recentPayloadHashes.get(hash);
+    if (!ts) return false;
+    return (now - ts) < 15000;
   }
 
   function validarFormPost() {
     if (!btnPublicar) return;
     var temFoto = !!selectedFile;
     var temTexto = !!(novoPostTexto && novoPostTexto.value.trim());
-    btnPublicar.disabled = !(temFoto && temTexto);
+    btnPublicar.disabled = isSubmittingPost || !(temFoto || temTexto);
   }
 
   uploadArea.addEventListener('click', function () { photoInput.click(); });
@@ -1094,24 +1247,70 @@
     validarFormPost();
   });
 
+  novoPostTexto.addEventListener('focus', ativarComposer);
   novoPostTexto.addEventListener('input', function () {
+    autoResizeComposer();
     charCount.textContent = this.value.length + '/500';
     validarFormPost();
   });
+  novoPostTexto.addEventListener('paste', function (e) {
+    if (!e.clipboardData || !e.clipboardData.items) return;
+    for (var i = 0; i < e.clipboardData.items.length; i++) {
+      var item = e.clipboardData.items[i];
+      if (item.type && item.type.indexOf('image/') === 0) {
+        var file = item.getAsFile();
+        if (file) {
+          e.preventDefault();
+          handleFile(file);
+          break;
+        }
+      }
+    }
+  });
+  novoPostTexto.addEventListener('keydown', function (e) {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+      e.preventDefault();
+      if (!btnPublicar.disabled) btnPublicar.click();
+    }
+  });
+  if (btnOpenImagePicker) {
+    btnOpenImagePicker.addEventListener('click', function () {
+      ativarComposer();
+      if (uploadArea && uploadArea.classList.contains('hidden')) {
+        uploadArea.classList.remove('hidden');
+      }
+      photoInput.click();
+    });
+  }
+  window.addEventListener('resize', ajustarSheetViewport);
+  if (window.visualViewport) window.visualViewport.addEventListener('resize', ajustarSheetViewport);
 
   if (btnPublicar) btnPublicar.addEventListener('click', function () {
-    if (!selectedFile || !novoPostTexto || !novoPostTexto.value.trim()) return;
+    if (isSubmittingPost) return;
+    var textoPayload = novoPostTexto ? novoPostTexto.value.trim() : '';
+    if (!selectedFile && !textoPayload) return;
     var petSelect = document.getElementById('novoPostPet');
     var petVal = (petSelect && petSelect.value) ? petSelect.value : '';
+    var hash = payloadHash(textoPayload, petVal, selectedFile);
+    if (isRecentDuplicate(hash)) {
+      toast('Publicação já enviada recentemente. Aguarde alguns segundos.', 'erro');
+      return;
+    }
+    isSubmittingPost = true;
     this.disabled = true;
     this.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>Publicando…';
 
     var formData = new FormData();
-    formData.append('foto', selectedFile);
-    formData.append('texto', novoPostTexto.value.trim());
+    if (selectedFile) formData.append('foto', selectedFile);
+    if (textoPayload) formData.append('texto', textoPayload);
     if (petVal) formData.append('pet_id', petVal);
 
-    fetch('/explorar/post', { method: 'POST', credentials: 'same-origin', body: formData })
+    fetch('/explorar/post', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Idempotency-Key': generateIdempotencyKey() },
+      body: formData
+    })
     .then(function (r) {
       return r.text().then(function (text) {
         try { return { ok: r.ok, data: JSON.parse(text) }; }
@@ -1120,6 +1319,7 @@
     })
     .then(function (result) {
       var data = result.data;
+      isSubmittingPost = false;
       btnPublicar.disabled = false;
       btnPublicar.innerHTML = 'Publicar';
       if (!result.ok || !data.sucesso) {
@@ -1127,6 +1327,7 @@
         validarFormPost();
         return;
       }
+      recentPayloadHashes.set(hash, Date.now());
       fecharModal('newPostModal');
       toast('Publicado!');
       totalPostsLocal = data.totalPosts != null ? data.totalPosts : (totalPostsLocal + 1);
@@ -1143,6 +1344,7 @@
       }
     })
     .catch(function () {
+      isSubmittingPost = false;
       toast('Erro de conexão. Verifique a internet e tente novamente.', 'erro');
       btnPublicar.disabled = false;
       btnPublicar.innerHTML = 'Publicar';
@@ -1337,7 +1539,72 @@
     return h;
   }
 
+  function renderPetshopPublicationHTML(p) {
+    var publicationKey = p.publicationKey || '';
+    var safeKey = String(publicationKey).replace(/[^a-zA-Z0-9]/g, '-');
+    var isPromo = p.publicationType === 'promocao' || p.is_promocao;
+    var petTitulo = escapeHtml(p.titulo || p.petshop_nome || '');
+    var petTexto = escapeHtml(p.texto || '');
+    var fotoInterna = p.foto_url
+      ? '<img src="' + escapeHtml(p.foto_url) + '" alt="" class="w-full object-cover post-photo" loading="lazy">'
+      : '<div class="w-full h-40 bg-gradient-to-br from-emerald-500/10 to-orange-500/10 flex items-center justify-center"><i class="fa-solid fa-paw text-4xl text-emerald-500/30"></i></div>';
+    var foto = '<a href="/petshops/' + escapeHtml(p.petshop_id || '') + '" class="block">' + fotoInterna + '</a>';
+
+    var avatar = p.petshop_logo_url
+      ? '<img src="' + escapeHtml(p.petshop_logo_url) + '" alt="" class="w-7 h-7 rounded-full object-cover ring-2 ring-emerald-200">'
+      : '<span class="w-7 h-7 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-[11px]"><i class="fa-solid fa-paw"></i></span>';
+
+    var titleBadge = isPromo ? 'Promoção' : 'Post';
+    var priceLine = (isPromo && p.preco != null)
+      ? '<p class="text-[#ec5a1c] font-extrabold mt-2">R$ ' + escapeHtml(Number(p.preco || 0).toFixed(2).replace(".", ",")) + '</p>'
+      : '';
+
+    var timeLine = p.created_em
+      ? '<span class="text-[11px] text-gray-400 tempo-relativo mt-2 block" data-time="' + escapeHtml(p.created_em) + '"></span>'
+      : '';
+
+    var h = '<article class="masonry-card explorar-card bg-gradient-to-b from-emerald-50/70 to-white overflow-hidden post-enter post-enter border-emerald-200/60" ' +
+      'data-post-id="' + escapeHtml(publicationKey) + '" data-view-source="petshop_explorar" data-author-id="' + escapeHtml(p.petshop_id || '') + '" id="petshop-publication-' + safeKey + '">';
+
+    h += '<div class="px-3 py-2 flex items-center justify-between text-[10px] font-bold text-emerald-800 uppercase tracking-wide">' +
+      '<span><i class="fa-solid fa-shield-check mr-1"></i>Parceiro</span>' +
+      '<a href="/petshops/' + escapeHtml(p.petshop_id || '') + '" class="normal-case font-semibold text-emerald-700 hover:underline">Ver petshop</a>' +
+      '</div>';
+
+    h += foto;
+    h += '<div class="px-3 py-2">' +
+      '<div class="flex items-center gap-2">' + avatar +
+      '<div class="min-w-0">' +
+      '<p class="text-xs font-semibold text-gray-900 truncate">' + escapeHtml(p.petshop_nome || ('Petshop ' + (p.petshop_id || ''))) + '</p>' +
+      '<span class="text-[11px] text-gray-500 truncate">' + escapeHtml(titleBadge) + '</span>' +
+      '</div></div>' +
+      priceLine;
+
+    if (petTexto) {
+      h += '<p class="mt-2 text-xs text-gray-700 leading-relaxed line-clamp-2 post-text">' + petTexto + '</p>';
+    }
+
+    h += timeLine;
+
+    h += '<div class="px-2.5 py-2 mt-3 border-t border-gray-100"><div class="flex items-center gap-1.5">' +
+      '<button type="button" class="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg transition-all text-xs btn-curtir relative ' + (p.curtiu ? 'text-red-500' : 'text-gray-500 hover:text-red-500 hover:bg-red-50/70') + '" ' +
+      'data-post-id="' + escapeHtml(publicationKey) + '" data-curtiu="' + (p.curtiu ? '1' : '0') + '">' +
+      '<i class="' + (p.curtiu ? 'fa-solid' : 'fa-regular') + ' fa-heart"></i>' +
+      '<span class="count-curtidas">' + (p.like_count || '') + '</span>' +
+      '</button>' +
+      '<button type="button" class="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg text-xs text-gray-500 hover:text-accent-500 hover:bg-accent-50/70 transition-all btn-comentar" ' +
+      'data-post-id="' + escapeHtml(publicationKey) + '">' +
+      '<i class="fa-regular fa-comment"></i>' +
+      '<span class="count-comentarios">' + (p.comment_count || '') + '</span>' +
+      '</button>' +
+      '</div></div>' +
+      '</div></article>';
+
+    return h;
+  }
+
   function renderPostHTML(p) {
+    if (p && p.is_petshop_publication) return renderPetshopPublicationHTML(p);
     if (p && p.is_sponsored) return renderSponsoredHTML(p);
     var txt = p.texto || p.legenda || '';
     var isRepost = p.tipo === 'repost';

@@ -6,9 +6,9 @@ const MAX_FIXADAS = 3;
 const SELECT_COLS = `
   p.*, u.nome AS autor_nome, u.cor_perfil, u.foto_perfil,
   pet.nome AS pet_nome, pet.foto AS pet_foto,
-  (SELECT COUNT(*)::int FROM curtidas WHERE publicacao_id = p.id) AS total_curtidas,
-  (SELECT COUNT(*)::int FROM comentarios WHERE publicacao_id = p.id) AS total_comentarios,
-  (SELECT COUNT(*)::int FROM reposts WHERE publicacao_id = p.id) AS total_reposts,
+  COALESCE(ps.like_count, 0) AS total_curtidas,
+  COALESCE(ps.comment_count, 0) AS total_comentarios,
+  COALESCE(ps.repost_count, 0) AS total_reposts,
   orig.id AS orig_id, orig.foto AS orig_foto, orig.texto AS orig_texto, orig.legenda AS orig_legenda,
   orig.criado_em AS orig_criado_em, orig.usuario_id AS orig_usuario_id,
   orig_u.nome AS orig_autor_nome, orig_u.cor_perfil AS orig_cor_perfil, orig_u.foto_perfil AS orig_foto_perfil,
@@ -18,6 +18,7 @@ const FROM_JOINS = `
   FROM publicacoes p
   JOIN usuarios u ON u.id = p.usuario_id
   LEFT JOIN pets pet ON pet.id = p.pet_id
+  LEFT JOIN post_stats ps ON ps.post_id = p.id
   LEFT JOIN publicacoes orig ON orig.id = p.repost_id
   LEFT JOIN usuarios orig_u ON orig_u.id = orig.usuario_id
   LEFT JOIN pets orig_pet ON orig_pet.id = orig.pet_id`;
@@ -56,6 +57,29 @@ const Publicacao = {
        ORDER BY p.fixada DESC, p.criado_em DESC
        LIMIT $1 OFFSET $2`,
       [limite, offset]
+    );
+    return resultado.rows;
+  },
+
+  async feedPorCursor(usuarioId, limite = 20, beforeId = null) {
+    const hasCursor = Number.isInteger(beforeId) && beforeId > 0;
+    const params = [usuarioId, limite];
+    let cursorFilter = '';
+    if (hasCursor) {
+      params.push(beforeId);
+      cursorFilter = ' AND p.id < $3 ';
+    }
+    const resultado = await query(
+      `SELECT ${SELECT_COLS} ${curtiuCol(usuarioId)} ${repostouCol(usuarioId)}
+       ${FROM_JOINS}
+       WHERE (
+         p.usuario_id IN (SELECT seguido_id FROM seguidores WHERE seguidor_id = $1)
+         OR p.usuario_id = $1
+       )
+       ${cursorFilter}
+       ORDER BY p.id DESC
+       LIMIT $2`,
+      params
     );
     return resultado.rows;
   },
@@ -284,6 +308,35 @@ const Publicacao = {
       [usuarioId]
     );
     return resultado.rows[0];
+  },
+
+  async buscarRecenteIgual(usuarioId, texto, petId = null, secondsWindow = 15) {
+    const r = await query(
+      `SELECT id, criado_em
+         FROM publicacoes
+        WHERE usuario_id = $1
+          AND tipo = 'original'
+          AND COALESCE(texto, '') = COALESCE($2, '')
+          AND COALESCE(pet_id, 0) = COALESCE($3, 0)
+          AND criado_em >= NOW() - ($4 || ' seconds')::interval
+        ORDER BY id DESC
+        LIMIT 1`,
+      [usuarioId, texto || '', petId || null, String(secondsWindow)]
+    );
+    return r.rows[0] || null;
+  },
+
+  async ultimoPostDoUsuario(usuarioId) {
+    const r = await query(
+      `SELECT id, criado_em
+         FROM publicacoes
+        WHERE usuario_id = $1
+          AND tipo = 'original'
+        ORDER BY id DESC
+        LIMIT 1`,
+      [usuarioId]
+    );
+    return r.rows[0] || null;
   },
 
   async deletar(id) {
