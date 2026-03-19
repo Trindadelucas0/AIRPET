@@ -195,6 +195,83 @@ const Petshop = {
 
     return parseInt(resultado.rows[0].total, 10);
   },
+
+  async listarParaExplorar({ usuarioId, lat, lng, limite = 12, ordenarPor = 'proximidade' }) {
+    const limitSeguro = Number.isInteger(limite) && limite > 0 ? limite : 12;
+    const hasGeo = Number.isFinite(lat) && Number.isFinite(lng);
+
+    const params = [usuarioId, limitSeguro];
+    let distanciaCol = `NULL::numeric AS distancia_metros`;
+    let orderBy = `p.avaliacao_media DESC, p.avaliacoes_count DESC, p.nome ASC`;
+
+    if (hasGeo) {
+      params.push(lat, lng);
+      distanciaCol = `ST_Distance(
+          p.localizacao,
+          ST_SetSRID(ST_MakePoint($4, $3), 4326)::geography
+        ) AS distancia_metros`;
+      if (ordenarPor === 'avaliacao') {
+        orderBy = `p.avaliacao_media DESC, p.avaliacoes_count DESC, distancia_metros ASC NULLS LAST`;
+      } else if (ordenarPor === 'relevancia') {
+        orderBy = `relevance_score DESC, p.avaliacao_media DESC, distancia_metros ASC NULLS LAST`;
+      } else {
+        orderBy = `distancia_metros ASC, p.avaliacao_media DESC, p.avaliacoes_count DESC`;
+      }
+    } else {
+      if (ordenarPor === 'relevancia') {
+        orderBy = `relevance_score DESC, p.avaliacao_media DESC, p.avaliacoes_count DESC`;
+      } else if (ordenarPor === 'proximidade') {
+        orderBy = `p.avaliacao_media DESC, p.avaliacoes_count DESC, p.nome ASC`;
+      }
+    }
+
+    const resultado = await query(
+      `SELECT
+         p.*,
+         ${distanciaCol},
+         EXISTS (
+           SELECT 1 FROM petshop_followers pf
+           WHERE pf.petshop_id = p.id AND pf.usuario_id = $1
+         ) AS usuario_segue,
+         EXISTS (
+           SELECT 1
+           FROM pet_petshop_links ppl
+           JOIN pets my_pet ON my_pet.id = ppl.pet_id
+           WHERE ppl.petshop_id = p.id
+             AND ppl.ativo = true
+             AND my_pet.usuario_id = $1
+         ) AS usuario_vinculado,
+         COALESCE((
+           SELECT MAX(COALESCE(ppl.relevance_score, 0))
+           FROM pet_petshop_links ppl
+           JOIN pets my_pet ON my_pet.id = ppl.pet_id
+           WHERE ppl.petshop_id = p.id
+             AND ppl.ativo = true
+             AND my_pet.usuario_id = $1
+         ), 0) AS relevance_score,
+         CASE
+           WHEN EXISTS (
+             SELECT 1
+             FROM pet_petshop_links ppl
+             JOIN pets my_pet ON my_pet.id = ppl.pet_id
+             WHERE ppl.petshop_id = p.id
+               AND ppl.ativo = true
+               AND my_pet.usuario_id = $1
+           ) THEN 'vinculado'
+           WHEN EXISTS (
+             SELECT 1 FROM petshop_followers pf
+             WHERE pf.petshop_id = p.id AND pf.usuario_id = $1
+           ) THEN 'seguindo'
+           ELSE 'descoberta'
+         END AS relationship_level
+       FROM petshops p
+       WHERE p.ativo = true
+       ORDER BY ${orderBy}
+       LIMIT $2`,
+      params
+    );
+    return resultado.rows;
+  },
 };
 
 module.exports = Petshop;

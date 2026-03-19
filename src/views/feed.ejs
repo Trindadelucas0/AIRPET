@@ -66,7 +66,46 @@
 
     <% if (posts && posts.length > 0) { %>
       <% posts.forEach(function(post, idx) { %>
-        <% if (post.is_sponsored) { %>
+        <% if (post.is_petshop_promo) { %>
+          <article class="bg-white rounded-2xl shadow-sm border border-emerald-200 overflow-hidden post-enter"
+                   style="animation-delay:<%= Math.min(idx * 60, 400) %>ms"
+                   id="<%= post.promo_key || ('promo-feed-' + post.id) %>">
+            <div class="px-4 py-2 bg-emerald-50 border-b border-emerald-100 flex items-center justify-between">
+              <span class="inline-flex items-center gap-1 text-[11px] font-bold tracking-wide text-emerald-700">
+                <i class="fa-solid fa-badge-percent"></i>
+                Promoção para você
+              </span>
+              <span class="text-[11px] text-gray-400">Baseada no seu relacionamento</span>
+            </div>
+            <div class="p-4">
+              <div class="flex items-center gap-3 mb-2">
+                <% if (post.petshop_logo_url) { %>
+                  <img src="<%= post.petshop_logo_url %>" alt="" class="w-10 h-10 rounded-full object-cover">
+                <% } else { %>
+                  <span class="w-10 h-10 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center"><i class="fa-solid fa-store"></i></span>
+                <% } %>
+                <div>
+                  <p class="text-sm font-semibold text-gray-900"><%= post.petshop_nome %></p>
+                  <p class="text-xs text-gray-500"><%= post.usuario_vinculado ? 'Vinculado' : 'Seguindo' %></p>
+                </div>
+              </div>
+              <h3 class="text-sm font-bold text-gray-900"><%= post.titulo %></h3>
+              <p class="text-xs text-gray-600 mt-1 line-clamp-2"><%= post.descricao_curta %></p>
+              <div class="mt-3 flex gap-2">
+                <a href="/petshops/<%= post.petshop_slug || post.petshop_id %>" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-500 text-white text-xs font-semibold hover:bg-emerald-600">
+                  <i class="fa-solid fa-store"></i>
+                  Ver petshop
+                </a>
+                <% if (post.contato_link) { %>
+                  <a href="<%= post.contato_link %>" target="_blank" rel="noopener" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-emerald-200 text-emerald-700 text-xs font-semibold hover:bg-emerald-50">
+                    <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                    Aproveitar
+                  </a>
+                <% } %>
+              </div>
+            </div>
+          </article>
+        <% } else if (post.is_sponsored) { %>
           <% var hasSponsoredPost = !!post.foto || !!post.legenda || !!post.texto; %>
           <% var sponsoredPostId = Number(post.id); %>
           <% var hasSponsoredPostId = Number.isFinite(sponsoredPostId) && sponsoredPostId > 0; %>
@@ -869,7 +908,24 @@
       '<div class="mt-3 flex items-center justify-between gap-2"><div class="flex items-center gap-2"><a href="/explorar/pet/' + escapeHtml(p.pet_id) + '" class="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-500 text-white text-xs font-semibold hover:bg-amber-600"><i class="fa-solid fa-paw"></i>Ver perfil do pet</a><a href="/explorar/perfil/' + escapeHtml(p.usuario_id) + '" class="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-amber-300 text-amber-700 text-xs font-semibold hover:bg-amber-100"><i class="fa-solid fa-user-plus"></i>Ver tutor</a></div><span class="text-[11px] text-gray-400">Entrega publicitária identificada</span></div></div></article>';
   }
 
+  function renderPetshopPromoHTML(p) {
+    var pid = p.promo_key || ('promo-feed-' + (p.id || 'x'));
+    var logo = p.petshop_logo_url
+      ? '<img src="' + escapeHtml(p.petshop_logo_url) + '" alt="" class="w-10 h-10 rounded-full object-cover">'
+      : '<span class="w-10 h-10 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center"><i class="fa-solid fa-store"></i></span>';
+    var status = p.usuario_vinculado ? 'Vinculado' : 'Seguindo';
+    var contato = p.contato_link
+      ? '<a href="' + escapeHtml(p.contato_link) + '" target="_blank" rel="noopener" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-emerald-200 text-emerald-700 text-xs font-semibold hover:bg-emerald-50"><i class="fa-solid fa-arrow-up-right-from-square"></i>Aproveitar</a>'
+      : '';
+    return '<article class="bg-white rounded-2xl shadow-sm border border-emerald-200 overflow-hidden post-enter" id="' + pid + '">' +
+      '<div class="px-4 py-2 bg-emerald-50 border-b border-emerald-100 flex items-center justify-between"><span class="inline-flex items-center gap-1 text-[11px] font-bold tracking-wide text-emerald-700"><i class="fa-solid fa-badge-percent"></i>Promoção para você</span><span class="text-[11px] text-gray-400">Baseada no seu relacionamento</span></div>' +
+      '<div class="p-4"><div class="flex items-center gap-3 mb-2">' + logo + '<div><p class="text-sm font-semibold text-gray-900">' + escapeHtml(p.petshop_nome || '') + '</p><p class="text-xs text-gray-500">' + status + '</p></div></div>' +
+      '<h3 class="text-sm font-bold text-gray-900">' + escapeHtml(p.titulo || 'Promoção') + '</h3><p class="text-xs text-gray-600 mt-1 line-clamp-2">' + escapeHtml(p.descricao_curta || '') + '</p>' +
+      '<div class="mt-3 flex gap-2"><a href="/petshops/' + escapeHtml(p.petshop_slug || p.petshop_id) + '" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-500 text-white text-xs font-semibold hover:bg-emerald-600"><i class="fa-solid fa-store"></i>Ver petshop</a>' + contato + '</div></div></article>';
+  }
+
   function renderPostHTML(p) {
+    if (p && p.is_petshop_promo) return renderPetshopPromoHTML(p);
     if (p && p.is_sponsored) return renderSponsoredHTML(p);
     var txt = p.texto || p.legenda || '';
     var isRepost = p.tipo === 'repost';

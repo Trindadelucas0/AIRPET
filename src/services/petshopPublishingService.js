@@ -1,6 +1,5 @@
 const PetshopPost = require('../models/PetshopPost');
 const PetshopProduct = require('../models/PetshopProduct');
-const PetshopFollower = require('../models/PetshopFollower');
 const PetPetshopLink = require('../models/PetPetshopLink');
 const notificacaoService = require('./notificacaoService');
 const petshopProductService = require('./petshopProductService');
@@ -34,23 +33,28 @@ const petshopPublishingService = {
       });
     }
 
-    if (postType === 'promocao' && approval_status === 'aprovado') {
-      await this.notificarPublicoElegivel(petshopId, post.id, dados.titulo || 'Nova promoção');
+    if (approval_status === 'aprovado') {
+      if (postType === 'promocao') {
+        await this.notificarVinculados(petshopId, dados.titulo || 'Nova promoção', `/petshops/${petshopId}`, 'sistema');
+      } else if (postType === 'normal' && dados.relevante) {
+        await this.notificarVinculados(petshopId, dados.titulo || 'Nova postagem relevante', `/petshops/${petshopId}`, 'sistema');
+      } else if (postType === 'evento') {
+        await this.notificarVinculados(petshopId, dados.titulo || 'Novo evento para seu pet', `/petshops/${petshopId}`, 'sistema');
+      }
     }
 
     return post;
   },
 
-  async notificarPublicoElegivel(petshopId, postId, titulo) {
-    const seguidores = await PetshopFollower.listarSeguidores(petshopId);
+  async notificarVinculados(petshopId, titulo, link, tipo = 'sistema') {
     const petsVinculados = await PetPetshopLink.listarPetsDoPetshop(petshopId);
     const usuariosViaPets = [...new Set((petsVinculados || []).map((p) => p.usuario_id).filter(Boolean))];
-    const usuarios = [...new Set([...(seguidores || []).map((s) => s.usuario_id), ...usuariosViaPets])];
-
-    const mensagem = `Nova promoção disponível: ${titulo}`;
+    const usuarios = [...new Set(usuariosViaPets)];
+    if (!usuarios.length) return;
+    const mensagem = `${titulo}`;
     await Promise.all(
       usuarios.map((uid) =>
-        notificacaoService.criar(uid, 'sistema', mensagem, `/petshops/${petshopId}`)
+        notificacaoService.criar(uid, tipo, mensagem, link || `/petshops/${petshopId}`)
       )
     );
   },

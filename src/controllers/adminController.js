@@ -408,10 +408,11 @@ async function aprovarPromocaoPetshop(req, res) {
   try {
     const post = await PetshopPost.atualizarAprovacao(req.params.id, 'aprovado');
     if (post) {
-      await petshopPublishingService.notificarPublicoElegivel(
+      await petshopPublishingService.notificarVinculados(
         post.petshop_id,
-        post.id,
-        post.titulo || 'Nova promoção'
+        post.titulo || 'Nova promoção disponível',
+        '/petshops/' + post.petshop_id,
+        'sistema'
       );
     }
     req.session.flash = { tipo: 'sucesso', mensagem: 'Promoção aprovada e publicada.' };

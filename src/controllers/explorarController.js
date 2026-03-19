@@ -11,6 +11,7 @@ const SeguidorPet = require('../models/SeguidorPet');
 const PetPetshopLink = require('../models/PetPetshopLink');
 const Petshop = require('../models/Petshop');
 const PetshopFollower = require('../models/PetshopFollower');
+const PetshopProduct = require('../models/PetshopProduct');
 const recomendacaoService = require('../services/recomendacaoService');
 const logger = require('../utils/logger');
 const { query } = require('../config/database');
@@ -119,6 +120,23 @@ function mesclarPostsComPatrocinados(postsOrganicos, patrocinados, pagina = 1) {
   return resultado;
 }
 
+function mesclarPostsComPromocoes(posts, promocoes, pagina = 1) {
+  if (pagina !== 1 || !Array.isArray(posts) || !Array.isArray(promocoes) || !promocoes.length) {
+    return posts;
+  }
+  const promocao = promocoes[0];
+  const pos = Math.min(5, posts.length);
+  const item = {
+    ...promocao,
+    id: 'promo-feed-' + promocao.id,
+    is_petshop_promo: true,
+    promo_key: 'promo-feed-' + promocao.id + '-p' + pagina,
+  };
+  const out = posts.slice();
+  out.splice(pos, 0, item);
+  return out;
+}
+
 const FotoPerfilPet = require('../models/FotoPerfilPet');
 
 const explorarController = {
@@ -132,7 +150,9 @@ const explorarController = {
 
       const postsOrganicos = await Publicacao.feedSeguindoPets(uid, limite, offset);
       const patrocinados = await Publicacao.buscarPatrocinadosPetAtivos(uid, 8);
-      const posts = mesclarPostsComPatrocinados(postsOrganicos, patrocinados, page);
+      const promocoesElegiveis = await PetshopProduct.listarPromocoesElegiveisFeed(uid, 1);
+      const postsComPatrocinados = mesclarPostsComPatrocinados(postsOrganicos, patrocinados, page);
+      const posts = mesclarPostsComPromocoes(postsComPatrocinados, promocoesElegiveis, page);
 
       const [pets, totalPosts, totalFixadas, recomendacoes, petsRecomendados] = await Promise.all([
         Pet.buscarPorUsuario(uid),
@@ -158,6 +178,7 @@ const explorarController = {
         recomendacoes,
         petsRecomendados,
         petshopDestaques,
+        promocoesFeed: promocoesElegiveis,
       });
     } catch (err) {
       logger.error('EXPLORAR', 'Erro no feed de seguidos', err);
@@ -661,6 +682,10 @@ const explorarController = {
       const petId = parseInt(req.params.id, 10);
       const petshopId = parseInt(req.body?.petshop_id, 10);
       const tipo = String(req.body?.tipo_vinculo || 'cliente');
+      const principal = req.body?.principal === true || req.body?.principal === 'true' || req.body?.principal === '1';
+      const usoFrequente = req.body?.uso_frequente === true || req.body?.uso_frequente === 'true' || req.body?.uso_frequente === '1';
+      const atendimentoRealizado = req.body?.atendimento_realizado === true || req.body?.atendimento_realizado === 'true' || req.body?.atendimento_realizado === '1';
+      const cadastroNoPetshop = req.body?.cadastro_no_petshop === true || req.body?.cadastro_no_petshop === 'true' || req.body?.cadastro_no_petshop === '1';
       if (!petId || !petshopId) {
         return res.status(400).json({ sucesso: false, mensagem: 'Dados inválidos.' });
       }
@@ -668,7 +693,14 @@ const explorarController = {
       if (!pet || pet.usuario_id !== uid) {
         return res.status(403).json({ sucesso: false, mensagem: 'Você não pode vincular este pet.' });
       }
-      await PetPetshopLink.vincular({ pet_id: petId, petshop_id: petshopId, tipo_vinculo: tipo });
+      const scoreBase = (principal ? 100 : 0) + (usoFrequente ? 30 : 0) + (atendimentoRealizado ? 25 : 0) + (cadastroNoPetshop ? 20 : 0);
+      await PetPetshopLink.vincular({
+        pet_id: petId,
+        petshop_id: petshopId,
+        tipo_vinculo: tipo,
+        principal,
+        relevance_score: scoreBase,
+      });
       const links = await PetPetshopLink.listarPorPet(petId);
       return res.json({ sucesso: true, links });
     } catch (err) {

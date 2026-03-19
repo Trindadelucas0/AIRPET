@@ -74,10 +74,56 @@ const Publicacao = {
 
   async feedSeguindoPets(usuarioId, limite = 20, offset = 0) {
     const resultado = await query(
-      `SELECT ${SELECT_COLS} ${curtiuCol(usuarioId)} ${repostouCol(usuarioId)} ${FROM_JOINS}
-       WHERE (p.pet_id IS NOT NULL AND p.pet_id IN (SELECT pet_id FROM seguidores_pets WHERE usuario_id = $1))
-          OR p.usuario_id = $1
-       ORDER BY p.fixada DESC, p.criado_em DESC
+      `SELECT ${SELECT_COLS} ${curtiuCol(usuarioId)} ${repostouCol(usuarioId)},
+         CASE
+           WHEN EXISTS (
+             SELECT 1
+             FROM pet_petshop_links ppl
+             JOIN pets my_pet ON my_pet.id = ppl.pet_id
+             WHERE ppl.ativo = true
+               AND p.pet_id IS NOT NULL
+               AND p.pet_id IN (
+                 SELECT pet_id FROM pet_petshop_links l2
+                 WHERE l2.petshop_id = ppl.petshop_id
+                   AND l2.ativo = true
+               )
+               AND my_pet.usuario_id = $1
+           ) THEN 3
+           WHEN p.pet_id IS NOT NULL AND p.pet_id IN (SELECT pet_id FROM seguidores_pets WHERE usuario_id = $1) THEN 2
+           WHEN EXISTS (
+             SELECT 1
+             FROM petshop_followers pf
+             JOIN pet_petshop_links l3 ON l3.petshop_id = pf.petshop_id AND l3.ativo = true
+             WHERE pf.usuario_id = $1
+               AND l3.pet_id = p.pet_id
+           ) THEN 1
+           ELSE 0
+         END AS prioridade_relacao
+       ${FROM_JOINS}
+       WHERE (
+         p.pet_id IS NOT NULL
+         AND (
+           p.pet_id IN (SELECT pet_id FROM seguidores_pets WHERE usuario_id = $1)
+           OR EXISTS (
+             SELECT 1
+             FROM petshop_followers pf
+             JOIN pet_petshop_links l3 ON l3.petshop_id = pf.petshop_id AND l3.ativo = true
+             WHERE pf.usuario_id = $1
+               AND l3.pet_id = p.pet_id
+           )
+           OR EXISTS (
+             SELECT 1
+             FROM pet_petshop_links lnk
+             JOIN pet_petshop_links my_link ON my_link.petshop_id = lnk.petshop_id AND my_link.ativo = true
+             JOIN pets my_pet ON my_pet.id = my_link.pet_id
+             WHERE lnk.ativo = true
+               AND lnk.pet_id = p.pet_id
+               AND my_pet.usuario_id = $1
+           )
+         )
+       )
+       OR p.usuario_id = $1
+       ORDER BY p.fixada DESC, prioridade_relacao DESC, p.criado_em DESC, p.id DESC
        LIMIT $2 OFFSET $3`,
       [usuarioId, limite, offset]
     );

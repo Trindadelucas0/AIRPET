@@ -42,6 +42,152 @@ const PetshopProduct = {
     );
     return result.rows[0].total;
   },
+
+  async listarPromocoesProximas({ usuarioId, lat, lng, limite = 8 }) {
+    const limitSeguro = Number.isInteger(limite) && limite > 0 ? limite : 8;
+    const hasGeo = Number.isFinite(lat) && Number.isFinite(lng);
+    const params = [usuarioId, limitSeguro];
+    let geoCols = `NULL::numeric AS distancia_metros`;
+    let geoOrder = `p.avaliacao_media DESC, p.avaliacoes_count DESC`;
+
+    if (hasGeo) {
+      params.push(lat, lng);
+      geoCols = `ST_Distance(
+          p.localizacao,
+          ST_SetSRID(ST_MakePoint($4, $3), 4326)::geography
+        ) AS distancia_metros`;
+      geoOrder = `distancia_metros ASC, p.avaliacao_media DESC, p.avaliacoes_count DESC`;
+    }
+
+    const result = await query(
+      `SELECT
+         pr.id,
+         pr.nome AS titulo,
+         COALESCE(pr.descricao, '') AS descricao_curta,
+         pr.preco,
+         pr.foto_url,
+         pr.contato_link,
+         pr.data_criacao AS validade,
+         p.id AS petshop_id,
+         p.nome AS petshop_nome,
+         p.slug AS petshop_slug,
+         p.logo_url AS petshop_logo_url,
+         p.avaliacao_media,
+         p.avaliacoes_count,
+         ${geoCols},
+         EXISTS (
+           SELECT 1 FROM petshop_followers pf
+           WHERE pf.petshop_id = p.id AND pf.usuario_id = $1
+         ) AS usuario_segue,
+         EXISTS (
+           SELECT 1
+           FROM pet_petshop_links ppl
+           JOIN pets my_pet ON my_pet.id = ppl.pet_id
+           WHERE ppl.petshop_id = p.id
+             AND ppl.ativo = true
+             AND my_pet.usuario_id = $1
+         ) AS usuario_vinculado,
+         CASE
+           WHEN EXISTS (
+             SELECT 1
+             FROM pet_petshop_links ppl
+             JOIN pets my_pet ON my_pet.id = ppl.pet_id
+             WHERE ppl.petshop_id = p.id
+               AND ppl.ativo = true
+               AND my_pet.usuario_id = $1
+           ) THEN 'vinculado'
+           WHEN EXISTS (
+             SELECT 1 FROM petshop_followers pf
+             WHERE pf.petshop_id = p.id AND pf.usuario_id = $1
+           ) THEN 'seguindo'
+           ELSE 'descoberta'
+         END AS relationship_level
+       FROM petshop_products pr
+       JOIN petshops p ON p.id = pr.petshop_id
+       WHERE pr.is_active = true
+         AND pr.is_promocao = true
+         AND p.ativo = true
+       ORDER BY ${geoOrder}
+       LIMIT $2`,
+      params
+    );
+    return result.rows;
+  },
+
+  async listarPromocoesElegiveisFeed(usuarioId, limite = 2) {
+    const limitSeguro = Number.isInteger(limite) && limite > 0 ? limite : 2;
+    const result = await query(
+      `SELECT
+         pr.id,
+         pr.nome AS titulo,
+         COALESCE(pr.descricao, '') AS descricao_curta,
+         pr.preco,
+         pr.foto_url,
+         pr.contato_link,
+         pr.data_criacao AS validade,
+         p.id AS petshop_id,
+         p.nome AS petshop_nome,
+         p.slug AS petshop_slug,
+         p.logo_url AS petshop_logo_url,
+         p.avaliacao_media,
+         p.avaliacoes_count,
+         EXISTS (
+           SELECT 1 FROM petshop_followers pf
+           WHERE pf.petshop_id = p.id AND pf.usuario_id = $1
+         ) AS usuario_segue,
+         EXISTS (
+           SELECT 1
+           FROM pet_petshop_links ppl
+           JOIN pets my_pet ON my_pet.id = ppl.pet_id
+           WHERE ppl.petshop_id = p.id
+             AND ppl.ativo = true
+             AND my_pet.usuario_id = $1
+         ) AS usuario_vinculado,
+         COALESCE((
+           SELECT MAX(COALESCE(ppl.relevance_score, 0))
+           FROM pet_petshop_links ppl
+           JOIN pets my_pet ON my_pet.id = ppl.pet_id
+           WHERE ppl.petshop_id = p.id
+             AND ppl.ativo = true
+             AND my_pet.usuario_id = $1
+         ), 0) AS relevance_score,
+         CASE
+           WHEN EXISTS (
+             SELECT 1
+             FROM pet_petshop_links ppl
+             JOIN pets my_pet ON my_pet.id = ppl.pet_id
+             WHERE ppl.petshop_id = p.id
+               AND ppl.ativo = true
+               AND my_pet.usuario_id = $1
+           ) THEN 'vinculado'
+           WHEN EXISTS (
+             SELECT 1 FROM petshop_followers pf
+             WHERE pf.petshop_id = p.id AND pf.usuario_id = $1
+           ) THEN 'seguindo'
+           ELSE 'descoberta'
+         END AS relationship_level
+       FROM petshop_products pr
+       JOIN petshops p ON p.id = pr.petshop_id
+       WHERE pr.is_active = true
+         AND pr.is_promocao = true
+         AND p.ativo = true
+         AND (
+           EXISTS (SELECT 1 FROM petshop_followers pf WHERE pf.petshop_id = p.id AND pf.usuario_id = $1)
+           OR EXISTS (
+             SELECT 1
+             FROM pet_petshop_links ppl
+             JOIN pets my_pet ON my_pet.id = ppl.pet_id
+             WHERE ppl.petshop_id = p.id
+               AND ppl.ativo = true
+               AND my_pet.usuario_id = $1
+           )
+         )
+       ORDER BY usuario_vinculado DESC, relevance_score DESC, pr.data_criacao DESC
+       LIMIT $2`,
+      [usuarioId, limitSeguro]
+    );
+    return result.rows;
+  },
 };
 
 module.exports = PetshopProduct;

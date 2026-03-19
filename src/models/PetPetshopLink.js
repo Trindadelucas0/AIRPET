@@ -1,18 +1,39 @@
-const { query } = require('../config/database');
+const { query, getClient } = require('../config/database');
 
 const PetPetshopLink = {
-  async vincular({ pet_id, petshop_id, tipo_vinculo = 'cliente' }) {
-    const result = await query(
-      `INSERT INTO pet_petshop_links (pet_id, petshop_id, tipo_vinculo, ativo)
-       VALUES ($1, $2, $3, true)
-       ON CONFLICT (pet_id, petshop_id) DO UPDATE SET
-         tipo_vinculo = EXCLUDED.tipo_vinculo,
-         ativo = true,
-         data_atualizacao = NOW()
-       RETURNING *`,
-      [pet_id, petshop_id, tipo_vinculo]
-    );
-    return result.rows[0];
+  async vincular({ pet_id, petshop_id, tipo_vinculo = 'cliente', principal = false, relevance_score = null }) {
+    const client = await getClient();
+    try {
+      await client.query('BEGIN');
+      if (principal) {
+        await client.query(
+          `UPDATE pet_petshop_links
+           SET is_principal = false, data_atualizacao = NOW()
+           WHERE pet_id = $1`,
+          [pet_id]
+        );
+      }
+
+      const result = await client.query(
+        `INSERT INTO pet_petshop_links (pet_id, petshop_id, tipo_vinculo, ativo, is_principal, relevance_score)
+         VALUES ($1, $2, $3, true, $4, COALESCE($5, 0))
+         ON CONFLICT (pet_id, petshop_id) DO UPDATE SET
+           tipo_vinculo = EXCLUDED.tipo_vinculo,
+           ativo = true,
+           is_principal = EXCLUDED.is_principal,
+           relevance_score = COALESCE(EXCLUDED.relevance_score, pet_petshop_links.relevance_score),
+           data_atualizacao = NOW()
+         RETURNING *`,
+        [pet_id, petshop_id, tipo_vinculo, !!principal, relevance_score]
+      );
+      await client.query('COMMIT');
+      return result.rows[0];
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
   },
 
   async listarPetsDoPetshop(petshopId) {
@@ -32,10 +53,27 @@ const PetPetshopLink = {
        FROM pet_petshop_links l
        JOIN petshops p ON p.id = l.petshop_id
        WHERE l.pet_id = $1 AND l.ativo = true
-       ORDER BY l.data_criacao DESC`,
+       ORDER BY l.is_principal DESC, l.relevance_score DESC, l.data_criacao DESC`,
       [petId]
     );
     return result.rows;
+  },
+
+  async atualizarPrincipal(petId, petshopId) {
+    await query(
+      `UPDATE pet_petshop_links
+       SET is_principal = false, data_atualizacao = NOW()
+       WHERE pet_id = $1`,
+      [petId]
+    );
+    const result = await query(
+      `UPDATE pet_petshop_links
+       SET is_principal = true, ativo = true, relevance_score = GREATEST(COALESCE(relevance_score, 0), 100), data_atualizacao = NOW()
+       WHERE pet_id = $1 AND petshop_id = $2
+       RETURNING *`,
+      [petId, petshopId]
+    );
+    return result.rows[0] || null;
   },
 
   async desvincular(petId, petshopId) {

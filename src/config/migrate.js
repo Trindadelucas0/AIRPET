@@ -1322,7 +1322,16 @@ const migrations = [
     data_atualizacao TIMESTAMP,
     UNIQUE (pet_id, petshop_id)
   );`,
+  `DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='pet_petshop_links' AND column_name='is_principal') THEN
+      ALTER TABLE pet_petshop_links ADD COLUMN is_principal BOOLEAN DEFAULT false;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='pet_petshop_links' AND column_name='relevance_score') THEN
+      ALTER TABLE pet_petshop_links ADD COLUMN relevance_score NUMERIC(10,2) DEFAULT 0;
+    END IF;
+  END $$;`,
   `CREATE INDEX IF NOT EXISTS idx_pet_petshop_links_petshop ON pet_petshop_links (petshop_id, ativo);`,
+  `CREATE INDEX IF NOT EXISTS idx_pet_petshop_links_principal ON pet_petshop_links (pet_id, is_principal);`,
 
   // Agenda profissional do petshop
   `CREATE TABLE IF NOT EXISTS petshop_services (

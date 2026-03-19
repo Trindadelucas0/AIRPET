@@ -34,6 +34,9 @@
           <a href="/mapa" class="px-3.5 py-2 rounded-xl text-sm font-medium transition-all duration-200 <%= currentPath.startsWith('/mapa') ? 'bg-primary-50 text-primary-600' : 'text-gray-500 hover:bg-primary-50 hover:text-primary-600' %>">
             <i class="fa-solid fa-map-location-dot mr-1.5"></i>Mapa
           </a>
+          <a href="/petshops" class="px-3.5 py-2 rounded-xl text-sm font-medium transition-all duration-200 <%= currentPath.startsWith('/petshops') ? 'bg-primary-50 text-primary-600' : 'text-gray-500 hover:bg-primary-50 hover:text-primary-600' %>">
+            <i class="fa-solid fa-store mr-1.5"></i>Petshops
+          </a>
           <a href="/notificacoes" class="relative px-3.5 py-2 rounded-xl text-sm font-medium transition-all duration-200 <%= currentPath.startsWith('/notificacoes') ? 'bg-primary-50 text-primary-600' : 'text-gray-500 hover:bg-primary-50 hover:text-primary-600' %>">
             <i class="fa-solid fa-bell mr-1.5"></i>
             <span data-notif-badge class="absolute -top-0.5 left-[22px] min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center animate-pulse <%= notifCount > 0 ? '' : 'hidden' %>">
@@ -127,6 +130,10 @@
     <a href="/explorar" class="bottom-tab flex flex-col items-center justify-center gap-0.5 w-14 py-1 rounded-2xl transition-all duration-200 <%= currentPath === '/explorar' ? 'text-primary-500' : 'text-gray-400 hover:text-primary-500' %>">
       <i class="fa-solid fa-compass text-lg"></i>
       <span class="text-[10px] font-medium">Explorar</span>
+    </a>
+    <a href="/petshops" class="bottom-tab flex flex-col items-center justify-center gap-0.5 w-14 py-1 rounded-2xl transition-all duration-200 <%= currentPath.startsWith('/petshops') ? 'text-primary-500' : 'text-gray-400 hover:text-primary-500' %>">
+      <i class="fa-solid fa-store text-lg"></i>
+      <span class="text-[10px] font-medium">Petshops</span>
     </a>
     <button type="button" id="fabNewPost" class="relative -mt-5 w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-primary-500/30 hover:shadow-xl hover:shadow-primary-500/40 hover:scale-105 active:scale-95 transition-all duration-300">
       <i class="fa-solid fa-plus text-lg"></i>
