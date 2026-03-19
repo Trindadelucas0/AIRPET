@@ -44,6 +44,7 @@ const PontoMapa = require('../models/PontoMapa');
 const Localizacao = require('../models/Localizacao');
 const PetshopPartnerRequest = require('../models/PetshopPartnerRequest');
 const PetshopPost = require('../models/PetshopPost');
+const PetshopAccount = require('../models/PetshopAccount');
 const notificacaoService = require('../services/notificacaoService');
 const adminAnalyticsService = require('../services/adminAnalyticsService');
 const petshopModerationService = require('../services/petshopModerationService');
@@ -208,23 +209,76 @@ async function listarUsuarios(req, res) {
     if (status === 'bloqueado') filtros.bloqueado = true;
     else if (status === 'ativo') filtros.bloqueado = false;
 
-    const [usuarios, estados, totalUsuarios] = await Promise.all([
+    // Petshops parceiros (responsáveis) vinculados a petshop_accounts.
+    const wherePetshops = ['pa.usuario_id IS NOT NULL', "pa.status = 'ativo'"];
+    const valuesPetshops = [];
+    let idxPet = 1;
+    if (filtros.estado) {
+      wherePetshops.push(`u.estado = $${idxPet}`);
+      valuesPetshops.push(filtros.estado);
+      idxPet++;
+    }
+    if (filtros.cidade) {
+      wherePetshops.push(`u.cidade ILIKE $${idxPet}`);
+      valuesPetshops.push('%' + filtros.cidade + '%');
+      idxPet++;
+    }
+    if (typeof filtros.bloqueado === 'boolean') {
+      wherePetshops.push(`u.bloqueado = $${idxPet}`);
+      valuesPetshops.push(filtros.bloqueado);
+      idxPet++;
+    }
+
+    const petshopParceirosQuery = query(
+      `SELECT
+          u.id,
+          u.nome,
+          u.email,
+          u.foto_perfil,
+          u.cor_perfil,
+          u.telefone,
+          u.cidade,
+          u.estado,
+          u.bairro,
+          u.role,
+          u.bloqueado,
+          u.data_criacao,
+          p.id AS petshop_id,
+          p.nome AS petshop_nome,
+          p.endereco AS petshop_endereco,
+          p.telefone AS petshop_telefone,
+          p.ativo AS petshop_ativo,
+          pa.status AS petshop_account_status
+        FROM petshop_accounts pa
+        JOIN usuarios u ON u.id = pa.usuario_id
+        JOIN petshops p ON p.id = pa.petshop_id
+        WHERE ${wherePetshops.join(' AND ')}
+        ORDER BY u.data_criacao DESC`,
+      valuesPetshops
+    ).then(function (r) { return (r && r.rows) ? r.rows : []; });
+
+    const [usuarios, estados, totalUsuarios, petshopParceiros] = await Promise.all([
       Object.keys(filtros).length ? Usuario.listarComFiltros(filtros) : Usuario.listarTodos(),
       Usuario.listarEstados(),
       Usuario.contarTotal(),
+      petshopParceirosQuery,
     ]);
 
     const adminEmail = process.env.ADMIN_EMAIL || '';
     const maxUsuarios = parseInt(process.env.MAX_USUARIOS || '0', 10);
+    const tab = req.query.tab === 'petshops' ? 'petshops' : 'usuarios';
 
     return res.render('admin/usuarios', {
       titulo: 'Usuários - AIRPET',
       usuarios,
+      petshopParceiros: Array.isArray(petshopParceiros) ? petshopParceiros : [],
+      petshopParceirosCount: (Array.isArray(petshopParceiros) ? petshopParceiros : []).length,
       adminEmail,
       estados: estados || [],
       filtros: { estado: estado || '', cidade: cidade || '', status: status || 'todos' },
       totalUsuarios,
       maxUsuarios: maxUsuarios > 0 ? maxUsuarios : null,
+      tab,
     });
   } catch (erro) {
     logger.error('AdminController', 'Erro ao listar usuários', erro);
@@ -301,6 +355,19 @@ async function excluirPetshop(req, res) {
     if (!petshop) {
       req.session.flash = { tipo: 'erro', mensagem: 'Petshop não encontrado.' };
       return res.redirect(adminPath + '/petshops');
+    }
+
+    // Excluir petshop parceiro deve remover também a conta vinculada no sistema (como no delete de usuário).
+    // O vínculo existe via petshop_accounts.usuario_id.
+    const contaPetshop = await PetshopAccount.buscarPorPetshopId(id);
+    if (contaPetshop && contaPetshop.usuario_id) {
+      const usuarioVinculado = await Usuario.buscarPorId(contaPetshop.usuario_id);
+      const adminEmail = process.env.ADMIN_EMAIL || '';
+      if (adminEmail && usuarioVinculado && usuarioVinculado.email === adminEmail) {
+        req.session.flash = { tipo: 'erro', mensagem: 'Não é possível excluir a conta do administrador.' };
+        return res.redirect(adminPath + '/petshops');
+      }
+      await Usuario.deletar(contaPetshop.usuario_id);
     }
 
     await Petshop.deletar(id);

@@ -2,16 +2,18 @@
   locals.titulo = petshop.nome;
   const capaUrl = petshop.foto_capa ? `/images/petshops/${petshop.foto_capa}` : (petshop.foto_capa_url || null);
   const avatarUrl = petshop.logo_url || null;
-  const categoria = (servicos && servicos.length > 0) ? servicos[0].nome : null;
+  const servicosSafe = (typeof servicos !== 'undefined' && Array.isArray(servicos)) ? servicos : [];
+  const profileSafe = (typeof profile !== 'undefined' && profile) ? profile : null;
+  const categoria = (servicosSafe && servicosSafe.length > 0) ? servicosSafe[0].nome : null;
   const reviewMedia = Number((reviewSummary && reviewSummary.media) ? reviewSummary.media : 0);
   const reviewTotal = Number((reviewSummary && reviewSummary.total) ? reviewSummary.total : 0);
 
-  const whatsappPublico = (profile && profile.whatsapp_publico) ? profile.whatsapp_publico : null;
+  const whatsappPublico = (profileSafe && profileSafe.whatsapp_publico) ? profileSafe.whatsapp_publico : null;
   const whatsappNumero = whatsappPublico || petshop.whatsapp || null;
   const whatsappHref = whatsappNumero ? `https://wa.me/55${String(whatsappNumero).replace(/\\D/g, '')}` : null;
-  const contatoHref = (profile && profile.contato_link) ? profile.contato_link : whatsappHref;
+  const contatoHref = (profileSafe && profileSafe.contato_link) ? profileSafe.contato_link : whatsappHref;
 
-  const agendamentoDisponivel = Boolean(profile && profile.aceita_agendamento) && petshop.agenda_aberta !== false;
+  const agendamentoDisponivel = Boolean(profileSafe && profileSafe.aceita_agendamento) && petshop.agenda_aberta !== false;
 
   const publicacoesLista = publicacoes || [];
   const publicacoesServisPromo = publicacoesLista.filter(p => p && (p.publicationType === 'promocao' || p.is_promocao));
@@ -87,7 +89,7 @@
     <div class="p-4 sm:p-5">
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <!-- Contato -->
-        <a href="<%= contatoHref || '#petshops-' + petshop.id %>" target="<%= (profile && profile.contato_link) ? '_blank' : '_self' %>" rel="noopener"
+        <a href="<%= contatoHref || '#petshops-' + petshop.id %>" target="<%= (profileSafe && profileSafe.contato_link) ? '_blank' : '_self' %>" rel="noopener"
            class="btn-primary rounded-2xl flex items-center justify-center gap-2 px-4 py-3 text-base font-semibold <%= contatoHref ? '' : 'opacity-60 pointer-events-none' %>">
           <i class="fa-brands fa-whatsapp"></i>
           Entrar em contato
@@ -126,13 +128,13 @@
         </div>
       <% } %>
 
-      <% if ((profile && profile.slogan) || (profile && profile.descricao_curta)) { %>
+      <% if ((profileSafe && profileSafe.slogan) || (profileSafe && profileSafe.descricao_curta)) { %>
         <div class="mt-4">
-          <% if (profile && profile.slogan) { %>
-            <p class="text-gray-900 font-extrabold text-lg"><%= profile.slogan %></p>
+          <% if (profileSafe && profileSafe.slogan) { %>
+            <p class="text-gray-900 font-extrabold text-lg"><%= profileSafe.slogan %></p>
           <% } %>
-          <% if (profile && profile.descricao_curta) { %>
-            <p class="text-gray-600 mt-1 text-sm leading-relaxed"><%= profile.descricao_curta %></p>
+          <% if (profileSafe && profileSafe.descricao_curta) { %>
+            <p class="text-gray-600 mt-1 text-sm leading-relaxed"><%= profileSafe.descricao_curta %></p>
           <% } %>
         </div>
       <% } %>
@@ -186,14 +188,14 @@
           <% }); %>
         </div>
       </div>
-    <% } else if (servicos && servicos.length > 0) { %>
+    <% } else if (servicosSafe && servicosSafe.length > 0) { %>
       <div class="card">
         <h2 class="text-lg font-extrabold text-gray-900 mb-3">
           <i class="fa-solid fa-concierge-bell text-[#ec5a1c] mr-2"></i>Serviços em destaque
         </h2>
         <div class="flex gap-2 overflow-x-auto pb-2">
           <% var iconeServico = { banho: 'fa-shower', tosa: 'fa-scissors', consulta: 'fa-stethoscope', vacina: 'fa-syringe', hospedagem: 'fa-house', adestramento: 'fa-graduation-cap', transporte: 'fa-car', creche: 'fa-children' }; %>
-          <% servicos.slice(0, 12).forEach(function(srv) { %>
+          <% servicosSafe.slice(0, 12).forEach(function(srv) { %>
             <% const nomeServico = srv.nome || srv; %>
             <span class="inline-flex items-center gap-2 bg-gray-100 text-gray-800 text-sm font-semibold px-4 py-2 rounded-2xl whitespace-nowrap border border-gray-200">
               <i class="fa-solid <%= iconeServico[String(nomeServico || '').toLowerCase()] || 'fa-paw' %> text-[#ec5a1c]"></i>

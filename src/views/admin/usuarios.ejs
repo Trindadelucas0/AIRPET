@@ -13,7 +13,18 @@
         <p class="text-sm text-gray-500 mt-0.5">Visualize, filtre por região e bloqueie contas</p>
       </div>
       <div class="text-right">
-        <span class="text-sm text-gray-500 font-medium"><%= usuarios.length %> <%= usuarios.length === 1 ? 'registro' : 'registros' %> na lista</span>
+        <div class="flex flex-wrap items-center justify-end gap-2 mb-2">
+          <button type="button"
+                  class="px-3 py-1.5 rounded-lg border text-sm font-medium transition-colors <%= tab === 'petshops' ? 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50' : 'bg-primary-50 text-primary-700 border-primary-200' %>"
+                  data-tab="usuarios">
+            Usuários (<%= usuarios.length %>)
+          </button>
+          <button type="button"
+                  class="px-3 py-1.5 rounded-lg border text-sm font-medium transition-colors <%= tab === 'petshops' ? 'bg-primary-50 text-primary-700 border-primary-200' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50' %>"
+                  data-tab="petshops">
+            Petshops parceiros (<%= petshopParceirosCount || 0 %>)
+          </button>
+        </div>
         <% if (typeof totalUsuarios !== 'undefined') { %>
           <p class="text-xs text-gray-400 mt-0.5">Total no sistema: <strong><%= totalUsuarios %></strong><% if (maxUsuarios) { %> / <%= maxUsuarios %> (limite)<% } %></p>
         <% } %>
@@ -71,7 +82,8 @@
     </form>
 
     <!-- Tabela de usuários -->
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+    <div id="tab-usuarios" <%= tab === 'petshops' ? 'class="hidden"' : '' %>>
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
       <div class="overflow-x-auto">
         <table class="w-full text-sm">
           <thead>
@@ -163,9 +175,122 @@
           <p class="text-xs mt-1">Ajuste os filtros ou <a href="<%= adminPath %>/usuarios" class="text-primary-500 hover:underline">limpe</a> para ver todos.</p>
         </div>
       <% } %>
+      </div>
+    </div>
+
+    <!-- Tabela de petshops parceiros -->
+    <div id="tab-petshops" <%= tab === 'petshops' ? '' : 'class="hidden"' %>>
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mt-6">
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="bg-gray-50 border-b border-gray-200">
+                <th class="px-4 py-3 text-left font-semibold text-gray-600">Petshop</th>
+                <th class="px-4 py-3 text-left font-semibold text-gray-600">Contato</th>
+                <th class="px-4 py-3 text-left font-semibold text-gray-600">Região</th>
+                <th class="px-4 py-3 text-left font-semibold text-gray-600">Perfil</th>
+                <th class="px-4 py-3 text-left font-semibold text-gray-600">Status</th>
+                <th class="px-4 py-3 text-left font-semibold text-gray-600">Cadastro</th>
+                <th class="px-4 py-3 text-left font-semibold text-gray-600">Ações</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+              <% (petshopParceiros || []).forEach(function(pp) { %>
+                <tr class="hover:bg-gray-50/80 transition-colors">
+                  <td class="px-4 py-3">
+                    <div class="flex items-center gap-3">
+                      <div class="w-9 h-9 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center text-xs font-semibold">
+                        <i class="fa-solid fa-store"></i>
+                      </div>
+                      <div>
+                        <p class="font-medium text-gray-900"><%= pp.petshop_nome %></p>
+                        <p class="text-xs text-gray-500">Petshop ID <%= pp.petshop_id %></p>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="px-4 py-3">
+                    <p class="text-gray-600"><%= pp.email || '—' %></p>
+                    <p class="text-xs text-gray-500"><%= pp.petshop_telefone || pp.telefone || '' %></p>
+                  </td>
+                  <td class="px-4 py-3">
+                    <p class="text-gray-600"><%= pp.cidade || '—' %></p>
+                    <p class="text-xs text-gray-500"><%= pp.estado || '—' %> <%= pp.bairro ? ' · ' + pp.bairro : '' %></p>
+                  </td>
+                  <td class="px-4 py-3">
+                    <div class="flex flex-col items-start gap-1">
+                      <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-600">petshop parceiro</span>
+                      <a href="/explorar/perfil/<%= pp.id %>" target="_blank" class="text-xs text-primary-600 hover:underline">Ver perfil público</a>
+                    </div>
+                  </td>
+                  <td class="px-4 py-3">
+                    <% if (pp.bloqueado) { %>
+                      <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-700">Bloqueado</span>
+                    <% } else { %>
+                      <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700">Ativo</span>
+                    <% } %>
+                  </td>
+                  <td class="px-4 py-3 text-gray-500 text-xs">
+                    <%= pp.data_criacao ? new Date(pp.data_criacao).toLocaleDateString('pt-BR') : '—' %>
+                  </td>
+                  <td class="px-4 py-3">
+                    <% const ehAdminEmail = typeof adminEmail !== 'undefined' && adminEmail && pp.email === adminEmail; %>
+                    <% if (!ehAdminEmail) { %>
+                      <form action="<%= adminPath %>/petshops/<%= pp.petshop_id %>/excluir" method="POST" class="inline"
+                            onsubmit="return confirm('Tem certeza? Isso remove o petshop parceiro e a conta do responsável de forma permanente.');">
+                        <button type="submit" class="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium bg-red-50 text-red-700 hover:bg-red-100 transition-colors">
+                          <i class="fa-solid fa-trash-can"></i> Excluir
+                        </button>
+                      </form>
+                    <% } else { %>
+                      <span class="text-xs text-gray-400">Admin</span>
+                    <% } %>
+                  </td>
+                </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+
+        <% if (!petshopParceiros || petshopParceiros.length === 0) { %>
+          <div class="text-center py-16 text-gray-400">
+            <i class="fa-solid fa-store text-4xl mb-3 opacity-50"></i>
+            <p class="text-sm font-medium">Nenhum petshop parceiro encontrado</p>
+            <p class="text-xs mt-1">Ajuste os filtros e recarregue para ver mais.</p>
+          </div>
+        <% } %>
+      </div>
     </div>
 
   </div>
 </main>
+
+<script>
+  (function () {
+    var activeTab = <%- JSON.stringify(tab || 'usuarios') %>;
+    function showTab(name) {
+      var usuarios = document.getElementById('tab-usuarios');
+      var petshops = document.getElementById('tab-petshops');
+      if (!usuarios || !petshops) return;
+      if (name === 'petshops') {
+        usuarios.classList.add('hidden');
+        petshops.classList.remove('hidden');
+      } else {
+        petshops.classList.add('hidden');
+        usuarios.classList.remove('hidden');
+      }
+    }
+
+    showTab(activeTab);
+
+    document.querySelectorAll('[data-tab]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var name = btn.getAttribute('data-tab');
+        var url = new URL(window.location.href);
+        url.searchParams.set('tab', name);
+        window.location.href = url.toString();
+      });
+    });
+  })();
+</script>
 
 <%- include('../partials/admin-footer') %>

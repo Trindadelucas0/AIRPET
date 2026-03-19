@@ -104,14 +104,17 @@ async function mostrarDetalhes(req, res) {
       PetshopFollower.contarSeguidores(petshop.id),
     ]);
 
+    const servicosSafe = Array.isArray(servicos) ? servicos : [];
+    const profileSafe = profile || null;
+
     const usuarioId = req.session && req.session.usuario && req.session.usuario.id;
     const userSegue = usuarioId ? await PetshopFollower.usuarioSegue(petshop.id, usuarioId) : false;
 
     return res.render('petshops/detalhes', {
       titulo: `${petshop.nome} - AIRPET`,
       petshop,
-      profile,
-      servicos,
+      profile: profileSafe,
+      servicos: servicosSafe,
       products,
       posts,
       publicacoes,
