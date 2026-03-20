@@ -259,11 +259,18 @@ const migrations = [
 
   // Seeds de aparência / PWA (ícone, cores, nome do app)
   `INSERT INTO config_sistema (chave, valor, descricao) VALUES
-    ('pwa_theme_color', '#ec5a1c', 'Cor do tema PWA e barra do navegador'),
+    ('pwa_theme_color', '#f26020', 'Cor do tema PWA e barra do navegador'),
     ('pwa_background_color', '#ffffff', 'Cor de fundo do PWA'),
     ('pwa_icon_192', '/images/icons/icon-192.png', 'URL do ícone 192x192'),
     ('pwa_icon_512', '/images/icons/icon-512.png', 'URL do ícone 512x512'),
-    ('app_primary_color', '#ec5a1c', 'Cor principal do site (botões, links)'),
+    ('app_primary_color', '#f26020', 'Cor principal do site (botões, links)'),
+    ('app_primary_hover_color', '#ff7a3d', 'Cor de hover da primária'),
+    ('app_accent_glow', 'rgba(242,96,32,0.12)', 'Glow da cor primária'),
+    ('app_green_color', '#22c55e', 'Cor global de sucesso'),
+    ('app_red_color', '#ef4444', 'Cor global de erro'),
+    ('app_purple_color', '#a78bfa', 'Cor global roxa'),
+    ('app_blue_color', '#60a5fa', 'Cor global azul'),
+    ('app_yellow_color', '#facc15', 'Cor global amarela'),
     ('app_name', 'AIRPET', 'Nome curto do aplicativo')
   ON CONFLICT (chave) DO NOTHING;`,
 

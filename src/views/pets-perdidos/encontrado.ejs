@@ -1,494 +1,223 @@
 <% locals.titulo = pet.nome + ' foi encontrado!' %>
 <% locals.extraHead = `
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
-  #mapaEncontrado { height: 280px; border-radius: 12px; z-index: 1; }
-  .como-option { transition: all .2s ease; cursor: pointer; }
-  .como-option.active { border-color: #10b981 !important; background: #ecfdf5 !important; }
-  .como-option:hover { border-color: #34d399; }
-  .loc-option { transition: all .2s ease; cursor: pointer; }
-  .loc-option.active { border-color: #10b981 !important; background: #ecfdf5 !important; }
-  .loc-option:hover { border-color: #34d399; }
-  .search-results { max-height: 200px; overflow-y: auto; }
-  .step-dot { width: 10px; height: 10px; border-radius: 50%; transition: all .3s; }
-  .step-dot.active { background: #10b981; transform: scale(1.3); }
-  .step-dot.done { background: #10b981; }
-  .step-dot.pending { background: #d1d5db; }
-  .step-bar { height: 2px; flex: 1; transition: background .3s; }
-  .step-bar.done { background: #10b981; }
-  .step-bar.pending { background: #e5e7eb; }
+  :root{--ink:#0d0d0f;--ink-2:#13131a;--ink-3:#1c1c26;--border:rgba(255,255,255,0.07);--border-hover:rgba(255,255,255,0.13);--text:#e4e4f0;--text-dim:#7a7a96;--text-muted:#3d3d52;--accent:#f26020;--green:#22c55e;--blue:#60a5fa;}
+  body{background:var(--ink)!important;color:var(--text)!important;font-family:'DM Sans',sans-serif;}
+  .enc-wrap{max-width:540px;margin:0 auto;padding:24px 20px 80px;}
+  .page-topbar{position:sticky;top:56px;z-index:40;background:rgba(13,13,15,0.88);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:12px 0;}
+  .topbar-inner{max-width:540px;margin:0 auto;padding:0 20px;display:flex;align-items:center;gap:12px;}
+  .back-link{color:var(--text-dim);font-size:13px;text-decoration:none;display:flex;align-items:center;gap:6px;transition:color 0.15s;}
+  .back-link:hover{color:var(--accent);text-decoration:none;}
+  /* Progress */
+  .step-progress{display:flex;align-items:center;gap:0;margin-bottom:6px;}
+  .step-dot{width:10px;height:10px;border-radius:50%;transition:all 0.3s;}
+  .step-dot.active{background:var(--green);transform:scale(1.3);}
+  .step-dot.done{background:var(--green);}
+  .step-dot.pending{background:var(--text-muted);}
+  .step-bar{flex:1;height:2px;transition:background 0.3s;}
+  .step-bar.done{background:var(--green);}
+  .step-bar.pending{background:var(--text-muted);}
+  .step-labels{display:flex;justify-content:space-between;font-size:11px;font-weight:700;margin-bottom:20px;}
+  /* Hero */
+  .enc-hero{background:rgba(34,197,94,0.06);border:1px solid rgba(34,197,94,0.2);border-radius:18px;padding:24px;text-align:center;margin-bottom:16px;}
+  .enc-avatar{width:80px;height:80px;border-radius:50%;object-fit:cover;border:3px solid rgba(34,197,94,0.5);margin:0 auto 12px;display:block;}
+  .enc-avatar-init{width:80px;height:80px;border-radius:50%;background:rgba(34,197,94,0.1);display:flex;align-items:center;justify-content:center;font-size:30px;margin:0 auto 12px;border:3px solid rgba(34,197,94,0.3);}
+  .enc-title{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:#fff;margin-bottom:6px;}
+  .enc-sub{font-size:14px;color:var(--text-dim);}
+  /* Steps */
+  .enc-step{display:none;}
+  .enc-step.active{display:block;}
+  /* Options */
+  .como-option{display:flex;align-items:center;gap:12px;padding:14px 16px;border:2px solid var(--border);border-radius:12px;cursor:pointer;transition:all 0.15s;margin-bottom:8px;}
+  .como-option:hover{border-color:var(--border-hover);}
+  .como-option.active{border-color:var(--green);background:rgba(34,197,94,0.06);}
+  .como-opt-icon{width:40px;height:40px;border-radius:11px;background:rgba(34,197,94,0.1);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px;color:var(--green);}
+  .como-opt-name{font-size:14px;font-weight:700;color:#fff;}
+  .como-opt-sub{font-size:11px;color:var(--text-dim);}
+  /* Section */
+  .section-card{background:var(--ink-2);border:1px solid var(--border);border-radius:18px;padding:22px;margin-bottom:14px;}
+  .section-title{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--text-dim);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:16px;}
+  .ds-input{width:100%;background:var(--ink-3);border:1px solid var(--border);border-radius:10px;padding:11px 14px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;outline:none;transition:border-color 0.2s,box-shadow 0.2s;}
+  .ds-input::placeholder{color:var(--text-muted);}
+  .ds-input:focus{border-color:rgba(34,197,94,0.5);box-shadow:0 0 0 3px rgba(34,197,94,0.06);}
+  .ds-label{display:block;font-size:11px;font-weight:700;color:var(--text-dim);letter-spacing:0.07em;text-transform:uppercase;margin-bottom:6px;}
+  .field-group{margin-bottom:14px;}
+  #mapaEncontrado{height:240px;border-radius:12px;overflow:hidden;filter:brightness(0.85) saturate(0.7);}
+  .search-results{background:var(--ink-3);border:1px solid var(--border);border-radius:10px;max-height:180px;overflow-y:auto;}
+  .search-result-item{padding:10px 14px;font-size:13px;cursor:pointer;color:var(--text);transition:background 0.1s;}
+  .search-result-item:hover{background:var(--ink-4);}
+  .btn-next{width:100%;padding:13px;background:var(--green);color:#fff;border:none;border-radius:12px;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:700;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:8px;}
+  .btn-next:hover{background:#16a34a;transform:translateY(-1px);}
+  .btn-back-step{width:100%;padding:11px;background:transparent;color:var(--text-dim);border:1px solid var(--border);border-radius:12px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.15s;margin-top:8px;}
+  .btn-back-step:hover{border-color:var(--border-hover);color:var(--text);}
 </style>
 ` %>
 <%- include('../partials/header') %>
 <%- include('../partials/flash') %>
 
-<main class="flex-1 container mx-auto px-4 py-6 max-w-lg">
-  <%- include('../partials/page-header', { backHref: '/pets/' + pet.id, backLabel: 'Voltar ao perfil', sticky: false }) %>
+<div class="page-topbar">
+  <div class="topbar-inner">
+    <a href="/pets/<%= pet.id %>" class="back-link"><i class="fa-solid fa-arrow-left"></i> <%= pet.nome %></a>
+  </div>
+</div>
 
-  <!-- Header emotivo -->
-  <div class="card mb-6 mt-6 bg-emerald-50 border border-emerald-200 text-center">
-    <div class="relative inline-block mb-4">
+<main class="flex-1">
+  <div class="enc-wrap">
+
+    <!-- Hero -->
+    <div class="enc-hero">
       <% if (pet.foto) { %>
-        <img src="<%= pet.foto %>" class="w-24 h-24 rounded-full object-cover ring-4 ring-emerald-400 mx-auto" alt="<%= pet.nome %>">
+        <img src="<%= pet.foto %>" class="enc-avatar" alt="<%= pet.nome %>">
       <% } else { %>
-        <div class="w-24 h-24 rounded-full bg-emerald-200 flex items-center justify-center ring-4 ring-emerald-400 mx-auto">
-          <i class="fa-solid fa-paw text-emerald-500 text-3xl"></i>
-        </div>
+        <div class="enc-avatar-init">🐾</div>
       <% } %>
-      <span class="absolute -bottom-1 -right-1 w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center ring-2 ring-white">
-        <i class="fa-solid fa-heart text-white text-sm"></i>
-      </span>
+      <div class="enc-title">Boas notícias! 🎉</div>
+      <div class="enc-sub">Você encontrou <strong style="color:var(--text)"><%= pet.nome %></strong>? Conte-nos os detalhes.</div>
     </div>
-    <h1 class="text-2xl font-bold text-gray-900 mb-1">Boas noticias!</h1>
-    <p class="text-gray-600">Voce encontrou <strong class="text-emerald-700"><%= pet.nome %></strong>? Conte-nos os detalhes.</p>
+
+    <!-- Progress -->
+    <div class="step-progress" id="progressBar">
+      <div class="step-dot active" id="dot1"></div>
+      <div class="step-bar pending" id="bar1"></div>
+      <div class="step-dot pending" id="dot2"></div>
+      <div class="step-bar pending" id="bar2"></div>
+      <div class="step-dot pending" id="dot3"></div>
+    </div>
+    <div class="step-labels">
+      <span id="label1" style="color:var(--green)">Detalhes</span>
+      <span id="label2" style="color:var(--text-muted)">Localização</span>
+      <span id="label3" style="color:var(--text-muted)">Confirmar</span>
+    </div>
+
+    <form action="/perdidos/<%= pet.id %>/encontrado" method="POST" id="formEncontrado">
+      <input type="hidden" name="latitude" id="encLat">
+      <input type="hidden" name="longitude" id="encLng">
+      <input type="hidden" name="local_descricao" id="encLocalDesc">
+      <input type="hidden" name="como_encontrado" id="encComo">
+
+      <!-- Step 1 -->
+      <div class="enc-step active" id="stepComo">
+        <div class="section-card">
+          <div class="section-title">Como foi encontrado?</div>
+          <div class="como-option" onclick="selecionarComo(this,'resgatado')">
+            <div class="como-opt-icon"><i class="fa-solid fa-hands-holding-heart"></i></div>
+            <div><div class="como-opt-name">Resgatei pessoalmente</div><div class="como-opt-sub">Eu fui buscar</div></div>
+          </div>
+          <div class="como-option" onclick="selecionarComo(this,'terceiro')">
+            <div class="como-opt-icon"><i class="fa-solid fa-person-walking"></i></div>
+            <div><div class="como-opt-name">Terceiro encontrou</div><div class="como-opt-sub">Alguém me devolveu</div></div>
+          </div>
+          <div class="como-option" onclick="selecionarComo(this,'voltou')">
+            <div class="como-opt-icon"><i class="fa-solid fa-house"></i></div>
+            <div><div class="como-opt-name">Voltou por conta própria</div><div class="como-opt-sub">Apareceu sozinho</div></div>
+          </div>
+        </div>
+        <div class="section-card">
+          <div class="section-title">Observações</div>
+          <textarea name="descricao_encontrado" class="ds-input" rows="3" style="resize:none;" placeholder="Como estava? Algum detalhe importante?"></textarea>
+        </div>
+        <button type="button" class="btn-next" onclick="irParaStep2()"><i class="fa-solid fa-arrow-right"></i> Próximo</button>
+      </div>
+
+      <!-- Step 2: Localização -->
+      <div class="enc-step" id="stepLocal">
+        <div class="section-card">
+          <div class="section-title">Onde foi encontrado?</div>
+          <div class="field-group">
+            <label class="ds-label">Buscar endereço</label>
+            <input type="text" id="encBuscaEndereco" class="ds-input" placeholder="Bairro, rua...">
+            <div id="encSearchResults" class="search-results hidden" style="margin-top:4px;"></div>
+          </div>
+          <div id="encMapaWrap" style="margin-top:8px;">
+            <div id="mapaEncontrado"></div>
+            <p style="font-size:11px;color:var(--text-dim);margin-top:6px;"><i class="fa-solid fa-hand-pointer mr-1"></i>Toque no mapa para marcar o local</p>
+          </div>
+          <div id="encLocalSel" class="hidden" style="margin-top:10px;padding:10px 14px;background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);border-radius:10px;font-size:13px;color:var(--green);">
+            <i class="fa-solid fa-check-circle mr-1"></i><span id="encLocalSelText"></span>
+          </div>
+        </div>
+        <button type="button" class="btn-next" onclick="irParaStep3()"><i class="fa-solid fa-arrow-right"></i> Próximo</button>
+        <button type="button" class="btn-back-step" onclick="irParaStep1()"><i class="fa-solid fa-arrow-left mr-1"></i> Voltar</button>
+      </div>
+
+      <!-- Step 3: Confirmar -->
+      <div class="enc-step" id="stepConfirmar">
+        <div class="section-card" style="text-align:center;padding:32px 22px;">
+          <div style="font-size:52px;margin-bottom:16px;">🎊</div>
+          <div style="font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:#fff;margin-bottom:8px;">Tudo pronto!</div>
+          <p style="font-size:14px;color:var(--text-dim);line-height:1.6;margin-bottom:20px;">Confirme para registrar que <strong style="color:var(--text)"><%= pet.nome %></strong> foi encontrado e remover o alerta.</p>
+          <button type="submit" class="btn-next">
+            <i class="fa-solid fa-check"></i> Confirmar — <%= pet.nome %> está seguro!
+          </button>
+          <button type="button" class="btn-back-step" onclick="irParaStep2()"><i class="fa-solid fa-arrow-left mr-1"></i> Voltar</button>
+        </div>
+      </div>
+    </form>
+
   </div>
-
-  <!-- Barra de progresso -->
-  <div class="flex items-center gap-0 mb-6 px-4" id="progressBar">
-    <div class="step-dot active" id="dot1"></div>
-    <div class="step-bar pending" id="bar1"></div>
-    <div class="step-dot pending" id="dot2"></div>
-    <div class="step-bar pending" id="bar2"></div>
-    <div class="step-dot pending" id="dot3"></div>
-  </div>
-  <div class="flex justify-between text-xs text-gray-400 mb-6 px-2">
-    <span id="label1" class="font-semibold text-emerald-600">Detalhes</span>
-    <span id="label2">Localização</span>
-    <span id="label3">Confirmar</span>
-  </div>
-
-  <form action="/perdidos/<%= pet.id %>/encontrado" method="POST" id="formEncontrado">
-
-    <!-- PASSO 1: Como foi encontrado -->
-    <div id="step1" class="space-y-5">
-      <div>
-        <label class="block text-sm font-medium text-gray-700 mb-3">
-          <i class="fa-solid fa-magnifying-glass text-emerald-500 mr-1"></i>
-          Como <%= pet.nome %> foi encontrado?
-        </label>
-        <div class="grid grid-cols-2 gap-3">
-          <div class="como-option border-2 border-gray-200 rounded-xl p-4 text-center" onclick="selecionarComo(this, 'voltou_sozinho')">
-            <i class="fa-solid fa-house-chimney text-2xl text-emerald-400 mb-2"></i>
-            <p class="text-sm font-semibold text-gray-800">Voltou sozinho</p>
-            <p class="text-xs text-gray-400 mt-1">Apareceu em casa</p>
-          </div>
-          <div class="como-option border-2 border-gray-200 rounded-xl p-4 text-center" onclick="selecionarComo(this, 'alguem_encontrou')">
-            <i class="fa-solid fa-people-arrows text-2xl text-blue-400 mb-2"></i>
-            <p class="text-sm font-semibold text-gray-800">Alguem encontrou</p>
-            <p class="text-xs text-gray-400 mt-1">Uma pessoa ajudou</p>
-          </div>
-          <div class="como-option border-2 border-gray-200 rounded-xl p-4 text-center" onclick="selecionarComo(this, 'tag_nfc')">
-            <i class="fa-solid fa-wifi text-2xl text-purple-400 mb-2"></i>
-            <p class="text-sm font-semibold text-gray-800">Via tag NFC</p>
-            <p class="text-xs text-gray-400 mt-1">Scan da coleira</p>
-          </div>
-          <div class="como-option border-2 border-gray-200 rounded-xl p-4 text-center" onclick="selecionarComo(this, 'outra_forma')">
-            <i class="fa-solid fa-ellipsis text-2xl text-gray-400 mb-2"></i>
-            <p class="text-sm font-semibold text-gray-800">Outra forma</p>
-            <p class="text-xs text-gray-400 mt-1">Quero descrever</p>
-          </div>
-        </div>
-        <input type="hidden" name="como_encontrado" id="comoEncontrado" value="">
-      </div>
-
-      <div>
-        <label for="descricao_encontrado" class="block text-sm font-medium text-gray-700 mb-1">
-          Quer contar mais? <span class="text-gray-400 font-normal">(opcional)</span>
-        </label>
-        <textarea name="descricao_encontrado" id="descricao_encontrado" rows="3"
-                  placeholder="Ex: Encontrei ele no parque perto de casa, um vizinho me avisou..."
-                  class="input-field resize-none"></textarea>
-      </div>
-
-      <button type="button" onclick="irParaPasso(2)" id="btnStep1"
-              class="w-full py-3.5 rounded-xl font-semibold text-white bg-emerald-500 hover:bg-emerald-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-              disabled>
-        Continuar <i class="fa-solid fa-arrow-right ml-2"></i>
-      </button>
-    </div>
-
-    <!-- PASSO 2: Onde foi encontrado -->
-    <div id="step2" class="space-y-5 hidden">
-      <div>
-        <label class="block text-sm font-medium text-gray-700 mb-3">
-          <i class="fa-solid fa-location-dot text-emerald-500 mr-1"></i>
-          Onde <%= pet.nome %> foi encontrado?
-        </label>
-
-        <div class="grid grid-cols-1 gap-2 mb-3">
-          <div id="optGeo" class="loc-option border-2 border-gray-200 rounded-xl p-3 flex items-center gap-3"
-               onclick="usarMinhaLocalizacao()">
-            <div class="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
-              <i class="fa-solid fa-location-crosshairs text-emerald-600"></i>
-            </div>
-            <div class="flex-1 min-w-0">
-              <p class="text-sm font-semibold text-gray-800">Minha localizacao atual</p>
-              <p class="text-xs text-gray-500">Usar GPS do celular</p>
-            </div>
-            <i class="fa-solid fa-check-circle text-emerald-500 text-lg opacity-0" id="optGeoCheck"></i>
-          </div>
-
-          <div id="optManual" class="loc-option border-2 border-gray-200 rounded-xl p-3 flex items-center gap-3"
-               onclick="usarManual()">
-            <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
-              <i class="fa-solid fa-map-pin text-blue-600"></i>
-            </div>
-            <div class="flex-1 min-w-0">
-              <p class="text-sm font-semibold text-gray-800">Marcar no mapa</p>
-              <p class="text-xs text-gray-500">Clique no mapa ou busque um endereco</p>
-            </div>
-            <i class="fa-solid fa-check-circle text-emerald-500 text-lg opacity-0" id="optManualCheck"></i>
-          </div>
-
-          <div id="optPular" class="loc-option border-2 border-gray-200 rounded-xl p-3 flex items-center gap-3"
-               onclick="pularLocalizacao()">
-            <div class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
-              <i class="fa-solid fa-forward text-gray-500"></i>
-            </div>
-            <div class="flex-1 min-w-0">
-              <p class="text-sm font-semibold text-gray-800">Nao sei / Pular</p>
-              <p class="text-xs text-gray-500">Nao quero informar a localizacao</p>
-            </div>
-            <i class="fa-solid fa-check-circle text-emerald-500 text-lg opacity-0" id="optPularCheck"></i>
-          </div>
-        </div>
-
-        <!-- Busca de endereco -->
-        <div id="buscaEnderecoBox" class="mb-3 hidden">
-          <div class="relative">
-            <input type="text" id="buscaEndereco" placeholder="Buscar endereco..."
-                   class="input-field !pr-10" autocomplete="off">
-            <button type="button" onclick="buscarEndereco()"
-                    class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-emerald-600 transition-colors">
-              <i class="fa-solid fa-magnifying-glass"></i>
-            </button>
-          </div>
-          <div id="resultadosBusca" class="search-results hidden mt-1 bg-white border rounded-xl shadow-lg"></div>
-        </div>
-
-        <div id="mapaEncontrado" class="hidden"></div>
-        <p id="coordInfo" class="text-xs text-gray-400 mt-1 hidden">
-          <i class="fa-solid fa-map-pin mr-1"></i>
-          <span id="coordText"></span>
-        </p>
-        <input type="hidden" name="latitude" id="encontradoLat">
-        <input type="hidden" name="longitude" id="encontradoLng">
-      </div>
-
-      <div class="flex gap-3">
-        <button type="button" onclick="irParaPasso(1)"
-                class="flex-1 py-3 rounded-xl font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors">
-          <i class="fa-solid fa-arrow-left mr-2"></i> Voltar
-        </button>
-        <button type="button" onclick="irParaPasso(3)" id="btnStep2"
-                class="flex-1 py-3 rounded-xl font-semibold text-white bg-emerald-500 hover:bg-emerald-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                disabled>
-          Continuar <i class="fa-solid fa-arrow-right ml-2"></i>
-        </button>
-      </div>
-    </div>
-
-    <!-- PASSO 3: Confirmacao e agradecimento -->
-    <div id="step3" class="space-y-5 hidden">
-
-      <!-- Resumo -->
-      <div class="card bg-emerald-50 border border-emerald-200">
-        <h3 class="text-sm font-bold text-gray-800 mb-3">
-          <i class="fa-solid fa-clipboard-check text-emerald-500 mr-1"></i> Resumo
-        </h3>
-        <div class="space-y-2 text-sm">
-          <div class="flex items-center gap-2">
-            <i class="fa-solid fa-paw text-emerald-400 w-5 text-center"></i>
-            <span class="text-gray-600">Pet: <strong><%= pet.nome %></strong></span>
-          </div>
-          <div class="flex items-center gap-2" id="resumoComo">
-            <i class="fa-solid fa-magnifying-glass text-emerald-400 w-5 text-center"></i>
-            <span class="text-gray-600">Como: <strong id="resumoComoTexto">—</strong></span>
-          </div>
-          <div class="flex items-center gap-2" id="resumoOnde">
-            <i class="fa-solid fa-location-dot text-emerald-400 w-5 text-center"></i>
-            <span class="text-gray-600">Local: <strong id="resumoOndeTexto">—</strong></span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Agradecimento publico -->
-      <div>
-        <label class="flex items-center gap-3 cursor-pointer mb-3">
-          <input type="checkbox" id="toggleAgradecimento" class="w-5 h-5 rounded border-gray-300 text-emerald-500 focus:ring-emerald-500"
-                 onchange="toggleAgradecimento()">
-          <div>
-            <span class="text-sm font-medium text-gray-700">Agradecer a comunidade</span>
-            <p class="text-xs text-gray-400">Enviar uma mensagem para quem ajudou na busca</p>
-          </div>
-        </label>
-        <div id="agradecimentoBox" class="hidden">
-          <textarea name="mensagem_agradecimento" id="mensagemAgradecimento" rows="3"
-                    placeholder="Obrigado a todos que ajudaram! Meu pet esta em casa e seguro..."
-                    class="input-field resize-none"></textarea>
-        </div>
-      </div>
-
-      <!-- Aviso -->
-      <div class="bg-amber-50 border border-amber-200 rounded-xl p-4">
-        <p class="text-sm text-amber-800">
-          <i class="fa-solid fa-info-circle mr-1"></i>
-          Ao confirmar, o alerta de <strong><%= pet.nome %></strong> sera encerrado e removido do mapa publico.
-          As conversas relacionadas serao apagadas por questoes de privacidade.
-        </p>
-      </div>
-
-      <div class="flex gap-3">
-        <button type="button" onclick="irParaPasso(2)"
-                class="flex-1 py-3 rounded-xl font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors">
-          <i class="fa-solid fa-arrow-left mr-2"></i> Voltar
-        </button>
-        <button type="submit" id="btnConfirmar"
-                class="flex-1 py-3.5 rounded-xl font-bold text-white bg-emerald-500 hover:bg-emerald-600 transition-colors active:scale-[0.98]">
-          <i class="fa-solid fa-check-circle mr-2"></i> Confirmar
-        </button>
-      </div>
-    </div>
-
-  </form>
 </main>
 
+<% locals.extraScripts = `
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-(function () {
-  var passoAtual = 1;
-  var locSelecionada = false;
-  var map = null;
-  var marker = null;
+var encMapa = null, encMarker = null;
+var currentStep = 1;
 
-  var comoTextos = {
-    'voltou_sozinho': 'Voltou sozinho',
-    'alguem_encontrou': 'Alguem encontrou',
-    'tag_nfc': 'Via tag NFC',
-    'outra_forma': 'Outra forma'
-  };
+function selecionarComo(el, val) {
+  document.querySelectorAll('.como-option').forEach(function(e){e.classList.remove('active');});
+  el.classList.add('active');
+  document.getElementById('encComo').value = val;
+}
 
-  /* ========== Passo 1: Como ========== */
+function atualizarProgress(step) {
+  ['dot1','dot2','dot3'].forEach(function(id,i){ var el=document.getElementById(id); el.className='step-dot '+(i+1<step?'done':i+1===step?'active':'pending'); });
+  ['bar1','bar2'].forEach(function(id,i){ document.getElementById(id).className='step-bar '+(i+1<step?'done':'pending'); });
+  ['label1','label2','label3'].forEach(function(id,i){ document.getElementById(id).style.color=i+1===step?'var(--green)':'var(--text-muted)'; });
+}
 
-  window.selecionarComo = function (el, valor) {
-    document.querySelectorAll('.como-option').forEach(function (o) { o.classList.remove('active'); });
-    el.classList.add('active');
-    document.getElementById('comoEncontrado').value = valor;
-    document.getElementById('btnStep1').disabled = false;
-  };
+function irParaStep1(){ document.getElementById('stepComo').classList.add('active'); document.getElementById('stepLocal').classList.remove('active'); document.getElementById('stepConfirmar').classList.remove('active'); atualizarProgress(1); }
+function irParaStep2(){ document.getElementById('stepComo').classList.remove('active'); document.getElementById('stepLocal').classList.add('active'); document.getElementById('stepConfirmar').classList.remove('active'); atualizarProgress(2); iniciarMapa(); }
+function irParaStep3(){ document.getElementById('stepLocal').classList.remove('active'); document.getElementById('stepConfirmar').classList.add('active'); atualizarProgress(3); }
 
-  /* ========== Passo 2: Onde ========== */
-
-  function initMap() {
-    if (map) return;
-    var container = document.getElementById('mapaEncontrado');
-    container.classList.remove('hidden');
-    map = L.map('mapaEncontrado').setView([-15.78, -47.93], 5);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; OSM', maxZoom: 19
-    }).addTo(map);
-    setTimeout(function () { map.invalidateSize(); }, 200);
-  }
-
-  function setMarker(lat, lng, popup) {
-    if (!map) initMap();
-    if (marker) map.removeLayer(marker);
-    marker = L.marker([lat, lng], {
-      draggable: true,
-      icon: L.divIcon({
-        className: 'custom-pin',
-        html: '<div style="background:#10b981;width:34px;height:34px;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center"><i class="fa-solid fa-check" style="color:#fff;font-size:14px"></i></div>',
-        iconSize: [34, 34], iconAnchor: [17, 17]
-      })
-    }).addTo(map);
-    if (popup) marker.bindPopup(popup).openPopup();
-
-    marker.on('dragend', function (e) {
-      var p = e.target.getLatLng();
-      updateCoords(p.lat, p.lng);
-    });
-
-    updateCoords(lat, lng);
-  }
-
-  function updateCoords(lat, lng) {
-    document.getElementById('encontradoLat').value = parseFloat(lat).toFixed(7);
-    document.getElementById('encontradoLng').value = parseFloat(lng).toFixed(7);
-    document.getElementById('coordInfo').classList.remove('hidden');
-    document.getElementById('coordText').textContent = parseFloat(lat).toFixed(5) + ', ' + parseFloat(lng).toFixed(5);
-    locSelecionada = true;
-    document.getElementById('btnStep2').disabled = false;
-  }
-
-  function clearLocSelection() {
-    document.querySelectorAll('.loc-option').forEach(function (el) {
-      el.classList.remove('active');
-      var chk = el.querySelector('.fa-check-circle');
-      if (chk) chk.style.opacity = '0';
-    });
-  }
-
-  function selectLocOption(id) {
-    clearLocSelection();
-    var el = document.getElementById(id);
-    if (el) {
-      el.classList.add('active');
-      var chk = el.querySelector('.fa-check-circle');
-      if (chk) chk.style.opacity = '1';
-    }
-  }
-
-  window.usarMinhaLocalizacao = function () {
-    selectLocOption('optGeo');
-    document.getElementById('buscaEnderecoBox').classList.add('hidden');
-    initMap();
-    if (!navigator.geolocation) {
-      alert('Geolocalizacao nao suportada neste dispositivo');
-      return;
-    }
-    navigator.geolocation.getCurrentPosition(function (pos) {
-      map.setView([pos.coords.latitude, pos.coords.longitude], 16);
-      setMarker(pos.coords.latitude, pos.coords.longitude, '<b>Localizacao atual</b>');
-    }, function () {
-      alert('Nao foi possivel obter sua localizacao.');
-    }, { timeout: 10000, enableHighAccuracy: true });
-  };
-
-  window.usarManual = function () {
-    selectLocOption('optManual');
-    document.getElementById('buscaEnderecoBox').classList.remove('hidden');
-    initMap();
-    map.on('click', function (e) {
-      var manual = document.getElementById('optManual');
-      if (manual && manual.classList.contains('active')) {
-        setMarker(e.latlng.lat, e.latlng.lng);
-      }
-    });
-  };
-
-  window.pularLocalizacao = function () {
-    selectLocOption('optPular');
-    document.getElementById('buscaEnderecoBox').classList.add('hidden');
-    document.getElementById('encontradoLat').value = '';
-    document.getElementById('encontradoLng').value = '';
-    document.getElementById('coordInfo').classList.add('hidden');
-    locSelecionada = true;
-    document.getElementById('btnStep2').disabled = false;
-  };
-
-  window.buscarEndereco = function () {
-    var q = document.getElementById('buscaEndereco').value.trim();
-    if (!q || q.length < 3) return;
-    var box = document.getElementById('resultadosBusca');
-    box.innerHTML = '<p class="p-3 text-sm text-gray-400">Buscando...</p>';
-    box.classList.remove('hidden');
-
-    fetch('https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(q) + '&limit=5&countrycodes=br')
-      .then(function (r) { return r.json(); })
-      .then(function (data) {
-        if (!data.length) {
-          box.innerHTML = '<p class="p-3 text-sm text-gray-500">Nenhum resultado</p>';
-          return;
-        }
-        box.innerHTML = data.map(function (r) {
-          return '<div class="p-3 hover:bg-emerald-50 cursor-pointer text-sm border-b last:border-0 transition-colors" onclick="selecionarEndereco(' + r.lat + ',' + r.lon + ',\'' + r.display_name.replace(/'/g, "\\'").substring(0, 80) + '\')">' +
-            '<i class="fa-solid fa-location-dot text-emerald-500 mr-1"></i>' + r.display_name.substring(0, 80) + '</div>';
-        }).join('');
-      })
-      .catch(function () {
-        box.innerHTML = '<p class="p-3 text-sm text-red-500">Erro na busca</p>';
-      });
-  };
-
-  window.selecionarEndereco = function (lat, lng, nome) {
-    document.getElementById('resultadosBusca').classList.add('hidden');
-    document.getElementById('buscaEndereco').value = nome;
-    map.setView([lat, lng], 16);
-    setMarker(lat, lng, '<b>' + nome + '</b>');
-  };
-
-  var buscaInput = document.getElementById('buscaEndereco');
-  if (buscaInput) {
-    buscaInput.addEventListener('keydown', function (e) {
-      if (e.key === 'Enter') { e.preventDefault(); buscarEndereco(); }
-    });
-  }
-
-  /* ========== Passo 3: Agradecimento ========== */
-
-  window.toggleAgradecimento = function () {
-    var box = document.getElementById('agradecimentoBox');
-    box.classList.toggle('hidden');
-  };
-
-  /* ========== Navegacao entre passos ========== */
-
-  function atualizarResumo() {
-    var como = document.getElementById('comoEncontrado').value;
-    document.getElementById('resumoComoTexto').textContent = comoTextos[como] || '—';
-
-    var lat = document.getElementById('encontradoLat').value;
-    if (lat) {
-      document.getElementById('resumoOndeTexto').textContent = 'Localização informada';
-    } else {
-      document.getElementById('resumoOndeTexto').textContent = 'Não informado';
-    }
-  }
-
-  function atualizarProgresso(passo) {
-    for (var i = 1; i <= 3; i++) {
-      var dot = document.getElementById('dot' + i);
-      var label = document.getElementById('label' + i);
-      if (i < passo) {
-        dot.className = 'step-dot done';
-        label.className = 'text-xs text-emerald-600 font-semibold';
-      } else if (i === passo) {
-        dot.className = 'step-dot active';
-        label.className = 'text-xs text-emerald-600 font-semibold';
-      } else {
-        dot.className = 'step-dot pending';
-        label.className = 'text-xs text-gray-400';
-      }
-    }
-    for (var j = 1; j <= 2; j++) {
-      var bar = document.getElementById('bar' + j);
-      bar.className = j < passo ? 'step-bar done' : 'step-bar pending';
-    }
-  }
-
-  window.irParaPasso = function (passo) {
-    document.getElementById('step1').classList.add('hidden');
-    document.getElementById('step2').classList.add('hidden');
-    document.getElementById('step3').classList.add('hidden');
-    document.getElementById('step' + passo).classList.remove('hidden');
-    passoAtual = passo;
-    atualizarProgresso(passo);
-
-    if (passo === 2 && map) {
-      setTimeout(function () { map.invalidateSize(); }, 200);
-    }
-    if (passo === 3) {
-      atualizarResumo();
-    }
-
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  /* Confirmacao antes de enviar */
-  document.getElementById('formEncontrado').addEventListener('submit', function (e) {
-    var como = document.getElementById('comoEncontrado').value;
-    if (!como) {
-      e.preventDefault();
-      alert('Por favor, selecione como o pet foi encontrado.');
-      irParaPasso(1);
-      return;
-    }
-
-    var btn = document.getElementById('btnConfirmar');
-    btn.disabled = true;
-    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Processando...';
+function iniciarMapa() {
+  if (encMapa) { encMapa.invalidateSize(); return; }
+  encMapa = L.map('mapaEncontrado').setView([-15.78,-47.93],13);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OSM'}).addTo(encMapa);
+  encMapa.on('click',function(e){
+    var ll=e.latlng;
+    if(encMarker) encMarker.setLatLng(ll); else encMarker=L.marker(ll).addTo(encMapa);
+    setEncLocal(ll.lat.toFixed(6),ll.lng.toFixed(6),'Marcado no mapa');
   });
-})();
+}
+
+function setEncLocal(lat,lng,desc){
+  document.getElementById('encLat').value=lat; document.getElementById('encLng').value=lng; document.getElementById('encLocalDesc').value=desc;
+  var el=document.getElementById('encLocalSel'); el.classList.remove('hidden'); document.getElementById('encLocalSelText').textContent=desc;
+}
+
+var buscaTimer;
+document.getElementById('encBuscaEndereco').addEventListener('input',function(){
+  clearTimeout(buscaTimer); var q=this.value.trim(); if(q.length<3){document.getElementById('encSearchResults').classList.add('hidden');return;}
+  buscaTimer=setTimeout(function(){
+    fetch('https://nominatim.openstreetmap.org/search?q='+encodeURIComponent(q)+'&format=json&limit=4&accept-language=pt-BR')
+      .then(function(r){return r.json();}).then(function(data){
+        var el=document.getElementById('encSearchResults');
+        if(!data.length){el.classList.add('hidden');return;}
+        el.innerHTML=data.map(function(d){'return <div class="search-result-item" onclick="selecionarEncLocal('+d.lat+','+d.lon+',\\''+d.display_name.replace(/'/g,'')+'\\')">'+d.display_name+'</div>';}).join('');
+        el.classList.remove('hidden');
+      });
+  },400);
+});
+
+function selecionarEncLocal(lat,lng,desc){
+  document.getElementById('encSearchResults').classList.add('hidden');
+  document.getElementById('encBuscaEndereco').value=desc.split(',')[0];
+  setEncLocal(lat,lng,desc.split(',').slice(0,2).join(','));
+  if(encMapa){encMapa.setView([lat,lng],15);if(encMarker)encMarker.setLatLng([lat,lng]);else encMarker=L.marker([lat,lng]).addTo(encMapa);}
+}
 </script>
+` %>
 
 <%- include('../partials/footer') %>

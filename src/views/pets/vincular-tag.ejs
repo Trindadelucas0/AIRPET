@@ -1,373 +1,216 @@
-<% locals.titulo = `Vincular Tag - ${pet.nome}` %>
+<% locals.titulo = 'Vincular Tag NFC — ' + pet.nome %>
+<% locals.extraHead = `
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{--ink:#0d0d0f;--ink-2:#13131a;--ink-3:#1c1c26;--ink-4:#242432;--border:rgba(255,255,255,0.07);--border-hover:rgba(255,255,255,0.13);--text:#e4e4f0;--text-dim:#7a7a96;--text-muted:#3d3d52;--accent:#f26020;--accent-light:#ff7a3d;--accent-glow:rgba(242,96,32,0.12);--green:#22c55e;--blue:#60a5fa;}
+  body{background:var(--ink)!important;color:var(--text)!important;font-family:'DM Sans',sans-serif;}
+  .nfc-wrap{max-width:520px;margin:0 auto;padding:24px 20px 80px;}
+  .page-topbar{position:sticky;top:56px;z-index:40;background:rgba(13,13,15,0.88);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:12px 0;}
+  .topbar-inner{max-width:520px;margin:0 auto;padding:0 20px;display:flex;align-items:center;gap:12px;}
+  .back-link{color:var(--text-dim);font-size:13px;text-decoration:none;display:flex;align-items:center;gap:6px;transition:color 0.15s;}
+  .back-link:hover{color:var(--accent);text-decoration:none;}
+  .page-title{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:#fff;}
+  /* Hero */
+  .nfc-hero{text-align:center;padding:36px 0 28px;}
+  .nfc-hero-icon{width:96px;height:96px;border-radius:28px;margin:0 auto 20px;background:var(--accent-glow);border:1px solid rgba(242,96,32,0.2);display:flex;align-items:center;justify-content:center;font-size:40px;color:var(--accent);position:relative;}
+  @keyframes nfc-pulse{0%,100%{box-shadow:0 0 0 0 rgba(242,96,32,0.3);}50%{box-shadow:0 0 0 16px rgba(242,96,32,0);}}
+  .nfc-hero-icon.scanning{animation:nfc-pulse 1.5s ease-in-out infinite;}
+  .nfc-hero h1{font-family:'Syne',sans-serif;font-size:24px;font-weight:800;color:#fff;margin-bottom:6px;}
+  .nfc-hero p{font-size:14px;color:var(--text-dim);max-width:320px;margin:0 auto;}
+  /* Tabs */
+  .tab-bar{display:flex;background:var(--ink-3);border-radius:12px;padding:4px;margin-bottom:20px;gap:4px;}
+  .tab-btn{flex:1;padding:11px;border-radius:9px;border:none;background:transparent;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;color:var(--text-dim);cursor:pointer;transition:all 0.15s;}
+  .tab-btn.active{background:var(--ink-2);color:var(--text);box-shadow:0 2px 8px rgba(0,0,0,0.3);}
+  /* Panel */
+  .nfc-panel{background:var(--ink-2);border:1px solid var(--border);border-radius:18px;padding:28px;text-align:center;}
+  .nfc-panel h2{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:#fff;margin-bottom:6px;}
+  .nfc-panel p{font-size:13px;color:var(--text-dim);margin-bottom:20px;line-height:1.6;}
+  .ds-input{width:100%;background:var(--ink-3);border:1px solid var(--border);border-radius:10px;padding:11px 14px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;outline:none;transition:border-color 0.2s,box-shadow 0.2s;text-align:center;letter-spacing:0.1em;font-weight:700;}
+  .ds-input::placeholder{color:var(--text-muted);font-weight:400;letter-spacing:0;}
+  .ds-input:focus{border-color:rgba(242,96,32,0.5);box-shadow:0 0 0 3px rgba(242,96,32,0.06);}
+  .btn-primary{width:100%;padding:14px;background:var(--accent);color:#fff;border:none;border-radius:12px;font-family:'DM Sans',sans-serif;font-size:16px;font-weight:700;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:14px;}
+  .btn-primary:hover{background:var(--accent-light);transform:translateY(-1px);}
+  .btn-primary:disabled{opacity:0.5;cursor:not-allowed;transform:none;}
+  /* Status */
+  .nfc-status{padding:14px 18px;border-radius:12px;display:flex;align-items:center;gap:10px;margin-bottom:14px;font-size:13px;font-weight:600;}
+  .nfc-status.success{background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.2);color:var(--green);}
+  .nfc-status.reading{background:rgba(96,165,250,0.1);border:1px solid rgba(96,165,250,0.2);color:var(--blue);}
+  .nfc-status.error{background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);color:#f87171;}
+  /* Tag já vinculada */
+  .tag-linked-card{background:var(--ink-2);border:1px solid rgba(34,197,94,0.2);border-radius:18px;padding:24px;text-align:center;margin-bottom:14px;}
+  .tag-linked-icon{width:64px;height:64px;border-radius:20px;background:rgba(34,197,94,0.1);display:flex;align-items:center;justify-content:center;font-size:28px;color:var(--green);margin:0 auto 14px;}
+  .tag-code{font-size:18px;font-weight:800;color:#fff;letter-spacing:0.12em;font-family:'Syne',sans-serif;margin:8px 0;}
+  /* Info tip */
+  .info-tip{display:flex;align-items:flex-start;gap:10px;padding:12px 16px;background:var(--ink-3);border-radius:10px;font-size:12px;color:var(--text-dim);margin-top:14px;}
+  .info-tip i{color:var(--blue);flex-shrink:0;margin-top:1px;}
+</style>
+` %>
 <%- include('../partials/header') %>
 <%- include('../partials/flash') %>
 
-<main class="flex-1 container mx-auto px-4 py-6 max-w-lg">
-  <%- include('../partials/page-header', { backHref: '/pets/' + pet.id, backLabel: 'Voltar para ' + pet.nome, sticky: false }) %>
-
-  <div class="text-center mb-6 mt-6">
-    <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary-500/10 mb-4">
-      <i class="fa-solid fa-microchip text-3xl text-primary-500"></i>
-    </div>
-    <h1 class="text-2xl font-bold text-gray-900">Vincular Tag NFC</h1>
-    <p class="text-gray-500 text-sm mt-2">
-      Registre uma tag para <strong><%= pet.nome %></strong>
-    </p>
+<div class="page-topbar">
+  <div class="topbar-inner">
+    <a href="/pets/<%= pet.id %>" class="back-link"><i class="fa-solid fa-arrow-left"></i> <%= pet.nome %></a>
+    <span class="page-title">Tag NFC</span>
   </div>
+</div>
 
-  <!-- ========== ETAPA 1: Obter o código da tag ========== -->
-  <div id="etapa1">
+<main class="flex-1">
+  <div class="nfc-wrap">
 
-    <!-- Tabs: Aproximar / Digitar -->
-    <div class="flex rounded-xl bg-gray-100 p-1 mb-6">
-      <button type="button" id="tabNfc" onclick="trocarTab('nfc')"
-              class="flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all bg-white text-primary-500 shadow-sm">
-        <i class="fa-solid fa-wifi mr-1.5"></i>Aproximar
-      </button>
-      <button type="button" id="tabDigitar" onclick="trocarTab('digitar')"
-              class="flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all text-gray-500">
-        <i class="fa-solid fa-keyboard mr-1.5"></i>Digitar
-      </button>
+    <% if (pet.tag_uid) { %>
+      <!-- Tag já vinculada -->
+      <div class="tag-linked-card">
+        <div class="tag-linked-icon"><i class="fa-solid fa-circle-check"></i></div>
+        <div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:#fff;margin-bottom:4px;">Tag Vinculada!</div>
+        <p style="font-size:13px;color:var(--text-dim);margin-bottom:12px;">Código da tag de <strong style="color:var(--text)"><%= pet.nome %></strong></p>
+        <div class="tag-code"><%= pet.tag_uid %></div>
+      </div>
+      <div style="background:var(--ink-2);border:1px solid var(--border);border-radius:18px;padding:20px;margin-bottom:14px;">
+        <h2 style="font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:#fff;margin-bottom:14px;">Trocar tag</h2>
+    <% } %>
+
+    <% if (!pet.tag_uid) { %>
+    <div class="nfc-hero">
+      <div class="nfc-hero-icon" id="heroIcon"><i class="fa-solid fa-wifi fa-rotate-90"></i></div>
+      <h1>Vincular Tag NFC</h1>
+      <p>Registre uma tag NFC para proteger <strong style="color:var(--text)"><%= pet.nome %></strong> e facilitar o resgate</p>
+    </div>
+    <% } %>
+
+    <div id="etapa1">
+      <div class="tab-bar">
+        <button type="button" id="tabNfc" class="tab-btn active" onclick="trocarTab('nfc')">
+          <i class="fa-solid fa-wifi mr-1.5"></i> Aproximar
+        </button>
+        <button type="button" id="tabDigitar" class="tab-btn" onclick="trocarTab('digitar')">
+          <i class="fa-solid fa-keyboard mr-1.5"></i> Digitar código
+        </button>
+      </div>
+
+      <!-- NFC Panel -->
+      <div id="painelNfc" class="nfc-panel">
+        <div id="nfcDisponivel">
+          <h2 id="nfcTitulo">Aproxime a tag</h2>
+          <p id="nfcDescricao">Encoste a tag NFC na parte traseira do celular para ler automaticamente</p>
+          <button type="button" id="btnIniciarNfc" class="btn-primary" onclick="iniciarLeituraNfc()">
+            <i class="fa-solid fa-satellite-dish"></i> Iniciar leitura NFC
+          </button>
+        </div>
+        <div id="nfcIndisponivel" class="hidden">
+          <div style="font-size:40px;opacity:0.2;margin-bottom:14px;">📵</div>
+          <h2>NFC não disponível</h2>
+          <p>Use a aba "Digitar código" para inserir o código manualmente</p>
+          <button type="button" class="btn-primary" onclick="trocarTab('digitar')">
+            <i class="fa-solid fa-keyboard"></i> Digitar código
+          </button>
+        </div>
+      </div>
+
+      <!-- Manual Panel -->
+      <div id="painelDigitar" class="nfc-panel hidden">
+        <h2>Digite o código da tag</h2>
+        <p>O código está impresso na etiqueta ou embalagem da tag NFC</p>
+        <input type="text" id="inputTagManual" class="ds-input" placeholder="AIRPET-XXXXXXXX"
+               maxlength="30" autocomplete="off" autocapitalize="characters">
+        <button type="button" class="btn-primary" onclick="confirmarTagManual()">
+          <i class="fa-solid fa-link"></i> Vincular tag
+        </button>
+      </div>
+
+      <div class="info-tip">
+        <i class="fa-solid fa-circle-info"></i>
+        <span>A leitura NFC funciona em smartphones Android com NFC ativado. Em iPhones, use o modo manual.</span>
+      </div>
     </div>
 
-    <!-- Conteúdo: Aproximar NFC -->
-    <div id="painelNfc" class="card text-center">
-      <div id="nfcDisponivel">
-        <div class="relative inline-block mb-4">
-          <div id="nfcPulse" class="w-28 h-28 mx-auto rounded-full bg-primary-500/5 flex items-center justify-center animate-pulse">
-            <div class="w-20 h-20 rounded-full bg-primary-500/10 flex items-center justify-center">
-              <i class="fa-solid fa-wifi text-3xl text-primary-500 rotate-45"></i>
-            </div>
+    <!-- Etapa 2: Confirmação -->
+    <div id="etapa2" class="hidden">
+      <div class="nfc-panel">
+        <div id="tagSuccessIcon" style="font-size:48px;margin-bottom:14px;">✅</div>
+        <h2>Tag detectada!</h2>
+        <p>Confirme o vínculo da tag abaixo com <strong style="color:var(--text)"><%= pet.nome %></strong></p>
+        <div id="tagCodigoDisplay" style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--accent);letter-spacing:0.12em;margin:12px 0;"></div>
+        <form id="formVincular" action="/pets/<%= pet.id %>/vincular-tag" method="POST">
+          <input type="hidden" name="tag_code" id="tagUidConfirm">
+          <div style="margin:14px 0 8px;">
+            <label class="ds-label" for="codigoAtivacaoInput">Código de ativação *</label>
+            <input type="text"
+                   id="codigoAtivacaoInput"
+                   name="codigo_ativacao"
+                   required
+                   maxlength="30"
+                   autocomplete="off"
+                   autocapitalize="characters"
+                   class="ds-input"
+                   placeholder="Informe o código de ativação">
           </div>
-        </div>
-        <h2 class="text-lg font-bold text-gray-900 mb-1" id="nfcTitulo">Aproxime a tag</h2>
-        <p class="text-sm text-gray-500 mb-4" id="nfcDescricao">
-          Encoste a tag NFC na parte de tras do celular
-        </p>
-        <button type="button" id="btnIniciarNfc" onclick="iniciarLeituraNfc()"
-                class="btn-primary text-lg">
-          <i class="fa-solid fa-satellite-dish mr-2"></i>Iniciar leitura NFC
-        </button>
-        <p class="text-xs text-gray-400 mt-3">
-          <i class="fa-solid fa-circle-info mr-1"></i>
-          Funciona em celulares Android com NFC ativado
-        </p>
-      </div>
-
-      <div id="nfcIndisponivel" class="hidden">
-        <div class="w-20 h-20 mx-auto rounded-full bg-gray-100 flex items-center justify-center mb-4">
-          <i class="fa-solid fa-wifi text-3xl text-gray-300 rotate-45"></i>
-        </div>
-        <h2 class="text-lg font-bold text-gray-800 mb-2">NFC nao disponivel</h2>
-        <p class="text-sm text-gray-500 mb-4">
-          Seu navegador nao suporta leitura NFC.<br>
-          Use a aba <strong>"Digitar"</strong> para informar o codigo manualmente.
-        </p>
-        <button type="button" onclick="trocarTab('digitar')"
-                class="btn-outline inline-flex w-auto px-6 py-3">
-          <i class="fa-solid fa-keyboard mr-1.5"></i>Digitar codigo
+          <button type="submit" class="btn-primary" style="background:var(--green);">
+            <i class="fa-solid fa-link"></i> Confirmar vínculo
+          </button>
+        </form>
+        <button type="button" onclick="voltarEtapa1()" style="margin-top:10px;width:100%;padding:12px;background:transparent;color:var(--text-dim);border:1px solid var(--border);border-radius:11px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;">
+          <i class="fa-solid fa-arrow-left mr-1"></i> Tentar novamente
         </button>
       </div>
     </div>
 
-    <!-- Conteúdo: Digitar código -->
-    <div id="painelDigitar" class="card hidden">
-      <h2 class="text-lg font-bold text-gray-900 mb-1">Digite o codigo da tag</h2>
-      <p class="text-sm text-gray-500 mb-4">
-        O codigo esta impresso na tag ou na embalagem, no formato <strong class="font-mono">PET-XXXXXX</strong>
-      </p>
-      <div class="mb-4">
-        <input type="text" id="inputTagCode" placeholder="PET-XXXXXX"
-               class="w-full px-4 py-3 rounded-xl border border-gray-300 text-center text-lg font-mono font-bold tracking-[0.2em] uppercase
-                      focus:ring-2 focus:ring-primary-500/30 focus:border-primary-500 transition-colors placeholder:text-gray-300"
-               autocomplete="off" maxlength="10">
-      </div>
-      <button type="button" id="btnConfirmarCodigo" onclick="confirmarTagCode()"
-              class="btn-primary text-lg">
-        <i class="fa-solid fa-arrow-right mr-2"></i>Continuar
-      </button>
-    </div>
+    <% if (pet.tag_uid) { %></div><% } %>
+
   </div>
-
-  <!-- ========== ETAPA 2: Código de validação ========== -->
-  <div id="etapa2" class="hidden">
-    <div class="card">
-      <div class="flex items-center gap-3 mb-5">
-        <button type="button" onclick="voltarEtapa1()" class="text-gray-400 hover:text-gray-600 transition-colors">
-          <i class="fa-solid fa-arrow-left"></i>
-        </button>
-        <div>
-          <h2 class="text-lg font-bold text-gray-900">Codigo de validacao</h2>
-          <p class="text-sm text-gray-500">Confirme a posse da tag</p>
-        </div>
-      </div>
-
-      <div class="bg-gray-50 rounded-xl p-4 flex items-center gap-3 mb-5">
-        <span class="w-10 h-10 rounded-lg bg-primary-500/10 text-primary-500 flex items-center justify-center flex-shrink-0">
-          <i class="fa-solid fa-microchip"></i>
-        </span>
-        <div>
-          <p class="text-xs text-gray-400">Tag detectada</p>
-          <p class="text-sm font-bold font-mono text-gray-800 tracking-wider" id="tagCodeExibido"></p>
-        </div>
-        <i class="fa-solid fa-check-circle text-emerald-500 ml-auto"></i>
-      </div>
-
-      <div class="bg-blue-50 rounded-xl p-4 flex items-start gap-3 mb-5">
-        <span class="w-8 h-8 rounded-lg bg-blue-100 text-blue-500 flex items-center justify-center flex-shrink-0 mt-0.5">
-          <i class="fa-solid fa-paw text-sm"></i>
-        </span>
-        <div>
-          <p class="text-xs text-blue-400">Vincular ao pet</p>
-          <p class="text-sm font-bold text-blue-800"><%= pet.nome %></p>
-        </div>
-      </div>
-
-      <form action="/pets/<%= pet.id %>/vincular-tag" method="POST" id="formValidacao">
-        <input type="hidden" name="tag_code" id="hiddenTagCode">
-
-        <div class="mb-5">
-          <label for="codigo_ativacao" class="block text-sm font-semibold text-gray-700 mb-1.5">
-            Codigo de ativacao
-          </label>
-          <input type="text" id="codigo_ativacao" name="codigo_ativacao" required
-                 placeholder="XXXX-XXXX"
-                 class="w-full px-4 py-3 rounded-xl border border-gray-300 text-center text-lg font-mono font-bold tracking-[0.3em] uppercase
-                        focus:ring-2 focus:ring-primary-500/30 focus:border-primary-500 transition-colors placeholder:text-gray-300"
-                 autocomplete="off" maxlength="9">
-          <p class="text-xs text-gray-400 mt-1.5">
-            <i class="fa-solid fa-circle-info mr-1"></i>
-            Encontre este codigo na embalagem ou cartao que acompanha a tag
-          </p>
-        </div>
-
-        <button type="submit" id="btnAtivar"
-                class="btn-primary text-lg">
-          <i class="fa-solid fa-link mr-2"></i>Vincular Tag a <%= pet.nome %>
-        </button>
-      </form>
-    </div>
-
-    <div class="mt-4 text-center">
-      <p class="text-xs text-gray-400">
-        <i class="fa-solid fa-shield-halved mr-1"></i>
-        Validacao segura com codigo unico da embalagem
-      </p>
-    </div>
-  </div>
-
-  <!-- ========== ETAPA: Lendo NFC (overlay) ========== -->
-  <div id="overlayNfc" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-    <div class="bg-white rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl">
-      <div class="w-24 h-24 mx-auto rounded-full bg-primary-500/10 flex items-center justify-center mb-4 animate-pulse">
-        <i class="fa-solid fa-wifi text-4xl text-primary-500 rotate-45"></i>
-      </div>
-      <h2 class="text-xl font-bold text-gray-900 mb-2">Aguardando tag...</h2>
-      <p class="text-sm text-gray-500 mb-6">Encoste a tag NFC na parte de tras do celular</p>
-      <button type="button" onclick="cancelarLeituraNfc()"
-              class="px-6 py-3 rounded-xl text-sm font-semibold text-gray-500 border border-gray-300 hover:bg-gray-50 transition-colors">
-        Cancelar
-      </button>
-    </div>
-  </div>
-
 </main>
 
 <script>
-(function() {
-  var tagCodeObtido = '';
-  var nfcReader = null;
-  var nfcAbortController = null;
+function trocarTab(tab) {
+  var isNfc = tab === 'nfc';
+  document.getElementById('tabNfc').classList.toggle('active', isNfc);
+  document.getElementById('tabDigitar').classList.toggle('active', !isNfc);
+  document.getElementById('painelNfc').classList.toggle('hidden', !isNfc);
+  document.getElementById('painelDigitar').classList.toggle('hidden', isNfc);
+}
 
-  /* Verifica suporte a Web NFC */
+async function iniciarLeituraNfc() {
   if (!('NDEFReader' in window)) {
     document.getElementById('nfcDisponivel').classList.add('hidden');
     document.getElementById('nfcIndisponivel').classList.remove('hidden');
+    return;
   }
-
-  /* Troca entre as tabs Aproximar / Digitar */
-  window.trocarTab = function(tab) {
-    var tabNfc = document.getElementById('tabNfc');
-    var tabDigitar = document.getElementById('tabDigitar');
-    var painelNfc = document.getElementById('painelNfc');
-    var painelDigitar = document.getElementById('painelDigitar');
-
-    if (tab === 'nfc') {
-      tabNfc.className = 'flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all bg-white text-primary-500 shadow-sm';
-      tabDigitar.className = 'flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all text-gray-500';
-      painelNfc.classList.remove('hidden');
-      painelDigitar.classList.add('hidden');
-    } else {
-      tabDigitar.className = 'flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all bg-white text-primary-500 shadow-sm';
-      tabNfc.className = 'flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all text-gray-500';
-      painelDigitar.classList.remove('hidden');
-      painelNfc.classList.add('hidden');
-      setTimeout(function() { document.getElementById('inputTagCode').focus(); }, 100);
-    }
-  };
-
-  /* Extrai o tag_code de uma URL ou texto */
-  function extrairTagCode(texto) {
-    if (!texto) return null;
-    texto = texto.trim();
-
-    var match = texto.match(/\/t(?:ag)?\/([A-Z0-9\-]+)/i);
-    if (match) return match[1].toUpperCase();
-
-    match = texto.match(/^(PET-[A-Z0-9]{6})$/i);
-    if (match) return match[1].toUpperCase();
-
-    return null;
+  var icon = document.getElementById('heroIcon');
+  if (icon) icon.classList.add('scanning');
+  document.getElementById('nfcTitulo').textContent = 'Aguardando tag...';
+  document.getElementById('nfcDescricao').textContent = 'Encoste a tag NFC no celular';
+  document.getElementById('btnIniciarNfc').disabled = true;
+  try {
+    var reader = new NDEFReader();
+    await reader.scan();
+    reader.addEventListener('reading', function(e) {
+      confirmarTag(e.serialNumber || 'TAG-' + Date.now());
+    });
+  } catch(err) {
+    document.getElementById('nfcTitulo').textContent = 'Erro ao iniciar NFC';
+    document.getElementById('nfcDescricao').textContent = err.message;
+    document.getElementById('btnIniciarNfc').disabled = false;
+    if (icon) icon.classList.remove('scanning');
   }
+}
 
-  /* Inicia leitura NFC via Web NFC API */
-  window.iniciarLeituraNfc = async function() {
-    if (!('NDEFReader' in window)) {
-      alert('NFC nao suportado neste navegador.');
-      return;
-    }
+function confirmarTagManual() {
+  var val = document.getElementById('inputTagManual').value.trim();
+  if (!val) { document.getElementById('inputTagManual').focus(); return; }
+  confirmarTag(val);
+}
 
-    try {
-      nfcAbortController = new AbortController();
-      nfcReader = new NDEFReader();
-      await nfcReader.scan({ signal: nfcAbortController.signal });
+function confirmarTag(uid) {
+  document.getElementById('etapa1').classList.add('hidden');
+  document.getElementById('etapa2').classList.remove('hidden');
+  document.getElementById('tagCodigoDisplay').textContent = uid;
+  document.getElementById('tagUidConfirm').value = uid;
+}
 
-      document.getElementById('overlayNfc').classList.remove('hidden');
-
-      nfcReader.addEventListener('reading', function(event) {
-        var tagCode = null;
-
-        if (event.serialNumber) {
-          tagCode = extrairTagCode(event.serialNumber);
-        }
-
-        if (!tagCode && event.message && event.message.records) {
-          for (var i = 0; i < event.message.records.length; i++) {
-            var record = event.message.records[i];
-
-            if (record.recordType === 'url' || record.recordType === 'absolute-url') {
-              var decoder = new TextDecoder();
-              var url = decoder.decode(record.data);
-              tagCode = extrairTagCode(url);
-              if (tagCode) break;
-            }
-
-            if (record.recordType === 'text') {
-              var decoder2 = new TextDecoder();
-              var texto = decoder2.decode(record.data);
-              tagCode = extrairTagCode(texto);
-              if (tagCode) break;
-            }
-          }
-        }
-
-        document.getElementById('overlayNfc').classList.add('hidden');
-
-        if (tagCode) {
-          avancarParaEtapa2(tagCode);
-        } else {
-          alert('Nao foi possivel ler o codigo da tag. Tente novamente ou digite o codigo manualmente.');
-        }
-
-        if (nfcAbortController) nfcAbortController.abort();
-      });
-
-      nfcReader.addEventListener('readingerror', function() {
-        document.getElementById('overlayNfc').classList.add('hidden');
-        alert('Erro ao ler a tag NFC. Tente novamente.');
-        if (nfcAbortController) nfcAbortController.abort();
-      });
-
-    } catch (erro) {
-      document.getElementById('overlayNfc').classList.add('hidden');
-
-      if (erro.name === 'NotAllowedError') {
-        alert('Permissao NFC negada. Ative o NFC nas configuracoes do celular e permita o acesso.');
-      } else if (erro.name === 'AbortError') {
-        /* cancelado */
-      } else {
-        alert('Erro ao iniciar NFC: ' + erro.message);
-      }
-    }
-  };
-
-  /* Cancela a leitura NFC */
-  window.cancelarLeituraNfc = function() {
-    document.getElementById('overlayNfc').classList.add('hidden');
-    if (nfcAbortController) {
-      nfcAbortController.abort();
-      nfcAbortController = null;
-    }
-  };
-
-  /* Confirma o código digitado manualmente */
-  window.confirmarTagCode = function() {
-    var input = document.getElementById('inputTagCode');
-    var valor = input.value.trim().toUpperCase();
-
-    if (!valor) {
-      input.classList.add('border-red-400');
-      input.focus();
-      return;
-    }
-
-    if (!valor.match(/^PET-[A-Z0-9]{6}$/)) {
-      if (valor.match(/^[A-Z0-9]{6}$/)) {
-        valor = 'PET-' + valor;
-      } else {
-        alert('Formato invalido. O codigo deve ser no formato PET-XXXXXX');
-        input.focus();
-        return;
-      }
-    }
-
-    input.classList.remove('border-red-400');
-    avancarParaEtapa2(valor);
-  };
-
-  /* Avança da etapa 1 para a etapa 2 */
-  function avancarParaEtapa2(tagCode) {
-    tagCodeObtido = tagCode;
-
-    document.getElementById('tagCodeExibido').textContent = tagCode;
-    document.getElementById('hiddenTagCode').value = tagCode;
-
-    document.getElementById('etapa1').classList.add('hidden');
-    document.getElementById('etapa2').classList.remove('hidden');
-
-    setTimeout(function() {
-      document.getElementById('codigo_ativacao').focus();
-    }, 200);
-  }
-
-  /* Volta para a etapa 1 */
-  window.voltarEtapa1 = function() {
-    document.getElementById('etapa2').classList.add('hidden');
-    document.getElementById('etapa1').classList.remove('hidden');
-    tagCodeObtido = '';
-  };
-
-  /* Enter no campo de tag code */
-  document.getElementById('inputTagCode').addEventListener('keydown', function(e) {
-    if (e.key === 'Enter') { e.preventDefault(); confirmarTagCode(); }
-  });
-
-  /* Formata automaticamente o código de ativação com hífen */
-  document.getElementById('codigo_ativacao').addEventListener('input', function(e) {
-    var val = this.value.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
-    if (val.length > 4) {
-      val = val.substring(0, 4) + '-' + val.substring(4, 8);
-    }
-    this.value = val;
-  });
-
-  /* Formata automaticamente o tag code com PET- */
-  document.getElementById('inputTagCode').addEventListener('input', function() {
-    var val = this.value.replace(/[^A-Za-z0-9\-]/g, '').toUpperCase();
-    this.value = val;
-    this.classList.remove('border-red-400');
-  });
-})();
+function voltarEtapa1() {
+  document.getElementById('etapa1').classList.remove('hidden');
+  document.getElementById('etapa2').classList.add('hidden');
+}
 </script>
 
 <%- include('../partials/footer') %>

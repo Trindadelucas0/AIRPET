@@ -3,7 +3,7 @@
 <% var currentPath = typeof req !== 'undefined' ? req.path : ''; %>
 
 <!-- Top Nav — estilo Instagram: nome no topo centralizado no mobile -->
-<nav class="bg-white border-b border-gray-100 sticky top-0 z-50 shadow-sm" id="navbar">
+<nav class="sticky top-0 z-50 shadow-sm" id="navbar">
   <div class="max-w-5xl mx-auto px-4 sm:px-6">
     <div class="flex items-center justify-between h-12 md:h-14">
       <!-- Mobile: layout 3 colunas para centralizar AIRPET no topo (estilo Instagram) -->
@@ -60,7 +60,7 @@
             </button>
 
             <div id="profileMenu"
-                 class="hidden absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-2xl shadow-black/10 ring-1 ring-black/5 py-2 z-50 opacity-0 translate-y-1 transition-all duration-200"
+                 class="hidden absolute right-0 mt-2 w-56 rounded-2xl py-2 z-50 opacity-0 translate-y-1 transition-all duration-200"
                  style="opacity:0; transform:translateY(4px)">
               <div class="px-4 py-3 border-b border-gray-100">
                 <p class="text-sm font-bold text-gray-900 truncate"><%= usuario.nome %></p>
@@ -121,7 +121,7 @@
 
 <!-- Mobile Bottom Navigation (logged in only) -->
 <% if (isLogado) { %>
-<nav id="bottomNav" class="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-xl border-t border-gray-200/60 safe-bottom">
+<nav id="bottomNav" class="md:hidden fixed bottom-0 left-0 right-0 z-50 safe-bottom">
   <div class="flex items-center justify-around h-16 px-2 max-w-lg mx-auto">
     <a href="/feed" class="bottom-tab flex flex-col items-center justify-center gap-0.5 w-14 py-1 rounded-2xl transition-all duration-200 <%= currentPath === '/feed' ? 'text-primary-500' : 'text-gray-400 hover:text-primary-500' %>">
       <i class="fa-solid fa-house text-lg"></i>
@@ -161,6 +161,57 @@
   </div>
 </nav>
 <% } %>
+
+<style>
+  #navbar {
+    background: rgba(255, 255, 255, 0.78) !important;
+    border-bottom: 1px solid var(--border) !important;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
+  #navbar a,
+  #navbar button {
+    color: var(--text-dim);
+  }
+  #navbar a:hover,
+  #navbar button:hover {
+    color: var(--accent) !important;
+  }
+  #navbar #profileBtn:hover {
+    background: var(--ink-3) !important;
+  }
+  #profileMenu {
+    background: var(--ink-2) !important;
+    border: 1px solid var(--border) !important;
+    box-shadow: 0 18px 48px rgba(15, 23, 42, 0.12) !important;
+  }
+  #profileMenu .border-b,
+  #profileMenu .border-t {
+    border-color: var(--border) !important;
+  }
+  #profileMenu p:first-child {
+    color: var(--text) !important;
+  }
+  #profileMenu p:last-child {
+    color: var(--text-dim) !important;
+  }
+  #profileMenu a {
+    color: var(--text) !important;
+  }
+  #profileMenu a:hover {
+    background: var(--ink-4) !important;
+  }
+  #mobileMenu {
+    background: rgba(255, 255, 255, 0.95) !important;
+    border-top: 1px solid var(--border) !important;
+  }
+  #bottomNav {
+    background: rgba(255, 255, 255, 0.95) !important;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid var(--border) !important;
+  }
+</style>
 
 <script>
 (function () {

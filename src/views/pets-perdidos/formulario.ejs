@@ -1,296 +1,222 @@
-<% locals.titulo = 'Reportar Pet Perdido' %>
+<% locals.titulo = 'Reportar ' + pet.nome + ' como Perdido' %>
 <% locals.extraHead = `
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
-  #mapaPerdido { height: 300px; border-radius: 12px; z-index: 1; }
-  .loc-option { transition: all .2s ease; cursor: pointer; }
-  .loc-option.active { border-color: var(--color-primary) !important; background: #fff7ed !important; }
-  .loc-option:hover { border-color: var(--color-primary); }
-  .search-results { max-height: 200px; overflow-y: auto; }
+  :root{--ink:#0d0d0f;--ink-2:#13131a;--ink-3:#1c1c26;--border:rgba(255,255,255,0.07);--border-hover:rgba(255,255,255,0.13);--text:#e4e4f0;--text-dim:#7a7a96;--text-muted:#3d3d52;--accent:#f26020;--red:#ef4444;--green:#22c55e;--blue:#60a5fa;}
+  body{background:var(--ink)!important;color:var(--text)!important;font-family:'DM Sans',sans-serif;}
+  .form-wrap{max-width:560px;margin:0 auto;padding:24px 20px 80px;}
+  .page-topbar{position:sticky;top:56px;z-index:40;background:rgba(13,13,15,0.88);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:12px 0;}
+  .topbar-inner{max-width:560px;margin:0 auto;padding:0 20px;display:flex;align-items:center;gap:12px;}
+  .back-link{color:var(--text-dim);font-size:13px;text-decoration:none;display:flex;align-items:center;gap:6px;transition:color 0.15s;}
+  .back-link:hover{color:var(--accent);text-decoration:none;}
+  .page-title{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:#fff;}
+  /* Alert hero */
+  .alert-hero{background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.2);border-radius:18px;padding:20px;display:flex;align-items:center;gap:16px;margin-bottom:16px;}
+  .alert-hero-avatar{width:56px;height:56px;border-radius:16px;object-fit:cover;border:2px solid rgba(239,68,68,0.4);flex-shrink:0;}
+  .alert-hero-init{width:56px;height:56px;border-radius:16px;background:rgba(239,68,68,0.1);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;}
+  .alert-hero-name{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:#fff;}
+  .alert-hero-sub{font-size:12px;color:var(--text-dim);}
+  /* Section */
+  .section-card{background:var(--ink-2);border:1px solid var(--border);border-radius:18px;padding:22px;margin-bottom:14px;}
+  .section-title{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--text-dim);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:16px;display:flex;align-items:center;gap:8px;}
+  .section-icon{width:26px;height:26px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:11px;}
+  .si-red{background:rgba(239,68,68,0.1);color:var(--red);}
+  .si-blue{background:rgba(96,165,250,0.1);color:var(--blue);}
+  .si-accent{background:var(--accent-glow);color:var(--accent);}
+  /* Loc option */
+  .loc-option{display:flex;align-items:center;gap:12px;padding:14px 16px;border:2px solid var(--border);border-radius:12px;cursor:pointer;transition:all 0.15s;margin-bottom:8px;}
+  .loc-option:hover{border-color:var(--border-hover);}
+  .loc-option.active{border-color:var(--accent);background:var(--accent-glow);}
+  .loc-option-icon{width:40px;height:40px;border-radius:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .loc-option-name{font-size:14px;font-weight:700;color:#fff;}
+  .loc-option-sub{font-size:11px;color:var(--text-dim);}
+  /* Input */
+  .ds-input{width:100%;background:var(--ink-3);border:1px solid var(--border);border-radius:10px;padding:11px 14px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;outline:none;transition:border-color 0.2s,box-shadow 0.2s;}
+  .ds-input::placeholder{color:var(--text-muted);}
+  .ds-input:focus{border-color:rgba(242,96,32,0.5);box-shadow:0 0 0 3px rgba(242,96,32,0.06);}
+  .ds-label{display:block;font-size:11px;font-weight:700;color:var(--text-dim);letter-spacing:0.07em;text-transform:uppercase;margin-bottom:6px;}
+  .field-group{margin-bottom:14px;}
+  #mapaPerdido{height:260px;border-radius:12px;overflow:hidden;filter:brightness(0.85) saturate(0.7);}
+  .search-results{background:var(--ink-3);border:1px solid var(--border);border-radius:10px;max-height:200px;overflow-y:auto;}
+  .search-result-item{padding:10px 14px;font-size:13px;cursor:pointer;color:var(--text);transition:background 0.1s;}
+  .search-result-item:hover{background:var(--ink-4);}
+  .btn-submit{width:100%;padding:14px;background:var(--red);color:#fff;border:none;border-radius:12px;font-family:'DM Sans',sans-serif;font-size:16px;font-weight:700;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:8px;}
+  .btn-submit:hover{background:#dc2626;transform:translateY(-1px);}
 </style>
 ` %>
 <%- include('../partials/header') %>
 <%- include('../partials/flash') %>
 
-<main class="flex-1 container mx-auto px-4 py-6 max-w-lg">
-  <%- include('../partials/page-header', { backHref: '/pets/' + pet.id, backLabel: 'Voltar ao perfil', sticky: false }) %>
-
-  <div class="mb-6 mt-6">
-    <h1 class="text-2xl font-bold text-gray-900">Reportar <%= pet.nome %> como Perdido</h1>
+<div class="page-topbar">
+  <div class="topbar-inner">
+    <a href="/pets/<%= pet.id %>" class="back-link"><i class="fa-solid fa-arrow-left"></i> <%= pet.nome %></a>
+    <span class="page-title">Reportar como perdido</span>
   </div>
+</div>
 
-  <div class="card mb-6 bg-red-50 border border-red-200">
-    <div class="flex items-center gap-3">
+<main class="flex-1">
+  <div class="form-wrap">
+
+    <!-- Pet hero -->
+    <div class="alert-hero">
       <% if (pet.foto) { %>
-        <img src="<%= pet.foto %>" class="w-16 h-16 rounded-full object-cover" alt="<%= pet.nome %>">
+        <img src="<%= pet.foto %>" class="alert-hero-avatar" alt="<%= pet.nome %>">
       <% } else { %>
-        <div class="w-16 h-16 rounded-full bg-red-200 flex items-center justify-center">
-          <i class="fa-solid fa-paw text-red-400 text-2xl"></i>
-        </div>
+        <div class="alert-hero-init">🐾</div>
       <% } %>
       <div>
-        <p class="font-bold text-gray-800"><%= pet.nome %></p>
-        <p class="text-sm text-gray-600 capitalize"><%= pet.tipo %> — <%= pet.raca || 'Sem raca' %></p>
+        <div class="alert-hero-name"><%= pet.nome %></div>
+        <div class="alert-hero-sub"><%= pet.tipo ? pet.tipo.charAt(0).toUpperCase()+pet.tipo.slice(1) : 'Pet' %> · <%= pet.raca || 'Sem raça' %></div>
       </div>
     </div>
-  </div>
 
-  <form action="/perdidos/<%= pet.id %>/reportar" method="POST" id="formPerdido">
-    <div class="space-y-5">
+    <form action="/perdidos/<%= pet.id %>/reportar" method="POST" id="formPerdido">
+      <input type="hidden" name="latitude" id="latInput">
+      <input type="hidden" name="longitude" id="lngInput">
+      <input type="hidden" name="local_descricao" id="localDescInput">
 
-      <!-- Escolha de localizacao -->
-      <div>
-        <label class="block text-sm font-medium text-gray-700 mb-2">
-          <i class="fa-solid fa-location-dot text-[#ec5a1c] mr-1"></i>
-          Ultima localizacao conhecida
-        </label>
+      <!-- Localização -->
+      <div class="section-card">
+        <div class="section-title"><div class="section-icon si-red"><i class="fa-solid fa-location-dot"></i></div>Última localização conhecida</div>
 
-        <div class="grid grid-cols-1 gap-2 mb-3">
-
-          <% if (typeof ultimoScan !== 'undefined' && ultimoScan && ultimoScan.latitude && ultimoScan.longitude) { %>
-            <div id="optScan" class="loc-option border-2 border-gray-200 rounded-xl p-3 flex items-center gap-3"
-                 onclick="usarUltimoScan()">
-              <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
-                <i class="fa-solid fa-satellite-dish text-blue-600"></i>
-              </div>
-              <div class="flex-1 min-w-0">
-                <p class="text-sm font-semibold text-gray-800">Ultimo scan da tag NFC</p>
-                <p class="text-xs text-gray-500 truncate">
-                  <% var dtScan = new Date(ultimoScan.data); %>
-                  <%= dtScan.toLocaleDateString('pt-BR') %> as <%= dtScan.toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'}) %>
-                  <% if (ultimoScan.cidade) { %> — <%= ultimoScan.cidade %><% } %>
-                </p>
-              </div>
-              <i class="fa-solid fa-check-circle text-[#ec5a1c] text-lg opacity-0" id="optScanCheck"></i>
+        <% if (typeof ultimoScan !== 'undefined' && ultimoScan && ultimoScan.latitude && ultimoScan.longitude) { %>
+          <div class="loc-option" id="optScan" onclick="usarUltimoScan()">
+            <div class="loc-option-icon" style="background:rgba(96,165,250,0.1);"><i class="fa-solid fa-satellite-dish" style="color:var(--blue);"></i></div>
+            <div>
+              <div class="loc-option-name">Último scan da tag NFC</div>
+              <div class="loc-option-sub"><% var dtScan = new Date(ultimoScan.data); %><%= dtScan.toLocaleDateString('pt-BR') %> às <%= dtScan.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}) %></div>
             </div>
-          <% } %>
-
-          <div id="optManual" class="loc-option border-2 border-gray-200 rounded-xl p-3 flex items-center gap-3"
-               onclick="usarManual()">
-            <div class="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
-              <i class="fa-solid fa-map-pin text-orange-600"></i>
-            </div>
-            <div class="flex-1 min-w-0">
-              <p class="text-sm font-semibold text-gray-800">Marcar no mapa</p>
-              <p class="text-xs text-gray-500">Clique no mapa ou busque um endereco</p>
-            </div>
-            <i class="fa-solid fa-check-circle text-[#ec5a1c] text-lg opacity-0" id="optManualCheck"></i>
           </div>
+        <% } %>
 
-          <div id="optGeo" class="loc-option border-2 border-gray-200 rounded-xl p-3 flex items-center gap-3"
-               onclick="usarMinhaLocalizacao()">
-            <div class="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
-              <i class="fa-solid fa-location-crosshairs text-green-600"></i>
-            </div>
-            <div class="flex-1 min-w-0">
-              <p class="text-sm font-semibold text-gray-800">Minha localizacao atual</p>
-              <p class="text-xs text-gray-500">Usar GPS do celular agora</p>
-            </div>
-            <i class="fa-solid fa-check-circle text-[#ec5a1c] text-lg opacity-0" id="optGeoCheck"></i>
+        <div class="loc-option" id="optMapa" onclick="usarMapa()">
+          <div class="loc-option-icon" style="background:var(--accent-glow);"><i class="fa-solid fa-map-location-dot" style="color:var(--accent);"></i></div>
+          <div>
+            <div class="loc-option-name">Marcar no mapa</div>
+            <div class="loc-option-sub">Toque no mapa para indicar o local</div>
           </div>
         </div>
 
-        <!-- Busca de endereco -->
-        <div id="buscaEnderecoBox" class="mb-3 hidden">
-          <div class="relative">
-            <input type="text" id="buscaEndereco" placeholder="Buscar endereco..."
-                   class="input-field !pr-10" autocomplete="off">
-            <button type="button" onclick="buscarEndereco()"
-                    class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#ec5a1c] transition-colors">
-              <i class="fa-solid fa-magnifying-glass"></i>
-            </button>
+        <div class="loc-option" id="optBusca" onclick="usarBusca()">
+          <div class="loc-option-icon" style="background:rgba(34,197,94,0.1);"><i class="fa-solid fa-magnifying-glass-location" style="color:var(--green);"></i></div>
+          <div>
+            <div class="loc-option-name">Buscar endereço</div>
+            <div class="loc-option-sub">Digite um endereço para localizar</div>
           </div>
-          <div id="resultadosBusca" class="search-results hidden mt-1 bg-white border rounded-xl shadow-lg"></div>
         </div>
 
-        <div id="mapaPerdido"></div>
-        <p id="coordInfo" class="text-xs text-gray-400 mt-1 hidden">
-          <i class="fa-solid fa-map-pin mr-1"></i>
-          <span id="coordText"></span>
-        </p>
-        <input type="hidden" name="latitude" id="perdidoLat">
-        <input type="hidden" name="longitude" id="perdidoLng">
+        <div id="mapaPerdidoWrap" class="hidden" style="margin-top:12px;">
+          <div id="mapaPerdido"></div>
+        </div>
+        <div id="buscaWrap" class="hidden" style="margin-top:12px;">
+          <input type="text" id="buscaEndereco" class="ds-input" placeholder="Digite o endereço ou bairro...">
+          <div id="searchResults" class="search-results hidden" style="margin-top:4px;"></div>
+        </div>
+        <div id="localSelecionado" class="hidden" style="margin-top:10px;padding:10px 14px;background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);border-radius:10px;font-size:13px;color:var(--green);display:flex;align-items:center;gap:8px;">
+          <i class="fa-solid fa-check-circle"></i>
+          <span id="localSelecionadoText"></span>
+        </div>
       </div>
 
-      <div>
-        <label for="descricao" class="block text-sm font-medium text-gray-700 mb-1">O que aconteceu?</label>
-        <textarea name="descricao" id="descricao" rows="4" required
-                  placeholder="Descreva as circunstancias: quando sumiu, onde estava, o que vestia..."
-                  class="input-field resize-none"></textarea>
+      <!-- Observações -->
+      <div class="section-card">
+        <div class="section-title"><div class="section-icon si-accent"><i class="fa-solid fa-file-lines"></i></div>Detalhes</div>
+        <div class="field-group">
+          <label class="ds-label">Descrição</label>
+          <textarea name="descricao" class="ds-input" rows="3" style="resize:none;" placeholder="Como estava usando? Sinais particulares? Qualquer detalhe ajuda..." maxlength="500"></textarea>
+        </div>
+        <div class="field-group" style="margin-bottom:0">
+          <label class="ds-label">Recompensa (opcional)</label>
+          <input type="text" name="recompensa" class="ds-input" placeholder="Ex: R$200, Pix, etc. (opcional)" maxlength="60">
+        </div>
       </div>
 
-      <div>
-        <label for="recompensa" class="block text-sm font-medium text-gray-700 mb-1">Recompensa (opcional)</label>
-        <input type="text" name="recompensa" id="recompensa" placeholder="Ex: R$ 200,00" class="input-field">
-      </div>
-
-      <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
-        <p class="text-sm text-yellow-800">
-          <i class="fa-solid fa-info-circle mr-1"></i>
-          Seu reporte sera enviado para analise da equipe. Apos aprovacao, o alerta sera publicado
-          e usuarios proximos serao notificados.
-        </p>
-      </div>
-
-      <button type="submit" class="btn-primary w-full bg-red-600 hover:bg-red-700">
-        <i class="fa-solid fa-triangle-exclamation mr-2"></i>Enviar Reporte
+      <button type="submit" class="btn-submit">
+        <i class="fa-solid fa-triangle-exclamation"></i> Reportar como perdido
       </button>
-    </div>
-  </form>
+    </form>
+  </div>
 </main>
 
+<% locals.extraScripts = `
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-(function () {
-  /* Dados do ultimo scan vindos do server */
-  var ultimoScan = <%- (typeof ultimoScan !== 'undefined' && ultimoScan) ? JSON.stringify({ lat: ultimoScan.latitude, lng: ultimoScan.longitude, data: ultimoScan.data, cidade: ultimoScan.cidade || '' }) : 'null' %>;
+var mapa = null, marker = null;
+var optScan = document.getElementById('optScan');
+var optMapa = document.getElementById('optMapa');
+var optBusca = document.getElementById('optBusca');
 
-  var defaultCenter = [-15.78, -47.93];
-  var defaultZoom = 5;
+function clearActive() {
+  [optScan,optMapa,optBusca].filter(Boolean).forEach(function(el){ el.classList.remove('active'); });
+}
 
-  var map = L.map('mapaPerdido').setView(defaultCenter, defaultZoom);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; OSM', maxZoom: 19
-  }).addTo(map);
+function setLocal(lat, lng, desc) {
+  document.getElementById('latInput').value = lat;
+  document.getElementById('lngInput').value = lng;
+  document.getElementById('localDescInput').value = desc || '';
+  var el = document.getElementById('localSelecionado');
+  el.classList.remove('hidden');
+  document.getElementById('localSelecionadoText').textContent = desc || lat+', '+lng;
+}
 
-  var marker = null;
+<% if (typeof ultimoScan !== 'undefined' && ultimoScan && ultimoScan.latitude && ultimoScan.longitude) { %>
+function usarUltimoScan() {
+  clearActive(); optScan.classList.add('active');
+  document.getElementById('mapaPerdidoWrap').classList.add('hidden');
+  document.getElementById('buscaWrap').classList.add('hidden');
+  setLocal(${ultimoScan.latitude}, ${ultimoScan.longitude}, 'Último scan da tag NFC');
+}
+<% } %>
 
-  /* Se tem ultimo scan, ja pre-seleciona */
-  if (ultimoScan) {
-    usarUltimoScan();
-  }
-
-  function setMarker(lat, lng, popup) {
-    if (marker) map.removeLayer(marker);
-    marker = L.marker([lat, lng], {
-      draggable: true,
-      icon: L.divIcon({
-        className: 'custom-pin',
-        html: '<div style="background:#dc2626;width:34px;height:34px;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center"><i class="fa-solid fa-exclamation" style="color:#fff;font-size:14px"></i></div>',
-        iconSize: [34, 34], iconAnchor: [17, 17]
-      })
-    }).addTo(map);
-    if (popup) marker.bindPopup(popup).openPopup();
-
-    marker.on('dragend', function (e) {
-      var p = e.target.getLatLng();
-      updateCoords(p.lat, p.lng);
+function usarMapa() {
+  clearActive(); optMapa.classList.add('active');
+  document.getElementById('buscaWrap').classList.add('hidden');
+  var wrap = document.getElementById('mapaPerdidoWrap');
+  wrap.classList.remove('hidden');
+  if (!mapa) {
+    mapa = L.map('mapaPerdido').setView([-15.78,-47.93],13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OSM'}).addTo(mapa);
+    mapa.on('click', function(e) {
+      var ll = e.latlng;
+      if (marker) marker.setLatLng(ll);
+      else marker = L.marker(ll).addTo(mapa);
+      setLocal(ll.lat.toFixed(6), ll.lng.toFixed(6), 'Marcado no mapa');
     });
+  } else { mapa.invalidateSize(); }
+}
 
-    updateCoords(lat, lng);
-  }
+function usarBusca() {
+  clearActive(); optBusca.classList.add('active');
+  document.getElementById('mapaPerdidoWrap').classList.add('hidden');
+  document.getElementById('buscaWrap').classList.remove('hidden');
+}
 
-  function updateCoords(lat, lng) {
-    document.getElementById('perdidoLat').value = parseFloat(lat).toFixed(7);
-    document.getElementById('perdidoLng').value = parseFloat(lng).toFixed(7);
-    document.getElementById('coordInfo').classList.remove('hidden');
-    document.getElementById('coordText').textContent = parseFloat(lat).toFixed(5) + ', ' + parseFloat(lng).toFixed(5);
-  }
-
-  function clearSelection() {
-    document.querySelectorAll('.loc-option').forEach(function (el) {
-      el.classList.remove('active');
-      var chk = el.querySelector('.fa-check-circle');
-      if (chk) chk.style.opacity = '0';
-    });
-  }
-
-  function selectOption(id) {
-    clearSelection();
-    var el = document.getElementById(id);
-    if (el) {
-      el.classList.add('active');
-      var chk = el.querySelector('.fa-check-circle');
-      if (chk) chk.style.opacity = '1';
-    }
-  }
-
-  /* Usar ultimo scan da tag */
-  window.usarUltimoScan = function () {
-    if (!ultimoScan) return;
-    selectOption('optScan');
-    document.getElementById('buscaEnderecoBox').classList.add('hidden');
-    map.setView([ultimoScan.lat, ultimoScan.lng], 15);
-    var dt = new Date(ultimoScan.data);
-    var popupText = '<b>Ultimo scan NFC</b><br>' + dt.toLocaleDateString('pt-BR') + ' ' + dt.toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'});
-    if (ultimoScan.cidade) popupText += '<br>' + ultimoScan.cidade;
-    setMarker(ultimoScan.lat, ultimoScan.lng, popupText);
-  };
-
-  /* Marcar manualmente no mapa */
-  window.usarManual = function () {
-    selectOption('optManual');
-    document.getElementById('buscaEnderecoBox').classList.remove('hidden');
-    map.on('click', onMapClick);
-  };
-
-  function onMapClick(e) {
-    setMarker(e.latlng.lat, e.latlng.lng);
-  }
-  map.on('click', function (e) {
-    var manual = document.getElementById('optManual');
-    if (manual && manual.classList.contains('active')) {
-      setMarker(e.latlng.lat, e.latlng.lng);
-    }
-  });
-
-  /* Usar GPS */
-  window.usarMinhaLocalizacao = function () {
-    selectOption('optGeo');
-    document.getElementById('buscaEnderecoBox').classList.add('hidden');
-    if (!navigator.geolocation) {
-      alert('Geolocalizacao nao suportada neste dispositivo');
-      return;
-    }
-    navigator.geolocation.getCurrentPosition(function (pos) {
-      map.setView([pos.coords.latitude, pos.coords.longitude], 16);
-      setMarker(pos.coords.latitude, pos.coords.longitude, '<b>Sua localizacao atual</b>');
-    }, function (err) {
-      var msg = (window.airpetGeo && window.airpetGeo.getErrorMessage)
-        ? window.airpetGeo.getErrorMessage(err)
-        : 'Nao foi possivel obter sua localizacao. Verifique as permissoes.';
-      alert(msg);
-    }, { timeout: 12000, enableHighAccuracy: true });
-  };
-
-  /* Busca de endereco via Nominatim */
-  window.buscarEndereco = function () {
-    var q = document.getElementById('buscaEndereco').value.trim();
-    if (!q || q.length < 3) return;
-    var box = document.getElementById('resultadosBusca');
-    box.innerHTML = '<p class="p-3 text-sm text-gray-400">Buscando...</p>';
-    box.classList.remove('hidden');
-
-    fetch('https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(q) + '&limit=5&countrycodes=br')
-      .then(function (r) { return r.json(); })
-      .then(function (data) {
-        if (!data.length) {
-          box.innerHTML = '<p class="p-3 text-sm text-gray-500">Nenhum resultado encontrado</p>';
-          return;
-        }
-        box.innerHTML = data.map(function (r) {
-          return '<div class="p-3 hover:bg-orange-50 cursor-pointer text-sm border-b last:border-0 transition-colors" onclick="selecionarEndereco(' + r.lat + ',' + r.lon + ',\'' + r.display_name.replace(/'/g, "\\'").substring(0, 80) + '\')">' +
-            '<i class="fa-solid fa-location-dot text-[#ec5a1c] mr-1"></i>' + r.display_name.substring(0, 80) + '</div>';
+var buscaTimer;
+document.getElementById('buscaEndereco').addEventListener('input', function() {
+  clearTimeout(buscaTimer);
+  var q = this.value.trim();
+  if (q.length < 3) { document.getElementById('searchResults').classList.add('hidden'); return; }
+  buscaTimer = setTimeout(function() {
+    fetch('https://nominatim.openstreetmap.org/search?q='+encodeURIComponent(q)+'&format=json&limit=4&accept-language=pt-BR')
+      .then(function(r){ return r.json(); })
+      .then(function(data) {
+        var el = document.getElementById('searchResults');
+        if (!data.length) { el.classList.add('hidden'); return; }
+        el.innerHTML = data.map(function(d){
+          return '<div class="search-result-item" onclick="selecionarLocal('+d.lat+','+d.lon+',\\''+d.display_name.replace(/'/g,'')+'\\')">'+ d.display_name +'</div>';
         }).join('');
-      })
-      .catch(function () {
-        box.innerHTML = '<p class="p-3 text-sm text-red-500">Erro na busca</p>';
+        el.classList.remove('hidden');
       });
-  };
+  }, 400);
+});
 
-  window.selecionarEndereco = function (lat, lng, nome) {
-    document.getElementById('resultadosBusca').classList.add('hidden');
-    document.getElementById('buscaEndereco').value = nome;
-    map.setView([lat, lng], 16);
-    setMarker(lat, lng, '<b>' + nome + '</b>');
-  };
-
-  document.getElementById('buscaEndereco').addEventListener('keydown', function (e) {
-    if (e.key === 'Enter') { e.preventDefault(); buscarEndereco(); }
-  });
-
-  setTimeout(function () { map.invalidateSize(); }, 200);
-})();
+function selecionarLocal(lat, lng, desc) {
+  document.getElementById('searchResults').classList.add('hidden');
+  document.getElementById('buscaEndereco').value = desc.split(',')[0];
+  setLocal(lat, lng, desc.split(',').slice(0,2).join(','));
+}
 </script>
+` %>
 
 <%- include('../partials/footer') %>

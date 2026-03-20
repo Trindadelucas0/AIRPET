@@ -1,11 +1,302 @@
 <% locals.titulo = 'Buscar' %>
 <% locals.extraHead = `
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink:#0d0d0f;--ink-2:#13131a;--ink-3:#1c1c26;--ink-4:#242432;
+    --border:rgba(255,255,255,0.07);--border-hover:rgba(255,255,255,0.13);
+    --text:#e4e4f0;--text-dim:#7a7a96;--text-muted:#3d3d52;
+    --accent:#f26020;--accent-light:#ff7a3d;--accent-glow:rgba(242,96,32,0.12);
+    --green:#22c55e;--red:#ef4444;--purple:#a78bfa;--radius:16px;--radius-sm:10px;
+  }
+  body { background:var(--ink) !important; color:var(--text) !important; font-family:'DM Sans',sans-serif; }
+
+  .search-wrap { max-width: 680px; margin: 0 auto; padding: 24px 20px 80px; }
+
+  /* ── TOP BAR ── */
+  .search-topbar {
+    position:sticky; top:56px; z-index:40;
+    background:rgba(13,13,15,0.88); backdrop-filter:blur(20px);
+    border-bottom:1px solid var(--border); padding:14px 0;
+  }
+  .search-topbar-inner { max-width:680px; margin:0 auto; padding:0 20px; }
+
+  /* ── SEARCH INPUT ── */
+  .search-box {
+    position:relative;
+  }
+  .search-input {
+    width:100%;
+    background:var(--ink-3);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:14px 48px 14px 48px;
+    color:var(--text);
+    font-family:'DM Sans',sans-serif;
+    font-size:15px;
+    outline:none;
+    transition:border-color 0.2s, box-shadow 0.2s;
+  }
+  .search-input::placeholder { color:var(--text-muted); }
+  .search-input:focus {
+    border-color:rgba(242,96,32,0.5);
+    box-shadow:0 0 0 3px rgba(242,96,32,0.06);
+  }
+  .search-icon {
+    position:absolute; left:16px; top:50%; transform:translateY(-50%);
+    color:var(--text-dim); font-size:15px; pointer-events:none;
+  }
+  .search-clear {
+    position:absolute; right:12px; top:50%; transform:translateY(-50%);
+    width:28px; height:28px; border-radius:50%;
+    background:var(--ink-4); border:none; color:var(--text-dim);
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer; font-size:12px; transition:all 0.15s;
+  }
+  .search-clear:hover { background:var(--ink-4); color:var(--text); }
+
+  /* ── SECTION LABEL ── */
+  .result-section-label {
+    display:flex; align-items:center; gap:10px;
+    margin-bottom:12px; margin-top:28px;
+    font-family:'Syne',sans-serif;
+    font-size:13px; font-weight:700; color:var(--text-dim);
+    letter-spacing:0.08em; text-transform:uppercase;
+  }
+  .result-section-label::after {
+    content:''; flex:1; height:1px; background:var(--border);
+  }
+
+  /* ── RESULT CARD ── */
+  .result-card {
+    display:flex; align-items:center; gap:14px;
+    background:var(--ink-2);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:14px 16px;
+    margin-bottom:8px;
+    transition:border-color 0.2s, transform 0.2s;
+    animation: slide-up 0.35s ease-out both;
+  }
+  .result-card:hover { border-color:var(--border-hover); transform:translateY(-1px); }
+
+  @keyframes slide-up { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:none; } }
+
+  .result-avatar {
+    width:48px; height:48px; border-radius:50%;
+    object-fit:cover; flex-shrink:0;
+  }
+  .result-avatar-init {
+    width:48px; height:48px; border-radius:50%; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+    font-size:18px; font-weight:700; color:#fff;
+    background:var(--ink-4);
+  }
+  .result-avatar-pet {
+    width:48px; height:48px; border-radius:14px;
+    object-fit:cover; flex-shrink:0;
+  }
+
+  .result-name {
+    font-size:15px; font-weight:700; color:#fff;
+    text-decoration:none; display:block; margin-bottom:2px;
+  }
+  .result-name:hover { color:var(--accent); text-decoration:none; }
+  .result-sub { font-size:12px; color:var(--text-dim); }
+
+  /* ── FOLLOW BTN ── */
+  .follow-btn {
+    margin-left:auto; flex-shrink:0;
+    padding:7px 16px;
+    border-radius:8px;
+    font-size:12px; font-weight:700;
+    border:1px solid var(--border); background:transparent; color:var(--text-dim);
+    cursor:pointer; transition:all 0.15s;
+  }
+  .follow-btn:hover { background:var(--accent); border-color:var(--accent); color:#fff; }
+  .follow-btn.seguindo { background:rgba(34,197,94,0.1); border-color:rgba(34,197,94,0.2); color:var(--green); }
+  .follow-btn.seguindo:hover { background:rgba(239,68,68,0.1); border-color:rgba(239,68,68,0.2); color:var(--red); }
+
+  /* ── EMPTY STATE ── */
+  .empty-state {
+    text-align:center; padding:64px 24px; color:var(--text-dim);
+  }
+  .empty-icon { font-size:48px; opacity:0.18; display:block; margin-bottom:16px; }
+  .empty-title { font-size:16px; font-weight:700; color:var(--text); margin-bottom:6px; }
+  .empty-sub { font-size:14px; }
+
+  /* ── INITIAL HERO ── */
+  .search-hero {
+    text-align:center; padding:48px 0 32px;
+  }
+  .search-hero-icon {
+    width:72px; height:72px; border-radius:22px; margin:0 auto 20px;
+    background:var(--accent-glow); border:1px solid rgba(242,96,32,0.2);
+    display:flex; align-items:center; justify-content:center;
+    font-size:28px; color:var(--accent);
+  }
+  .search-hero h1 { font-family:'Syne',sans-serif; font-size:28px; font-weight:800; color:#fff; margin-bottom:8px; }
+  .search-hero p { font-size:14px; color:var(--text-dim); }
+
+  /* ── TAGS SUGESTÃO ── */
+  .tag-pill {
+    display:inline-flex; align-items:center; gap:6px;
+    padding:6px 14px; border-radius:100px;
+    background:var(--ink-3); border:1px solid var(--border);
+    font-size:12px; font-weight:600; color:var(--text-dim);
+    text-decoration:none; transition:all 0.15s;
+    margin:4px;
+  }
+  .tag-pill:hover { border-color:var(--accent); color:var(--accent); text-decoration:none; }
+</style>
+` %>
+<%- include('../partials/header') %>
+<%- include('../partials/flash') %>
+
+<div class="search-topbar">
+  <div class="search-topbar-inner">
+    <form action="/explorar/busca" method="GET">
+      <div class="search-box">
+        <i class="fa-solid fa-magnifying-glass search-icon"></i>
+        <input type="text" name="q" value="<%= q %>"
+               class="search-input" placeholder="Buscar pets, tutores, petshops..."
+               autofocus autocomplete="off">
+        <% if (q) { %>
+          <a href="/explorar/busca" class="search-clear" title="Limpar">
+            <i class="fa-solid fa-xmark"></i>
+          </a>
+        <% } %>
+      </div>
+    </form>
+  </div>
+</div>
+
+<main class="flex-1 pb-24 md:pb-6">
+  <div class="search-wrap">
+    <% if (!q || q.length < 2) { %>
+      <!-- Estado inicial -->
+      <div class="search-hero">
+        <div class="search-hero-icon"><i class="fa-solid fa-magnifying-glass"></i></div>
+        <h1>Explorar</h1>
+        <p>Encontre pets, tutores e petshops parceiros</p>
+      </div>
+      <div style="text-align:center; margin-top:8px;">
+        <a href="/explorar/busca?q=cachorro" class="tag-pill">🐶 Cachorros</a>
+        <a href="/explorar/busca?q=gato" class="tag-pill">🐱 Gatos</a>
+        <a href="/explorar/busca?q=veterinario" class="tag-pill">🩺 Veterinários</a>
+        <a href="/explorar/busca?q=petshop" class="tag-pill">🏪 Petshops</a>
+      </div>
+    <% } else { %>
+
+      <% if (resultadosUsuarios.length === 0 && resultadosPets.length === 0) { %>
+        <div class="empty-state">
+          <span class="empty-icon">🔍</span>
+          <div class="empty-title">Nenhum resultado para "<%= q %>"</div>
+          <div class="empty-sub">Tente outro nome ou termo de busca</div>
+        </div>
+      <% } %>
+
+      <!-- Pessoas -->
+      <% if (resultadosUsuarios.length > 0) { %>
+        <div class="result-section-label">
+          <i class="fa-solid fa-users" style="color:var(--accent);"></i>
+          Pessoas
+        </div>
+        <% resultadosUsuarios.forEach(function(u, i) { %>
+          <% var uCor = u.cor_perfil || '#f26020'; %>
+          <div class="result-card" style="animation-delay:<%= i * 40 %>ms">
+            <a href="/explorar/perfil/<%= u.id %>">
+              <% if (u.foto_perfil) { %>
+                <img src="<%= u.foto_perfil %>" class="result-avatar" style="box-shadow:0 0 0 2px <%= uCor %>" alt="">
+              <% } else { %>
+                <div class="result-avatar-init" style="box-shadow:0 0 0 2px <%= uCor %>"><%= (u.nome||'U').charAt(0).toUpperCase() %></div>
+              <% } %>
+            </a>
+            <div style="flex:1; min-width:0;">
+              <a href="/explorar/perfil/<%= u.id %>" class="result-name"><%= u.nome %></a>
+              <div class="result-sub">
+                <% if (u.cidade) { %><i class="fa-solid fa-location-dot mr-1" style="color:var(--accent);font-size:10px;"></i><%= u.cidade %><% } %>
+              </div>
+            </div>
+            <% if (typeof usuario !== 'undefined' && usuario && u.id !== usuario.id) { %>
+              <button type="button"
+                      class="follow-btn <%= u.seguindo ? 'seguindo' : '' %>"
+                      data-user-id="<%= u.id %>"
+                      onclick="toggleFollow(this, <%= u.id %>)">
+                <%= u.seguindo ? 'Seguindo' : 'Seguir' %>
+              </button>
+            <% } %>
+          </div>
+        <% }); %>
+      <% } %>
+
+      <!-- Pets -->
+      <% if (resultadosPets.length > 0) { %>
+        <div class="result-section-label">
+          <i class="fa-solid fa-paw" style="color:var(--accent);"></i>
+          Pets
+        </div>
+        <% resultadosPets.forEach(function(p, i) { %>
+          <div class="result-card" style="animation-delay:<%= (i + resultadosUsuarios.length) * 40 %>ms">
+            <a href="/explorar/pet/<%= p.id %>">
+              <% if (p.foto) { %>
+                <img src="<%= p.foto %>" class="result-avatar-pet" alt="">
+              <% } else { %>
+                <div class="result-avatar-pet" style="background:var(--ink-4);display:flex;align-items:center;justify-content:center;font-size:20px;">🐾</div>
+              <% } %>
+            </a>
+            <div style="flex:1; min-width:0;">
+              <a href="/explorar/pet/<%= p.id %>" class="result-name"><%= p.nome %></a>
+              <div class="result-sub">
+                <% if (p.raca) { %><%= p.raca %><% } %>
+                <% if (p.dono_nome) { %> · Tutor: <%= p.dono_nome %><% } %>
+              </div>
+            </div>
+            <% if (typeof usuario !== 'undefined' && usuario) { %>
+              <button type="button"
+                      class="follow-btn <%= p.seguindo ? 'seguindo' : '' %>"
+                      data-pet-id="<%= p.id %>"
+                      onclick="toggleFollowPet(this, <%= p.id %>)">
+                <%= p.seguindo ? 'Seguindo' : 'Seguir' %>
+              </button>
+            <% } %>
+          </div>
+        <% }); %>
+      <% } %>
+    <% } %>
+  </div>
+</main>
+
+<script>
+function toggleFollow(btn, userId) {
+  fetch('/explorar/seguir/' + userId, { method:'POST', headers:{'Content-Type':'application/json'} })
+    .then(r => r.json()).then(d => {
+      if (d.sucesso) {
+        btn.classList.toggle('seguindo');
+        btn.textContent = btn.classList.contains('seguindo') ? 'Seguindo' : 'Seguir';
+      }
+    });
+}
+function toggleFollowPet(btn, petId) {
+  fetch('/explorar/pet/' + petId + '/seguir', { method:'POST', headers:{'Content-Type':'application/json'} })
+    .then(r => r.json()).then(d => {
+      if (d.sucesso) {
+        btn.classList.toggle('seguindo');
+        btn.textContent = btn.classList.contains('seguindo') ? 'Seguindo' : 'Seguir';
+      }
+    });
+}
+</script>
+
+<%- include('../partials/footer') %>
+<% locals.titulo = 'Buscar' %>
+<% locals.extraHead = `
 <style>
   .search-card { animation: slideUp .4s ease-out both; }
   @keyframes slideUp { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
   .follow-btn { transition: all .25s ease; }
-  .follow-btn.seguindo { background: transparent; border-color: #d1d5db; color: #6b7280; }
-  .follow-btn.seguindo:hover { border-color: #ef4444; color: #ef4444; }
+  .follow-btn.seguindo { background: transparent; border-color: #e5e7eb; color: #6b7280; }
+  .follow-btn.seguindo:hover { border-color: color-mix(in srgb, var(--accent) 22%, transparent); color: var(--accent); }
   .busca-hero { background: linear-gradient(180deg, rgba(236,90,28,.05) 0%, transparent 100%); }
   .busca-input:focus { box-shadow: 0 0 0 3px rgba(236,90,28,.12); border-color: rgba(236,90,28,.4); }
   .busca-card { border-radius: 1.25rem; box-shadow: 0 2px 8px rgba(0,0,0,.04); border: 1px solid rgba(0,0,0,.04); transition: box-shadow .2s, transform .2s; }
@@ -78,7 +369,7 @@
               </div>
               <% if (typeof usuario !== 'undefined' && usuario && usuario.id !== u.id) { %>
                 <button class="follow-btn shrink-0 px-4 py-2 text-xs font-bold rounded-full border-2 transition-all
-                               <%= u.seguindo ? 'seguindo border-gray-300 text-gray-500' : 'border-gray-900 bg-gray-900 text-white hover:bg-gray-700' %>"
+                               <%= u.seguindo ? 'seguindo border-gray-200 text-gray-500' : 'border-primary-500 bg-white text-primary-500 hover:bg-primary-50 hover:text-primary-600' %>"
                         data-user-id="<%= u.id %>" data-seguindo="<%= u.seguindo ? 'true' : 'false' %>">
                   <%= u.seguindo ? 'Seguindo' : 'Seguir' %>
                 </button>
@@ -174,7 +465,7 @@
                   · <%= rec.total_seguidores %> seguidor<%= rec.total_seguidores !== 1 ? 'es' : '' %>
                 </p>
               </div>
-              <button class="follow-btn shrink-0 px-4 py-2 text-xs font-bold rounded-full border-2 border-gray-900 bg-gray-900 text-white hover:bg-gray-700 transition-all"
+              <button class="follow-btn shrink-0 px-4 py-2 text-xs font-bold rounded-full border-2 border-primary-500 text-primary-500 bg-white hover:bg-primary-50 hover:text-primary-600 transition-all"
                       data-user-id="<%= rec.id %>" data-seguindo="false">
                 Seguir
               </button>
@@ -250,11 +541,11 @@
             if (d.seguindo) {
               el.textContent = 'Seguindo';
               el.classList.add('seguindo');
-              el.classList.remove('bg-gray-900', 'text-white', 'hover:bg-gray-700');
+              el.classList.remove('border-primary-500', 'text-primary-500', 'bg-white', 'hover:bg-primary-50', 'hover:text-primary-600');
             } else {
               el.textContent = 'Seguir';
               el.classList.remove('seguindo');
-              el.classList.add('bg-gray-900', 'text-white', 'hover:bg-gray-700');
+              el.classList.add('border-primary-500', 'text-primary-500', 'bg-white', 'hover:bg-primary-50', 'hover:text-primary-600');
             }
           }
         });

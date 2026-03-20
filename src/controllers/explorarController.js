@@ -266,7 +266,14 @@ const explorarController = {
       const petshopDestaques = page === 1 ? (await Petshop.listarAtivos()).slice(0, 6) : [];
 
       if (req.headers.accept && req.headers.accept.includes('application/json')) {
-        return res.json({ sucesso: true, posts, totalPosts, totalFixadas });
+        return res.json({
+          sucesso: true,
+          posts,
+          totalPosts,
+          totalFixadas,
+          temMais: postsOrganicos.length === limite,
+          page,
+        });
       }
 
       res.render('feed', {

@@ -7,8 +7,17 @@
   <link rel="stylesheet" href="/css/output.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
   <style>
-    .admin-nav a.active { background: rgba(236, 90, 28, 0.1); color: #c2410c; font-weight: 600; }
-    .admin-nav a:hover:not(.active) { background: rgba(0,0,0,0.04); color: #111; }
+    .admin-nav a { transition: background-color .15s ease, color .15s ease; }
+    .admin-nav a.active {
+      background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+      color: var(--color-primary);
+      font-weight: 700;
+      box-shadow: 0 10px 25px rgba(242,96,32,0.12);
+    }
+    .admin-nav a:hover:not(.active) {
+      background: color-mix(in srgb, var(--color-primary) 8%, transparent);
+      color: var(--text);
+    }
   </style>
 </head>
 <body class="bg-gray-100 min-h-screen antialiased text-gray-800">

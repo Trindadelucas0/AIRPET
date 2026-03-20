@@ -1,12 +1,12 @@
 <% if (typeof flash !== 'undefined' && flash) { %>
   <%
     var tipos = {
-      sucesso:  { bg: 'bg-emerald-50', border: 'border-emerald-400', text: 'text-emerald-800', icon: 'fa-circle-check text-emerald-500' },
-      success:  { bg: 'bg-emerald-50', border: 'border-emerald-400', text: 'text-emerald-800', icon: 'fa-circle-check text-emerald-500' },
-      erro:     { bg: 'bg-red-50',     border: 'border-red-400',     text: 'text-red-800',     icon: 'fa-circle-xmark text-red-500' },
-      error:    { bg: 'bg-red-50',     border: 'border-red-400',     text: 'text-red-800',     icon: 'fa-circle-xmark text-red-500' },
-      info:     { bg: 'bg-blue-50',    border: 'border-blue-400',    text: 'text-blue-800',    icon: 'fa-circle-info text-blue-500' },
-      aviso:    { bg: 'bg-amber-50',   border: 'border-amber-400',   text: 'text-amber-800',   icon: 'fa-triangle-exclamation text-amber-500' },
+      sucesso:  { icon: 'fa-circle-check', color: 'var(--green)' },
+      success:  { icon: 'fa-circle-check', color: 'var(--green)' },
+      erro:     { icon: 'fa-circle-xmark', color: 'var(--red)' },
+      error:    { icon: 'fa-circle-xmark', color: 'var(--red)' },
+      info:     { icon: 'fa-circle-info', color: 'var(--blue)' },
+      aviso:    { icon: 'fa-triangle-exclamation', color: 'var(--yellow)' },
     };
 
     var msgs = [];
@@ -22,12 +22,13 @@
     <div class="max-w-5xl mx-auto px-4 sm:px-6 pt-3 space-y-2" id="flashContainer">
       <% msgs.forEach(function(msg) { %>
         <% var s = tipos[msg.tipo] || tipos.info; %>
-        <div class="flash-msg flex items-center gap-3 px-4 py-3 rounded-2xl border-l-4 <%= s.bg %> <%= s.border %> <%= s.text %> shadow-sm animate-slideUp"
+        <div class="flash-msg flex items-center gap-3 px-4 py-3 rounded-2xl border-l-4 shadow-sm animate-slideUp"
+             style="background: var(--ink-2); border-color: <%= s.color %>; color: var(--text);"
              role="alert">
-          <i class="fa-solid <%= s.icon %> text-lg flex-shrink-0"></i>
+          <i class="fa-solid <%= s.icon %> text-lg flex-shrink-0" style="color: <%= s.color %>;"></i>
           <span class="text-sm font-medium flex-1"><%= msg.mensagem %></span>
           <button type="button" onclick="this.parentElement.classList.add('fade-out'); setTimeout(function(){ this.parentElement.remove(); }.bind(this), 400);"
-                  class="ml-auto text-gray-400 hover:text-gray-600 transition-colors">
+                  class="ml-auto transition-colors" style="color: var(--text-dim);">
             <i class="fa-solid fa-xmark"></i>
           </button>
         </div>

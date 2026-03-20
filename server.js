@@ -75,18 +75,32 @@ app.use(async (req, res, next) => {
   try {
     const configs = await ConfigSistema.listarTodas();
     const get = (chave, padrao) => (configs.find(c => c.chave === chave)?.valor) || padrao;
-    res.locals.themeColor = get('pwa_theme_color', '#ec5a1c');
+    res.locals.themeColor = get('pwa_theme_color', '#f26020');
     res.locals.backgroundColor = get('pwa_background_color', '#ffffff');
     res.locals.pwaIcon192 = get('pwa_icon_192', '/images/icons/icon-192.svg');
     res.locals.pwaIcon512 = get('pwa_icon_512', '/images/icons/icon-512.svg');
-    res.locals.primaryColor = get('app_primary_color', '#ec5a1c');
+    res.locals.primaryColor = get('app_primary_color', '#f26020');
+    res.locals.primaryHoverColor = get('app_primary_hover_color', '#ff7a3d');
+    res.locals.accentGlowColor = get('app_accent_glow', 'rgba(242,96,32,0.12)');
+    res.locals.greenColor = get('app_green_color', '#22c55e');
+    res.locals.redColor = get('app_red_color', '#ef4444');
+    res.locals.purpleColor = get('app_purple_color', '#a78bfa');
+    res.locals.blueColor = get('app_blue_color', '#60a5fa');
+    res.locals.yellowColor = get('app_yellow_color', '#facc15');
     res.locals.appName = get('app_name', 'AIRPET');
   } catch (_) {
-    res.locals.themeColor = '#ec5a1c';
+    res.locals.themeColor = '#f26020';
     res.locals.backgroundColor = '#ffffff';
     res.locals.pwaIcon192 = '/images/icons/icon-192.svg';
     res.locals.pwaIcon512 = '/images/icons/icon-512.svg';
-    res.locals.primaryColor = '#ec5a1c';
+    res.locals.primaryColor = '#f26020';
+    res.locals.primaryHoverColor = '#ff7a3d';
+    res.locals.accentGlowColor = 'rgba(242,96,32,0.12)';
+    res.locals.greenColor = '#22c55e';
+    res.locals.redColor = '#ef4444';
+    res.locals.purpleColor = '#a78bfa';
+    res.locals.blueColor = '#60a5fa';
+    res.locals.yellowColor = '#facc15';
     res.locals.appName = 'AIRPET';
   }
 

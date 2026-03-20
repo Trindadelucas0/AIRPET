@@ -1,168 +1,186 @@
 <% locals.titulo = 'Editar ' + pet.nome %>
+<% locals.extraHead = `
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{--ink:#0d0d0f;--ink-2:#13131a;--ink-3:#1c1c26;--ink-4:#242432;--border:rgba(255,255,255,0.07);--border-hover:rgba(255,255,255,0.13);--text:#e4e4f0;--text-dim:#7a7a96;--text-muted:#3d3d52;--accent:#f26020;--accent-light:#ff7a3d;--accent-glow:rgba(242,96,32,0.12);--green:#22c55e;--red:#ef4444;}
+  body{background:var(--ink)!important;color:var(--text)!important;font-family:'DM Sans',sans-serif;}
+  .form-wrap{max-width:560px;margin:0 auto;padding:24px 20px 80px;}
+  .page-topbar{position:sticky;top:56px;z-index:40;background:rgba(13,13,15,0.88);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:12px 0;}
+  .page-topbar-inner{max-width:560px;margin:0 auto;padding:0 20px;display:flex;align-items:center;gap:12px;}
+  .back-link{color:var(--text-dim);font-size:13px;text-decoration:none;display:flex;align-items:center;gap:6px;transition:color 0.15s;}
+  .back-link:hover{color:var(--accent);text-decoration:none;}
+  .page-title{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:#fff;}
+  .section-card{background:var(--ink-2);border:1px solid var(--border);border-radius:18px;padding:22px;margin-bottom:14px;}
+  .section-card-title{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--text-dim);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:16px;display:flex;align-items:center;gap:8px;}
+  .section-card-title-icon{width:26px;height:26px;border-radius:7px;background:var(--accent-glow);border:1px solid rgba(242,96,32,0.15);display:flex;align-items:center;justify-content:center;color:var(--accent);font-size:11px;}
+  .ds-label{display:block;font-size:11px;font-weight:700;color:var(--text-dim);letter-spacing:0.07em;text-transform:uppercase;margin-bottom:6px;}
+  .ds-input{width:100%;background:var(--ink-3);border:1px solid var(--border);border-radius:10px;padding:11px 14px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;outline:none;transition:border-color 0.2s,box-shadow 0.2s;}
+  .ds-input::placeholder{color:var(--text-muted);}
+  .ds-input:focus{border-color:rgba(242,96,32,0.5);box-shadow:0 0 0 3px rgba(242,96,32,0.06);}
+  select.ds-input{cursor:pointer;}
+  .field-group{margin-bottom:14px;}
+  .field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  @media(max-width:480px){.field-row{grid-template-columns:1fr;}}
+  .foto-label{display:block;cursor:pointer;border:2px dashed var(--border);border-radius:14px;overflow:hidden;transition:border-color 0.2s;position:relative;}
+  .foto-label:hover{border-color:rgba(242,96,32,0.4);}
+  .foto-preview{width:100%;height:200px;object-fit:cover;display:block;background:var(--ink-3);}
+  .foto-placeholder{width:100%;height:200px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:var(--text-dim);background:var(--ink-3);}
+  .foto-overlay{position:absolute;inset:0;background:rgba(13,13,15,0.5);display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;font-weight:700;opacity:0;transition:opacity 0.2s;}
+  .foto-label:hover .foto-overlay{opacity:1;}
+  .btn-save{width:100%;padding:14px;background:var(--accent);color:#fff;border:none;border-radius:12px;font-family:'DM Sans',sans-serif;font-size:16px;font-weight:700;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:8px;}
+  .btn-save:hover{background:var(--accent-light);transform:translateY(-1px);}
+  .btn-cancel{width:100%;padding:12px;background:transparent;color:var(--text-dim);border:1px solid var(--border);border-radius:12px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.15s;text-align:center;text-decoration:none;display:block;margin-top:8px;}
+  .btn-cancel:hover{border-color:var(--border-hover);color:var(--text);text-decoration:none;}
+  .castrado-toggle{display:flex;align-items:center;gap:12px;padding:14px 16px;background:var(--ink-3);border:1px solid var(--border);border-radius:10px;cursor:pointer;}
+  .toggle-track{width:44px;height:24px;border-radius:12px;background:var(--ink-4);position:relative;transition:background 0.2s;flex-shrink:0;}
+  .toggle-track.on{background:var(--green);}
+  .toggle-thumb{width:18px;height:18px;border-radius:50%;background:#fff;position:absolute;top:3px;left:3px;transition:left 0.2s;box-shadow:0 1px 3px rgba(0,0,0,0.3);}
+  .toggle-track.on .toggle-thumb{left:23px;}
+  .toggle-label{font-size:14px;font-weight:600;color:var(--text);}
+</style>
+` %>
 <%- include('../partials/header') %>
 <%- include('../partials/flash') %>
 
-<main class="flex-1 container mx-auto px-4 py-6 max-w-lg">
-  <%- include('../partials/page-header', { backHref: '/pets/' + pet.id, backLabel: 'Voltar ao perfil', title: 'Editar ' + pet.nome, sticky: false }) %>
+<div class="page-topbar">
+  <div class="page-topbar-inner">
+    <a href="/pets/<%= pet.id %>" class="back-link"><i class="fa-solid fa-arrow-left"></i> <%= pet.nome %></a>
+    <span class="page-title">Editar</span>
+  </div>
+</div>
 
-  <div class="mt-6">
+<main class="flex-1">
+  <div class="form-wrap">
+    <form action="/pets/<%= pet.id %>/editar" method="POST" enctype="multipart/form-data">
 
-  <form action="/pets/<%= pet.id %>/editar" method="POST" enctype="multipart/form-data" class="space-y-6 mt-6">
-
-    <!-- Foto -->
-    <div class="card">
-      <h2 class="text-sm font-semibold text-gray-700 mb-3">Foto</h2>
-      <label for="petFoto" class="block cursor-pointer">
-        <div class="relative w-full h-48 rounded-xl overflow-hidden bg-gray-100 group">
+      <!-- Foto -->
+      <div class="section-card">
+        <div class="section-card-title"><div class="section-card-title-icon"><i class="fa-solid fa-camera"></i></div>Foto</div>
+        <label for="petFoto" class="foto-label">
           <% if (pet.foto) { %>
-            <img src="<%= pet.foto %><%= pet.data_atualizacao ? '?t=' + new Date(pet.data_atualizacao).getTime() : '' %>" alt="<%= pet.nome %>" id="fotoAtual"
-                 class="w-full h-full object-cover">
+            <img src="<%= pet.foto %><%= pet.data_atualizacao ? '?t=' + new Date(pet.data_atualizacao).getTime() : '' %>"
+                 id="fotoAtual" class="foto-preview" alt="<%= pet.nome %>">
           <% } else { %>
-            <div class="w-full h-full flex items-center justify-center" id="fotoAtual">
-              <i class="fa-solid fa-paw text-4xl text-gray-300"></i>
+            <div id="fotoAtual" class="foto-placeholder">
+              <i class="fa-solid fa-paw" style="font-size:40px;opacity:0.2;"></i>
+              <span style="font-size:13px;font-weight:600;">Adicionar foto</span>
             </div>
           <% } %>
-          <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-            <span class="text-white text-sm font-medium"><i class="fa-solid fa-camera mr-2"></i>Alterar foto</span>
+          <div class="foto-overlay"><i class="fa-solid fa-camera mr-2"></i> Alterar foto</div>
+        </label>
+        <input type="file" id="petFoto" name="foto" accept="image/*" class="hidden" onchange="previewFoto(this)">
+        <p style="font-size:11px;color:var(--text-muted);margin-top:8px;">JPG, PNG ou WebP · Máx. 5 MB</p>
+      </div>
+
+      <!-- Dados básicos -->
+      <div class="section-card">
+        <div class="section-card-title"><div class="section-card-title-icon"><i class="fa-solid fa-id-card"></i></div>Dados básicos</div>
+        <div class="field-group">
+          <label class="ds-label" for="nome">Nome</label>
+          <input type="text" id="nome" name="nome" required value="<%= pet.nome %>" class="ds-input" maxlength="50">
+        </div>
+        <div class="field-row">
+          <div class="field-group" style="margin-bottom:0">
+            <label class="ds-label" for="tipo">Tipo</label>
+            <select id="tipo" name="tipo" class="ds-input">
+              <option value="cachorro" <%= pet.tipo==='cachorro'?'selected':'' %>>🐶 Cachorro</option>
+              <option value="gato"     <%= pet.tipo==='gato'?'selected':'' %>>🐱 Gato</option>
+              <option value="passaro"  <%= pet.tipo==='passaro'?'selected':'' %>>🦜 Pássaro</option>
+              <option value="outro"    <%= pet.tipo==='outro'?'selected':'' %>>🐾 Outro</option>
+            </select>
+          </div>
+          <div class="field-group" style="margin-bottom:0">
+            <label class="ds-label" for="sexo">Sexo</label>
+            <select id="sexo" name="sexo" class="ds-input">
+              <option value="">Não informado</option>
+              <option value="macho"  <%= pet.sexo==='macho'?'selected':'' %>>Macho</option>
+              <option value="femea"  <%= pet.sexo==='femea'?'selected':'' %>>Fêmea</option>
+            </select>
           </div>
         </div>
-        <input type="file" id="petFoto" name="foto" accept="image/*" class="hidden" onchange="previewFoto(this)">
-      </label>
-      <p class="text-xs text-gray-500 mt-2">Escolha uma imagem e clique em Salvar. Máx. 5 MB.</p>
-    </div>
-
-    <!-- Dados básicos -->
-    <div class="card space-y-4">
-      <h2 class="text-sm font-semibold text-gray-700 mb-1">Dados básicos</h2>
-
-      <div>
-        <label for="nome" class="block text-sm font-medium text-gray-700 mb-1">Nome</label>
-        <input type="text" id="nome" name="nome" required value="<%= pet.nome %>"
-               class="input-field" maxlength="50">
+        <div class="field-group" style="margin-top:14px;">
+          <label class="ds-label" for="raca">Raça</label>
+          <input type="text" id="raca" name="raca" value="<%= pet.raca||'' %>" placeholder="Ex: Golden Retriever, SRD" class="ds-input">
+        </div>
+        <div class="field-row">
+          <div class="field-group" style="margin-bottom:0">
+            <label class="ds-label" for="porte">Porte</label>
+            <select id="porte" name="porte" class="ds-input">
+              <option value="">—</option>
+              <option value="mini"    <%= pet.porte==='mini'?'selected':'' %>>Mini</option>
+              <option value="pequeno" <%= pet.porte==='pequeno'?'selected':'' %>>Pequeno</option>
+              <option value="medio"   <%= pet.porte==='medio'?'selected':'' %>>Médio</option>
+              <option value="grande"  <%= pet.porte==='grande'?'selected':'' %>>Grande</option>
+              <option value="gigante" <%= pet.porte==='gigante'?'selected':'' %>>Gigante</option>
+            </select>
+          </div>
+          <div class="field-group" style="margin-bottom:0">
+            <label class="ds-label" for="cor">Cor / Pelagem</label>
+            <input type="text" id="cor" name="cor" value="<%= pet.cor||'' %>" placeholder="Ex: Preto" class="ds-input">
+          </div>
+        </div>
+        <div class="field-group" style="margin-top:14px;">
+          <label class="ds-label" for="dataNascimento">Data de Nascimento</label>
+          <input type="date" id="dataNascimento" name="dataNascimento"
+                 value="<%= pet.data_nascimento ? new Date(pet.data_nascimento).toISOString().split('T')[0] : '' %>"
+                 class="ds-input">
+        </div>
+        <div class="field-group">
+          <label class="ds-label" for="peso">Peso (kg)</label>
+          <input type="number" id="peso" name="peso" value="<%= pet.peso||'' %>" step="0.1" min="0" placeholder="Ex: 12.5" class="ds-input">
+        </div>
       </div>
 
-      <div>
-        <label for="tipo" class="block text-sm font-medium text-gray-700 mb-1">Tipo</label>
-        <select id="tipo" name="tipo" class="input-field">
-          <option value="cachorro" <%= pet.tipo === 'cachorro' ? 'selected' : '' %>>Cachorro</option>
-          <option value="gato" <%= pet.tipo === 'gato' ? 'selected' : '' %>>Gato</option>
-          <option value="passaro" <%= pet.tipo === 'passaro' ? 'selected' : '' %>>Pássaro</option>
-          <option value="outro" <%= pet.tipo === 'outro' ? 'selected' : '' %>>Outro</option>
-        </select>
+      <!-- Castração -->
+      <div class="section-card">
+        <div class="section-card-title"><div class="section-card-title-icon"><i class="fa-solid fa-scissors"></i></div>Castração</div>
+        <label class="castrado-toggle" id="castradoToggle">
+          <input type="hidden" name="castrado" id="castradoVal" value="<%= pet.castrado ? 'sim' : 'nao' %>">
+          <div class="toggle-track <%= pet.castrado ? 'on' : '' %>" id="castradoTrack">
+            <div class="toggle-thumb"></div>
+          </div>
+          <span class="toggle-label" id="castradoLabel"><%= pet.castrado ? 'Castrado(a)' : 'Não castrado(a)' %></span>
+        </label>
       </div>
 
-      <div>
-        <label for="raca" class="block text-sm font-medium text-gray-700 mb-1">Raça</label>
-        <input type="text" id="raca" name="raca" value="<%= pet.raca || '' %>"
-               placeholder="Ex: Golden Retriever" class="input-field">
-      </div>
-    </div>
-
-    <!-- Dados físicos -->
-    <div class="card space-y-4">
-      <h2 class="text-sm font-semibold text-gray-700 mb-1">Dados físicos</h2>
-
-      <div>
-        <label for="dataNascimento" class="block text-sm font-medium text-gray-700 mb-1">Data de nascimento</label>
-        <input type="date" id="dataNascimento" name="dataNascimento"
-               value="<%= pet.dataNascimento ? new Date(pet.dataNascimento).toISOString().split('T')[0] : '' %>"
-               class="input-field">
+      <!-- Bio -->
+      <div class="section-card">
+        <div class="section-card-title"><div class="section-card-title-icon"><i class="fa-solid fa-quote-left"></i></div>Descrição</div>
+        <textarea name="descricao" class="ds-input" rows="4" maxlength="200"
+                  placeholder="Uma frase carinhosa sobre seu pet..." style="resize:none;"><%= pet.descricao_emocional||'' %></textarea>
+        <div style="font-size:11px;color:var(--text-muted);text-align:right;margin-top:4px;" id="bioCount"><%= (pet.descricao_emocional||'').length %>/200</div>
       </div>
 
-      <div>
-        <label for="peso" class="block text-sm font-medium text-gray-700 mb-1">Peso (kg)</label>
-        <input type="number" id="peso" name="peso" step="0.1" min="0" max="200"
-               value="<%= pet.peso || '' %>" placeholder="Ex: 12.5" class="input-field">
-      </div>
-    </div>
-
-    <!-- Descrição -->
-    <div class="card">
-      <h2 class="text-sm font-semibold text-gray-700 mb-3">Descrição</h2>
-      <textarea name="descricao" id="descricao" rows="4" maxlength="500"
-                placeholder="Conte algo sobre seu pet..."
-                class="input-field resize-none"><%= pet.descricao || '' %></textarea>
-      <p class="text-xs text-gray-400 text-right mt-1"><span id="descCount"><%= pet.descricao ? pet.descricao.length : 0 %></span>/500</p>
-    </div>
-
-    <!-- Contato -->
-    <div class="card">
-      <h2 class="text-sm font-semibold text-gray-700 mb-3">Contato de emergência</h2>
-      <div>
-        <label for="telefoneContato" class="block text-sm font-medium text-gray-700 mb-1">Telefone</label>
-        <input type="tel" id="telefoneContato" name="telefoneContato"
-               value="<%= pet.telefoneContato || pet.telefone_contato || '' %>"
-               placeholder="(00) 00000-0000" class="input-field">
-      </div>
-    </div>
-
-    <!-- Saúde e identificação -->
-    <div class="card space-y-4">
-      <h2 class="text-sm font-semibold text-gray-700 mb-1">Saúde e identificação</h2>
-      <div>
-        <label for="microchip" class="block text-sm font-medium text-gray-700 mb-1">Microchip</label>
-        <input type="text" id="microchip" name="microchip" value="<%= pet.microchip || '' %>" placeholder="Número do microchip" class="input-field">
-      </div>
-      <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Castrado</label>
-        <select name="castrado" id="castrado" class="input-field">
-          <option value="">Não informado</option>
-          <option value="sim" <%= (pet.castrado === true || pet.castrado === 't') ? 'selected' : '' %>>Sim</option>
-          <option value="nao" <%= (pet.castrado === false || pet.castrado === 'f') ? 'selected' : '' %>>Não</option>
-        </select>
-      </div>
-      <div>
-        <label for="alergias_medicacoes" class="block text-sm font-medium text-gray-700 mb-1">Alergias / Medicações</label>
-        <textarea name="alergias_medicacoes" id="alergias_medicacoes" rows="2" class="input-field resize-none" placeholder="Alergias ou medicações em uso"><%= pet.alergias_medicacoes || '' %></textarea>
-      </div>
-      <div>
-        <label for="veterinario_nome" class="block text-sm font-medium text-gray-700 mb-1">Veterinário (nome)</label>
-        <input type="text" id="veterinario_nome" name="veterinario_nome" value="<%= pet.veterinario_nome || '' %>" placeholder="Nome do veterinário" class="input-field">
-      </div>
-      <div>
-        <label for="veterinario_telefone" class="block text-sm font-medium text-gray-700 mb-1">Veterinário (telefone)</label>
-        <input type="tel" id="veterinario_telefone" name="veterinario_telefone" value="<%= pet.veterinario_telefone || '' %>" placeholder="(00) 00000-0000" class="input-field">
-      </div>
-      <div>
-        <label for="observacoes" class="block text-sm font-medium text-gray-700 mb-1">Observações gerais</label>
-        <textarea name="observacoes" id="observacoes" rows="2" class="input-field resize-none" placeholder="Outras observações"><%= pet.observacoes || '' %></textarea>
-      </div>
-    </div>
-
-    <!-- Actions -->
-    <div class="flex gap-3">
-      <a href="/pets/<%= pet.id %>" class="btn-outline flex-1 text-center">Cancelar</a>
-      <button type="submit" class="btn-primary flex-1">
-        <i class="fa-solid fa-check mr-2"></i>Salvar
-      </button>
-    </div>
-
-  </form>
+      <button type="submit" class="btn-save"><i class="fa-solid fa-floppy-disk"></i> Salvar alterações</button>
+      <a href="/pets/<%= pet.id %>" class="btn-cancel">Cancelar</a>
+    </form>
   </div>
 </main>
 
 <script>
 function previewFoto(input) {
-  if (input.files && input.files[0]) {
-    var reader = new FileReader();
-    reader.onload = function (e) {
-      var container = document.getElementById('fotoAtual');
-      if (container.tagName === 'IMG') {
-        container.src = e.target.result;
-      } else {
-        container.innerHTML = '<img src="' + e.target.result + '" class="w-full h-full object-cover" alt="Preview">';
-      }
-    };
-    reader.readAsDataURL(input.files[0]);
-  }
+  if (!input.files[0]) return;
+  var r = new FileReader();
+  r.onload = function(e) {
+    var el = document.getElementById('fotoAtual');
+    if (el.tagName === 'IMG') { el.src = e.target.result; }
+    else { var img = document.createElement('img'); img.src = e.target.result; img.className = 'foto-preview'; img.id='fotoAtual'; el.parentNode.replaceChild(img, el); }
+  };
+  r.readAsDataURL(input.files[0]);
 }
 
-var desc = document.getElementById('descricao');
-if (desc) {
-  desc.addEventListener('input', function () {
-    document.getElementById('descCount').textContent = this.value.length;
-  });
-}
+var track = document.getElementById('castradoTrack');
+var label = document.getElementById('castradoLabel');
+var val = document.getElementById('castradoVal');
+document.getElementById('castradoToggle').addEventListener('click', function(e) {
+  if (e.target.tagName === 'INPUT') return;
+  var on = track.classList.toggle('on');
+  val.value = on ? 'sim' : 'nao';
+  label.textContent = on ? 'Castrado(a)' : 'Não castrado(a)';
+});
+
+var bioArea = document.querySelector('textarea[name="descricao"]');
+if (bioArea) bioArea.addEventListener('input', function() { document.getElementById('bioCount').textContent = this.value.length + '/200'; });
 </script>
 
 <%- include('../partials/footer') %>

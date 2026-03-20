@@ -91,6 +91,7 @@
 ` %>
 <%- include('../partials/header') %>
 <%- include('../partials/flash') %>
+<script>document.body.classList.add('notif-page');</script>
 
 <main class="flex-1 pb-24 md:pb-0">
   <div class="max-w-2xl mx-auto px-4 sm:px-6 py-6">
@@ -215,7 +216,7 @@
                       <!-- Unread dot + Actions -->
                       <div class="flex items-center gap-2 shrink-0 mt-1">
                         <% if (!n.lida) { %>
-                          <span class="dot-unread w-2.5 h-2.5 rounded-full bg-accent-500 shadow-sm shadow-accent-500/40" data-dot="<%= n.id %>"></span>
+                          <span class="dot-unread w-2.5 h-2.5 rounded-full bg-primary-500 shadow-sm shadow-primary-500/30" data-dot="<%= n.id %>"></span>
                         <% } %>
                         <% if (n.link) { %>
                           <i class="fa-solid fa-chevron-right text-[10px] text-gray-300 group-hover:text-primary-400 transition-colors"></i>

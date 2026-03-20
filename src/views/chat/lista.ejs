@@ -1,6 +1,7 @@
 <% locals.titulo = 'Minhas Conversas' %>
 <%- include('../partials/header') %>
 <%- include('../partials/flash') %>
+<script>document.body.classList.add('chat-page');</script>
 
 <main class="flex-1 container mx-auto px-4 py-8 max-w-2xl">
   <%- include('../partials/page-header', { backHref: '/pets', backLabel: 'Meus Pets', sticky: false }) %>

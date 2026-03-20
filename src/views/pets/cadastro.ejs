@@ -1,506 +1,411 @@
 <% locals.titulo = 'Cadastrar Pet' %>
+<% locals.extraHead = `
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink:#0d0d0f;--ink-2:#13131a;--ink-3:#1c1c26;--ink-4:#242432;
+    --border:rgba(255,255,255,0.07);--border-hover:rgba(255,255,255,0.13);
+    --text:#e4e4f0;--text-dim:#7a7a96;--text-muted:#3d3d52;
+    --accent:#f26020;--accent-light:#ff7a3d;--accent-glow:rgba(242,96,32,0.12);
+    --green:#22c55e;
+  }
+  body { background:var(--ink) !important; color:var(--text) !important; font-family:'DM Sans',sans-serif; }
+
+  .wizard-wrap { max-width:520px; margin:0 auto; padding:24px 20px 80px; }
+
+  /* ── TOPBAR ── */
+  .wizard-topbar {
+    position:sticky; top:56px; z-index:40;
+    background:rgba(13,13,15,0.88); backdrop-filter:blur(20px);
+    border-bottom:1px solid var(--border); padding:12px 0;
+  }
+  .wizard-topbar-inner {
+    max-width:520px; margin:0 auto; padding:0 20px;
+    display:flex; align-items:center; gap:14px;
+  }
+  .wizard-topbar-back {
+    color:var(--text-dim); font-size:13px; text-decoration:none;
+    display:flex; align-items:center; gap:6px; transition:color 0.15s;
+  }
+  .wizard-topbar-back:hover { color:var(--accent); text-decoration:none; }
+  .wizard-topbar h1 { font-family:'Syne',sans-serif; font-size:17px; font-weight:800; color:#fff; }
+
+  /* ── PROGRESS ── */
+  .progress-section { margin-bottom:28px; }
+  .progress-meta { display:flex; justify-content:space-between; font-size:12px; color:var(--text-dim); font-weight:600; margin-bottom:8px; }
+  .progress-track {
+    width:100%; height:3px; background:var(--ink-3); border-radius:2px; overflow:hidden;
+  }
+  .progress-fill {
+    height:100%; background:var(--accent); border-radius:2px;
+    transition:width 0.4s cubic-bezier(0.4,0,0.2,1);
+  }
+
+  /* ── STEP CARD ── */
+  .wizard-step {
+    background:var(--ink-2); border:1px solid var(--border); border-radius:20px; padding:32px 28px;
+    animation:step-in 0.3s ease-out both;
+  }
+  @keyframes step-in { from { opacity:0; transform:translateX(20px); } to { opacity:1; transform:none; } }
+  .step-icon-wrap {
+    width:64px; height:64px; border-radius:20px; margin:0 auto 20px;
+    background:var(--accent-glow); border:1px solid rgba(242,96,32,0.2);
+    display:flex; align-items:center; justify-content:center;
+    font-size:26px; color:var(--accent);
+  }
+  .step-title {
+    font-family:'Syne',sans-serif;
+    font-size:22px; font-weight:800; color:#fff;
+    text-align:center; margin-bottom:6px;
+  }
+  .step-sub { font-size:13px; color:var(--text-dim); text-align:center; margin-bottom:24px; }
+
+  /* ── INPUT ── */
+  .ds-input {
+    width:100%; background:var(--ink-3); border:1px solid var(--border);
+    border-radius:12px; padding:13px 16px; color:var(--text);
+    font-family:'DM Sans',sans-serif; font-size:15px; outline:none;
+    transition:border-color 0.2s, box-shadow 0.2s;
+  }
+  .ds-input::placeholder { color:var(--text-muted); }
+  .ds-input:focus { border-color:rgba(242,96,32,0.5); box-shadow:0 0 0 3px rgba(242,96,32,0.06); }
+  .ds-input.center { text-align:center; font-size:18px; font-weight:700; }
+  .ds-select { appearance:none; cursor:pointer; }
+
+  /* ── TIPO BUTTONS ── */
+  .tipo-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .tipo-btn {
+    display:flex; flex-direction:column; align-items:center; gap:8px;
+    padding:20px 12px; border-radius:14px;
+    border:2px solid var(--border); background:var(--ink-3);
+    cursor:pointer; transition:all 0.15s;
+    color:var(--text-dim); font-family:'DM Sans',sans-serif;
+    font-size:14px; font-weight:600;
+  }
+  .tipo-btn:hover { border-color:var(--accent); color:var(--text); background:var(--ink-4); }
+  .tipo-btn.selected { border-color:var(--accent); background:var(--accent-glow); color:var(--accent-light); }
+  .tipo-btn-icon { font-size:32px; }
+
+  /* ── PORTE BUTTONS ── */
+  .porte-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+  .porte-btn {
+    padding:14px 8px; border-radius:12px;
+    border:2px solid var(--border); background:var(--ink-3);
+    cursor:pointer; transition:all 0.15s;
+    color:var(--text-dim); font-family:'DM Sans',sans-serif;
+    font-size:13px; font-weight:600; text-align:center;
+  }
+  .porte-btn:hover { border-color:var(--accent); color:var(--text); }
+  .porte-btn.selected { border-color:var(--accent); background:var(--accent-glow); color:var(--accent-light); }
+
+  /* ── SEXO BUTTONS ── */
+  .sexo-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .sexo-btn {
+    display:flex; flex-direction:column; align-items:center; gap:8px;
+    padding:18px; border-radius:14px;
+    border:2px solid var(--border); background:var(--ink-3);
+    cursor:pointer; transition:all 0.15s;
+    color:var(--text-dim); font-family:'DM Sans',sans-serif; font-size:14px; font-weight:600;
+  }
+  .sexo-btn:hover { border-color:var(--accent); color:var(--text); }
+  .sexo-btn.selected { border-color:var(--accent); background:var(--accent-glow); color:var(--accent-light); }
+  .sexo-btn i { font-size:24px; }
+
+  /* ── FOTO UPLOAD ── */
+  .foto-label {
+    display:block; cursor:pointer;
+    border:2px dashed var(--border); border-radius:16px; overflow:hidden;
+    transition:border-color 0.2s; position:relative;
+  }
+  .foto-label:hover { border-color:rgba(242,96,32,0.4); }
+  .foto-preview {
+    width:100%; height:200px; object-fit:cover; display:block;
+    background:var(--ink-3);
+  }
+  .foto-placeholder {
+    width:100%; height:200px; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:10px; color:var(--text-dim); background:var(--ink-3);
+  }
+  .foto-placeholder i { font-size:32px; color:var(--text-muted); }
+  .foto-placeholder span { font-size:13px; font-weight:600; }
+  .foto-overlay {
+    position:absolute; inset:0; background:rgba(13,13,15,0.5); backdrop-filter:blur(2px);
+    display:flex; align-items:center; justify-content:center;
+    color:#fff; font-size:14px; font-weight:700; opacity:0; transition:opacity 0.2s;
+  }
+  .foto-label:hover .foto-overlay { opacity:1; }
+
+  /* ── BUTTONS ── */
+  .btn-next {
+    width:100%; padding:14px; margin-top:20px;
+    background:var(--accent); color:#fff; border:none; border-radius:12px;
+    font-family:'DM Sans',sans-serif; font-size:16px; font-weight:700;
+    cursor:pointer; transition:all 0.2s; display:flex; align-items:center; justify-content:center; gap:10px;
+  }
+  .btn-next:hover { background:var(--accent-light); transform:translateY(-1px); }
+  .btn-next:disabled { opacity:0.5; cursor:not-allowed; transform:none; }
+
+  .btn-back-step {
+    width:100%; padding:12px; margin-top:10px;
+    background:transparent; color:var(--text-dim); border:1px solid var(--border); border-radius:12px;
+    font-family:'DM Sans',sans-serif; font-size:14px; font-weight:600;
+    cursor:pointer; transition:all 0.15s;
+  }
+  .btn-back-step:hover { border-color:var(--border-hover); color:var(--text); }
+
+  /* ── LABEL ── */
+  .ds-label { display:block; font-size:11px; font-weight:700; color:var(--text-dim); letter-spacing:0.08em; text-transform:uppercase; margin-bottom:7px; }
+
+  /* ── SKIP ── */
+  .btn-skip {
+    display:block; text-align:center; width:100%; margin-top:12px;
+    font-size:12px; color:var(--text-muted); background:none; border:none; cursor:pointer; padding:6px;
+    transition:color 0.15s;
+  }
+  .btn-skip:hover { color:var(--text-dim); }
+</style>
+` %>
 <%- include('../partials/header') %>
 <%- include('../partials/flash') %>
 
-<main class="flex-1 container mx-auto px-4 py-6 max-w-lg">
-
-  <div class="mb-6">
-    <a href="/pets" class="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-[#ec5a1c] transition-colors mb-3">
-      <i class="fa-solid fa-arrow-left text-xs"></i> Meus Pets
-    </a>
-    <h1 class="text-2xl font-bold text-gray-900">Cadastrar Pet</h1>
+<div class="wizard-topbar">
+  <div class="wizard-topbar-inner">
+    <a href="/pets" class="wizard-topbar-back"><i class="fa-solid fa-arrow-left"></i> Meus Pets</a>
+    <h1>Cadastrar Pet</h1>
   </div>
+</div>
 
-  <!-- Progress bar -->
-  <div class="mb-8">
-    <div class="flex items-center justify-between text-xs font-medium text-gray-400 mb-2">
-      <span id="stepLabel">Passo 1 de 9</span>
-      <span id="stepPercent">11%</span>
+<main class="flex-1">
+  <div class="wizard-wrap">
+
+    <!-- Progress -->
+    <div class="progress-section">
+      <div class="progress-meta">
+        <span id="stepLabel">Passo 1 de 9</span>
+        <span id="stepPercent">11%</span>
+      </div>
+      <div class="progress-track">
+        <div id="progressBar" class="progress-fill" style="width:11%"></div>
+      </div>
     </div>
-    <div class="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
-      <div id="progressBar" class="h-full bg-primary-500 rounded-full transition-all duration-500 ease-out" style="width: 11%"></div>
-    </div>
-  </div>
 
-  <form action="/pets/cadastro" method="POST" enctype="multipart/form-data" id="formCadastro">
+    <form action="/pets/cadastro" method="POST" enctype="multipart/form-data" id="formCadastro">
 
-    <!-- Step 1: Nome -->
-    <div class="wizard-step card" data-step="1">
-      <div class="text-center mb-6">
-        <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-orange-50 text-[#ec5a1c] mb-3">
-          <i class="fa-solid fa-heart text-2xl"></i>
+      <!-- Step 1: Nome -->
+      <div class="wizard-step" data-step="1">
+        <div class="step-icon-wrap"><i class="fa-solid fa-heart"></i></div>
+        <h2 class="step-title">Como se chama?</h2>
+        <p class="step-sub">Escolha o nome carinhoso do seu companheiro</p>
+        <input type="text" name="nome" id="petNome" required placeholder="Ex: Rex, Luna, Thor..."
+               class="ds-input center" maxlength="50">
+        <button type="button" class="btn-next" onclick="nextStep()">
+          Continuar <i class="fa-solid fa-arrow-right"></i>
+        </button>
+      </div>
+
+      <!-- Step 2: Tipo -->
+      <div class="wizard-step hidden" data-step="2">
+        <div class="step-icon-wrap"><i class="fa-solid fa-paw"></i></div>
+        <h2 class="step-title">Qual o tipo?</h2>
+        <p class="step-sub">Selecione a espécie do seu pet</p>
+        <input type="hidden" name="tipo" id="petTipo" required>
+        <div class="tipo-grid">
+          <button type="button" onclick="selectTipo(this,'cachorro')" class="tipo-btn">
+            <span class="tipo-btn-icon">🐶</span> Cachorro
+          </button>
+          <button type="button" onclick="selectTipo(this,'gato')" class="tipo-btn">
+            <span class="tipo-btn-icon">🐱</span> Gato
+          </button>
+          <button type="button" onclick="selectTipo(this,'passaro')" class="tipo-btn">
+            <span class="tipo-btn-icon">🦜</span> Pássaro
+          </button>
+          <button type="button" onclick="selectTipo(this,'outro')" class="tipo-btn">
+            <span class="tipo-btn-icon">🐾</span> Outro
+          </button>
         </div>
-        <h2 class="text-xl font-bold text-gray-900">Como se chama seu pet?</h2>
-        <p class="text-sm text-gray-500 mt-1">Escolha o nome carinhoso do seu companheiro</p>
-      </div>
-      <input type="text" name="nome" id="petNome" required placeholder="Ex: Rex, Luna, Thor..."
-             class="input-field text-center text-lg font-semibold" maxlength="50">
-      <button type="button" class="btn-primary mt-6 w-full" onclick="nextStep()">
-        Continuar <i class="fa-solid fa-arrow-right ml-2"></i>
-      </button>
-    </div>
-
-    <!-- Step 2: Tipo / Especie -->
-    <div class="wizard-step card hidden" data-step="2">
-      <div class="text-center mb-6">
-        <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-orange-50 text-[#ec5a1c] mb-3">
-          <i class="fa-solid fa-paw text-2xl"></i>
-        </div>
-        <h2 class="text-xl font-bold text-gray-900">Qual o tipo do pet?</h2>
-        <p class="text-sm text-gray-500 mt-1">Selecione a especie</p>
-      </div>
-      <input type="hidden" name="tipo" id="petTipo" required>
-      <div class="grid grid-cols-2 gap-3">
-        <button type="button" onclick="selectTipo(this, 'cachorro')"
-                class="tipo-btn flex flex-col items-center gap-2 p-5 rounded-xl border-2 border-gray-200 hover:border-[#ec5a1c] hover:bg-orange-50 transition-all">
-          <i class="fa-solid fa-dog text-3xl text-gray-600"></i>
-          <span class="text-sm font-semibold text-gray-700">Cachorro</span>
-        </button>
-        <button type="button" onclick="selectTipo(this, 'gato')"
-                class="tipo-btn flex flex-col items-center gap-2 p-5 rounded-xl border-2 border-gray-200 hover:border-[#ec5a1c] hover:bg-orange-50 transition-all">
-          <i class="fa-solid fa-cat text-3xl text-gray-600"></i>
-          <span class="text-sm font-semibold text-gray-700">Gato</span>
-        </button>
-        <button type="button" onclick="selectTipo(this, 'passaro')"
-                class="tipo-btn flex flex-col items-center gap-2 p-5 rounded-xl border-2 border-gray-200 hover:border-[#ec5a1c] hover:bg-orange-50 transition-all">
-          <i class="fa-solid fa-dove text-3xl text-gray-600"></i>
-          <span class="text-sm font-semibold text-gray-700">Passaro</span>
-        </button>
-        <button type="button" onclick="selectTipo(this, 'outro')"
-                class="tipo-btn flex flex-col items-center gap-2 p-5 rounded-xl border-2 border-gray-200 hover:border-[#ec5a1c] hover:bg-orange-50 transition-all">
-          <i class="fa-solid fa-otter text-3xl text-gray-600"></i>
-          <span class="text-sm font-semibold text-gray-700">Outro</span>
-        </button>
-      </div>
-      <!-- Campo customizado para "outro" -->
-      <div id="tipoCustomWrapper" class="hidden mt-4">
-        <label class="block text-sm font-medium text-gray-700 mb-1">Qual animal?</label>
-        <input type="text" name="tipo_custom" id="tipoCustom" placeholder="Ex: Hamster, Coelho, Tartaruga..."
-               class="input-field">
-      </div>
-      <div class="flex gap-3 mt-6">
-        <button type="button" class="btn-outline flex-1" onclick="prevStep()">
+        <button type="button" class="btn-back-step" onclick="prevStep()">
           <i class="fa-solid fa-arrow-left mr-1"></i> Voltar
         </button>
-        <button type="button" class="btn-primary flex-1" onclick="nextStep()">
-          Continuar <i class="fa-solid fa-arrow-right ml-1"></i>
-        </button>
       </div>
-    </div>
 
-    <!-- Step 3: Raca (com busca no banco) -->
-    <div class="wizard-step card hidden" data-step="3">
-      <div class="text-center mb-6">
-        <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-orange-50 text-[#ec5a1c] mb-3">
-          <i class="fa-solid fa-dna text-2xl"></i>
-        </div>
-        <h2 class="text-xl font-bold text-gray-900">Qual a raca?</h2>
-        <p class="text-sm text-gray-500 mt-1">Pesquise ou selecione da lista</p>
+      <!-- Step 3: Raça -->
+      <div class="wizard-step hidden" data-step="3">
+        <div class="step-icon-wrap"><i class="fa-solid fa-dna"></i></div>
+        <h2 class="step-title">Qual a raça?</h2>
+        <p class="step-sub">Pode digitar ou deixar em branco</p>
+        <input type="text" name="raca" id="petRaca" placeholder="Ex: Golden Retriever, SRD..."
+               class="ds-input center" maxlength="60">
+        <button type="button" class="btn-next" onclick="nextStep()">Continuar <i class="fa-solid fa-arrow-right"></i></button>
+        <button type="button" class="btn-skip" onclick="document.getElementById('petRaca').value=''; nextStep()">Pular</button>
+        <button type="button" class="btn-back-step" onclick="prevStep()"><i class="fa-solid fa-arrow-left mr-1"></i> Voltar</button>
       </div>
-      <div class="relative">
-        <input type="text" name="raca" id="petRaca" placeholder="Digite para buscar..."
-               class="input-field pr-10" autocomplete="off">
-        <i class="fa-solid fa-search absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
-        <!-- Dropdown de sugestoes -->
-        <div id="racaSugestoes" class="hidden absolute left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-48 overflow-y-auto z-50"></div>
-      </div>
-      <div id="racasPopulares" class="mt-4">
-        <p class="text-xs text-gray-500 mb-2 font-medium">Racas populares:</p>
-        <div class="flex flex-wrap gap-2" id="racasChips"></div>
-      </div>
-      <label class="flex items-center gap-2 cursor-pointer text-sm text-gray-600 mt-3">
-        <input type="checkbox" id="semRaca"
-               class="w-4 h-4 rounded border-gray-300 text-[#ec5a1c] focus:ring-[#ec5a1c]"
-               onchange="document.getElementById('petRaca').value = this.checked ? 'Sem raca definida (SRD)' : ''; document.getElementById('petRaca').disabled = this.checked;">
-        Sem raca definida (SRD)
-      </label>
-      <div class="flex gap-3 mt-6">
-        <button type="button" class="btn-outline flex-1" onclick="prevStep()">
-          <i class="fa-solid fa-arrow-left mr-1"></i> Voltar
-        </button>
-        <button type="button" class="btn-primary flex-1" onclick="nextStep()">
-          Continuar <i class="fa-solid fa-arrow-right ml-1"></i>
-        </button>
-      </div>
-    </div>
 
-    <!-- Step 4: Sexo e Porte -->
-    <div class="wizard-step card hidden" data-step="4">
-      <div class="text-center mb-6">
-        <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-orange-50 text-[#ec5a1c] mb-3">
-          <i class="fa-solid fa-venus-mars text-2xl"></i>
+      <!-- Step 4: Sexo -->
+      <div class="wizard-step hidden" data-step="4">
+        <div class="step-icon-wrap"><i class="fa-solid fa-venus-mars"></i></div>
+        <h2 class="step-title">Qual o sexo?</h2>
+        <p class="step-sub">Selecione uma opção</p>
+        <input type="hidden" name="sexo" id="petSexo">
+        <div class="sexo-grid">
+          <button type="button" onclick="selectSexo(this,'macho')" class="sexo-btn">
+            <i class="fa-solid fa-mars" style="color:#60a5fa;"></i> Macho
+          </button>
+          <button type="button" onclick="selectSexo(this,'femea')" class="sexo-btn">
+            <i class="fa-solid fa-venus" style="color:#f472b6;"></i> Fêmea
+          </button>
         </div>
-        <h2 class="text-xl font-bold text-gray-900">Sexo e porte</h2>
+        <button type="button" class="btn-skip" onclick="nextStep()">Pular</button>
+        <button type="button" class="btn-back-step" onclick="prevStep()"><i class="fa-solid fa-arrow-left mr-1"></i> Voltar</button>
       </div>
-      <div class="space-y-4">
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">Sexo</label>
-          <div class="grid grid-cols-3 gap-2">
-            <button type="button" onclick="selectOption(this, 'sexo', 'macho')"
-                    class="opt-btn p-3 rounded-xl border-2 border-gray-200 text-center text-sm font-medium hover:border-[#ec5a1c] transition-all">
-              <i class="fa-solid fa-mars text-blue-500 text-lg block mb-1"></i>Macho
-            </button>
-            <button type="button" onclick="selectOption(this, 'sexo', 'femea')"
-                    class="opt-btn p-3 rounded-xl border-2 border-gray-200 text-center text-sm font-medium hover:border-[#ec5a1c] transition-all">
-              <i class="fa-solid fa-venus text-pink-500 text-lg block mb-1"></i>Femea
-            </button>
-            <button type="button" onclick="selectOption(this, 'sexo', 'nao_sei')"
-                    class="opt-btn p-3 rounded-xl border-2 border-gray-200 text-center text-sm font-medium hover:border-[#ec5a1c] transition-all">
-              <i class="fa-solid fa-question text-gray-400 text-lg block mb-1"></i>Nao sei
-            </button>
+
+      <!-- Step 5: Porte -->
+      <div class="wizard-step hidden" data-step="5">
+        <div class="step-icon-wrap"><i class="fa-solid fa-weight-scale"></i></div>
+        <h2 class="step-title">Qual o porte?</h2>
+        <p class="step-sub">Tamanho aproximado</p>
+        <input type="hidden" name="porte" id="petPorte">
+        <div class="porte-grid">
+          <button type="button" onclick="selectPorte(this,'mini')" class="porte-btn">🐭 Mini</button>
+          <button type="button" onclick="selectPorte(this,'pequeno')" class="porte-btn">🐩 Pequeno</button>
+          <button type="button" onclick="selectPorte(this,'medio')" class="porte-btn">🐕 Médio</button>
+          <button type="button" onclick="selectPorte(this,'grande')" class="porte-btn">🐕‍🦺 Grande</button>
+          <button type="button" onclick="selectPorte(this,'gigante')" class="porte-btn">🦮 Gigante</button>
+          <button type="button" onclick="nextStep()" class="porte-btn" style="border-style:dashed; font-size:11px;">Não sei</button>
+        </div>
+        <button type="button" class="btn-back-step" onclick="prevStep()"><i class="fa-solid fa-arrow-left mr-1"></i> Voltar</button>
+      </div>
+
+      <!-- Step 6: Nascimento -->
+      <div class="wizard-step hidden" data-step="6">
+        <div class="step-icon-wrap"><i class="fa-solid fa-cake-candles"></i></div>
+        <h2 class="step-title">Quando nasceu?</h2>
+        <p class="step-sub">Data de nascimento aproximada</p>
+        <input type="date" name="dataNascimento" id="petDataNascimento" class="ds-input center">
+        <button type="button" class="btn-next" onclick="nextStep()">Continuar <i class="fa-solid fa-arrow-right"></i></button>
+        <button type="button" class="btn-skip" onclick="nextStep()">Pular</button>
+        <button type="button" class="btn-back-step" onclick="prevStep()"><i class="fa-solid fa-arrow-left mr-1"></i> Voltar</button>
+      </div>
+
+      <!-- Step 7: Cor -->
+      <div class="wizard-step hidden" data-step="7">
+        <div class="step-icon-wrap"><i class="fa-solid fa-palette"></i></div>
+        <h2 class="step-title">Qual a cor/pelagem?</h2>
+        <p class="step-sub">Cor predominante do pelo</p>
+        <input type="text" name="cor" placeholder="Ex: Preto, Dourado, Tigrado..."
+               class="ds-input center" maxlength="50">
+        <button type="button" class="btn-next" onclick="nextStep()">Continuar <i class="fa-solid fa-arrow-right"></i></button>
+        <button type="button" class="btn-skip" onclick="nextStep()">Pular</button>
+        <button type="button" class="btn-back-step" onclick="prevStep()"><i class="fa-solid fa-arrow-left mr-1"></i> Voltar</button>
+      </div>
+
+      <!-- Step 8: Foto -->
+      <div class="wizard-step hidden" data-step="8">
+        <div class="step-icon-wrap"><i class="fa-solid fa-camera"></i></div>
+        <h2 class="step-title">Foto do pet</h2>
+        <p class="step-sub">Uma boa foto ajuda a identificá-lo</p>
+        <label for="petFoto" class="foto-label">
+          <img src="" alt="" id="fotoPreviewImg" class="foto-preview hidden">
+          <div id="fotoPlaceholder" class="foto-placeholder">
+            <i class="fa-solid fa-camera"></i>
+            <span>Toque para escolher foto</span>
           </div>
-          <input type="hidden" name="sexo" id="petSexo">
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">Porte</label>
-          <div class="grid grid-cols-3 gap-2">
-            <button type="button" onclick="selectOption(this, 'porte', 'pequeno')"
-                    class="opt-btn p-3 rounded-xl border-2 border-gray-200 text-center text-sm font-medium hover:border-[#ec5a1c] transition-all">
-              <span class="text-lg block mb-1">🐕</span>Pequeno
-            </button>
-            <button type="button" onclick="selectOption(this, 'porte', 'medio')"
-                    class="opt-btn p-3 rounded-xl border-2 border-gray-200 text-center text-sm font-medium hover:border-[#ec5a1c] transition-all">
-              <span class="text-lg block mb-1">🐕‍🦺</span>Medio
-            </button>
-            <button type="button" onclick="selectOption(this, 'porte', 'grande')"
-                    class="opt-btn p-3 rounded-xl border-2 border-gray-200 text-center text-sm font-medium hover:border-[#ec5a1c] transition-all">
-              <span class="text-lg block mb-1">🦮</span>Grande
-            </button>
-          </div>
-          <input type="hidden" name="porte" id="petPorte">
-        </div>
-      </div>
-      <div class="flex gap-3 mt-6">
-        <button type="button" class="btn-outline flex-1" onclick="prevStep()">
-          <i class="fa-solid fa-arrow-left mr-1"></i> Voltar
-        </button>
-        <button type="button" class="btn-primary flex-1" onclick="nextStep()">
-          Continuar <i class="fa-solid fa-arrow-right ml-1"></i>
-        </button>
-      </div>
-    </div>
-
-    <!-- Step 5: Foto -->
-    <div class="wizard-step card hidden" data-step="5">
-      <div class="text-center mb-6">
-        <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-orange-50 text-[#ec5a1c] mb-3">
-          <i class="fa-solid fa-camera text-2xl"></i>
-        </div>
-        <h2 class="text-xl font-bold text-gray-900">Foto do pet</h2>
-        <p class="text-sm text-gray-500 mt-1">Uma boa foto ajuda na identificacao</p>
-      </div>
-      <label for="petFoto"
-             class="flex flex-col items-center justify-center w-full h-52 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-[#ec5a1c] hover:bg-orange-50/50 transition-all"
-             id="fotoLabel">
-        <div id="fotoPreviewContainer" class="hidden w-full h-full">
-          <img id="fotoPreview" class="w-full h-full object-cover rounded-xl" alt="Preview">
-        </div>
-        <div id="fotoPlaceholder" class="flex flex-col items-center gap-2 text-gray-400">
-          <i class="fa-solid fa-cloud-arrow-up text-3xl"></i>
-          <span class="text-sm font-medium">Toque para selecionar uma foto</span>
-          <span class="text-xs">JPG, PNG — ate 5 MB</span>
-        </div>
+          <div class="foto-overlay"><i class="fa-solid fa-pen mr-2"></i> Alterar</div>
+        </label>
         <input type="file" id="petFoto" name="foto" accept="image/*" class="hidden" onchange="previewFoto(this)">
-      </label>
-      <div class="flex gap-3 mt-6">
-        <button type="button" class="btn-outline flex-1" onclick="prevStep()">
-          <i class="fa-solid fa-arrow-left mr-1"></i> Voltar
-        </button>
-        <button type="button" class="btn-primary flex-1" onclick="nextStep()">
-          Continuar <i class="fa-solid fa-arrow-right ml-1"></i>
-        </button>
+        <button type="button" class="btn-next" onclick="nextStep()">Continuar <i class="fa-solid fa-arrow-right"></i></button>
+        <button type="button" class="btn-skip" onclick="nextStep()">Pular</button>
+        <button type="button" class="btn-back-step" onclick="prevStep()"><i class="fa-solid fa-arrow-left mr-1"></i> Voltar</button>
       </div>
-    </div>
 
-    <!-- Step 6: Idade / Peso / Cor -->
-    <div class="wizard-step card hidden" data-step="6">
-      <div class="text-center mb-6">
-        <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-orange-50 text-[#ec5a1c] mb-3">
-          <i class="fa-solid fa-weight-scale text-2xl"></i>
-        </div>
-        <h2 class="text-xl font-bold text-gray-900">Dados fisicos</h2>
-      </div>
-      <div class="space-y-4">
-        <div>
-          <label for="dataNascimento" class="block text-sm font-medium text-gray-700 mb-1">Data de nascimento (aproximada)</label>
-          <input type="date" name="dataNascimento" id="dataNascimento" class="input-field">
-        </div>
-        <div>
-          <label for="peso" class="block text-sm font-medium text-gray-700 mb-1">Peso (kg)</label>
-          <input type="number" name="peso" id="peso" step="0.1" min="0" max="200"
-                 placeholder="Ex: 12.5" class="input-field">
-        </div>
-        <div>
-          <label for="cor" class="block text-sm font-medium text-gray-700 mb-1">Cor predominante</label>
-          <input type="text" name="cor" id="petCor" placeholder="Ex: Caramelo, Preto e branco..."
-                 class="input-field">
-        </div>
-      </div>
-      <div class="flex gap-3 mt-6">
-        <button type="button" class="btn-outline flex-1" onclick="prevStep()">
-          <i class="fa-solid fa-arrow-left mr-1"></i> Voltar
+      <!-- Step 9: Bio / Descrição emocional -->
+      <div class="wizard-step hidden" data-step="9">
+        <div class="step-icon-wrap"><i class="fa-solid fa-quote-left"></i></div>
+        <h2 class="step-title">Algo especial?</h2>
+        <p class="step-sub">Uma frase carinhosa sobre o seu pet (opcional)</p>
+        <textarea name="descricao" class="ds-input" rows="4"
+                  placeholder="Ex: Adora correr na praia e é melhor amigo de todos..."
+                  maxlength="200" style="resize:none;"></textarea>
+        <div style="font-size:11px;color:var(--text-muted);text-align:right;margin-top:4px;">0/200</div>
+        <button type="submit" class="btn-next" style="background:var(--green);">
+          <i class="fa-solid fa-paw"></i> Cadastrar pet
         </button>
-        <button type="button" class="btn-primary flex-1" onclick="nextStep()">
-          Continuar <i class="fa-solid fa-arrow-right ml-1"></i>
-        </button>
+        <button type="button" class="btn-back-step" onclick="prevStep()"><i class="fa-solid fa-arrow-left mr-1"></i> Voltar</button>
       </div>
-    </div>
 
-    <!-- Step 7: Descricao emocional -->
-    <div class="wizard-step card hidden" data-step="7">
-      <div class="text-center mb-6">
-        <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-orange-50 text-[#ec5a1c] mb-3">
-          <i class="fa-solid fa-face-smile text-2xl"></i>
-        </div>
-        <h2 class="text-xl font-bold text-gray-900">Conte algo sobre seu pet</h2>
-        <p class="text-sm text-gray-500 mt-1">Uma descricao que ajude a identifica-lo</p>
-      </div>
-      <textarea name="descricao" id="petDescricao" rows="4" maxlength="500"
-                placeholder="Ex: Brincalhao, adora correr no parque, tem uma manchinha no olho esquerdo..."
-                class="input-field resize-none"></textarea>
-      <p class="text-xs text-gray-400 text-right mt-1"><span id="descCount">0</span>/500</p>
-      <div class="flex gap-3 mt-6">
-        <button type="button" class="btn-outline flex-1" onclick="prevStep()">
-          <i class="fa-solid fa-arrow-left mr-1"></i> Voltar
-        </button>
-        <button type="button" class="btn-primary flex-1" onclick="nextStep()">
-          Continuar <i class="fa-solid fa-arrow-right ml-1"></i>
-        </button>
-      </div>
-    </div>
-
-    <!-- Step 8: Telefone de contato -->
-    <div class="wizard-step card hidden" data-step="8">
-      <div class="text-center mb-6">
-        <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-orange-50 text-[#ec5a1c] mb-3">
-          <i class="fa-solid fa-phone text-2xl"></i>
-        </div>
-        <h2 class="text-xl font-bold text-gray-900">Telefone de contato</h2>
-        <p class="text-sm text-gray-500 mt-1">Numero para contato caso seu pet seja encontrado</p>
-      </div>
-      <input type="tel" name="telefoneContato" id="petTelefone" required
-             placeholder="(00) 00000-0000"
-             class="input-field text-center text-lg">
-      <div class="flex gap-3 mt-6">
-        <button type="button" class="btn-outline flex-1" onclick="prevStep()">
-          <i class="fa-solid fa-arrow-left mr-1"></i> Voltar
-        </button>
-        <button type="button" class="btn-primary flex-1" onclick="nextStep()">
-          Continuar <i class="fa-solid fa-arrow-right ml-2"></i>
-        </button>
-      </div>
-    </div>
-
-    <!-- Step 9: Saúde e identificação (opcional) -->
-    <div class="wizard-step card hidden" data-step="9">
-      <div class="text-center mb-6">
-        <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-orange-50 text-[#ec5a1c] mb-3">
-          <i class="fa-solid fa-heart-pulse text-2xl"></i>
-        </div>
-        <h2 class="text-xl font-bold text-gray-900">Saúde e identificação</h2>
-        <p class="text-sm text-gray-500 mt-1">Opcional — microchip, castração, veterinário</p>
-      </div>
-      <div class="space-y-4">
-        <div>
-          <label for="microchip" class="block text-sm font-medium text-gray-700 mb-1">Microchip</label>
-          <input type="text" name="microchip" id="microchip" placeholder="Número do microchip" class="input-field">
-        </div>
-        <div>
-          <label for="castrado" class="block text-sm font-medium text-gray-700 mb-1">Castrado</label>
-          <select name="castrado" id="castrado" class="input-field">
-            <option value="">Não informado</option>
-            <option value="sim">Sim</option>
-            <option value="nao">Não</option>
-          </select>
-        </div>
-        <div>
-          <label for="alergias_medicacoes" class="block text-sm font-medium text-gray-700 mb-1">Alergias / Medicações</label>
-          <textarea name="alergias_medicacoes" id="alergias_medicacoes" rows="2" class="input-field resize-none" placeholder="Alergias ou medicações em uso"></textarea>
-        </div>
-        <div>
-          <label for="veterinario_nome" class="block text-sm font-medium text-gray-700 mb-1">Veterinário (nome)</label>
-          <input type="text" name="veterinario_nome" id="veterinario_nome" placeholder="Nome do veterinário" class="input-field">
-        </div>
-        <div>
-          <label for="veterinario_telefone" class="block text-sm font-medium text-gray-700 mb-1">Veterinário (telefone)</label>
-          <input type="tel" name="veterinario_telefone" id="veterinario_telefone" placeholder="(00) 00000-0000" class="input-field">
-        </div>
-        <div>
-          <label for="observacoes" class="block text-sm font-medium text-gray-700 mb-1">Observações gerais</label>
-          <textarea name="observacoes" id="observacoes" rows="2" class="input-field resize-none" placeholder="Outras observações"></textarea>
-        </div>
-      </div>
-      <div class="flex gap-3 mt-6">
-        <button type="button" class="btn-outline flex-1" onclick="prevStep()">
-          <i class="fa-solid fa-arrow-left mr-1"></i> Voltar
-        </button>
-        <button type="submit" class="btn-success flex-1">
-          <i class="fa-solid fa-check mr-2"></i>Cadastrar
-        </button>
-      </div>
-    </div>
-
-  </form>
-
+    </form>
+  </div>
 </main>
 
 <script>
-(function () {
-  var currentStep = 1;
-  var totalSteps = 9;
-  var steps = document.querySelectorAll('.wizard-step');
-  var tipoAtual = '';
+var currentStep = 1, totalSteps = 9;
 
-  function showStep(n) {
-    steps.forEach(function (el) { el.classList.add('hidden'); });
-    var target = document.querySelector('[data-step="' + n + '"]');
-    if (target) target.classList.remove('hidden');
-    document.getElementById('stepLabel').textContent = 'Passo ' + n + ' de ' + totalSteps;
-    var pct = Math.round((n / totalSteps) * 100);
-    document.getElementById('stepPercent').textContent = pct + '%';
-    document.getElementById('progressBar').style.width = pct + '%';
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+function updateProgress() {
+  var pct = Math.round((currentStep / totalSteps) * 100);
+  document.getElementById('progressBar').style.width = pct + '%';
+  document.getElementById('stepLabel').textContent = 'Passo ' + currentStep + ' de ' + totalSteps;
+  document.getElementById('stepPercent').textContent = pct + '%';
+}
 
-    if (n === 3 && tipoAtual) carregarRacasPopulares(tipoAtual);
+function showStep(n) {
+  document.querySelectorAll('.wizard-step').forEach(function(s) { s.classList.add('hidden'); });
+  document.querySelector('[data-step="' + n + '"]').classList.remove('hidden');
+  currentStep = n;
+  updateProgress();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function nextStep() {
+  if (currentStep === 1 && !document.getElementById('petNome').value.trim()) {
+    document.getElementById('petNome').focus(); return;
   }
+  if (currentStep < totalSteps) showStep(currentStep + 1);
+}
 
-  window.nextStep = function () {
-    if (currentStep === 1 && !document.getElementById('petNome').value.trim()) {
-      document.getElementById('petNome').focus(); return;
-    }
-    if (currentStep === 2 && !document.getElementById('petTipo').value) return;
-    if (currentStep === 2 && document.getElementById('petTipo').value === 'outro' && !document.getElementById('tipoCustom').value.trim()) {
-      document.getElementById('tipoCustom').focus(); return;
-    }
-    if (currentStep < totalSteps) { currentStep++; showStep(currentStep); }
+function prevStep() {
+  if (currentStep > 1) showStep(currentStep - 1);
+}
+
+function selectTipo(btn, val) {
+  document.querySelectorAll('.tipo-btn').forEach(function(b) { b.classList.remove('selected'); });
+  btn.classList.add('selected');
+  document.getElementById('petTipo').value = val;
+  setTimeout(nextStep, 250);
+}
+
+function selectSexo(btn, val) {
+  document.querySelectorAll('.sexo-btn').forEach(function(b) { b.classList.remove('selected'); });
+  btn.classList.add('selected');
+  document.getElementById('petSexo').value = val;
+  setTimeout(nextStep, 250);
+}
+
+function selectPorte(btn, val) {
+  document.querySelectorAll('.porte-btn').forEach(function(b) { b.classList.remove('selected'); });
+  btn.classList.add('selected');
+  document.getElementById('petPorte').value = val;
+  setTimeout(nextStep, 250);
+}
+
+function previewFoto(input) {
+  if (!input.files || !input.files[0]) return;
+  var r = new FileReader();
+  r.onload = function(e) {
+    var img = document.getElementById('fotoPreviewImg');
+    var ph = document.getElementById('fotoPlaceholder');
+    img.src = e.target.result;
+    img.classList.remove('hidden');
+    ph.classList.add('hidden');
   };
+  r.readAsDataURL(input.files[0]);
+}
 
-  window.prevStep = function () {
-    if (currentStep > 1) { currentStep--; showStep(currentStep); }
-  };
-
-  window.selectTipo = function (btn, tipo) {
-    document.querySelectorAll('.tipo-btn').forEach(function (b) {
-      b.classList.remove('border-[#ec5a1c]', 'bg-orange-50', 'ring-2', 'ring-orange-200');
-      b.classList.add('border-gray-200');
-    });
-    btn.classList.remove('border-gray-200');
-    btn.classList.add('border-[#ec5a1c]', 'bg-orange-50', 'ring-2', 'ring-orange-200');
-    document.getElementById('petTipo').value = tipo;
-    tipoAtual = tipo;
-
-    var customWrapper = document.getElementById('tipoCustomWrapper');
-    if (tipo === 'outro') {
-      customWrapper.classList.remove('hidden');
-    } else {
-      customWrapper.classList.add('hidden');
-      document.getElementById('tipoCustom').value = '';
-    }
-
-    document.getElementById('petRaca').value = '';
-    document.getElementById('semRaca').checked = false;
-    document.getElementById('petRaca').disabled = false;
-  };
-
-  window.selectOption = function (btn, campo, valor) {
-    var parent = btn.closest('.space-y-4') || btn.parentElement;
-    btn.parentElement.querySelectorAll('.opt-btn').forEach(function (b) {
-      b.classList.remove('border-[#ec5a1c]', 'bg-orange-50', 'ring-2', 'ring-orange-200');
-      b.classList.add('border-gray-200');
-    });
-    btn.classList.remove('border-gray-200');
-    btn.classList.add('border-[#ec5a1c]', 'bg-orange-50', 'ring-2', 'ring-orange-200');
-    document.getElementById('pet' + campo.charAt(0).toUpperCase() + campo.slice(1)).value = valor;
-  };
-
-  // === Busca de racas no banco ===
-
-  var racaInput = document.getElementById('petRaca');
-  var racaSugestoes = document.getElementById('racaSugestoes');
-  var debounceRaca = null;
-
-  racaInput.addEventListener('input', function () {
-    clearTimeout(debounceRaca);
-    var q = this.value.trim();
-    if (q.length < 2) { racaSugestoes.classList.add('hidden'); return; }
-    debounceRaca = setTimeout(function () { buscarRacas(q); }, 250);
+// Bio counter
+var bioArea = document.querySelector('textarea[name="descricao"]');
+if (bioArea) {
+  bioArea.addEventListener('input', function() {
+    this.nextElementSibling.textContent = this.value.length + '/200';
   });
-
-  racaInput.addEventListener('focus', function () {
-    if (this.value.trim().length >= 2) buscarRacas(this.value.trim());
-  });
-
-  document.addEventListener('click', function (e) {
-    if (!e.target.closest('#petRaca') && !e.target.closest('#racaSugestoes')) {
-      racaSugestoes.classList.add('hidden');
-    }
-  });
-
-  function buscarRacas(q) {
-    var tipo = tipoAtual || '';
-    fetch('/api/racas?tipo=' + encodeURIComponent(tipo) + '&q=' + encodeURIComponent(q))
-      .then(function (res) { return res.json(); })
-      .then(function (racas) {
-        if (!racas.length) { racaSugestoes.classList.add('hidden'); return; }
-        racaSugestoes.innerHTML = '';
-        racas.forEach(function (r) {
-          var div = document.createElement('div');
-          div.className = 'px-4 py-2.5 hover:bg-orange-50 cursor-pointer text-sm text-gray-700 transition-colors';
-          div.textContent = r.nome;
-          div.addEventListener('click', function () {
-            racaInput.value = r.nome;
-            racaSugestoes.classList.add('hidden');
-          });
-          racaSugestoes.appendChild(div);
-        });
-        racaSugestoes.classList.remove('hidden');
-      })
-      .catch(function () { racaSugestoes.classList.add('hidden'); });
-  }
-
-  function carregarRacasPopulares(tipo) {
-    var chipsContainer = document.getElementById('racasChips');
-    fetch('/api/racas?tipo=' + encodeURIComponent(tipo))
-      .then(function (res) { return res.json(); })
-      .then(function (racas) {
-        chipsContainer.innerHTML = '';
-        racas.filter(function (r) { return r.popular !== false; }).slice(0, 12).forEach(function (r) {
-          var chip = document.createElement('button');
-          chip.type = 'button';
-          chip.className = 'px-3 py-1.5 rounded-full bg-gray-100 text-xs font-medium text-gray-700 hover:bg-orange-100 hover:text-[#ec5a1c] transition-colors';
-          chip.textContent = r.nome;
-          chip.addEventListener('click', function () {
-            racaInput.value = r.nome;
-          });
-          chipsContainer.appendChild(chip);
-        });
-      })
-      .catch(function () {});
-  }
-
-  // === Foto preview ===
-
-  window.previewFoto = function (input) {
-    if (input.files && input.files[0]) {
-      var reader = new FileReader();
-      reader.onload = function (e) {
-        document.getElementById('fotoPreview').src = e.target.result;
-        document.getElementById('fotoPreviewContainer').classList.remove('hidden');
-        document.getElementById('fotoPlaceholder').classList.add('hidden');
-      };
-      reader.readAsDataURL(input.files[0]);
-    }
-  };
-
-  // === Contador de descricao ===
-
-  var desc = document.getElementById('petDescricao');
-  if (desc) {
-    desc.addEventListener('input', function () {
-      document.getElementById('descCount').textContent = this.value.length;
-    });
-  }
-})();
+}
 </script>
 
 <%- include('../partials/footer') %>

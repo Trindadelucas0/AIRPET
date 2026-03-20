@@ -1,19 +1,556 @@
 <%
   locals.extraHead = `
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap" rel="stylesheet">
     <style>
-      @keyframes heartPop { 0%{transform:scale(1)} 30%{transform:scale(1.35)} 60%{transform:scale(0.95)} 100%{transform:scale(1)} }
-      @keyframes shimmer { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
+      :root {
+        /* Mantemos apenas o que não conflita com os tokens do design system global */
+        --radius-card: var(--radius);
+        --radius-btn: var(--radius-sm);
+        --font-display: 'Syne', sans-serif;
+        --font-body: 'DM Sans', sans-serif;
+      }
+
+      /* ── TOP HEADER BAR ── */
+      .feed-topbar {
+        position: sticky; top: 56px; z-index: 40;
+        background: rgba(255,255,255,0.78);
+        backdrop-filter: blur(20px) saturate(160%);
+        -webkit-backdrop-filter: blur(20px);
+        border-bottom: 1px solid var(--border);
+        padding: 12px 0;
+      }
+
+      .feed-topbar-inner {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 0 20px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .feed-topbar h1 {
+        font-family: var(--font-display);
+        font-size: 20px;
+        font-weight: 800;
+        color: var(--text);
+        letter-spacing: -0.01em;
+      }
+
+      /* ── LAYOUT ── */
+      .feed-layout {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 24px 20px 80px;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 300px;
+        gap: 24px;
+        align-items: start;
+      }
+
+      @media (max-width: 900px) { .feed-layout { grid-template-columns: 1fr; } }
+      @media (max-width: 900px) { .feed-sidebar { display: none; } }
+
+      /* ── SEARCH (mobile) ── */
+      .mobile-search {
+        display: flex; align-items: center; gap: 10px;
+        background: var(--ink-3);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 10px 14px;
+        color: var(--text-dim);
+        font-size: 13px;
+        text-decoration: none;
+        margin-bottom: 16px;
+        transition: all 0.2s;
+      }
+      .mobile-search:hover { border-color: var(--border-hover); color: var(--text-dim); text-decoration: none; }
+
+      /* ── PETSHOP DESTAQUES ── */
+      .petshop-section {
+        background: var(--ink-2);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-card);
+        padding: 18px;
+        margin-bottom: 16px;
+      }
+
+      .petshop-header {
+        display: flex; align-items: center; justify-content: space-between;
+        margin-bottom: 14px;
+      }
+
+      .petshop-header h2 {
+        font-family: var(--font-display);
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--text);
+        letter-spacing: 0.01em;
+      }
+
+      .petshop-header a {
+        font-size: 11px; font-weight: 700;
+        color: var(--accent); text-decoration: none;
+        letter-spacing: 0.05em; text-transform: uppercase;
+      }
+
+      .petshop-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+      .petshop-card {
+        background: var(--ink-3);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 10px;
+        text-decoration: none;
+        transition: all 0.2s;
+        display: block;
+      }
+      .petshop-card:hover { border-color: var(--border-hover); background: var(--ink-4); text-decoration: none; }
+
+      .petshop-card img, .petshop-card-empty {
+        width: 100%; height: 64px;
+        border-radius: 8px;
+        object-fit: cover;
+        display: flex;
+        background: var(--ink-4);
+        align-items: center;
+        justify-content: center;
+        color: var(--text-muted);
+        margin-bottom: 8px;
+      }
+
+      .petshop-card p {
+        font-size: 11px; font-weight: 600; color: var(--text);
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      }
+
+      /* ── COMPOSER ── */
+      .composer {
+        background: var(--ink-2);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-card);
+        padding: 18px;
+        margin-bottom: 16px;
+      }
+
+      .composer-top {
+        display: flex; gap: 12px; align-items: flex-start;
+        margin-bottom: 14px;
+      }
+
+      .composer-textarea {
+        flex: 1;
+        background: transparent;
+        border: none;
+        outline: none;
+        color: var(--text);
+        font-family: var(--font-body);
+        font-size: 15px;
+        resize: none;
+        min-height: 60px;
+        placeholder-color: var(--text-dim);
+      }
+
+      .composer-textarea::placeholder { color: var(--text-dim); }
+
+      .composer-actions {
+        display: flex; align-items: center; justify-content: space-between;
+        border-top: 1px solid var(--border);
+        padding-top: 14px;
+      }
+
+      .composer-tools {
+        display: flex; gap: 4px;
+      }
+
+      .composer-tool-btn {
+        width: 34px; height: 34px; border-radius: 8px;
+        background: transparent; border: none; cursor: pointer;
+        color: var(--text-dim); font-size: 14px;
+        display: flex; align-items: center; justify-content: center;
+        transition: all 0.15s;
+      }
+      .composer-tool-btn:hover { background: var(--ink-3); color: var(--accent); }
+
+      .btn-post {
+        display: inline-flex; align-items: center; gap: 7px;
+        padding: 9px 20px;
+        background: var(--accent);
+        color: #fff;
+        border: none; border-radius: var(--radius-btn);
+        font-family: var(--font-body);
+        font-size: 14px; font-weight: 700;
+        cursor: pointer; transition: all 0.2s;
+      }
+      .btn-post:hover { background: var(--accent-light); transform: translateY(-1px); }
+      .btn-post:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+      /* ── POST CARD ── */
+      .post-card {
+        background: var(--ink-2);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-card);
+        overflow: hidden;
+        margin-bottom: 12px;
+        transition: border-color 0.2s;
+      }
+
+      .post-card:hover { border-color: var(--border-hover); }
+
+      /* Repost / Pinned strip */
+      .post-strip {
+        display: flex; align-items: center; gap: 7px;
+        padding: 8px 16px 0;
+        font-size: 11px; font-weight: 600;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+      .post-strip.repost { color: var(--green); }
+      .post-strip.pinned { color: var(--text-dim); }
+
+      /* Promo strip */
+      .promo-strip {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 7px 16px;
+        background: rgba(34,197,94,0.06);
+        border-bottom: 1px solid rgba(34,197,94,0.1);
+        font-size: 11px; font-weight: 700;
+        color: var(--green); letter-spacing: 0.06em; text-transform: uppercase;
+      }
+      .promo-strip span:last-child { color: var(--text-dim); font-weight: 400; text-transform: none; letter-spacing: 0; }
+
+      .post-header {
+        display: flex; align-items: center; gap: 12px;
+        padding: 14px 16px 10px;
+      }
+
+      .post-avatar-wrap { flex-shrink: 0; }
+
+      .post-avatar {
+        width: 38px; height: 38px; border-radius: 50%;
+        object-fit: cover; display: block;
+      }
+
+      .post-avatar-initial {
+        width: 38px; height: 38px; border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 14px; font-weight: 700; color: var(--text);
+        background: var(--ink-4);
+      }
+
+      .post-meta { flex: 1; min-width: 0; }
+
+      .post-author-name {
+        font-weight: 700; font-size: 14px; color: var(--text);
+        text-decoration: none;
+      }
+      .post-author-name:hover { color: var(--accent); text-decoration: none; }
+
+      .post-pet-link {
+        font-size: 11px; color: var(--text-dim); text-decoration: none;
+        display: inline-flex; align-items: center; gap: 3px; margin-left: 6px;
+      }
+      .post-pet-link:hover { color: var(--accent); text-decoration: none; }
+
+      .post-time {
+        font-size: 11px; color: var(--text-dim); display: block; margin-top: 1px;
+      }
+
+      .post-menu-btn {
+        width: 32px; height: 32px; border-radius: 8px; border: none;
+        background: transparent; color: var(--text-dim); font-size: 14px;
+        cursor: pointer; display: flex; align-items: center; justify-content: center;
+        transition: all 0.15s;
+      }
+      .post-menu-btn:hover { background: var(--ink-3); color: var(--text); }
+
+      /* Post dropdown */
+      .post-dropdown {
+        position: absolute; right: 0; top: calc(100% + 4px);
+        min-width: 168px;
+        background: var(--ink-3);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        box-shadow: 0 18px 48px rgba(15, 23, 42, 0.12);
+        overflow: hidden; z-index: 30;
+        transform-origin: top right;
+        animation: scale-in 0.12s ease-out;
+      }
+
+      @keyframes scale-in {
+        from { opacity: 0; transform: scale(0.9); }
+        to   { opacity: 1; transform: scale(1); }
+      }
+
+      .post-dropdown-item {
+        display: flex; align-items: center; gap: 10px;
+        padding: 11px 16px;
+        font-size: 13px; font-weight: 500;
+        color: var(--text); cursor: pointer;
+        border: none; background: transparent;
+        width: 100%; text-align: left;
+        transition: background 0.1s;
+      }
+      .post-dropdown-item:hover { background: var(--ink-4); }
+      .post-dropdown-item.danger { color: #f87171; }
+      .post-dropdown-item.danger:hover { background: rgba(239,68,68,0.08); }
+
+      /* Post body */
+      .post-text {
+        padding: 0 16px 12px;
+        font-size: 14px; line-height: 1.65;
+        color: var(--text);
+        white-space: pre-wrap;
+      }
+
+      .post-photo {
+        width: 100%;
+        max-height: 520px;
+        object-fit: cover;
+        display: block;
+      }
+
+      /* Repost embed */
+      .post-embed {
+        margin: 0 16px 12px;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        overflow: hidden;
+        background: var(--ink-3);
+      }
+
+      .post-embed-header {
+        display: flex; align-items: center; gap: 8px;
+        padding: 10px 12px 6px;
+      }
+
+      .post-embed-avatar {
+        width: 22px; height: 22px; border-radius: 50%;
+        object-fit: cover;
+      }
+
+      .post-embed-name {
+        font-size: 12px; font-weight: 700; color: var(--text);
+        text-decoration: none;
+      }
+      .post-embed-name:hover { color: var(--accent); text-decoration: none; }
+
+      .post-embed-text {
+        padding: 0 12px 10px;
+        font-size: 12px; color: var(--text-dim); line-height: 1.5;
+        display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+      }
+
+      .post-embed-img {
+        width: 100%; max-height: 180px; object-fit: cover; display: block;
+      }
+
+      /* Post actions */
+      .post-actions {
+        display: flex;
+        border-top: 1px solid var(--border);
+      }
+
+      .post-action-btn {
+        flex: 1;
+        display: flex; align-items: center; justify-content: center; gap: 7px;
+        padding: 12px 8px;
+        font-size: 13px; font-weight: 500;
+        color: var(--text-dim);
+        background: transparent; border: none; cursor: pointer;
+        transition: all 0.15s;
+        border-radius: 0;
+        position: relative;
+      }
+
+      .post-action-btn:hover {
+        color: var(--text);
+        background: var(--ink-4);
+      }
+
+      .post-action-btn.liked { color: var(--red); }
+      .post-action-btn.reposted { color: var(--green); }
+      .post-action-btn:not(:last-child) { border-right: 1px solid var(--border); }
+
+      /* Inline comment */
+      .post-view-comments {
+        padding: 0 16px 10px;
+      }
+
+      .post-view-comments button {
+        font-size: 12px; color: var(--text-dim); font-weight: 500;
+        background: transparent; border: none; cursor: pointer; padding: 0;
+      }
+      .post-view-comments button:hover { color: var(--accent); }
+
+      .post-comment-row {
+        display: flex; align-items: center; gap: 10px;
+        padding: 10px 16px 14px;
+        border-top: 1px solid var(--border);
+      }
+
+      .comment-input {
+        flex: 1;
+        background: var(--ink-3);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 8px 14px;
+        font-size: 13px;
+        color: var(--text);
+        font-family: var(--font-body);
+        outline: none;
+        transition: border-color 0.15s;
+      }
+      .comment-input::placeholder { color: var(--text-muted); }
+      .comment-input:focus { border-color: rgba(242,96,32,0.4); }
+
+      /* ── MENTION ── */
+      .mention { color: var(--accent); font-weight: 600; cursor: pointer; }
+      .mention:hover { text-decoration: underline; }
+
+      .autocomplete-dropdown {
+        position: absolute; bottom: 100%; left: 0; right: 0;
+        max-height: 160px; overflow-y: auto;
+        background: var(--ink-3);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        box-shadow: 0 16px 44px rgba(15, 23, 42, 0.12);
+        z-index: 10; margin-bottom: 4px;
+      }
+
+      .autocomplete-item {
+        display: flex; align-items: center; gap: 8px;
+        padding: 9px 12px; cursor: pointer; font-size: 13px;
+        color: var(--text); transition: background 0.1s;
+      }
+      .autocomplete-item:hover { background: var(--ink-4); }
+
+      /* ── PROMO CARD ── */
+      .promo-card-body { padding: 14px 16px; }
+      .promo-store-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+      .promo-logo { width: 36px; height: 36px; border-radius: 10px; object-fit: cover; }
+      .promo-logo-empty {
+        width: 36px; height: 36px; border-radius: 10px;
+        background: var(--ink-4); display: flex; align-items: center; justify-content: center;
+        color: var(--text-muted); font-size: 16px;
+      }
+      .promo-store-name { font-size: 14px; font-weight: 700; color: var(--text); }
+      .promo-status { font-size: 11px; color: var(--text-dim); }
+      .promo-title { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+      .promo-desc { font-size: 13px; color: var(--text-dim); line-height: 1.5; }
+      .promo-btns { display: flex; gap: 8px; margin-top: 14px; }
+      .promo-btn-main {
+        display: inline-flex; align-items: center; gap: 6px;
+        padding: 8px 16px;
+        background: rgba(34,197,94,0.12);
+        color: var(--green); border: 1px solid rgba(34,197,94,0.2);
+        border-radius: 9px; font-size: 12px; font-weight: 700;
+        text-decoration: none; transition: all 0.15s;
+      }
+      .promo-btn-main:hover { background: rgba(34,197,94,0.2); color: #4ade80; text-decoration: none; }
+
+      /* ── SPONSORED CARD ── */
+      .sponsored-strip {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 7px 16px;
+        background: rgba(167,139,250,0.06);
+        border-bottom: 1px solid rgba(167,139,250,0.1);
+        font-size: 11px; font-weight: 700;
+        color: var(--purple); letter-spacing: 0.06em; text-transform: uppercase;
+      }
+
+      /* ── SIDEBAR ── */
+      .feed-sidebar {
+        position: sticky; top: calc(56px + 56px + 16px);
+      }
+
+      .sidebar-card {
+        background: var(--ink-2);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-card);
+        padding: 18px;
+        margin-bottom: 14px;
+      }
+
+      .sidebar-title {
+        font-family: var(--font-display);
+        font-size: 13px; font-weight: 700; color: var(--text);
+        margin-bottom: 14px; letter-spacing: 0.01em;
+      }
+
+      .sidebar-user-item {
+        display: flex; align-items: center; gap: 10px;
+        padding: 6px 0;
+      }
+
+      .sidebar-avatar {
+        width: 34px; height: 34px; border-radius: 50%;
+        object-fit: cover; flex-shrink: 0;
+      }
+
+      .sidebar-avatar-init {
+        width: 34px; height: 34px; border-radius: 50%;
+        flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+        font-size: 12px; font-weight: 700; color: var(--text); background: var(--ink-4);
+      }
+
+      .sidebar-user-name {
+        flex: 1; min-width: 0;
+        font-size: 13px; font-weight: 600; color: var(--text);
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      }
+
+      .sidebar-follow-btn {
+        padding: 5px 12px;
+        background: transparent;
+        border: 1px solid var(--border);
+        border-radius: 7px;
+        font-size: 11px; font-weight: 700; color: var(--text);
+        cursor: pointer; transition: all 0.15s;
+        white-space: nowrap;
+      }
+      .sidebar-follow-btn:hover {
+        background: var(--accent); border-color: var(--accent); color: #fff;
+      }
+
+      .sidebar-divider { height: 1px; background: var(--border); margin: 4px 0 10px; }
+
+      /* ── FLOAT HEARTS ── */
       @keyframes floatHeart { 0%{opacity:1;transform:translateY(0) scale(1)} 100%{opacity:0;transform:translateY(-60px) scale(1.4)} }
-      .animate-heartPop { animation: heartPop 0.4s ease-out; }
-      .float-heart { position:absolute; pointer-events:none; animation:floatHeart 0.7s ease-out forwards; color:#ef4444; }
-      .skeleton { background:linear-gradient(90deg,#f0f0f0 25%,#e0e0e0 50%,#f0f0f0 75%); background-size:200% 100%; animation:shimmer 1.5s infinite; border-radius:8px; }
-      .menu-dropdown { transform-origin:top right; animation:scaleIn .15s ease-out; }
-      .mention { color:#328dff; font-weight:500; cursor:pointer; }
-      .mention:hover { text-decoration:underline; }
-      .autocomplete-dropdown { position:absolute; bottom:100%; left:0; right:0; max-height:160px; overflow-y:auto; background:#fff; border:1px solid #e5e7eb; border-radius:12px; box-shadow:0 -4px 12px rgba(0,0,0,.08); z-index:10; margin-bottom:4px; }
-      .autocomplete-item { display:flex; align-items:center; gap:8px; padding:8px 12px; cursor:pointer; font-size:13px; transition:background .15s; }
-      .autocomplete-item:hover { background:#f9fafb; }
-      .post-enter { animation: slideUp .4s ease-out both; }
+      .float-heart { position:absolute; pointer-events:none; animation:floatHeart 0.7s ease-out forwards; color:var(--red); font-size:14px; }
+
+      /* ── SKELETON ── */
+      @keyframes shimmer-dark { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
+      .skeleton-dark {
+        background: linear-gradient(90deg, var(--ink-3) 25%, var(--ink-4) 50%, var(--ink-3) 75%);
+        background-size: 200% 100%;
+        animation: shimmer-dark 1.5s infinite;
+        border-radius: 8px;
+      }
+
+      /* ── POST ENTER ANIM ── */
+      @keyframes post-enter { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:none; } }
+      .post-enter { animation: post-enter 0.35s ease-out both; }
+
+      /* ── HEART POP ── */
+      @keyframes heartPop { 0%{transform:scale(1)} 30%{transform:scale(1.35)} 60%{transform:scale(0.9)} 100%{transform:scale(1)} }
+      .animate-heartPop { animation: heartPop 0.35s ease-out; }
+
+      /* ── LOAD MORE ── */
+      #loadMoreBtn {
+        display: block; width: 100%;
+        padding: 13px;
+        background: var(--ink-2);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-card);
+        color: var(--text-dim);
+        font-family: var(--font-body);
+        font-size: 14px; font-weight: 500;
+        cursor: pointer; transition: all 0.2s;
+        text-align: center;
+      }
+      #loadMoreBtn:hover { border-color: var(--border-hover); color: var(--text); background: var(--ink-3); }
     </style>
   `;
 %>
@@ -21,1295 +558,784 @@
 <%- include('partials/flash') %>
 
 <% var isLogado = typeof usuario !== 'undefined' && usuario; %>
+<% var meusPets = typeof meusPets !== 'undefined' ? meusPets : (typeof pets !== 'undefined' ? pets : []); %>
+<% var sugestoesUsuarios = typeof sugestoesUsuarios !== 'undefined' ? sugestoesUsuarios : (typeof recomendacoes !== 'undefined' ? recomendacoes : []); %>
+<% var sugestoesPets = typeof sugestoesPets !== 'undefined' ? sugestoesPets : (typeof petsRecomendados !== 'undefined' ? petsRecomendados : []); %>
+<% var petshopsProximos = typeof petshopsProximos !== 'undefined' ? petshopsProximos : (typeof petshopDestaques !== 'undefined' ? petshopDestaques : []); %>
+<% var hasMore = typeof hasMore !== 'undefined' ? hasMore : (typeof temMais !== 'undefined' ? temMais : false); %>
 
 <main class="flex-1 pb-24 md:pb-6">
 
-  <!-- Header -->
-  <div class="sticky top-14 z-40 bg-white/90 backdrop-blur-xl border-b border-gray-100">
-    <div class="max-w-4xl mx-auto px-4 py-3">
-      <h1 class="text-lg font-bold text-gray-900">Feed</h1>
+  <!-- Top bar -->
+  <div class="feed-topbar">
+    <div class="feed-topbar-inner">
+      <h1>Feed</h1>
+      <div style="font-size:12px; color:var(--text-dim);">
+        <% if (isLogado) { %>Bem-vindo, <%= usuario.nome.split(' ')[0] %><% } %>
+      </div>
     </div>
   </div>
 
-  <div class="max-w-4xl mx-auto flex gap-6 px-4 pt-4">
+  <div class="feed-layout">
 
-  <!-- Feed (coluna principal) -->
-  <div id="feedContainer" class="max-w-xl w-full flex-1 space-y-4">
+    <!-- ═══ MAIN COLUMN ═══ -->
+    <div>
 
-    <!-- Busca mobile -->
-    <div class="lg:hidden">
-      <a href="/explorar/busca" class="flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-2xl px-4 py-3 text-gray-400 text-sm hover:bg-gray-100 transition-colors">
-        <i class="fa-solid fa-magnifying-glass text-xs"></i> Buscar pets ou pessoas...
-      </a>
-    </div>
+      <!-- Mobile search -->
+      <div class="lg:hidden">
+        <a href="/explorar/busca" class="mobile-search">
+          <i class="fa-solid fa-magnifying-glass" style="font-size:13px;"></i>
+          Buscar pets ou pessoas...
+        </a>
+      </div>
 
-    <% if (petshopDestaques && petshopDestaques.length > 0) { %>
-      <section class="bg-white rounded-2xl border border-gray-100 p-4">
-        <div class="flex items-center justify-between mb-3">
-          <h2 class="text-sm font-bold text-gray-900">Parceiros perto de você</h2>
-          <a href="/petshops/mapa" class="text-xs text-primary-500 font-semibold">Mapa</a>
+      <!-- Petshop destaques -->
+      <% if (petshopDestaques && petshopDestaques.length > 0) { %>
+      <div class="petshop-section">
+        <div class="petshop-header">
+          <h2>Parceiros perto de você</h2>
+          <a href="/petshops/mapa"><i class="fa-solid fa-map-location-dot mr-1"></i>Mapa</a>
         </div>
-        <div class="grid grid-cols-2 gap-2">
+        <div class="petshop-grid">
           <% petshopDestaques.slice(0, 4).forEach(function(ps) { %>
-            <a href="/petshops/<%= ps.slug || ps.id %>" class="rounded-xl border border-gray-100 p-2 hover:border-primary-200 transition-colors">
-              <% if (ps.logo_url) { %>
-                <img src="<%= ps.logo_url %>" alt="<%= ps.nome %>" class="w-full h-20 object-cover rounded-lg mb-2">
-              <% } else { %>
-                <div class="w-full h-20 rounded-lg mb-2 bg-gray-100 flex items-center justify-center text-gray-400"><i class="fa-solid fa-store"></i></div>
-              <% } %>
-              <p class="text-xs font-semibold text-gray-800 truncate"><%= ps.nome %></p>
-            </a>
+          <a href="/petshops/<%= ps.slug || ps.id %>" class="petshop-card">
+            <% if (ps.logo_url) { %>
+              <img src="<%= ps.logo_url %>" alt="<%= ps.nome %>">
+            <% } else { %>
+              <div class="petshop-card-empty"><i class="fa-solid fa-store"></i></div>
+            <% } %>
+            <p><%= ps.nome %></p>
+          </a>
           <% }) %>
         </div>
-      </section>
-    <% } %>
-
-    <% if (posts && posts.length > 0) { %>
-      <% posts.forEach(function(post, idx) { %>
-        <% if (post.is_petshop_promo) { %>
-          <article class="bg-white rounded-2xl shadow-sm border border-emerald-200 overflow-hidden post-enter"
-                   style="animation-delay:<%= Math.min(idx * 60, 400) %>ms"
-                   id="<%= post.promo_key || ('promo-feed-' + post.id) %>">
-            <div class="px-4 py-2 bg-emerald-50 border-b border-emerald-100 flex items-center justify-between">
-              <span class="inline-flex items-center gap-1 text-[11px] font-bold tracking-wide text-emerald-700">
-                <i class="fa-solid fa-badge-percent"></i>
-                Promoção para você
-              </span>
-              <span class="text-[11px] text-gray-400">Baseada no seu relacionamento</span>
-            </div>
-            <div class="p-4">
-              <div class="flex items-center gap-3 mb-2">
-                <% if (post.petshop_logo_url) { %>
-                  <img src="<%= post.petshop_logo_url %>" alt="" class="w-10 h-10 rounded-full object-cover">
-                <% } else { %>
-                  <span class="w-10 h-10 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center"><i class="fa-solid fa-store"></i></span>
-                <% } %>
-                <div>
-                  <p class="text-sm font-semibold text-gray-900"><%= post.petshop_nome %></p>
-                  <p class="text-xs text-gray-500"><%= post.usuario_vinculado ? 'Vinculado' : 'Seguindo' %></p>
-                </div>
-              </div>
-              <h3 class="text-sm font-bold text-gray-900"><%= post.titulo %></h3>
-              <p class="text-xs text-gray-600 mt-1 line-clamp-2"><%= post.descricao_curta %></p>
-              <div class="mt-3 flex gap-2">
-                <a href="/petshops/<%= post.petshop_slug || post.petshop_id %>" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-500 text-white text-xs font-semibold hover:bg-emerald-600">
-                  <i class="fa-solid fa-store"></i>
-                  Ver petshop
-                </a>
-                <% if (post.contato_link) { %>
-                  <a href="<%= post.contato_link %>" target="_blank" rel="noopener" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-emerald-200 text-emerald-700 text-xs font-semibold hover:bg-emerald-50">
-                    <i class="fa-solid fa-arrow-up-right-from-square"></i>
-                    Aproveitar
-                  </a>
-                <% } %>
-              </div>
-            </div>
-          </article>
-        <% } else if (post.is_sponsored) { %>
-          <% var hasSponsoredPost = !!post.foto || !!post.legenda || !!post.texto; %>
-          <% var sponsoredPostId = Number(post.id); %>
-          <% var hasSponsoredPostId = Number.isFinite(sponsoredPostId) && sponsoredPostId > 0; %>
-          <article class="bg-gradient-to-br from-amber-50 to-white rounded-2xl shadow-sm border-2 border-amber-200 overflow-hidden post-enter"
-                   style="animation-delay:<%= Math.min(idx * 60, 400) %>ms"
-                   data-post-id="<%= hasSponsoredPostId ? sponsoredPostId : '' %>"
-                   data-view-source="<%= hasSponsoredPostId ? 'sponsored_feed' : '' %>"
-                   id="<%= post.sponsored_key || ('sponsored-' + post.boost_id + '-' + post.pet_id) %>">
-            <div class="px-4 py-2 bg-amber-100 border-b border-amber-200 flex items-center justify-between">
-              <span class="inline-flex items-center gap-1 text-[11px] font-bold tracking-wide text-amber-800">
-                <i class="fa-solid fa-bullhorn"></i>
-                <%= post.sponsored_label || 'PATROCINADO' %>
-              </span>
-              <span class="text-[11px] text-amber-700">Anúncio de perfil pet</span>
-            </div>
-            <div class="p-4">
-              <div class="flex items-center gap-3">
-                <% if (post.pet_foto) { %>
-                  <img src="<%= post.pet_foto %>" alt="" class="w-12 h-12 rounded-full object-cover ring-2 ring-amber-200">
-                <% } else { %>
-                  <span class="w-12 h-12 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center">
-                    <i class="fa-solid fa-paw"></i>
-                  </span>
-                <% } %>
-                <div class="min-w-0 flex-1">
-                  <p class="text-sm font-semibold text-gray-900 truncate"><%= post.pet_nome || ('Pet ' + post.pet_id) %></p>
-                  <p class="text-xs text-gray-500 truncate">Tutor: <%= post.autor_nome || ('Usuário ' + post.usuario_id) %></p>
-                </div>
-              </div>
-              <% if (post.foto) { %>
-                <img src="<%= post.foto %>" alt="" class="w-full mt-3 rounded-xl max-h-[320px] object-cover" loading="lazy">
-              <% } %>
-              <% if (hasSponsoredPost) { %>
-                <p class="mt-3 text-sm text-gray-700 line-clamp-2"><%= post.legenda || post.texto || 'Conheça este perfil pet patrocinado.' %></p>
-              <% } else { %>
-                <p class="mt-3 text-sm text-gray-700">Este pet está em campanha patrocinada. Ainda sem publicação no momento — conheça o perfil e siga o tutor.</p>
-              <% } %>
-              <div class="mt-3 flex items-center justify-between gap-2">
-                <div class="flex items-center gap-2">
-                  <a href="/explorar/pet/<%= post.pet_id %>" class="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-500 text-white text-xs font-semibold hover:bg-amber-600">
-                    <i class="fa-solid fa-paw"></i>
-                    Ver perfil do pet
-                  </a>
-                  <a href="/explorar/perfil/<%= post.usuario_id %>" class="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-amber-300 text-amber-700 text-xs font-semibold hover:bg-amber-100">
-                    <i class="fa-solid fa-user-plus"></i>
-                    Ver tutor
-                  </a>
-                </div>
-                <span class="text-[11px] text-gray-400">Entrega publicitária identificada</span>
-              </div>
-            </div>
-          </article>
-        <% } else { %>
-        <article class="bg-white rounded-2xl shadow-sm border border-gray-100/80 overflow-hidden post-enter"
-                 style="animation-delay:<%= Math.min(idx * 60, 400) %>ms"
-                 data-post-id="<%= post.id %>" data-author-id="<%= post.usuario_id %>" id="post-<%= post.id %>">
-
-          <% if (post.tipo === 'repost') { %>
-            <div class="px-4 pt-3 flex items-center gap-2 text-emerald-500 text-xs font-semibold">
-              <i class="fa-solid fa-retweet text-[11px]"></i>
-              <span><%= post.autor_nome %> repostou</span>
-            </div>
-          <% } %>
-          <% if (post.fixada) { %>
-            <div class="px-4 pt-3 flex items-center gap-2 text-gray-400 text-xs font-semibold">
-              <i class="fa-solid fa-thumbtack text-[11px]"></i>
-              <span>Fixado</span>
-            </div>
-          <% } %>
-
-          <div class="flex items-center gap-3 px-4 pt-3 pb-2">
-            <a href="/explorar/perfil/<%= post.usuario_id %>" class="shrink-0 rounded-full transition-all" title="Ver perfil de <%= post.autor_nome %>">
-              <% var postCor = post.cor_perfil || '#ec5a1c'; %>
-              <% if (post.foto_perfil) { %>
-                <img src="<%= post.foto_perfil %>" alt="" class="w-10 h-10 rounded-full object-cover post-author-avatar" style="box-shadow: 0 0 0 2px <%= postCor %>">
-              <% } else { %>
-                <span class="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white post-author-avatar bg-gray-400"
-                      style="box-shadow: 0 0 0 2px <%= postCor %>">
-                  <%= post.autor_nome ? post.autor_nome.charAt(0).toUpperCase() : 'U' %>
-                </span>
-              <% } %>
-            </a>
-
-            <div class="flex-1 min-w-0">
-              <div class="flex items-center gap-1.5 flex-wrap">
-                <a href="/explorar/perfil/<%= post.usuario_id %>"
-                   class="font-semibold text-sm text-gray-900 hover:underline truncate post-author-name"><%= post.autor_nome %></a>
-                <% if (post.pet_nome && post.pet_id) { %>
-                  <a href="/explorar/pet/<%= post.pet_id %>" class="text-xs text-gray-400 hover:text-primary-500 truncate">
-                    <i class="fa-solid fa-paw text-[9px]"></i> <%= post.pet_nome %>
-                  </a>
-                <% } %>
-              </div>
-              <span class="text-xs text-gray-400 tempo-relativo" data-time="<%= post.criado_em %>"></span>
-            </div>
-
-            <% if (isLogado && usuario.id === post.usuario_id) { %>
-              <div class="relative shrink-0">
-                <button type="button" class="p-1.5 -mr-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors btn-menu-post">
-                  <i class="fa-solid fa-ellipsis"></i>
-                </button>
-                <div class="menu-dropdown hidden absolute right-0 top-full mt-1 w-44 bg-white rounded-xl shadow-lg ring-1 ring-black/5 py-1 z-30">
-                  <button type="button" class="w-full px-4 py-2.5 text-left text-sm hover:bg-gray-50 flex items-center gap-2.5 transition-colors btn-fixar"
-                          data-post-id="<%= post.id %>" data-fixada="<%= post.fixada ? '1' : '0' %>">
-                    <i class="fa-solid fa-thumbtack text-gray-400 w-4 text-center"></i>
-                    <span><%= post.fixada ? 'Desafixar' : 'Fixar' %></span>
-                  </button>
-                  <button type="button" class="w-full px-4 py-2.5 text-left text-sm hover:bg-red-50 text-red-500 flex items-center gap-2.5 transition-colors btn-deletar"
-                          data-post-id="<%= post.id %>">
-                    <i class="fa-solid fa-trash-can w-4 text-center"></i>
-                    <span>Excluir</span>
-                  </button>
-                </div>
-              </div>
-            <% } %>
-          </div>
-
-          <% var postTexto = post.texto || post.legenda || ''; %>
-          <% if (postTexto) { %>
-            <div class="px-4 pb-2">
-              <p class="text-[15px] text-gray-800 leading-relaxed line-clamp-3 post-text"><%= postTexto %></p>
-              <button type="button" class="text-accent-500 text-xs font-semibold mt-1 btn-ver-mais hidden hover:underline">ver mais</button>
-            </div>
-          <% } %>
-
-          <% if (post.foto) { %>
-            <div class="mt-1">
-              <img src="<%= post.foto %>" alt="" class="w-full max-h-[500px] object-cover post-photo" loading="lazy">
-            </div>
-          <% } %>
-
-          <% if (post.tipo === 'repost' && post.orig_id) { %>
-            <div class="mx-4 my-3 border border-gray-200 rounded-2xl overflow-hidden hover:bg-gray-50/50 transition-colors">
-              <div class="flex items-center gap-2 px-3 pt-3 pb-1">
-                <% var origCor = post.orig_cor_perfil || '#ec5a1c'; %>
-                <% if (post.orig_foto_perfil) { %>
-                  <img src="<%= post.orig_foto_perfil %>" alt="" class="w-6 h-6 rounded-full object-cover" style="box-shadow: 0 0 0 1px <%= origCor %>">
-                <% } else { %>
-                  <span class="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white bg-gray-400"
-                        style="box-shadow: 0 0 0 1px <%= origCor %>">
-                    <%= post.orig_autor_nome ? post.orig_autor_nome.charAt(0).toUpperCase() : 'U' %>
-                  </span>
-                <% } %>
-                <a href="/explorar/perfil/<%= post.orig_usuario_id %>" class="text-xs font-semibold text-gray-700 hover:underline"><%= post.orig_autor_nome %></a>
-                <span class="text-[11px] text-gray-400 tempo-relativo" data-time="<%= post.orig_criado_em %>"></span>
-              </div>
-              <% var origTexto = post.orig_texto || post.orig_legenda || ''; %>
-              <% if (origTexto) { %>
-                <p class="px-3 pb-2 text-xs text-gray-600 line-clamp-2"><%= origTexto %></p>
-              <% } %>
-              <% if (post.orig_foto) { %>
-                <img src="<%= post.orig_foto %>" alt="" class="w-full max-h-[200px] object-cover" loading="lazy">
-              <% } %>
-            </div>
-          <% } %>
-
-          <div class="flex items-center px-2 py-1.5 border-t border-gray-50">
-            <button type="button" class="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-gray-400 hover:text-accent-500 hover:bg-accent-50/50 transition-all text-[13px] btn-comentar"
-                    data-post-id="<%= post.id %>">
-              <i class="fa-regular fa-comment"></i>
-              <span class="count-comentarios"><%= post.total_comentarios || '' %></span>
-            </button>
-            <button type="button" class="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl transition-all text-[13px] btn-repost <%= post.repostou ? 'text-emerald-500' : 'text-gray-400 hover:text-emerald-500 hover:bg-emerald-50/50' %>"
-                    data-post-id="<%= post.id %>">
-              <i class="fa-solid fa-retweet"></i>
-              <span class="count-reposts"><%= post.total_reposts || '' %></span>
-            </button>
-            <button type="button" class="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl transition-all text-[13px] btn-curtir relative <%= post.curtiu ? 'text-red-500' : 'text-gray-400 hover:text-red-500 hover:bg-red-50/50' %>"
-                    data-post-id="<%= post.id %>" data-curtiu="<%= post.curtiu ? '1' : '0' %>">
-              <i class="<%= post.curtiu ? 'fa-solid' : 'fa-regular' %> fa-heart"></i>
-              <span class="count-curtidas"><%= post.total_curtidas || '' %></span>
-            </button>
-            <button type="button" class="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-gray-400 hover:text-accent-500 hover:bg-accent-50/50 transition-all text-[13px] btn-share"
-                    data-post-id="<%= post.id %>" data-autor="<%= post.autor_nome %>">
-              <i class="fa-solid fa-share-from-square"></i>
-            </button>
-          </div>
-
-          <% if (post.total_comentarios > 0) { %>
-            <div class="px-4 pb-2">
-              <button type="button" class="text-xs text-gray-400 hover:text-accent-500 transition-colors font-medium btn-comentar" data-post-id="<%= post.id %>">
-                Ver todos os <%= post.total_comentarios %> comentários
-              </button>
-            </div>
-          <% } %>
-
-          <% if (isLogado) { %>
-            <div class="flex items-center gap-2 px-4 pb-3">
-              <% if (usuario.foto_perfil) { %>
-                <img src="<%= usuario.foto_perfil %>" alt="" class="w-7 h-7 rounded-full object-cover shrink-0">
-              <% } else { %>
-                <span class="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0"
-                      style="background:<%= usuario.cor_perfil || '#ec5a1c' %>">
-                  <%= usuario.nome ? usuario.nome.charAt(0).toUpperCase() : 'U' %>
-                </span>
-              <% } %>
-              <input type="text" placeholder="Adicionar comentário…"
-                     class="flex-1 text-xs bg-gray-50 rounded-full px-3.5 py-2 border-none outline-none focus:bg-gray-100 focus:ring-2 focus:ring-primary-500/10 transition-all input-comentario-inline"
-                     data-post-id="<%= post.id %>" maxlength="500">
-            </div>
-          <% } %>
-
-        </article>
-        <% } %>
-      <% }); %>
-
-    <% } else { %>
-      <div class="text-center py-20 animate-fadeIn">
-        <div class="w-20 h-20 mx-auto mb-5 rounded-full bg-gradient-to-br from-primary-50 to-orange-50 flex items-center justify-center">
-          <i class="fa-solid fa-user-plus text-3xl text-primary-400"></i>
-        </div>
-        <h3 class="text-lg font-bold text-gray-800 mb-1.5">Seu feed está vazio</h3>
-        <p class="text-sm text-gray-400 max-w-xs mx-auto leading-relaxed">
-          Siga outros tutores para ver as publicações deles aqui. Use o <a href="/explorar" class="text-primary-500 font-semibold hover:underline">Explorar</a> para descobrir pessoas na sua região.
-        </p>
       </div>
-    <% } %>
-  </div>
-
-  <% if (typeof temMais !== 'undefined' && temMais) { %>
-    <div id="scrollSentinel" class="py-8 flex justify-center">
-      <div class="flex items-center gap-2 text-gray-400 text-sm">
-        <i class="fa-solid fa-spinner fa-spin"></i>
-        <span>Carregando…</span>
-      </div>
-    </div>
-  <% } %>
-
-  </div>
-
-  <!-- Sidebar (desktop only) -->
-  <aside class="hidden lg:block w-80 flex-shrink-0 space-y-4 sticky top-20 self-start">
-
-    <div class="bg-white rounded-2xl border border-gray-100/80 shadow-sm p-4">
-      <form action="/explorar/busca" method="GET" class="relative">
-        <input type="text" name="q" placeholder="Buscar pets ou pessoas..." class="w-full pl-10 pr-4 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500/20 focus:border-primary-400 outline-none transition-all">
-        <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
-      </form>
-    </div>
-
-    <% if (typeof recomendacoes !== 'undefined' && recomendacoes.length > 0) { %>
-    <div class="bg-white rounded-2xl border border-gray-100/80 shadow-sm overflow-hidden">
-      <div class="px-4 pt-4 pb-2">
-        <h3 class="font-bold text-gray-900 text-[15px]"><i class="fa-solid fa-user-plus mr-1.5 text-primary-500"></i>Quem seguir</h3>
-        <p class="text-xs text-gray-400 mt-0.5">Pessoas perto de você</p>
-      </div>
-      <div class="divide-y divide-gray-50">
-        <% recomendacoes.forEach(function(rec) { %>
-          <div class="flex items-center gap-3 px-4 py-3 hover:bg-gray-50/50 transition-colors">
-            <a href="/explorar/perfil/<%= rec.id %>" class="shrink-0">
-              <% if (rec.foto_perfil) { %>
-                <img src="<%= rec.foto_perfil %>" alt="" class="w-10 h-10 rounded-full object-cover">
-              <% } else { %>
-                <span class="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white"
-                      style="background:<%= rec.cor_perfil || '#ec5a1c' %>">
-                  <%= rec.nome ? rec.nome.charAt(0).toUpperCase() : 'U' %>
-                </span>
-              <% } %>
-            </a>
-            <div class="flex-1 min-w-0">
-              <a href="/explorar/perfil/<%= rec.id %>" class="font-semibold text-sm text-gray-900 hover:underline truncate block"><%= rec.nome %></a>
-              <% if (rec.bairro || rec.cidade) { %>
-                <p class="text-xs text-gray-400 truncate"><i class="fa-solid fa-location-dot mr-0.5"></i><%= rec.bairro ? rec.bairro + ', ' : '' %><%= rec.cidade || '' %>
-                  <% if (rec.distancia_km) { %> · <%= rec.distancia_km %>km<% } %>
-                </p>
-              <% } %>
-            </div>
-            <button class="btn-seguir-sidebar shrink-0 px-3 py-1.5 text-xs font-bold rounded-full bg-gray-900 text-white hover:bg-gray-700 transition-colors"
-                    data-user-id="<%= rec.id %>">
-              Seguir
-            </button>
-          </div>
-        <% }) %>
-      </div>
-      <a href="/explorar/busca" class="block text-center text-sm text-primary-500 font-semibold py-3 hover:bg-primary-50/50 transition-colors border-t border-gray-50">
-        Ver mais
-      </a>
-    </div>
-    <% } %>
-
-    <% if (typeof petsRecomendados !== 'undefined' && petsRecomendados.length > 0) { %>
-    <div class="bg-white rounded-2xl border border-gray-100/80 shadow-sm overflow-hidden">
-      <div class="px-4 pt-4 pb-2">
-        <h3 class="font-bold text-gray-900 text-[15px]"><i class="fa-solid fa-paw mr-1.5 text-primary-500"></i>Pets populares</h3>
-      </div>
-      <div class="divide-y divide-gray-50">
-        <% petsRecomendados.slice(0, 5).forEach(function(pet) { %>
-          <div class="flex items-center gap-3 px-4 py-3 hover:bg-gray-50/50 transition-colors">
-            <a href="/pets/<%= pet.id %>" class="shrink-0">
-              <% if (pet.foto) { %>
-                <img src="<%= pet.foto %>" alt="<%= pet.nome %>" class="w-10 h-10 rounded-full object-cover ring-2 ring-primary-100">
-              <% } else { %>
-                <div class="w-10 h-10 rounded-full bg-primary-50 flex items-center justify-center">
-                  <i class="fa-solid fa-paw text-primary-400 text-sm"></i>
-                </div>
-              <% } %>
-            </a>
-            <div class="flex-1 min-w-0">
-              <a href="/pets/<%= pet.id %>" class="font-semibold text-sm text-gray-900 hover:underline truncate block"><%= pet.nome %></a>
-              <p class="text-xs text-gray-400 truncate"><%= pet.raca || pet.tipo || '' %> · <%= pet.total_seguidores %> seguidor<%= pet.total_seguidores !== 1 ? 'es' : '' %></p>
-            </div>
-            <button class="btn-seguir-pet-sidebar shrink-0 px-3 py-1.5 text-xs font-bold rounded-full border-2 border-primary-500 text-primary-500 hover:bg-primary-500 hover:text-white transition-all"
-                    data-pet-id="<%= pet.id %>">
-              Seguir
-            </button>
-          </div>
-        <% }) %>
-      </div>
-      <a href="/explorar/busca" class="block text-center text-sm text-primary-500 font-semibold py-3 hover:bg-primary-50/50 transition-colors border-t border-gray-50">
-        Buscar pets
-      </a>
-    </div>
-    <% } %>
-
-  </aside>
-
-  </div>
-
-</main>
-
-
-<!-- NEW POST MODAL -->
-<div id="newPostModal" class="fixed inset-0 z-[60] hidden">
-  <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" id="newPostOverlay"></div>
-  <div id="newPostSheet" class="new-post-sheet absolute bottom-0 left-0 right-0 bg-white flex flex-col animate-slideUp safe-bottom
-              md:relative md:top-1/2 md:-translate-y-1/2">
-
-    <div class="new-post-header flex items-center justify-between px-4 sm:px-5 py-3.5 border-b border-gray-100">
-      <h3 class="font-bold text-gray-900">Nova publicação</h3>
-      <div class="flex items-center gap-3">
-        <span id="postCounter" class="text-xs font-semibold px-2.5 py-1 rounded-full <%= totalPosts >= 10 ? 'bg-red-50 text-red-500' : 'bg-gray-100 text-gray-500' %>">
-          <%= totalPosts %>/10
-        </span>
-        <button type="button" id="closeNewPost" class="p-1 text-gray-400 hover:text-gray-600 transition-colors">
-          <i class="fa-solid fa-xmark text-lg"></i>
-        </button>
-      </div>
-    </div>
-
-    <div class="new-post-body flex-1 px-4 sm:px-5 py-3.5 space-y-3.5 scrollbar-hide">
-      <% if (totalPosts >= 10) { %>
-        <div class="flex items-center gap-2 px-4 py-3 rounded-xl bg-red-50 text-red-600 text-xs font-medium">
-          <i class="fa-solid fa-circle-exclamation"></i>
-          Limite atingido. Exclua um post antigo para publicar.
-        </div>
       <% } %>
 
-      <div id="uploadArea"
-           class="upload-dropzone hidden p-5 text-center cursor-pointer hover:border-primary-300 hover:bg-primary-50/30 duration-200">
-        <div id="uploadPlaceholder">
-          <div class="w-14 h-14 mx-auto mb-3 rounded-full bg-primary-50 flex items-center justify-center">
-            <i class="fa-solid fa-camera text-xl text-primary-400"></i>
+      <!-- Composer -->
+      <% if (isLogado) { %>
+      <div class="composer">
+        <div class="composer-top">
+          <% var corMe = usuario.cor_perfil || '#ec5a1c'; %>
+          <% if (usuario.foto_perfil) { %>
+            <img src="<%= usuario.foto_perfil %>" class="post-avatar" style="box-shadow:0 0 0 2px <%= corMe %>; flex-shrink:0;" alt="">
+          <% } else { %>
+            <div class="post-avatar-initial" style="box-shadow:0 0 0 2px <%= corMe %>; flex-shrink:0;"><%= (usuario.nome || 'U').charAt(0).toUpperCase() %></div>
+          <% } %>
+          <div style="flex:1; min-width:0; position:relative;">
+            <div id="mentionDropdownNovaPublicacao" class="autocomplete-dropdown hidden"></div>
+            <textarea
+              id="novoPostTexto"
+              class="composer-textarea"
+              rows="3"
+              placeholder="O que está acontecendo com seu pet?"
+              maxlength="500"
+            ></textarea>
           </div>
-          <p class="text-sm font-medium text-gray-600">Adicionar foto (opcional)</p>
-          <p class="text-xs text-gray-400 mt-1">toque, cole (Ctrl+V) ou arraste uma imagem</p>
         </div>
-        <div id="uploadPreview" class="hidden relative min-h-[180px] flex items-center justify-center">
-          <img id="previewImg" src="" alt="Preview" class="max-h-60 w-full max-w-full mx-auto rounded-xl object-contain">
-          <button type="button" id="removePhoto"
-                  class="absolute top-2 right-2 w-8 h-8 bg-black/50 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-black/70 transition-colors">
-            <i class="fa-solid fa-xmark text-sm"></i>
+        <div id="novoPostPreview" class="hidden mb-3" style="position:relative;">
+          <img id="novoPostPreviewImg" src="" alt="" style="max-height:200px; border-radius:12px; object-fit:cover; width:100%;">
+          <button type="button" id="removerFoto" style="position:absolute;top:8px;right:8px;width:28px;height:28px;border-radius:50%;background:rgba(0,0,0,0.6);border:none;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:12px;">
+            <i class="fa-solid fa-xmark"></i>
           </button>
         </div>
-      </div>
-      <input type="file" id="photoInput" accept="image/jpeg,image/png,image/gif,image/webp" class="hidden">
 
-      <div id="composerCard" class="composer-card px-3 py-2.5">
-      <div class="flex gap-2.5 items-start">
-        <% if (isLogado && usuario.foto_perfil) { %>
-          <img src="<%= usuario.foto_perfil %>" alt="" class="w-8 h-8 rounded-full object-cover shrink-0 mt-0.5">
-        <% } else { %>
-          <span class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0 mt-0.5"
-                style="background:<%= (isLogado && (usuario.cor_perfil || '#ec5a1c')) || '#ec5a1c' %>">
-            <%= (isLogado && usuario.nome ? usuario.nome.charAt(0).toUpperCase() : 'U') %>
-          </span>
-        <% } %>
-        <textarea id="novoPostTexto" rows="1" maxlength="500"
-                placeholder="O que seu pet aprontou hoje?"
-                class="composer-textarea w-full resize-none bg-transparent border-0 px-0 py-1 text-sm text-gray-800 placeholder-gray-400 outline-none"></textarea>
-      </div>
-      <div id="composerActions" class="hidden mt-2 pt-2 border-t border-gray-200 flex items-center justify-between">
-        <div class="flex items-center gap-2">
-          <button type="button" id="btnOpenImagePicker" class="w-8 h-8 rounded-full text-gray-500 hover:text-primary-500 hover:bg-primary-50 transition-colors" title="Adicionar imagem">
-            <i class="fa-regular fa-image"></i>
-          </button>
-          <span class="text-[11px] text-gray-400">Texto rápido ou imagem opcional</span>
-        </div>
-        <span id="charCount" class="text-[11px] text-gray-300">0/500</span>
-      </div>
-      </div>
-
-      <% if (pets && pets.length > 0) { %>
-        <div>
-          <label class="text-[11px] font-medium text-gray-500 mb-1.5 block">Perfil do post (opcional)</label>
-          <select id="novoPostPet" required
-                  class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-800 focus:ring-2 focus:ring-primary-500/20 focus:border-primary-400 outline-none bg-white transition-all">
-            <% pets.forEach(function(p, i) { %>
-              <option value="<%= p.id %>" <%= i === 0 ? 'selected' : '' %>><%= p.nome %></option>
+        <!-- Pet selector -->
+        <% if (typeof meusPets !== 'undefined' && meusPets && meusPets.length > 0) { %>
+        <div style="margin-bottom:12px;">
+          <select id="novoPetId" style="background:var(--ink-3);border:1px solid var(--border);border-radius:9px;padding:7px 12px;color:var(--text);font-family:var(--font-body);font-size:13px;outline:none;width:100%;cursor:pointer;">
+            <option value="">🐾 Nenhum pet</option>
+            <% meusPets.forEach(function(p) { %>
+              <option value="<%= p.id %>"><%= p.nome %></option>
             <% }); %>
           </select>
         </div>
-      <% } else { %>
-        <div class="flex flex-col gap-2 px-4 py-3 rounded-xl bg-amber-50 text-amber-800 text-sm">
-          <div class="flex items-center gap-2">
-            <i class="fa-solid fa-paw"></i>
-            <span>Opcional: cadastre um pet para vincular às publicações.</span>
-          </div>
-          <a href="/pets/cadastro" class="inline-flex items-center gap-1.5 text-sm font-semibold text-amber-700 hover:text-amber-900 underline">
-            <i class="fa-solid fa-plus text-xs"></i> Cadastrar pet
-          </a>
-        </div>
-      <% } %>
-    </div>
-
-    <div class="new-post-footer px-4 sm:px-5 py-3 border-t border-gray-100">
-      <button type="button" id="btnPublicar" disabled
-              class="w-full py-3 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-primary-500 to-primary-600 shadow-lg shadow-primary-500/20 hover:shadow-xl hover:shadow-primary-500/30 hover:-translate-y-0 transition-all duration-300 disabled:opacity-40 disabled:shadow-none disabled:translate-y-0 disabled:cursor-not-allowed">
-        Publicar
-      </button>
-    </div>
-  </div>
-</div>
-
-<%- include('partials/modal-crop') %>
-
-<!-- REPOST MODAL -->
-<div id="repostModal" class="fixed inset-0 z-[60] hidden">
-  <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" id="repostOverlay"></div>
-  <div class="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl max-h-[75vh] flex flex-col animate-slideUp safe-bottom
-              md:relative md:top-1/2 md:-translate-y-1/2 md:max-w-lg md:mx-auto md:rounded-2xl md:max-h-[70vh]">
-
-    <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-      <h3 class="font-bold text-gray-900">Repostar</h3>
-      <button type="button" id="closeRepost" class="p-1 text-gray-400 hover:text-gray-600 transition-colors">
-        <i class="fa-solid fa-xmark text-lg"></i>
-      </button>
-    </div>
-
-    <div class="flex-1 overflow-y-auto px-5 py-4 space-y-4 scrollbar-hide">
-      <div id="repostPreviewContent" class="border border-gray-200 rounded-2xl p-3 bg-gray-50/50"></div>
-
-      <textarea id="repostTexto" rows="3" maxlength="500"
-                placeholder="Adicione um comentário…"
-                class="w-full resize-none border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-primary-500/20 focus:border-primary-400 outline-none transition-all"></textarea>
-    </div>
-
-    <input type="hidden" id="repostPostId" value="">
-
-    <div class="px-5 py-4 border-t border-gray-100">
-      <button type="button" id="btnRepostar" disabled
-              class="w-full py-3 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-emerald-500 to-emerald-600 shadow-lg shadow-emerald-500/20 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 disabled:opacity-40 disabled:shadow-none disabled:translate-y-0 disabled:cursor-not-allowed">
-        <i class="fa-solid fa-retweet mr-1.5"></i> Repostar
-      </button>
-    </div>
-  </div>
-</div>
-
-
-<!-- COMMENT MODAL -->
-<div id="commentModal" class="fixed inset-0 z-[60] hidden">
-  <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" id="commentOverlay"></div>
-  <div class="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl max-h-[80vh] flex flex-col animate-slideUp safe-bottom
-              md:relative md:top-1/2 md:-translate-y-1/2 md:max-w-lg md:mx-auto md:rounded-2xl md:max-h-[75vh]">
-
-    <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-      <h3 class="font-bold text-gray-900">Comentários</h3>
-      <button type="button" id="closeComment" class="p-1 text-gray-400 hover:text-gray-600 transition-colors">
-        <i class="fa-solid fa-xmark text-lg"></i>
-      </button>
-    </div>
-
-    <div id="commentList" class="flex-1 overflow-y-auto px-5 py-3 scrollbar-hide min-h-[120px]">
-      <div class="space-y-1">
-        <div class="skeleton h-10 w-full mb-3"></div>
-        <div class="skeleton h-10 w-3/4 mb-3"></div>
-        <div class="skeleton h-10 w-5/6"></div>
-      </div>
-    </div>
-
-    <div class="relative border-t border-gray-100">
-      <div id="mentionDropdown" class="autocomplete-dropdown hidden"></div>
-      <div class="flex items-center gap-2 px-5 py-3">
-        <% if (isLogado) { %>
-          <% var feedNavCor = usuario.cor_perfil || '#ec5a1c'; %>
-          <% if (usuario.foto_perfil) { %>
-            <img src="<%= usuario.foto_perfil %>" alt="" class="w-8 h-8 rounded-full object-cover shrink-0" style="box-shadow: 0 0 0 2px <%= feedNavCor %>">
-          <% } else { %>
-            <span class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0 bg-gray-400"
-                  style="box-shadow: 0 0 0 2px <%= feedNavCor %>">
-              <%= usuario.nome ? usuario.nome.charAt(0).toUpperCase() : 'U' %>
-            </span>
-          <% } %>
         <% } %>
-        <input type="text" id="commentInput" placeholder="Adicionar comentário…" maxlength="500"
-               class="flex-1 text-sm bg-gray-50 rounded-full px-4 py-2.5 outline-none focus:bg-gray-100 focus:ring-2 focus:ring-primary-500/10 transition-all"
-               data-post-id="">
-        <button type="button" id="btnEnviarComentario"
-                class="w-9 h-9 rounded-full bg-gradient-to-r from-primary-500 to-primary-600 flex items-center justify-center text-white shrink-0 hover:shadow-lg hover:shadow-primary-500/25 transition-all disabled:opacity-40"
-                disabled>
-          <i class="fa-solid fa-paper-plane text-xs"></i>
-        </button>
+
+        <div class="composer-actions">
+          <div class="composer-tools">
+            <button type="button" class="composer-tool-btn" id="btnAnexarFoto" title="Foto">
+              <i class="fa-solid fa-image"></i>
+            </button>
+            <button type="button" class="composer-tool-btn" id="btnEmoji" title="Emoji">
+              <i class="fa-regular fa-face-smile"></i>
+            </button>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span id="charCount" style="font-size:12px;color:var(--text-dim);">0/500</span>
+            <button type="button" id="btnPublicar" class="btn-post" disabled>
+              <i class="fa-solid fa-paper-plane"></i>
+              Publicar
+            </button>
+          </div>
+        </div>
+        <input type="file" id="inputFotoPost" accept="image/*" class="hidden">
+      </div>
+      <% } %>
+
+      <!-- FEED -->
+      <div id="feedContainer">
+        <% if (posts && posts.length > 0) { %>
+          <% posts.forEach(function(post, idx) { %>
+            <% if (post.is_petshop_promo) { %>
+              <article class="post-card post-enter" id="promo-<%= post.petshop_id %>" style="animation-delay:<%= Math.min(idx*50,300) %>ms">
+                <div class="promo-strip">
+                  <span><i class="fa-solid fa-badge-percent mr-1"></i>Promoção para você</span>
+                  <span>Baseado no seu relacionamento</span>
+                </div>
+                <div class="promo-card-body">
+                  <div class="promo-store-header">
+                    <% if (post.petshop_logo_url) { %>
+                      <img src="<%= post.petshop_logo_url %>" class="promo-logo" alt="">
+                    <% } else { %>
+                      <div class="promo-logo-empty"><i class="fa-solid fa-store"></i></div>
+                    <% } %>
+                    <div>
+                      <div class="promo-store-name"><%= post.petshop_nome || 'Parceiro' %></div>
+                      <div class="promo-status"><%= post.usuario_vinculado ? 'Vinculado' : 'Seguindo' %></div>
+                    </div>
+                  </div>
+                  <div class="promo-title"><%= post.titulo || 'Promoção' %></div>
+                  <div class="promo-desc"><%= post.descricao_curta || '' %></div>
+                  <div class="promo-btns">
+                    <a href="/petshops/<%= post.petshop_slug || post.petshop_id %>" class="promo-btn-main">
+                      <i class="fa-solid fa-store"></i>Ver petshop
+                    </a>
+                    <% if (post.contato_link) { %>
+                      <a href="<%= post.contato_link %>" target="_blank" rel="noopener" class="promo-btn-main" style="background:rgba(242,96,32,0.1);color:var(--accent);border-color:rgba(242,96,32,0.2);">
+                        <i class="fa-solid fa-arrow-up-right-from-square"></i>Aproveitar
+                      </a>
+                    <% } %>
+                  </div>
+                </div>
+              </article>
+
+            <% } else if (post.is_sponsored) { %>
+              <article class="post-card post-enter" id="sponsored-<%= post.id %>" style="animation-delay:<%= Math.min(idx*50,300) %>ms">
+                <div class="sponsored-strip">
+                  <span><i class="fa-solid fa-circle-dollar mr-1"></i>Patrocinado</span>
+                </div>
+                <div class="post-header">
+                  <% if (post.pet_foto) { %>
+                    <img src="<%= post.pet_foto %>" class="post-avatar" alt="">
+                  <% } else { %>
+                    <div class="post-avatar-initial" style="background:var(--ink-4)"><%= (post.pet_nome || 'P').charAt(0) %></div>
+                  <% } %>
+                  <div class="post-meta">
+                    <span style="font-size:14px;font-weight:700;color:var(--text);"><%= post.pet_nome || 'Perfil pet patrocinado' %></span>
+                    <span class="post-time">Patrocinado</span>
+                  </div>
+                </div>
+                <% if (post.sponsored_label) { %>
+                  <div class="post-text" style="font-weight:700;font-size:16px;padding-bottom:4px;"><%= post.sponsored_label %></div>
+                <% } %>
+                <% if (post.texto || post.legenda) { %>
+                  <div class="post-text"><%= post.texto || post.legenda %></div>
+                <% } %>
+                <% if (post.foto) { %>
+                  <img src="<%= post.foto %>" class="post-photo" loading="lazy" alt="">
+                <% } %>
+                <% if (post.pet_id) { %>
+                  <div style="padding:10px 16px 14px;">
+                    <a href="/explorar/pet/<%= post.pet_id %>" style="display:inline-flex;align-items:center;gap:6px;padding:9px 18px;background:var(--accent);color:#fff;border-radius:9px;font-size:13px;font-weight:700;text-decoration:none;transition:all 0.15s;" onmouseover="this.style.background='var(--accent-light)'" onmouseout="this.style.background='var(--accent)'">
+                      Ver perfil do pet <i class="fa-solid fa-arrow-right" style="font-size:11px;"></i>
+                    </a>
+                  </div>
+                <% } %>
+              </article>
+
+            <% } else { %>
+              <%
+                var isRepost = post.tipo === 'repost';
+                var isMine = typeof usuario !== 'undefined' && usuario && post.usuario_id === usuario.id;
+                var pCor = post.cor_perfil || '#ec5a1c';
+              %>
+              <article class="post-card post-enter" data-post-id="<%= post.id %>" data-author-id="<%= post.usuario_id %>" id="post-<%= post.id %>" style="animation-delay:<%= Math.min(idx*50,300) %>ms">
+
+                <% if (isRepost) { %>
+                  <div class="post-strip repost"><i class="fa-solid fa-retweet"></i><%= post.autor_nome %> repostou</div>
+                <% } %>
+                <% if (post.fixada) { %>
+                  <div class="post-strip pinned"><i class="fa-solid fa-thumbtack"></i>Fixado</div>
+                <% } %>
+
+                <div class="post-header">
+                  <a href="/explorar/perfil/<%= post.usuario_id %>" class="post-avatar-wrap">
+                    <% if (post.foto_perfil) { %>
+                      <img src="<%= post.foto_perfil %>" class="post-avatar post-author-avatar" style="box-shadow:0 0 0 2px <%= pCor %>" alt="">
+                    <% } else { %>
+                      <div class="post-avatar-initial post-author-avatar" style="box-shadow:0 0 0 2px <%= pCor %>"><%= (post.autor_nome || 'U').charAt(0).toUpperCase() %></div>
+                    <% } %>
+                  </a>
+                  <div class="post-meta">
+                    <div>
+                      <a href="/explorar/perfil/<%= post.usuario_id %>" class="post-author-name post-author-name"><%= post.autor_nome %></a>
+                      <% if (post.pet_nome && post.pet_id) { %>
+                        <a href="/explorar/pet/<%= post.pet_id %>" class="post-pet-link"><i class="fa-solid fa-paw" style="font-size:9px;"></i> <%= post.pet_nome %></a>
+                      <% } %>
+                    </div>
+                    <span class="post-time tempo-relativo" data-time="<%= post.criado_em %>"><%= post.criado_em %></span>
+                  </div>
+                  <% if (isMine) { %>
+                  <div style="position:relative; flex-shrink:0;">
+                    <button type="button" class="post-menu-btn btn-menu-post"><i class="fa-solid fa-ellipsis"></i></button>
+                    <div class="post-dropdown hidden">
+                      <button type="button" class="post-dropdown-item btn-fixar" data-post-id="<%= post.id %>" data-fixada="<%= post.fixada ? '1' : '0' %>">
+                        <i class="fa-solid fa-thumbtack" style="width:16px;text-align:center;color:var(--text-dim);"></i>
+                        <%= post.fixada ? 'Desafixar' : 'Fixar' %>
+                      </button>
+                      <button type="button" class="post-dropdown-item danger btn-deletar" data-post-id="<%= post.id %>">
+                        <i class="fa-solid fa-trash-can" style="width:16px;text-align:center;"></i>
+                        Excluir
+                      </button>
+                    </div>
+                  </div>
+                  <% } %>
+                </div>
+
+                <% if (post.texto || post.legenda) { %>
+                  <div class="post-text line-clamp-3 post-text-body"><%= post.texto || post.legenda %></div>
+                  <div style="padding:0 16px 10px;"><button type="button" class="btn-ver-mais hidden" style="font-size:12px;color:var(--accent);font-weight:600;background:transparent;border:none;cursor:pointer;padding:0;">ver mais</button></div>
+                <% } %>
+
+                <% if (post.foto) { %>
+                  <img src="<%= post.foto %>" class="post-photo" loading="lazy" alt="">
+                <% } %>
+
+                <% if (isRepost && post.orig_id) { %>
+                  <div class="post-embed">
+                    <div class="post-embed-header">
+                      <% if (post.orig_foto_perfil) { %>
+                        <img src="<%= post.orig_foto_perfil %>" class="post-embed-avatar" alt="">
+                      <% } else { %>
+                        <div class="post-embed-avatar" style="background:var(--ink-4);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:var(--text);"><%= (post.orig_autor_nome || 'U').charAt(0).toUpperCase() %></div>
+                      <% } %>
+                      <a href="/explorar/perfil/<%= post.orig_usuario_id %>" class="post-embed-name"><%= post.orig_autor_nome %></a>
+                    </div>
+                    <% if (post.orig_texto || post.orig_legenda) { %>
+                      <div class="post-embed-text"><%= post.orig_texto || post.orig_legenda %></div>
+                    <% } %>
+                    <% if (post.orig_foto) { %>
+                      <img src="<%= post.orig_foto %>" class="post-embed-img" loading="lazy" alt="">
+                    <% } %>
+                  </div>
+                <% } %>
+
+                <div class="post-actions">
+                  <button type="button" class="post-action-btn btn-comentar" data-post-id="<%= post.id %>">
+                    <i class="fa-regular fa-comment"></i>
+                    <span class="count-comentarios"><%= post.total_comentarios || '' %></span>
+                  </button>
+                  <button type="button" class="post-action-btn btn-repost <%= post.repostou ? 'reposted' : '' %>" data-post-id="<%= post.id %>">
+                    <i class="fa-solid fa-retweet"></i>
+                    <span class="count-reposts"><%= post.total_reposts || '' %></span>
+                  </button>
+                  <button type="button" class="post-action-btn btn-curtir <%= post.curtiu ? 'liked' : '' %>" data-post-id="<%= post.id %>" data-curtiu="<%= post.curtiu ? '1' : '0' %>" style="position:relative;">
+                    <i class="<%= post.curtiu ? 'fa-solid' : 'fa-regular' %> fa-heart"></i>
+                    <span class="count-curtidas"><%= post.total_curtidas || '' %></span>
+                  </button>
+                  <button type="button" class="post-action-btn btn-share" data-post-id="<%= post.id %>" data-autor="<%= post.autor_nome %>">
+                    <i class="fa-solid fa-share-from-square"></i>
+                  </button>
+                </div>
+
+                <% if (post.total_comentarios > 0) { %>
+                <div class="post-view-comments">
+                  <button type="button" class="btn-comentar" data-post-id="<%= post.id %>">
+                    Ver todos os <%= post.total_comentarios %> comentários
+                  </button>
+                </div>
+                <% } %>
+
+                <% if (isLogado) { %>
+                <div class="post-comment-row">
+                  <% if (usuario.foto_perfil) { %>
+                    <img src="<%= usuario.foto_perfil %>" style="width:28px;height:28px;border-radius:50%;object-fit:cover;flex-shrink:0;box-shadow:0 0 0 2px <%= usuario.cor_perfil || '#ec5a1c' %>;" alt="">
+                  <% } else { %>
+                    <div style="width:28px;height:28px;border-radius:50%;flex-shrink:0;background:var(--ink-4);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--text);box-shadow:0 0 0 2px <%= usuario.cor_perfil || '#ec5a1c' %>;"><%= (usuario.nome || 'U').charAt(0).toUpperCase() %></div>
+                  <% } %>
+                  <input type="text" class="comment-input input-comentario-inline" data-post-id="<%= post.id %>" placeholder="Adicionar comentário…" maxlength="500">
+                </div>
+                <% } %>
+
+              </article>
+            <% } %>
+          <% }); %>
+        <% } else { %>
+          <div style="text-align:center; padding:80px 24px; color:var(--text-dim);">
+            <div style="font-size:48px; margin-bottom:16px; opacity:0.3;">🐾</div>
+            <p style="font-size:16px; font-weight:600; color:var(--text); margin-bottom:8px;">Seu feed está vazio</p>
+            <p style="font-size:14px;">Siga pessoas e pets para ver publicações aqui.</p>
+            <a href="/explorar" style="display:inline-flex;align-items:center;gap:8px;margin-top:20px;padding:10px 22px;background:var(--accent);color:#fff;border-radius:10px;font-size:14px;font-weight:700;text-decoration:none;">
+              <i class="fa-solid fa-compass"></i>Explorar
+            </a>
+          </div>
+        <% } %>
+
+        <% if (typeof hasMore !== 'undefined' && hasMore) { %>
+          <button id="loadMoreBtn" data-page="2">
+            <i class="fa-solid fa-arrows-rotate mr-2"></i>Carregar mais publicações
+          </button>
+        <% } %>
       </div>
     </div>
+
+    <!-- ═══ SIDEBAR ═══ -->
+    <aside class="feed-sidebar">
+
+      <!-- Search desktop -->
+      <div style="margin-bottom:14px;">
+        <a href="/explorar/busca" style="display:flex;align-items:center;gap:10px;background:var(--ink-2);border:1px solid var(--border);border-radius:12px;padding:10px 14px;color:var(--text-dim);font-size:13px;text-decoration:none;transition:all 0.2s;" onmouseover="this.style.borderColor='var(--border-hover)'" onmouseout="this.style.borderColor='var(--border)'">
+          <i class="fa-solid fa-magnifying-glass" style="font-size:13px;"></i>
+          Buscar pets ou pessoas...
+        </a>
+      </div>
+
+      <!-- Sugestões de usuários -->
+      <% if (typeof sugestoesUsuarios !== 'undefined' && sugestoesUsuarios && sugestoesUsuarios.length > 0) { %>
+      <div class="sidebar-card">
+        <div class="sidebar-title">Quem seguir</div>
+        <% sugestoesUsuarios.forEach(function(u) { %>
+          <div class="sidebar-user-item">
+            <% var uCor = u.cor_perfil || '#ec5a1c'; %>
+            <% if (u.foto_perfil) { %>
+              <img src="<%= u.foto_perfil %>" class="sidebar-avatar" style="box-shadow:0 0 0 2px <%= uCor %>" alt="">
+            <% } else { %>
+              <div class="sidebar-avatar-init" style="box-shadow:0 0 0 2px <%= uCor %>"><%= (u.nome || 'U').charAt(0).toUpperCase() %></div>
+            <% } %>
+            <a href="/explorar/perfil/<%= u.id %>" style="flex:1;min-width:0;font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-decoration:none;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'"><%= u.nome %></a>
+            <button type="button" class="sidebar-follow-btn btn-seguir-sidebar" data-user-id="<%= u.id %>">Seguir</button>
+          </div>
+        <% }); %>
+      </div>
+      <% } %>
+
+      <!-- Pets para seguir -->
+      <% if (typeof sugestoesPets !== 'undefined' && sugestoesPets && sugestoesPets.length > 0) { %>
+      <div class="sidebar-card">
+        <div class="sidebar-title">Pets em destaque</div>
+        <% sugestoesPets.forEach(function(pet) { %>
+          <div class="sidebar-user-item">
+            <% if (pet.foto) { %>
+              <img src="<%= pet.foto %>" class="sidebar-avatar" alt="">
+            <% } else { %>
+              <div class="sidebar-avatar-init" style="background:var(--ink-4);">🐾</div>
+            <% } %>
+            <a href="/explorar/pet/<%= pet.id %>" style="flex:1;min-width:0;font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-decoration:none;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'"><%= pet.nome %></a>
+            <button type="button" class="sidebar-follow-btn btn-seguir-pet-sidebar" data-pet-id="<%= pet.id %>">Seguir</button>
+          </div>
+        <% }); %>
+      </div>
+      <% } %>
+
+      <!-- Petshops -->
+      <% if (typeof petshopsProximos !== 'undefined' && petshopsProximos && petshopsProximos.length > 0) { %>
+      <div class="sidebar-card">
+        <div class="sidebar-title">Petshops próximos</div>
+        <% petshopsProximos.forEach(function(ps) { %>
+          <div class="sidebar-user-item">
+            <% if (ps.logo_url) { %>
+              <img src="<%= ps.logo_url %>" style="width:34px;height:34px;border-radius:9px;object-fit:cover;flex-shrink:0;" alt="">
+            <% } else { %>
+              <div class="sidebar-avatar-init" style="border-radius:9px;background:var(--ink-4);">🏪</div>
+            <% } %>
+            <a href="/petshops/<%= ps.slug || ps.id %>" style="flex:1;min-width:0;font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-decoration:none;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'"><%= ps.nome %></a>
+          </div>
+        <% }); %>
+      </div>
+      <% } %>
+
+      <div style="font-size:11px;color:var(--text-dim);line-height:1.6;padding:0 4px;">
+        AIRPET © 2025 &nbsp;·&nbsp;
+        <a href="/privacidade" style="color:var(--text-dim);text-decoration:none;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text-dim)'">Privacidade</a> &nbsp;·&nbsp;
+        <a href="/termos" style="color:var(--text-dim);text-decoration:none;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text-dim)'">Termos</a>
+      </div>
+    </aside>
+
   </div>
-</div>
+</main>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"
-        integrity="sha512-9KkIqdfN7ipE6L4oF4lF0W5f+Yk3nN7+E2n1Q0Y1kHjAPiVnJjOVT1fE2YTYL4e1kCwTxmU1nPqkRIKO1pV4Eg=="
-        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script src="/js/crop-modal.js"></script>
-
-<!-- SCRIPTS -->
 <script>
 (function () {
   'use strict';
 
-  var currentPage = <%= page %>;
-  var hasMore = <%= temMais ? 'true' : 'false' %>;
-  var totalPostsLocal = <%= totalPosts %>;
-  var totalFixadasLocal = <%= totalFixadas %>;
-  var meuId = <%= isLogado ? usuario.id : 0 %>;
-  var meuNome = '<%= isLogado ? usuario.nome.replace(/'/g, "\\'") : "" %>';
-  var meuCorPerfil = '<%= isLogado ? (usuario.cor_perfil || "#ec5a1c") : "#ec5a1c" %>';
-  var meuFotoPerfil = '<%= isLogado ? (usuario.foto_perfil || "") : "" %>';
-  var isLoading = false;
-  var selectedFile = null;
-  var commentPostId = null;
-  var searchTimeout = null;
-
+  var meuId = <%- typeof usuario !== 'undefined' && usuario ? usuario.id : 'null' %>;
+  var meuNome = '<%- typeof usuario !== 'undefined' && usuario ? (usuario.nome || '').replace(/'/g, "\\'") : '' %>';
+  var meuFotoPerfil = '<%- typeof usuario !== 'undefined' && usuario ? (usuario.foto_perfil || '').replace(/'/g, "\\'") : '' %>';
+  var meuCorPerfil = '<%- typeof usuario !== 'undefined' && usuario ? (usuario.cor_perfil || '#ec5a1c').replace(/'/g, "\\'") : '#ec5a1c' %>';
   var feedContainer = document.getElementById('feedContainer');
-  var scrollSentinel = document.getElementById('scrollSentinel');
-  var viewObserver = null;
-  var viewedPosts = new Set();
 
-  function registrarVisualizacao(postId, watchMs, source) {
-    fetch('/explorar/api/interactions/view', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-      credentials: 'same-origin',
-      body: JSON.stringify({ postId: postId, watchMs: watchMs || 1500, source: source || 'feed' })
-    }).catch(function () {});
-  }
-
-  function observarCardVisualizacao(card) {
-    if (!card || !viewObserver) return;
-    var postId = parseInt(card.getAttribute('data-post-id'), 10);
-    if (!postId || viewedPosts.has(postId)) return;
-    viewObserver.observe(card);
-  }
-
-  function tempoRelativo(dateStr) {
-    if (!dateStr) return '';
-    var now = Date.now();
-    var then = new Date(dateStr).getTime();
-    var diff = Math.floor((now - then) / 1000);
+  // ── Relative time ──
+  function tempoRelativo(ts) {
+    if (!ts) return '';
+    var d = new Date(ts), now = Date.now(), diff = Math.floor((now - d) / 1000);
     if (diff < 60) return 'agora';
-    if (diff < 3600) return 'há ' + Math.floor(diff / 60) + 'm';
-    if (diff < 86400) return 'há ' + Math.floor(diff / 3600) + 'h';
-    if (diff < 604800) return 'há ' + Math.floor(diff / 86400) + 'd';
-    var d = new Date(dateStr);
-    var meses = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
-    return d.getDate() + ' ' + meses[d.getMonth()];
+    if (diff < 3600) return Math.floor(diff/60) + 'min';
+    if (diff < 86400) return Math.floor(diff/3600) + 'h';
+    if (diff < 604800) return Math.floor(diff/86400) + 'd';
+    return d.toLocaleDateString('pt-BR', {day:'2-digit',month:'short'});
   }
 
   function atualizarTempos() {
-    var els = document.querySelectorAll('.tempo-relativo');
-    for (var i = 0; i < els.length; i++) {
-      var t = els[i].getAttribute('data-time');
-      if (t) els[i].textContent = tempoRelativo(t);
-    }
-  }
-
-  function escapeHtml(str) {
-    var div = document.createElement('div');
-    div.textContent = str || '';
-    return div.innerHTML;
-  }
-
-  function renderMencoes(texto) {
-    return escapeHtml(texto).replace(/@(\S+)/g, '<span class="mention" data-user="$1">@$1</span>');
-  }
-
-  function toast(msg, tipo) {
-    var el = document.createElement('div');
-    el.className = 'fixed top-20 left-1/2 -translate-x-1/2 z-[70] px-5 py-3 rounded-2xl text-sm font-semibold shadow-xl animate-slideUp ' +
-      (tipo === 'erro' ? 'bg-red-500 text-white' : 'bg-white text-gray-800 ring-1 ring-black/5');
-    el.textContent = msg;
-    document.body.appendChild(el);
-    setTimeout(function () { el.classList.add('fade-out'); }, 2500);
-    setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 3000);
-  }
-
-  function abrirModal(id) { var m = document.getElementById(id); if (m) { m.classList.remove('hidden'); document.body.style.overflow = 'hidden'; } }
-  function fecharModal(id) { var m = document.getElementById(id); if (m) { m.classList.add('hidden'); document.body.style.overflow = ''; } }
-
-  document.getElementById('newPostOverlay').addEventListener('click', function () { fecharModal('newPostModal'); });
-  document.getElementById('closeNewPost').addEventListener('click', function () { fecharModal('newPostModal'); });
-  document.getElementById('repostOverlay').addEventListener('click', function () { fecharModal('repostModal'); });
-  document.getElementById('closeRepost').addEventListener('click', function () { fecharModal('repostModal'); });
-  document.getElementById('commentOverlay').addEventListener('click', function () { fecharModal('commentModal'); });
-  document.getElementById('closeComment').addEventListener('click', function () { fecharModal('commentModal'); });
-  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { fecharModal('newPostModal'); fecharModal('repostModal'); fecharModal('commentModal'); } });
-
-  var LIKE_DEBOUNCE_MS = 350;
-  var likeCoalesceState = new Map(); // postId -> { timer, inFlight, desiredLiked, btn }
-
-  function sendLikeRequest(postId) {
-    var state = likeCoalesceState.get(postId);
-    if (!state || state.inFlight) return;
-
-    state.inFlight = true;
-    state.timer = null;
-
-    var desiredLikedSnap = !!state.desiredLiked;
-    var methodSnap = desiredLikedSnap ? 'POST' : 'DELETE';
-    var btnSnap = state.btn;
-    var countEl = btnSnap ? btnSnap.querySelector('.count-curtidas') : null;
-    var url = '/explorar/post/' + postId + '/curtir';
-    var key = 'like:' + postId + ':' + (desiredLikedSnap ? '1' : '0');
-
-    var coordinator = window.AIRPET_REQ_COORDINATOR;
-    var fetchFn = function (signal) {
-      return fetch(url, {
-        method: methodSnap,
-        headers: { 'Accept': 'application/json' },
-        credentials: 'same-origin',
-        signal: signal
-      }).then(function (r) { return r.json(); });
-    };
-
-    var p;
-    if (coordinator && coordinator.enqueue) {
-      p = coordinator.enqueue({
-        key: key,
-        priority: coordinator.PRIORITY ? coordinator.PRIORITY.HIGH : 'HIGH',
-        group: 'likeActions',
-        fetchFn: fetchFn
-      });
-    } else {
-      p = fetchFn(null);
-    }
-
-    Promise.resolve(p).then(function (data) {
-      if (data && data.sucesso && countEl) countEl.textContent = data.total || '';
-    }).catch(function () { }).finally(function () {
-      var s2 = likeCoalesceState.get(postId);
-      if (!s2) return;
-      s2.inFlight = false;
-
-      // Se o usuário clicou durante a requisição, manda UMA nova (depois do debounce).
-      if (s2.desiredLiked !== desiredLikedSnap) {
-        scheduleLikeRequest(postId);
-      }
+    document.querySelectorAll('.tempo-relativo').forEach(function(el) {
+      var t = el.getAttribute('data-time');
+      if (t) el.textContent = tempoRelativo(t);
     });
   }
 
-  function scheduleLikeRequest(postId) {
-    var state = likeCoalesceState.get(postId);
-    if (!state || state.inFlight) return;
-    if (state.timer) clearTimeout(state.timer);
-    state.timer = setTimeout(function () { sendLikeRequest(postId); }, LIKE_DEBOUNCE_MS);
+  function escapeHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
 
+  // ── Menus ──
+  function fecharMenus() {
+    document.querySelectorAll('.post-dropdown').forEach(function(m) { m.classList.add('hidden'); });
+  }
+
+  function toggleMenu(btn) {
+    var dd = btn.nextElementSibling;
+    var isHidden = dd.classList.contains('hidden');
+    fecharMenus();
+    if (isHidden) dd.classList.remove('hidden');
+  }
+
+  // ── Like ──
   function curtirPost(postId, btn) {
+    if (!meuId) { window.location = '/auth/login'; return; }
     var curtiu = btn.getAttribute('data-curtiu') === '1';
-    var desiredLiked = !curtiu;
-
-    // Atualiza UI otimista imediatamente.
+    var newState = !curtiu;
+    btn.setAttribute('data-curtiu', newState ? '1' : '0');
+    btn.classList.toggle('liked', newState);
     var icon = btn.querySelector('i');
+    if (icon) { icon.className = newState ? 'fa-solid fa-heart' : 'fa-regular fa-heart'; }
     var countEl = btn.querySelector('.count-curtidas');
-    btn.setAttribute('data-curtiu', desiredLiked ? '1' : '0');
-    if (desiredLiked) {
-      btn.classList.remove('text-gray-400'); btn.classList.add('text-red-500');
-      icon.className = 'fa-solid fa-heart animate-heartPop';
-      var heart = document.createElement('i');
-      heart.className = 'fa-solid fa-heart float-heart';
-      heart.style.left = '50%'; heart.style.bottom = '100%';
+    if (countEl) {
+      var n = parseInt(countEl.textContent) || 0;
+      countEl.textContent = newState ? n + 1 : Math.max(0, n - 1) || '';
+    }
+    if (newState) {
+      btn.classList.add('animate-heartPop');
+      setTimeout(function() { btn.classList.remove('animate-heartPop'); }, 400);
+      var heart = document.createElement('span');
+      heart.className = 'float-heart'; heart.textContent = '♥';
+      heart.style.cssText = 'left:50%;top:50%;transform:translate(-50%,-50%)';
       btn.appendChild(heart);
-      setTimeout(function () { if (heart.parentNode) heart.parentNode.removeChild(heart); }, 800);
-    } else {
-      btn.classList.remove('text-red-500'); btn.classList.add('text-gray-400');
-      icon.className = 'fa-regular fa-heart';
+      setTimeout(function() { heart.remove(); }, 700);
     }
-
-    // Coalesce: vários cliques viram UMA requisição no final do burst.
-    var state = likeCoalesceState.get(postId);
-    if (!state) { state = { timer: null, inFlight: false, desiredLiked: desiredLiked, btn: btn }; }
-    state.desiredLiked = desiredLiked;
-    state.btn = btn;
-    likeCoalesceState.set(postId, state);
-    scheduleLikeRequest(postId);
+    fetch('/explorar/post/' + postId + '/curtir', {
+      method: newState ? 'POST' : 'DELETE',
+      headers: { 'Accept': 'application/json' },
+      credentials: 'same-origin'
+    });
   }
 
-  function abrirComentarios(postId) { commentPostId = postId; var input = document.getElementById('commentInput'); input.setAttribute('data-post-id', postId); input.value = ''; document.getElementById('btnEnviarComentario').disabled = true; abrirModal('commentModal'); carregarComentarios(postId); }
-
-  function carregarComentarios(postId) {
-    var list = document.getElementById('commentList');
-    var cacheTimeMs = 1800000; // 30 min
-    var staleTimeMs = 300000; // 5 min
-    var key = 'comments:' + postId;
-    var group = 'commentsModal';
-
-    try { if (window.AIRPET_REQ_COORDINATOR && window.AIRPET_REQ_COORDINATOR.cancelGroup) window.AIRPET_REQ_COORDINATOR.cancelGroup(group); } catch (_) {}
-
-    function renderData(data) {
-      if (!data || !data.sucesso) return;
-      if (!data.comentarios || data.comentarios.length === 0) { list.innerHTML = '<div class="text-center py-10"><p class="text-sm text-gray-400">Nenhum comentário ainda.</p></div>'; return; }
-      var html = '<div class="space-y-4">';
-      data.comentarios.forEach(function (c) { html += renderComentario(c); });
-      html += '</div>';
-      list.innerHTML = html;
-      var tempos = list.querySelectorAll('.tempo-relativo');
-      for (var i = 0; i < tempos.length; i++) { var t = tempos[i].getAttribute('data-time'); if (t) tempos[i].textContent = tempoRelativo(t); }
-    }
-
-    // 1) render imediato do cache (sem skeleton), se existir
-    var hasCached = false;
-    if (window.AIRPET_SWR_CACHE && window.AIRPET_SWR_CACHE.getCached) {
-      var cached = window.AIRPET_SWR_CACHE.getCached(key, cacheTimeMs);
-      if (cached && cached.value) renderData(cached.value);
-      if (cached && cached.value) hasCached = true;
-    }
-
-    // 2) se não tiver cache, mostra skeleton
-    if (!hasCached) {
-      list.innerHTML = '<div class="space-y-3"><div class="skeleton h-12 w-full"></div><div class="skeleton h-12 w-3/4"></div></div>';
-    }
-
-    // 3) revalida em background se cache estiver stale
-    if (typeof swrFetchGet === 'function') {
-      swrFetchGet({
-        key: key,
-        url: '/explorar/post/' + postId + '/comentarios',
-        priority: window.AIRPET_REQ_COORDINATOR && window.AIRPET_REQ_COORDINATOR.PRIORITY ? window.AIRPET_REQ_COORDINATOR.PRIORITY.HIGH : 'HIGH',
-        staleTimeMs: staleTimeMs,
-        cacheTimeMs: cacheTimeMs,
-        group: group,
-        onUpdate: function (data) {
-          if (commentPostId !== postId) return;
-          renderData(data);
-        }
-      }).then(function (res) {
-        if (commentPostId !== postId) return;
-        renderData(res.data);
-      }).catch(function () {
-        if (commentPostId !== postId) return;
-        list.innerHTML = '<div class="text-center py-8"><p class="text-sm text-red-400">Erro ao carregar.</p></div>';
-      });
-      return;
-    }
-
-    // fallback
-    fetch('/explorar/post/' + postId + '/comentarios', { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
-      .then(function (r) { return r.json(); })
-      .then(function (data) {
-        if (commentPostId !== postId) return;
-        renderData(data);
-      })
-      .catch(function () {
-        if (commentPostId !== postId) return;
-        list.innerHTML = '<div class="text-center py-8"><p class="text-sm text-red-400">Erro ao carregar.</p></div>';
-      });
-  }
-
-  function renderComentario(c) {
-    var cCor = c.cor_perfil || '#ec5a1c';
-    var avatar = c.foto_perfil ? '<img src="' + escapeHtml(c.foto_perfil) + '" class="w-8 h-8 rounded-full object-cover shrink-0" style="box-shadow:0 0 0 2px ' + escapeHtml(cCor) + '">' : '<span class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0 bg-gray-400" style="box-shadow:0 0 0 2px ' + escapeHtml(cCor) + '">' + escapeHtml((c.nome || 'U').charAt(0).toUpperCase()) + '</span>';
-    var podeApagar = (c.usuario_id === meuId);
-    return '<div class="flex gap-3 group" data-comment-id="' + c.id + '"><a href="/explorar/perfil/' + c.usuario_id + '" class="shrink-0">' + avatar + '</a><div class="flex-1 min-w-0"><div class="flex items-baseline gap-2"><a href="/explorar/perfil/' + c.usuario_id + '" class="text-sm font-semibold text-gray-900 hover:underline">' + escapeHtml(c.nome || c.autor_nome) + '</a><span class="text-[11px] text-gray-400 tempo-relativo" data-time="' + c.criado_em + '"></span></div><p class="text-sm text-gray-700 mt-0.5 leading-relaxed">' + renderMencoes(c.texto) + '</p></div>' + (podeApagar ? '<button type="button" class="shrink-0 p-1 text-gray-300 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all btn-del-comment" data-comment-id="' + c.id + '"><i class="fa-solid fa-trash-can text-xs"></i></button>' : '') + '</div>';
+  // ── Comments ──
+  function abrirComentarios(postId) {
+    window.location = '/explorar/post/' + postId;
   }
 
   function enviarComentario(postId, texto, inputEl) {
-    if (!texto) return;
-    fetch('/explorar/post/' + postId + '/comentar', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' }, credentials: 'same-origin', body: JSON.stringify({ texto: texto }) }).then(function (r) { return r.json(); }).then(function (data) {
-      if (!data.sucesso) { toast(data.mensagem || 'Erro.', 'erro'); return; }
-      if (inputEl) inputEl.value = '';
-      var card = document.querySelector('article[data-post-id="' + postId + '"]');
-      if (card) { var counts = card.querySelectorAll('.count-comentarios'); for (var i = 0; i < counts.length; i++) counts[i].textContent = data.total || ''; }
-      if (commentPostId === postId) carregarComentarios(postId);
-    }).catch(function () { toast('Erro de conexão.', 'erro'); });
-  }
-
-  document.getElementById('commentList').addEventListener('click', function (e) { var btn = e.target.closest('.btn-del-comment'); if (!btn) return; var cid = btn.getAttribute('data-comment-id'); if (!confirm('Excluir comentário?')) return; fetch('/explorar/comentario/' + cid, { method: 'DELETE', headers: { 'Accept': 'application/json' }, credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (data) { if (data.sucesso && commentPostId) carregarComentarios(commentPostId); }).catch(function () {}); });
-
-  var commentInput = document.getElementById('commentInput');
-  var btnEnviarComentario = document.getElementById('btnEnviarComentario');
-  commentInput.addEventListener('input', function () { btnEnviarComentario.disabled = !this.value.trim(); handleMentionAutocomplete(this); });
-  commentInput.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); var txt = this.value.trim(); if (txt) enviarComentario(this.getAttribute('data-post-id'), txt, this); btnEnviarComentario.disabled = true; } });
-  btnEnviarComentario.addEventListener('click', function () { var txt = commentInput.value.trim(); if (txt) enviarComentario(commentInput.getAttribute('data-post-id'), txt, commentInput); btnEnviarComentario.disabled = true; });
-
-  var mentionDropdown = document.getElementById('mentionDropdown');
-  function handleMentionAutocomplete(input) {
-    var val = input.value; var cursor = input.selectionStart; var before = val.substring(0, cursor); var match = before.match(/@(\w*)$/);
-    if (!match) { mentionDropdown.classList.add('hidden'); return; }
-    var query = (match[1] || '').trim(); clearTimeout(searchTimeout);
-    searchTimeout = setTimeout(function () {
-      var url = '/explorar/api/usuarios?seguindo=1';
-      var qKey = query.toLowerCase();
-      if (query.length) url += '&q=' + encodeURIComponent(query);
-
-      // Cancela requests anteriores de sugestões quando o usuário continua digitando.
-      try { if (window.AIRPET_REQ_COORDINATOR && window.AIRPET_REQ_COORDINATOR.cancelGroup) window.AIRPET_REQ_COORDINATOR.cancelGroup('mentionAutocomplete'); } catch (_) {}
-
-      if (typeof swrFetchGet === 'function') {
-        var uidPart = (typeof meuId !== 'undefined' && meuId !== null && meuId !== undefined) ? String(meuId) : 'anon';
-        var key = 'mentionUsers:' + uidPart + ':' + qKey;
-        swrFetchGet({
-          key: key,
-          url: url,
-          priority: window.AIRPET_REQ_COORDINATOR && window.AIRPET_REQ_COORDINATOR.PRIORITY
-            ? window.AIRPET_REQ_COORDINATOR.PRIORITY.MEDIUM
-            : 'MEDIUM',
-          staleTimeMs: 300000, // 5 min
-          cacheTimeMs: 1800000, // 30 min
-          serveStale: false,
-          group: 'mentionAutocomplete'
-        }).then(function (res) {
-          var users = res && res.data ? res.data : res;
-          if (!users || !users.length) { mentionDropdown.classList.add('hidden'); return; }
-          var html = '';
-          users.forEach(function (u) {
-            var uCor = u.cor_perfil || '#ec5a1c';
-            var av = u.foto_perfil ? '<img src="' + escapeHtml(u.foto_perfil) + '" class="w-7 h-7 rounded-full object-cover" style="box-shadow:0 0 0 2px ' + escapeHtml(uCor) + '">' : '<span class="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold text-white bg-gray-400" style="box-shadow:0 0 0 2px ' + escapeHtml(uCor) + '">' + escapeHtml((u.nome || 'U').charAt(0).toUpperCase()) + '</span>';
-            html += '<div class="autocomplete-item" data-nome="' + escapeHtml(u.nome) + '">' + av + '<span class="font-medium text-gray-700">' + escapeHtml(u.nome) + '</span></div>';
-          });
-          mentionDropdown.innerHTML = html;
-          mentionDropdown.classList.remove('hidden');
-        }).catch(function () { mentionDropdown.classList.add('hidden'); });
-        return;
-      }
-
-      // fallback
-      fetch(url, { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
-        .then(function (r) { return r.json(); })
-        .then(function (users) {
-          if (!users || !users.length) { mentionDropdown.classList.add('hidden'); return; }
-          var html = '';
-          users.forEach(function (u) {
-            var uCor = u.cor_perfil || '#ec5a1c';
-            var av = u.foto_perfil ? '<img src="' + escapeHtml(u.foto_perfil) + '" class="w-7 h-7 rounded-full object-cover" style="box-shadow:0 0 0 2px ' + escapeHtml(uCor) + '">' : '<span class="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold text-white bg-gray-400" style="box-shadow:0 0 0 2px ' + escapeHtml(uCor) + '">' + escapeHtml((u.nome || 'U').charAt(0).toUpperCase()) + '</span>';
-            html += '<div class="autocomplete-item" data-nome="' + escapeHtml(u.nome) + '">' + av + '<span class="font-medium text-gray-700">' + escapeHtml(u.nome) + '</span></div>';
-          });
-          mentionDropdown.innerHTML = html;
-          mentionDropdown.classList.remove('hidden');
-        })
-        .catch(function () { mentionDropdown.classList.add('hidden'); });
-    }, query.length ? 250 : 100);
-  }
-  mentionDropdown.addEventListener('click', function (e) { var item = e.target.closest('.autocomplete-item'); if (!item) return; var nome = item.getAttribute('data-nome'); var val = commentInput.value; var cursor = commentInput.selectionStart; var before = val.substring(0, cursor); var after = val.substring(cursor); var replaced = before.replace(/@(\w*)$/, '@' + nome + ' '); commentInput.value = replaced + after; commentInput.focus(); commentInput.setSelectionRange(replaced.length, replaced.length); mentionDropdown.classList.add('hidden'); });
-
-  function abrirRepostModal(postId) { var card = document.querySelector('article[data-post-id="' + postId + '"]'); if (!card) return; var preview = document.getElementById('repostPreviewContent'); var avatarEl = card.querySelector('.post-author-avatar'); var nameEl = card.querySelector('.post-author-name'); var textEl = card.querySelector('.post-text'); var photoEl = card.querySelector('.post-photo'); var html = '<div class="flex items-center gap-2 mb-2">'; if (avatarEl) { var cloned = avatarEl.cloneNode(true); cloned.className = cloned.className.replace(/w-10 h-10/g, 'w-7 h-7').replace('ring-2 ring-gray-100', ''); html += cloned.outerHTML; } html += '<span class="text-xs font-semibold text-gray-700">' + escapeHtml(nameEl ? nameEl.textContent : '') + '</span></div>'; if (textEl) html += '<p class="text-xs text-gray-600 line-clamp-3">' + escapeHtml(textEl.textContent) + '</p>'; if (photoEl) html += '<img src="' + photoEl.src + '" class="mt-2 w-full max-h-[150px] object-cover rounded-xl" loading="lazy">'; preview.innerHTML = html; document.getElementById('repostPostId').value = postId; document.getElementById('repostTexto').value = ''; document.getElementById('btnRepostar').disabled = true; abrirModal('repostModal'); }
-  document.getElementById('repostTexto').addEventListener('input', function () { document.getElementById('btnRepostar').disabled = !this.value.trim(); });
-  document.getElementById('btnRepostar').addEventListener('click', function () { var postId = document.getElementById('repostPostId').value; var texto = document.getElementById('repostTexto').value.trim(); if (!texto || !postId) return; this.disabled = true; fetch('/explorar/post/' + postId + '/repost', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' }, credentials: 'same-origin', body: JSON.stringify({ texto: texto }) }).then(function (r) { return r.json(); }).then(function (data) { if (!data.sucesso) { toast(data.mensagem || 'Erro.', 'erro'); return; } fecharModal('repostModal'); toast('Repostado!'); }).catch(function () { toast('Erro de conexão.', 'erro'); }); });
-
-  var uploadArea = document.getElementById('uploadArea');
-  var photoInput = document.getElementById('photoInput');
-  var previewImg = document.getElementById('previewImg');
-  var uploadPlaceholder = document.getElementById('uploadPlaceholder');
-  var uploadPreview = document.getElementById('uploadPreview');
-  var novoPostTexto = document.getElementById('novoPostTexto');
-  var charCount = document.getElementById('charCount');
-  var btnPublicar = document.getElementById('btnPublicar');
-  var composerCard = document.getElementById('composerCard');
-  var composerActions = document.getElementById('composerActions');
-  var btnOpenImagePicker = document.getElementById('btnOpenImagePicker');
-  var newPostSheet = document.getElementById('newPostSheet');
-  var isSubmittingPost = false;
-  var recentPayloadHashes = new Map();
-
-  function abrirNovoPost() {
-    var petSelect = document.getElementById('novoPostPet');
-    isSubmittingPost = false;
-    selectedFile = null; photoInput.value = ''; novoPostTexto.value = ''; charCount.textContent = '0/500'; uploadPlaceholder.classList.remove('hidden'); uploadPreview.classList.add('hidden');
-    if (uploadArea) uploadArea.classList.add('hidden');
-    if (composerActions) composerActions.classList.add('hidden');
-    if (composerCard) composerCard.classList.remove('is-active');
-    if (btnPublicar) btnPublicar.textContent = 'Publicar';
-    if (petSelect && petSelect.options.length) petSelect.selectedIndex = 0;
-    validarFormPost(); abrirModal('newPostModal');
-    ajustarSheetViewport();
-    setTimeout(function () { if (novoPostTexto) novoPostTexto.focus(); }, 80);
-  }
-  function autoResizeComposer() {
-    if (!novoPostTexto) return;
-    novoPostTexto.style.height = 'auto';
-    novoPostTexto.style.height = Math.min(novoPostTexto.scrollHeight, 180) + 'px';
-  }
-  function ativarComposer() {
-    if (composerActions) composerActions.classList.remove('hidden');
-    if (composerCard) composerCard.classList.add('is-active');
-  }
-  function ajustarSheetViewport() {
-    if (!newPostSheet) return;
-    var vv = window.visualViewport;
-    var vh = vv ? Math.floor(vv.height) : window.innerHeight;
-    if (vh > 0) newPostSheet.style.maxHeight = Math.max(380, vh - 10) + 'px';
-  }
-  function generateIdempotencyKey() {
-    return 'post_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 10);
-  }
-  function payloadHash(texto, petId, file) {
-    return [texto || '', petId || '', file ? file.size : 0, file ? file.name : ''].join('|');
-  }
-  function isRecentDuplicate(hash) {
-    var now = Date.now();
-    var ts = recentPayloadHashes.get(hash);
-    if (!ts) return false;
-    return (now - ts) < 15000;
-  }
-  function validarFormPost() {
-    var petOk = true;
-    var ps = document.getElementById('novoPostPet');
-    if (ps && ps.tagName === 'SELECT') petOk = !!ps.value;
-    if (!btnPublicar) return;
-    var temTexto = !!novoPostTexto.value.trim();
-    var temMidia = !!selectedFile;
-    btnPublicar.disabled = (isSubmittingPost || (!temTexto && !temMidia) || totalPostsLocal >= 10 || !petOk);
-  }
-  uploadArea.addEventListener('click', function () { photoInput.click(); });
-  uploadArea.addEventListener('dragover', function (e) { e.preventDefault(); this.classList.add('border-primary-400', 'bg-primary-50/50'); });
-  uploadArea.addEventListener('dragleave', function () { this.classList.remove('border-primary-400', 'bg-primary-50/50'); });
-  uploadArea.addEventListener('drop', function (e) { e.preventDefault(); this.classList.remove('border-primary-400', 'bg-primary-50/50'); if (e.dataTransfer.files && e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]); });
-  photoInput.addEventListener('change', function () { if (this.files && this.files[0]) handleFile(this.files[0]); });
-  function handleFile(file) {
-    if (!file.type.match(/^image\/(jpeg|png|gif|webp)$/)) { toast('Formato não suportado.', 'erro'); return; }
-    if (file.size > 10 * 1024 * 1024) { toast('Imagem muito grande (max 10MB).', 'erro'); return; }
-    var reader = new FileReader();
-    reader.onload = function (ev) {
-      if (typeof openCropModal !== 'function') {
-        selectedFile = file;
-        uploadPlaceholder.classList.add('hidden');
-        uploadPreview.classList.remove('hidden');
-        previewImg.src = ev.target.result;
-        validarFormPost();
-        return;
-      }
-      openCropModal({
-        src: ev.target.result,
-        aspectRatio: 0,
-        maxWidth: 1200,
-        maxHeight: 1200,
-        onConfirm: function (blob) {
-          selectedFile = new File([blob], 'foto-post.jpg', { type: 'image/jpeg' });
-          uploadPlaceholder.classList.add('hidden');
-          uploadPreview.classList.remove('hidden');
-          previewImg.src = URL.createObjectURL(blob);
-          validarFormPost();
-        },
-        onCancel: function () {
-          selectedFile = file;
-          uploadPlaceholder.classList.add('hidden');
-          uploadPreview.classList.remove('hidden');
-          previewImg.src = ev.target.result;
-          validarFormPost();
-        }
-      });
-    };
-    reader.readAsDataURL(file);
-  }
-  document.getElementById('removePhoto').addEventListener('click', function (e) { e.stopPropagation(); selectedFile = null; photoInput.value = ''; uploadPlaceholder.classList.remove('hidden'); uploadPreview.classList.add('hidden'); validarFormPost(); });
-  novoPostTexto.addEventListener('focus', ativarComposer);
-  novoPostTexto.addEventListener('input', function () { autoResizeComposer(); charCount.textContent = this.value.length + '/500'; validarFormPost(); });
-  novoPostTexto.addEventListener('paste', function (e) {
-    if (!e.clipboardData || !e.clipboardData.items) return;
-    for (var i = 0; i < e.clipboardData.items.length; i++) {
-      var item = e.clipboardData.items[i];
-      if (item.type && item.type.indexOf('image/') === 0) {
-        var file = item.getAsFile();
-        if (file) {
-          e.preventDefault();
-          handleFile(file);
-          break;
-        }
-      }
-    }
-  });
-  novoPostTexto.addEventListener('keydown', function (e) {
-    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-      e.preventDefault();
-      if (!btnPublicar.disabled) btnPublicar.click();
-    }
-  });
-  if (btnOpenImagePicker) {
-    btnOpenImagePicker.addEventListener('click', function () {
-      ativarComposer();
-      if (uploadArea && uploadArea.classList.contains('hidden')) {
-        uploadArea.classList.remove('hidden');
-      }
-      photoInput.click();
-    });
-  }
-  window.addEventListener('resize', ajustarSheetViewport);
-  if (window.visualViewport) window.visualViewport.addEventListener('resize', ajustarSheetViewport);
-  var ps = document.getElementById('novoPostPet');
-  if (ps) ps.addEventListener('change', validarFormPost);
-
-  btnPublicar.addEventListener('click', function () {
-    if (isSubmittingPost) return;
-    var textoPayload = novoPostTexto.value.trim();
-    if (!selectedFile && !textoPayload) return;
-    var petSelect = document.getElementById('novoPostPet');
-    var petPayload = (petSelect && petSelect.value) ? petSelect.value : '';
-    var hash = payloadHash(textoPayload, petPayload, selectedFile);
-    if (isRecentDuplicate(hash)) {
-      toast('Publicação já enviada recentemente. Aguarde alguns segundos.', 'erro');
-      return;
-    }
-    isSubmittingPost = true;
-    this.disabled = true; this.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>Publicando…';
-    var formData = new FormData();
-    if (selectedFile) formData.append('foto', selectedFile);
-    if (textoPayload) formData.append('texto', textoPayload);
-    if (petSelect && petSelect.value) formData.append('pet_id', petSelect.value);
-    fetch('/explorar/post', {
+    fetch('/explorar/post/' + postId + '/comentar', {
       method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
       credentials: 'same-origin',
-      headers: { 'Idempotency-Key': generateIdempotencyKey() },
-      body: formData
-    }).then(function (r) { return r.json(); }).then(function (data) {
-      isSubmittingPost = false;
-      btnPublicar.textContent = 'Publicar';
-      if (!data.sucesso) { toast(data.mensagem || 'Erro.', 'erro'); validarFormPost(); return; }
-      recentPayloadHashes.set(hash, Date.now());
-      fecharModal('newPostModal'); toast('Publicado!');
-      totalPostsLocal = data.totalPosts || (totalPostsLocal + 1);
-      if (data.post) { var emptyState = feedContainer.querySelector('.text-center.py-20'); if (emptyState) emptyState.remove(); feedContainer.insertAdjacentHTML('afterbegin', renderPostHTML(data.post)); initVerMaisForCard(feedContainer.firstElementChild); observarCardVisualizacao(feedContainer.firstElementChild); }
-    }).catch(function () {
-      isSubmittingPost = false;
-      toast('Erro de conexão.', 'erro');
-      btnPublicar.textContent = 'Publicar';
-      validarFormPost();
+      body: JSON.stringify({ texto: texto })
+    }).then(function(r) { return r.json(); }).then(function(d) {
+      if (d.sucesso) {
+        inputEl.value = '';
+        var card = document.getElementById('post-' + postId);
+        if (card) {
+          var countEl = card.querySelector('.count-comentarios');
+          if (countEl) {
+            var n = parseInt(countEl.textContent) || 0;
+            countEl.textContent = n + 1;
+          }
+        }
+      }
     });
-  });
+  }
 
-  var fabBtn = document.getElementById('fabNewPost');
-  if (fabBtn) fabBtn.addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); abrirNovoPost(); });
-
-  function fixarPost(postId, estaFixada) { fetch('/explorar/post/' + postId + '/fixar', { method: estaFixada ? 'DELETE' : 'POST', headers: { 'Accept': 'application/json' }, credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (data) { if (!data.sucesso) { toast(data.mensagem || 'Erro.', 'erro'); return; } toast(data.fixada ? 'Post fixado!' : 'Post desafixado!'); setTimeout(function () { window.location.reload(); }, 600); }).catch(function () { toast('Erro.', 'erro'); }); }
-  function deletarPost(postId) { if (!confirm('Excluir esta publicação?')) return; fetch('/explorar/post/' + postId, { method: 'DELETE', headers: { 'Accept': 'application/json' }, credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (data) { if (!data.sucesso) { toast(data.mensagem || 'Não foi possível excluir agora. Tente novamente.', 'erro'); return; } var card = document.getElementById('post-' + postId); if (card) { card.classList.add('fade-out'); setTimeout(function () { if (card.parentNode) card.parentNode.removeChild(card); }, 400); } totalPostsLocal = Math.max(0, totalPostsLocal - 1); toast('Publicação excluída.'); }).catch(function () { toast('Erro de conexão. Tente novamente.', 'erro'); }); }
-  function compartilhar(postId, autor) { var url = window.location.origin + '/feed#post-' + postId; window.open('https://wa.me/?text=' + encodeURIComponent('Veja o post de ' + autor + ' no AIRPET! 🐾 ' + url), '_blank'); }
-  function fecharMenus() { var menus = document.querySelectorAll('.menu-dropdown'); for (var i = 0; i < menus.length; i++) menus[i].classList.add('hidden'); }
-  function toggleMenu(btn) { var dropdown = btn.parentElement.querySelector('.menu-dropdown'); if (!dropdown) return; var wasHidden = dropdown.classList.contains('hidden'); fecharMenus(); if (wasHidden) dropdown.classList.remove('hidden'); }
-  function initVerMaisForCard(card) { if (!card) return; var texts = card.querySelectorAll('.post-text'); for (var i = 0; i < texts.length; i++) { var p = texts[i]; var btn = p.parentElement.querySelector('.btn-ver-mais'); if (btn && p.scrollHeight > p.clientHeight + 2) btn.classList.remove('hidden'); } }
-  function initVerMais() { var texts = feedContainer.querySelectorAll('.post-text'); for (var i = 0; i < texts.length; i++) { var p = texts[i]; var btn = p.parentElement.querySelector('.btn-ver-mais'); if (!btn) continue; if (p.scrollHeight > p.clientHeight + 2) btn.classList.remove('hidden'); } }
-  function toggleTexto(btn) { var p = btn.previousElementSibling || btn.parentElement.querySelector('.post-text'); if (!p) return; if (p.classList.contains('line-clamp-3')) { p.classList.remove('line-clamp-3'); btn.textContent = 'ver menos'; } else { p.classList.add('line-clamp-3'); btn.textContent = 'ver mais'; } }
-
-  function carregarMaisPosts() {
-    if (isLoading || !hasMore) return;
-    isLoading = true; currentPage++;
-    var uidKey = meuId ? String(meuId) : 'anon';
-    var pageKey = 'feed:' + uidKey + ':' + currentPage;
-
-    if (typeof swrFetchGet === 'function') {
-      swrFetchGet({
-        key: pageKey,
-        url: '/feed?page=' + currentPage,
-        priority: window.AIRPET_REQ_COORDINATOR && window.AIRPET_REQ_COORDINATOR.PRIORITY
-          ? window.AIRPET_REQ_COORDINATOR.PRIORITY.HIGH
-          : 'HIGH',
-        staleTimeMs: 300000, // 5 min
-        cacheTimeMs: 1800000, // 30 min
-        group: 'feedInfinite'
-      }).then(function (res) {
-        isLoading = false;
-        var data = res && res.data ? res.data : res;
-        if (!data || !data.sucesso || !data.posts || !data.posts.length) {
-          hasMore = false;
-          if (scrollSentinel) scrollSentinel.innerHTML = '<p class="text-xs text-gray-300 text-center">Você chegou ao fim 🐾</p>';
-          return;
+  // ── Repost ──
+  function abrirRepostModal(postId) {
+    if (!meuId) { window.location = '/auth/login'; return; }
+    if (confirm('Repostar esta publicação?')) {
+      fetch('/explorar/post/' + postId + '/repost', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ texto: 'Repost' })
+      }).then(function(r) { return r.json(); }).then(function(d) {
+        if (d.sucesso) {
+          var card = document.getElementById('post-' + postId);
+          if (card) {
+            var btn = card.querySelector('.btn-repost');
+            if (btn) {
+              btn.classList.add('reposted');
+              var countEl = btn.querySelector('.count-reposts');
+              if (countEl) countEl.textContent = (parseInt(countEl.textContent) || 0) + 1;
+            }
+          }
         }
-        data.posts.forEach(function (post) {
-          feedContainer.insertAdjacentHTML('beforeend', renderPostHTML(post));
-          initVerMaisForCard(feedContainer.lastElementChild);
-          observarCardVisualizacao(feedContainer.lastElementChild);
-        });
-        atualizarTempos();
-        if (data.posts.length < 20) {
-          hasMore = false;
-          if (scrollSentinel) scrollSentinel.innerHTML = '<p class="text-xs text-gray-300 text-center">Você chegou ao fim 🐾</p>';
-        }
-      }).catch(function () {
-        isLoading = false;
       });
-      return;
     }
-
-    // fallback
-    fetch('/feed?page=' + currentPage, { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
-      .then(function (r) { return r.json(); })
-      .then(function (data) {
-        isLoading = false;
-        if (!data.sucesso || !data.posts || !data.posts.length) { hasMore = false; if (scrollSentinel) scrollSentinel.innerHTML = '<p class="text-xs text-gray-300 text-center">Você chegou ao fim 🐾</p>'; return; }
-        data.posts.forEach(function (post) { feedContainer.insertAdjacentHTML('beforeend', renderPostHTML(post)); initVerMaisForCard(feedContainer.lastElementChild); observarCardVisualizacao(feedContainer.lastElementChild); });
-        atualizarTempos();
-        if (data.posts.length < 20) { hasMore = false; if (scrollSentinel) scrollSentinel.innerHTML = '<p class="text-xs text-gray-300 text-center">Você chegou ao fim 🐾</p>'; }
-      }).catch(function () { isLoading = false; });
   }
 
-  if ('IntersectionObserver' in window) {
-    viewObserver = new IntersectionObserver(function (entries) {
-      entries.forEach(function (entry) {
-        if (!entry.isIntersecting || entry.intersectionRatio < 0.6) return;
-        var card = entry.target;
-        var postId = parseInt(card.getAttribute('data-post-id'), 10);
-        if (!postId || viewedPosts.has(postId)) return;
-        viewedPosts.add(postId);
-        var source = card.getAttribute('data-view-source') || 'feed';
-        registrarVisualizacao(postId, 1500, source);
-        viewObserver.unobserve(card);
+  // ── Share ──
+  function compartilhar(postId, autor) {
+    var url = window.location.origin + '/explorar/post/' + postId;
+    if (navigator.share) {
+      navigator.share({ title: 'Post de ' + autor + ' no AIRPET', url: url });
+    } else {
+      navigator.clipboard.writeText(url).then(function() {
+        alert('Link copiado!');
       });
-    }, { threshold: [0.6] });
-    document.querySelectorAll('article[data-post-id]').forEach(observarCardVisualizacao);
+    }
   }
 
-  if (scrollSentinel && 'IntersectionObserver' in window) { var observer = new IntersectionObserver(function (entries) { if (entries[0].isIntersecting) carregarMaisPosts(); }, { rootMargin: '200px' }); observer.observe(scrollSentinel); }
-
-  function renderSponsoredHTML(p) {
-    var sid = p.sponsored_key || ('sponsored-' + (p.boost_id || 'x') + '-' + (p.pet_id || 'x'));
-    var sponsoredPostId = parseInt(p.id, 10);
-    var hasSponsoredPostId = !Number.isNaN(sponsoredPostId) && sponsoredPostId > 0;
-    var petNome = escapeHtml(p.pet_nome || ('Pet ' + (p.pet_id || '')));
-    var tutorNome = escapeHtml(p.autor_nome || ('Usuário ' + (p.usuario_id || '')));
-    var hasPost = !!(p.foto || p.legenda || p.texto);
-    var legenda = escapeHtml(hasPost ? (p.legenda || p.texto || 'Conheça este perfil pet patrocinado.') : 'Este pet está em campanha patrocinada. Ainda sem publicação no momento — conheça o perfil e siga o tutor.');
-    var fotoPet = p.pet_foto ? '<img src="' + escapeHtml(p.pet_foto) + '" alt="" class="w-12 h-12 rounded-full object-cover ring-2 ring-amber-200">' : '<span class="w-12 h-12 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center"><i class="fa-solid fa-paw"></i></span>';
-    var fotoPost = p.foto ? '<img src="' + escapeHtml(p.foto) + '" alt="" class="w-full mt-3 rounded-xl max-h-[320px] object-cover" loading="lazy">' : '';
-    return '<article class="bg-gradient-to-br from-amber-50 to-white rounded-2xl shadow-sm border-2 border-amber-200 overflow-hidden post-enter" data-post-id="' + (hasSponsoredPostId ? sponsoredPostId : '') + '" data-view-source="' + (hasSponsoredPostId ? 'sponsored_feed' : '') + '" id="' + sid + '">' +
-      '<div class="px-4 py-2 bg-amber-100 border-b border-amber-200 flex items-center justify-between"><span class="inline-flex items-center gap-1 text-[11px] font-bold tracking-wide text-amber-800"><i class="fa-solid fa-bullhorn"></i>' + escapeHtml(p.sponsored_label || 'PATROCINADO') + '</span><span class="text-[11px] text-amber-700">Anúncio de perfil pet</span></div>' +
-      '<div class="p-4"><div class="flex items-center gap-3">' + fotoPet + '<div class="min-w-0 flex-1"><p class="text-sm font-semibold text-gray-900 truncate">' + petNome + '</p><p class="text-xs text-gray-500 truncate">Tutor: ' + tutorNome + '</p></div></div>' +
-      fotoPost +
-      '<p class="mt-3 text-sm text-gray-700 line-clamp-2">' + legenda + '</p>' +
-      '<div class="mt-3 flex items-center justify-between gap-2"><div class="flex items-center gap-2"><a href="/explorar/pet/' + escapeHtml(p.pet_id) + '" class="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-500 text-white text-xs font-semibold hover:bg-amber-600"><i class="fa-solid fa-paw"></i>Ver perfil do pet</a><a href="/explorar/perfil/' + escapeHtml(p.usuario_id) + '" class="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-amber-300 text-amber-700 text-xs font-semibold hover:bg-amber-100"><i class="fa-solid fa-user-plus"></i>Ver tutor</a></div><span class="text-[11px] text-gray-400">Entrega publicitária identificada</span></div></div></article>';
+  // ── Pin / Delete ──
+  function fixarPost(postId, isFixed) {
+    fetch('/explorar/post/' + postId + '/fixar', {
+      method: isFixed ? 'DELETE' : 'POST',
+      headers: { 'Accept': 'application/json' },
+      credentials: 'same-origin'
+    }).then(function() { location.reload(); });
   }
 
-  function renderPetshopPromoHTML(p) {
-    var pid = p.promo_key || ('promo-feed-' + (p.id || 'x'));
-    var logo = p.petshop_logo_url
-      ? '<img src="' + escapeHtml(p.petshop_logo_url) + '" alt="" class="w-10 h-10 rounded-full object-cover">'
-      : '<span class="w-10 h-10 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center"><i class="fa-solid fa-store"></i></span>';
-    var status = p.usuario_vinculado ? 'Vinculado' : 'Seguindo';
-    var contato = p.contato_link
-      ? '<a href="' + escapeHtml(p.contato_link) + '" target="_blank" rel="noopener" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-emerald-200 text-emerald-700 text-xs font-semibold hover:bg-emerald-50"><i class="fa-solid fa-arrow-up-right-from-square"></i>Aproveitar</a>'
-      : '';
-    return '<article class="bg-white rounded-2xl shadow-sm border border-emerald-200 overflow-hidden post-enter" id="' + pid + '">' +
-      '<div class="px-4 py-2 bg-emerald-50 border-b border-emerald-100 flex items-center justify-between"><span class="inline-flex items-center gap-1 text-[11px] font-bold tracking-wide text-emerald-700"><i class="fa-solid fa-badge-percent"></i>Promoção para você</span><span class="text-[11px] text-gray-400">Baseada no seu relacionamento</span></div>' +
-      '<div class="p-4"><div class="flex items-center gap-3 mb-2">' + logo + '<div><p class="text-sm font-semibold text-gray-900">' + escapeHtml(p.petshop_nome || '') + '</p><p class="text-xs text-gray-500">' + status + '</p></div></div>' +
-      '<h3 class="text-sm font-bold text-gray-900">' + escapeHtml(p.titulo || 'Promoção') + '</h3><p class="text-xs text-gray-600 mt-1 line-clamp-2">' + escapeHtml(p.descricao_curta || '') + '</p>' +
-      '<div class="mt-3 flex gap-2"><a href="/petshops/' + escapeHtml(p.petshop_slug || p.petshop_id) + '" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-500 text-white text-xs font-semibold hover:bg-emerald-600"><i class="fa-solid fa-store"></i>Ver petshop</a>' + contato + '</div></div></article>';
+  function deletarPost(postId) {
+    if (!confirm('Excluir publicação?')) return;
+    fetch('/explorar/post/' + postId, { method: 'DELETE', headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
+      .then(function(r) { return r.json(); })
+      .then(function(d) {
+        if (d.sucesso) {
+          var el = document.getElementById('post-' + postId);
+          if (el) {
+            el.style.transition = 'opacity 0.3s, transform 0.3s';
+            el.style.opacity = '0'; el.style.transform = 'translateY(-8px)';
+            setTimeout(function() { el.remove(); }, 300);
+          }
+        }
+      });
   }
 
+  // ── Ver mais ──
+  function initVerMais() {
+    document.querySelectorAll('.post-text-body').forEach(function(el) {
+      if (el.scrollHeight > el.clientHeight + 4) {
+        var btn = el.closest('article') ? el.closest('article').querySelector('.btn-ver-mais') : null;
+        if (btn) btn.classList.remove('hidden');
+      }
+    });
+  }
+
+  function toggleTexto(btn) {
+    var el = btn.closest('article').querySelector('.post-text-body');
+    if (el) {
+      el.classList.toggle('line-clamp-3');
+      btn.textContent = el.classList.contains('line-clamp-3') ? 'ver mais' : 'ver menos';
+    }
+  }
+
+  // ── Composer ──
+  var textarea = document.getElementById('novoPostTexto');
+  var btnPublicar = document.getElementById('btnPublicar');
+  var charCount = document.getElementById('charCount');
+  var inputFoto = document.getElementById('inputFotoPost');
+  var previewWrap = document.getElementById('novoPostPreview');
+  var previewImg = document.getElementById('novoPostPreviewImg');
+  var fotoBlob = null;
+
+  if (textarea) {
+    textarea.addEventListener('input', function() {
+      var len = textarea.value.length;
+      charCount.textContent = len + '/500';
+      charCount.style.color = len > 450 ? '#f87171' : 'var(--text-dim)';
+      btnPublicar.disabled = len === 0 && !fotoBlob;
+    });
+  }
+
+  if (document.getElementById('btnAnexarFoto')) {
+    document.getElementById('btnAnexarFoto').addEventListener('click', function() { inputFoto.click(); });
+  }
+
+  if (inputFoto) {
+    inputFoto.addEventListener('change', function() {
+      var file = this.files[0];
+      if (!file) return;
+      var reader = new FileReader();
+      reader.onload = function(ev) {
+        previewImg.src = ev.target.result;
+        previewWrap.classList.remove('hidden');
+        fotoBlob = file;
+        btnPublicar.disabled = false;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  if (document.getElementById('removerFoto')) {
+    document.getElementById('removerFoto').addEventListener('click', function() {
+      previewWrap.classList.add('hidden');
+      previewImg.src = '';
+      fotoBlob = null;
+      inputFoto.value = '';
+      if (textarea) btnPublicar.disabled = textarea.value.trim() === '';
+    });
+  }
+
+  if (btnPublicar) {
+    btnPublicar.addEventListener('click', function() {
+      var texto = textarea.value.trim();
+      if (!texto && !fotoBlob) return;
+      btnPublicar.disabled = true;
+      btnPublicar.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Publicando...';
+
+      var petIdEl = document.getElementById('novoPetId');
+      var petId = petIdEl ? petIdEl.value : '';
+
+      var fd = new FormData();
+      if (texto) fd.append('texto', texto);
+      if (petId) fd.append('pet_id', petId);
+      if (fotoBlob) fd.append('foto', fotoBlob);
+
+      fetch('/explorar/post', { method: 'POST', body: fd, credentials: 'same-origin' })
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+          if (d.sucesso && d.post) {
+            textarea.value = ''; charCount.textContent = '0/500';
+            previewWrap.classList.add('hidden'); previewImg.src = ''; fotoBlob = null;
+            btnPublicar.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Publicar';
+            btnPublicar.disabled = true;
+            var html = renderPostHTML(d.post);
+            var temp = document.createElement('div'); temp.innerHTML = html;
+            var newCard = temp.firstChild;
+            feedContainer.insertBefore(newCard, feedContainer.firstChild);
+            initVerMais();
+          } else {
+            alert(d.mensagem || 'Erro ao publicar.');
+            btnPublicar.disabled = false;
+            btnPublicar.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Publicar';
+          }
+        });
+    });
+  }
+
+  // ── Render post HTML (for dynamic insertion) ──
   function renderPostHTML(p) {
-    if (p && p.is_petshop_promo) return renderPetshopPromoHTML(p);
-    if (p && p.is_sponsored) return renderSponsoredHTML(p);
-    var txt = p.texto || p.legenda || '';
-    var isRepost = p.tipo === 'repost';
-    var isMine = p.usuario_id === meuId;
     var pCor = p.cor_perfil || '#ec5a1c';
-    var avatarHtml = p.foto_perfil ? '<img src="' + escapeHtml(p.foto_perfil) + '" alt="" class="w-10 h-10 rounded-full object-cover post-author-avatar" style="box-shadow:0 0 0 2px ' + escapeHtml(pCor) + '">' : '<span class="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white post-author-avatar bg-gray-400" style="box-shadow:0 0 0 2px ' + escapeHtml(pCor) + '">' + escapeHtml((p.autor_nome || 'U').charAt(0).toUpperCase()) + '</span>';
-    var myAvatarHtml = meuFotoPerfil ? '<img src="' + escapeHtml(meuFotoPerfil) + '" alt="" class="w-7 h-7 rounded-full object-cover shrink-0" style="box-shadow:0 0 0 2px ' + escapeHtml(meuCorPerfil) + '">' : '<span class="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0 bg-gray-400" style="box-shadow:0 0 0 2px ' + escapeHtml(meuCorPerfil) + '">' + escapeHtml(meuNome.charAt(0).toUpperCase()) + '</span>';
-    var h = '<article class="bg-white rounded-2xl shadow-sm border border-gray-100/80 overflow-hidden post-enter" data-post-id="' + p.id + '" data-author-id="' + p.usuario_id + '" id="post-' + p.id + '">';
-    if (isRepost) h += '<div class="px-4 pt-3 flex items-center gap-2 text-emerald-500 text-xs font-semibold"><i class="fa-solid fa-retweet text-[11px]"></i><span>' + escapeHtml(p.autor_nome) + ' repostou</span></div>';
-    if (p.fixada) h += '<div class="px-4 pt-3 flex items-center gap-2 text-gray-400 text-xs font-semibold"><i class="fa-solid fa-thumbtack text-[11px]"></i><span>Fixado</span></div>';
-    var tutorHref = '/explorar/perfil/' + p.usuario_id;
-    h += '<div class="flex items-center gap-3 px-4 pt-3 pb-2"><a href="' + tutorHref + '" class="shrink-0 rounded-full transition-all">' + avatarHtml + '</a><div class="flex-1 min-w-0"><div class="flex items-center gap-1.5 flex-wrap"><a href="' + tutorHref + '" class="font-semibold text-sm text-gray-900 hover:underline truncate post-author-name">' + escapeHtml(p.autor_nome) + '</a>';
-    if (p.pet_nome && p.pet_id) h += '<a href="/explorar/pet/' + p.pet_id + '" class="text-xs text-gray-400 hover:text-primary-500 truncate"><i class="fa-solid fa-paw text-[9px]"></i> ' + escapeHtml(p.pet_nome) + '</a>';
-    h += '</div><span class="text-xs text-gray-400 tempo-relativo" data-time="' + p.criado_em + '">' + tempoRelativo(p.criado_em) + '</span></div>';
-    if (isMine) { h += '<div class="relative shrink-0"><button type="button" class="p-1.5 -mr-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors btn-menu-post"><i class="fa-solid fa-ellipsis"></i></button><div class="menu-dropdown hidden absolute right-0 top-full mt-1 w-44 bg-white rounded-xl shadow-lg ring-1 ring-black/5 py-1 z-30"><button type="button" class="w-full px-4 py-2.5 text-left text-sm hover:bg-gray-50 flex items-center gap-2.5 transition-colors btn-fixar" data-post-id="' + p.id + '" data-fixada="' + (p.fixada ? '1' : '0') + '"><i class="fa-solid fa-thumbtack text-gray-400 w-4 text-center"></i><span>' + (p.fixada ? 'Desafixar' : 'Fixar') + '</span></button><button type="button" class="w-full px-4 py-2.5 text-left text-sm hover:bg-red-50 text-red-500 flex items-center gap-2.5 transition-colors btn-deletar" data-post-id="' + p.id + '"><i class="fa-solid fa-trash-can w-4 text-center"></i><span>Excluir</span></button></div></div>'; }
+    var avatarHtml = p.foto_perfil
+      ? '<img src="' + escapeHtml(p.foto_perfil) + '" class="post-avatar post-author-avatar" style="box-shadow:0 0 0 2px ' + escapeHtml(pCor) + '" alt="">'
+      : '<div class="post-avatar-initial post-author-avatar" style="box-shadow:0 0 0 2px ' + escapeHtml(pCor) + '">' + escapeHtml((p.autor_nome || 'U').charAt(0).toUpperCase()) + '</div>';
+    var txt = p.texto || p.legenda || '';
+    var h = '<article class="post-card post-enter" data-post-id="' + p.id + '" id="post-' + p.id + '">';
+    h += '<div class="post-header"><a href="/explorar/perfil/' + p.usuario_id + '" class="post-avatar-wrap">' + avatarHtml + '</a>';
+    h += '<div class="post-meta"><div><a href="/explorar/perfil/' + p.usuario_id + '" class="post-author-name">' + escapeHtml(p.autor_nome) + '</a></div>';
+    h += '<span class="post-time">agora</span></div>';
+    h += '<div style="position:relative;flex-shrink:0;"><button type="button" class="post-menu-btn btn-menu-post"><i class="fa-solid fa-ellipsis"></i></button>';
+    h += '<div class="post-dropdown hidden"><button type="button" class="post-dropdown-item btn-fixar" data-post-id="' + p.id + '" data-fixada="0"><i class="fa-solid fa-thumbtack" style="width:16px;text-align:center;color:var(--text-dim);"></i>Fixar</button>';
+    h += '<button type="button" class="post-dropdown-item danger btn-deletar" data-post-id="' + p.id + '"><i class="fa-solid fa-trash-can" style="width:16px;text-align:center;"></i>Excluir</button></div></div></div>';
+    if (txt) h += '<div class="post-text post-text-body">' + escapeHtml(txt) + '</div>';
+    if (p.foto) h += '<img src="' + escapeHtml(p.foto) + '" class="post-photo" loading="lazy" alt="">';
+    h += '<div class="post-actions">';
+    h += '<button type="button" class="post-action-btn btn-comentar" data-post-id="' + p.id + '"><i class="fa-regular fa-comment"></i><span class="count-comentarios"></span></button>';
+    h += '<button type="button" class="post-action-btn btn-repost" data-post-id="' + p.id + '"><i class="fa-solid fa-retweet"></i><span class="count-reposts"></span></button>';
+    h += '<button type="button" class="post-action-btn btn-curtir" data-post-id="' + p.id + '" data-curtiu="0" style="position:relative;"><i class="fa-regular fa-heart"></i><span class="count-curtidas"></span></button>';
+    h += '<button type="button" class="post-action-btn btn-share" data-post-id="' + p.id + '" data-autor="' + escapeHtml(p.autor_nome) + '"><i class="fa-solid fa-share-from-square"></i></button>';
     h += '</div>';
-    if (txt) h += '<div class="px-4 pb-2"><p class="text-[15px] text-gray-800 leading-relaxed line-clamp-3 post-text">' + escapeHtml(txt) + '</p><button type="button" class="text-accent-500 text-xs font-semibold mt-1 btn-ver-mais hidden hover:underline">ver mais</button></div>';
-    if (p.foto) h += '<div class="mt-1"><img src="' + escapeHtml(p.foto) + '" alt="" class="w-full max-h-[500px] object-cover post-photo" loading="lazy"></div>';
-    if (isRepost && p.orig_id) { var oCor = p.orig_cor_perfil || '#ec5a1c'; var origAv = p.orig_foto_perfil ? '<img src="' + escapeHtml(p.orig_foto_perfil) + '" class="w-6 h-6 rounded-full object-cover" style="box-shadow:0 0 0 1px ' + escapeHtml(oCor) + '">' : '<span class="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white bg-gray-400" style="box-shadow:0 0 0 1px ' + escapeHtml(oCor) + '">' + escapeHtml((p.orig_autor_nome || 'U').charAt(0).toUpperCase()) + '</span>'; h += '<div class="mx-4 my-3 border border-gray-200 rounded-2xl overflow-hidden"><div class="flex items-center gap-2 px-3 pt-3 pb-1">' + origAv + '<a href="/explorar/perfil/' + p.orig_usuario_id + '" class="text-xs font-semibold text-gray-700 hover:underline">' + escapeHtml(p.orig_autor_nome) + '</a></div>'; var origTxt = p.orig_texto || p.orig_legenda || ''; if (origTxt) h += '<p class="px-3 pb-2 text-xs text-gray-600 line-clamp-2">' + escapeHtml(origTxt) + '</p>'; if (p.orig_foto) h += '<img src="' + escapeHtml(p.orig_foto) + '" class="w-full max-h-[200px] object-cover" loading="lazy">'; h += '</div>'; }
-    h += '<div class="flex items-center px-2 py-1.5 border-t border-gray-50">';
-    h += '<button type="button" class="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-gray-400 hover:text-accent-500 hover:bg-accent-50/50 transition-all text-[13px] btn-comentar" data-post-id="' + p.id + '"><i class="fa-regular fa-comment"></i><span class="count-comentarios">' + (p.total_comentarios || '') + '</span></button>';
-    h += '<button type="button" class="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl transition-all text-[13px] btn-repost ' + (p.repostou ? 'text-emerald-500' : 'text-gray-400') + '" data-post-id="' + p.id + '"><i class="fa-solid fa-retweet"></i><span class="count-reposts">' + (p.total_reposts || '') + '</span></button>';
-    h += '<button type="button" class="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl transition-all text-[13px] btn-curtir relative ' + (p.curtiu ? 'text-red-500' : 'text-gray-400') + '" data-post-id="' + p.id + '" data-curtiu="' + (p.curtiu ? '1' : '0') + '"><i class="' + (p.curtiu ? 'fa-solid' : 'fa-regular') + ' fa-heart"></i><span class="count-curtidas">' + (p.total_curtidas || '') + '</span></button>';
-    h += '<button type="button" class="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-gray-400 transition-all text-[13px] btn-share" data-post-id="' + p.id + '" data-autor="' + escapeHtml(p.autor_nome) + '"><i class="fa-solid fa-share-from-square"></i></button>';
-    h += '</div>';
-    if (p.total_comentarios > 0) h += '<div class="px-4 pb-2"><button type="button" class="text-xs text-gray-400 hover:text-accent-500 font-medium btn-comentar" data-post-id="' + p.id + '">Ver todos os ' + p.total_comentarios + ' comentários</button></div>';
-    if (meuId) h += '<div class="flex items-center gap-2 px-4 pb-3">' + myAvatarHtml + '<input type="text" placeholder="Adicionar comentário…" class="flex-1 text-xs bg-gray-50 rounded-full px-3.5 py-2 border-none outline-none focus:bg-gray-100 focus:ring-2 focus:ring-primary-500/10 transition-all input-comentario-inline" data-post-id="' + p.id + '" maxlength="500"></div>';
+    if (meuId) h += '<div class="post-comment-row"><div style="width:28px;height:28px;border-radius:50%;flex-shrink:0;background:var(--ink-4);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--text);box-shadow:0 0 0 2px ' + escapeHtml(meuCorPerfil) + ';">' + escapeHtml(meuNome.charAt(0).toUpperCase()) + '</div><input type="text" class="comment-input input-comentario-inline" data-post-id="' + p.id + '" placeholder="Adicionar comentário…" maxlength="500"></div>';
     h += '</article>';
     return h;
   }
 
+  // ── Event delegation ──
   feedContainer.addEventListener('click', function (e) {
     var btn;
-    btn = e.target.closest('.btn-curtir'); if (btn) { curtirPost(btn.getAttribute('data-post-id'), btn); return; }
-    btn = e.target.closest('.btn-comentar'); if (btn) { abrirComentarios(btn.getAttribute('data-post-id')); return; }
-    btn = e.target.closest('.btn-repost'); if (btn) { abrirRepostModal(btn.getAttribute('data-post-id')); return; }
-    btn = e.target.closest('.btn-share'); if (btn) { compartilhar(btn.getAttribute('data-post-id'), btn.getAttribute('data-autor')); return; }
+    btn = e.target.closest('.btn-curtir'); if (btn) { curtirPost(btn.dataset.postId, btn); return; }
+    btn = e.target.closest('.btn-comentar'); if (btn) { abrirComentarios(btn.dataset.postId); return; }
+    btn = e.target.closest('.btn-repost'); if (btn) { abrirRepostModal(btn.dataset.postId); return; }
+    btn = e.target.closest('.btn-share'); if (btn) { compartilhar(btn.dataset.postId, btn.dataset.autor); return; }
     btn = e.target.closest('.btn-menu-post'); if (btn) { e.stopPropagation(); toggleMenu(btn); return; }
-    btn = e.target.closest('.btn-fixar'); if (btn) { fecharMenus(); fixarPost(btn.getAttribute('data-post-id'), btn.getAttribute('data-fixada') === '1'); return; }
-    btn = e.target.closest('.btn-deletar'); if (btn) { fecharMenus(); deletarPost(btn.getAttribute('data-post-id')); return; }
+    btn = e.target.closest('.btn-fixar'); if (btn) { fecharMenus(); fixarPost(btn.dataset.postId, btn.dataset.fixada === '1'); return; }
+    btn = e.target.closest('.btn-deletar'); if (btn) { fecharMenus(); deletarPost(btn.dataset.postId); return; }
     btn = e.target.closest('.btn-ver-mais'); if (btn) { toggleTexto(btn); return; }
     fecharMenus();
   });
-  feedContainer.addEventListener('keydown', function (e) { if (e.key === 'Enter' && e.target.classList.contains('input-comentario-inline')) { e.preventDefault(); var txt = e.target.value.trim(); if (txt) enviarComentario(e.target.getAttribute('data-post-id'), txt, e.target); } });
-  document.addEventListener('click', function (e) { if (!e.target.closest('.btn-menu-post') && !e.target.closest('.menu-dropdown')) fecharMenus(); });
+
+  feedContainer.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' && e.target.classList.contains('input-comentario-inline')) {
+      e.preventDefault();
+      var txt = e.target.value.trim();
+      if (txt) enviarComentario(e.target.dataset.postId, txt, e.target);
+    }
+  });
+
+  document.addEventListener('click', function (e) {
+    if (!e.target.closest('.btn-menu-post') && !e.target.closest('.post-dropdown')) fecharMenus();
+  });
+
+  // ── Sidebar follow buttons ──
+  document.querySelectorAll('.btn-seguir-sidebar').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var el = this;
+      fetch('/explorar/seguir/' + el.dataset.userId, { method: 'POST', headers: { 'Content-Type': 'application/json' } })
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+          if (d.sucesso) {
+            el.textContent = 'Seguindo';
+            el.style.background = 'var(--accent)'; el.style.borderColor = 'var(--accent)'; el.style.color = '#fff';
+            el.disabled = true;
+          }
+        });
+    });
+  });
+
+  document.querySelectorAll('.btn-seguir-pet-sidebar').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var el = this;
+      fetch('/explorar/pet/' + el.dataset.petId + '/seguir', { method: 'POST', headers: { 'Content-Type': 'application/json' } })
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+          if (d.sucesso) {
+            el.textContent = 'Seguindo';
+            el.style.background = 'var(--accent)'; el.style.borderColor = 'var(--accent)'; el.style.color = '#fff';
+            el.disabled = true;
+          }
+        });
+    });
+  });
+
+  // ── Load more ──
+  var loadMoreBtn = document.getElementById('loadMoreBtn');
+  if (loadMoreBtn) {
+    loadMoreBtn.addEventListener('click', function() {
+      var page = parseInt(this.getAttribute('data-page') || '2', 10);
+      this.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>Carregando...';
+      this.disabled = true;
+      fetch('/feed?page=' + page, { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+          if (d.posts && d.posts.length > 0) {
+            d.posts.forEach(function(p) {
+              var html = renderPostHTML(p);
+              var temp = document.createElement('div'); temp.innerHTML = html;
+              feedContainer.insertBefore(temp.firstChild, loadMoreBtn);
+            });
+            if (d.temMais) {
+              loadMoreBtn.setAttribute('data-page', page + 1);
+              loadMoreBtn.innerHTML = '<i class="fa-solid fa-arrows-rotate mr-2"></i>Carregar mais publicações';
+              loadMoreBtn.disabled = false;
+            } else {
+              loadMoreBtn.remove();
+            }
+          } else {
+            loadMoreBtn.remove();
+          }
+          initVerMais();
+        });
+    });
+  }
 
   atualizarTempos();
   setInterval(atualizarTempos, 60000);
   setTimeout(initVerMais, 100);
-
-  document.querySelectorAll('.btn-seguir-sidebar').forEach(function(btn) { btn.addEventListener('click', function() { var userId = this.getAttribute('data-user-id'); var el = this; fetch('/explorar/seguir/' + userId, { method: 'POST', headers: { 'Content-Type': 'application/json' } }).then(function(r) { return r.json(); }).then(function(d) { if (d.sucesso) { el.textContent = 'Seguindo'; el.classList.remove('bg-gray-900', 'hover:bg-gray-700'); el.classList.add('bg-primary-500', 'hover:bg-primary-600'); el.disabled = true; } }); }); });
-  document.querySelectorAll('.btn-seguir-pet-sidebar').forEach(function(btn) { btn.addEventListener('click', function() { var petId = this.getAttribute('data-pet-id'); var el = this; fetch('/explorar/pet/' + petId + '/seguir', { method: 'POST', headers: { 'Content-Type': 'application/json' } }).then(function(r) { return r.json(); }).then(function(d) { if (d.sucesso) { el.textContent = 'Seguindo'; el.classList.remove('border-primary-500', 'text-primary-500', 'hover:bg-primary-500', 'hover:text-white'); el.classList.add('bg-primary-500', 'text-white', 'border-primary-500'); el.disabled = true; } }); }); });
 
 })();
 </script>

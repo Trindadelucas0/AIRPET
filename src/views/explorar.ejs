@@ -6,18 +6,16 @@
           crossorigin="anonymous" referrerpolicy="no-referrer">
     <style>
       @keyframes heartPop { 0%{transform:scale(1)} 30%{transform:scale(1.35)} 60%{transform:scale(0.95)} 100%{transform:scale(1)} }
-      @keyframes shimmer { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
       @keyframes floatHeart { 0%{opacity:1;transform:translateY(0) scale(1)} 100%{opacity:0;transform:translateY(-60px) scale(1.4)} }
       @keyframes explorarHero { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
       .animate-heartPop { animation: heartPop 0.4s ease-out; }
-      .float-heart { position:absolute; pointer-events:none; animation:floatHeart 0.7s ease-out forwards; color:#ef4444; }
-      .skeleton { background:linear-gradient(90deg,#f0f0f0 25%,#e0e0e0 50%,#f0f0f0 75%); background-size:200% 100%; animation:shimmer 1.5s infinite; border-radius:8px; }
+      .float-heart { position:absolute; pointer-events:none; animation:floatHeart 0.7s ease-out forwards; color:var(--red); }
       .menu-dropdown { transform-origin:top right; animation:scaleIn .15s ease-out; }
-      .mention { color:#328dff; font-weight:500; cursor:pointer; }
+      .mention { color:var(--accent); font-weight:600; cursor:pointer; }
       .mention:hover { text-decoration:underline; }
-      .autocomplete-dropdown { position:absolute; bottom:100%; left:0; right:0; max-height:160px; overflow-y:auto; background:#fff; border:1px solid #e5e7eb; border-radius:12px; box-shadow:0 -4px 12px rgba(0,0,0,.08); z-index:10; margin-bottom:4px; }
+      .autocomplete-dropdown { position:absolute; bottom:100%; left:0; right:0; max-height:160px; overflow-y:auto; background:var(--ink-2); border:1px solid var(--border); border-radius:12px; box-shadow:0 18px 48px rgba(15,23,42,0.10); z-index:10; margin-bottom:4px; }
       .autocomplete-item { display:flex; align-items:center; gap:8px; padding:8px 12px; cursor:pointer; font-size:13px; transition:background .15s; }
-      .autocomplete-item:hover { background:#f9fafb; }
+      .autocomplete-item:hover { background:var(--ink-3); }
       .post-enter { animation: slideUp .4s ease-out both; }
       .driver-popover { border-radius:16px !important; }
       .driver-popover-title { font-weight:700 !important; color:#111827 !important; }
@@ -40,10 +38,10 @@
         margin-bottom: 1rem;
         transition: transform .2s ease, box-shadow .2s ease;
       }
-      .masonry-card:hover { transform: translateY(-2px); box-shadow: 0 12px 24px -8px rgba(0,0,0,.08); }
-      .explorar-card { border-radius: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,.04); border: 1px solid rgba(0,0,0,.04); }
-      .explorar-sidebar-card { border-radius: 1.25rem; box-shadow: 0 2px 8px rgba(0,0,0,.04); border: 1px solid rgba(0,0,0,.04); }
-      .explorar-sidebar-card .divide-y > * + * { border-top: 1px solid rgba(0,0,0,.04); }
+      .masonry-card:hover { transform: translateY(-2px); box-shadow: 0 14px 30px -12px rgba(15,23,42,.10); }
+      .explorar-card { border-radius: 1.25rem; box-shadow: 0 1px 3px rgba(15,23,42,.04); border: 1px solid var(--border); }
+      .explorar-sidebar-card { border-radius: 1.25rem; box-shadow: 0 2px 8px rgba(15,23,42,.05); border: 1px solid var(--border); }
+      .explorar-sidebar-card .divide-y > * + * { border-top: 1px solid var(--border); }
       .btn-seguir-explorar { transition: transform .15s, box-shadow .15s; }
       .btn-seguir-explorar:hover { transform: scale(1.02); }
       .btn-seguir-explorar:active { transform: scale(0.98); }
@@ -383,7 +381,7 @@
                 </p>
               <% } %>
             </div>
-            <button class="btn-seguir-sidebar btn-seguir-explorar shrink-0 px-3.5 py-2 text-xs font-bold rounded-xl bg-gray-900 text-white hover:bg-gray-700 shadow-sm"
+            <button class="btn-seguir-sidebar btn-seguir-explorar shrink-0 px-3.5 py-2 text-xs font-bold rounded-xl border-2 border-primary-500 text-primary-500 bg-white hover:bg-primary-50 hover:text-primary-600 shadow-sm transition-all"
                     data-user-id="<%= rec.id %>">
               Seguir
             </button>
@@ -714,8 +712,12 @@
 
   function toast(msg, tipo) {
     var el = document.createElement('div');
-    el.className = 'fixed top-20 left-1/2 -translate-x-1/2 z-[70] px-5 py-3 rounded-2xl text-sm font-semibold shadow-xl animate-slideUp ' +
-      (tipo === 'erro' ? 'bg-red-500 text-white' : 'bg-white text-gray-800 ring-1 ring-black/5');
+    var isErro = (tipo === 'erro');
+    var borderColor = isErro ? 'var(--red)' : 'var(--accent)';
+    el.className = 'fixed top-20 left-1/2 -translate-x-1/2 z-[70] px-5 py-3 rounded-2xl text-sm font-semibold shadow-xl ring-1 ring-black/5 animate-slideUp';
+    el.style.background = 'var(--ink-2)';
+    el.style.color = 'var(--text)';
+    el.style.borderLeft = '5px solid ' + borderColor;
     el.textContent = msg;
     document.body.appendChild(el);
     setTimeout(function () { el.classList.add('fade-out'); }, 2500);
@@ -1840,8 +1842,8 @@
         .then(function(d) {
           if (d.sucesso) {
             el.textContent = 'Seguindo';
-            el.classList.remove('bg-gray-900', 'hover:bg-gray-700');
-            el.classList.add('bg-primary-500', 'hover:bg-primary-600');
+            el.classList.remove('border-primary-500', 'text-primary-500', 'bg-white', 'hover:bg-primary-50', 'hover:text-primary-600');
+            el.classList.add('bg-primary-500', 'text-white', 'hover:bg-primary-600');
             el.disabled = true;
           }
         });

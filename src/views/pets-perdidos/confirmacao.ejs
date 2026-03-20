@@ -1,140 +1,156 @@
-<% locals.titulo = dados.petNome + ' esta seguro!' %>
+<% locals.titulo = dados.petNome + ' está seguro!' %>
 <% locals.extraHead = `
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-  .confetti-container {
-    position: fixed; inset: 0; pointer-events: none; z-index: 9999; overflow: hidden;
-  }
-  .confetti {
-    position: absolute; top: -20px; width: 10px; height: 10px; border-radius: 2px;
-    animation: confettiFall var(--duration) var(--delay) ease-in forwards;
-  }
-  @keyframes confettiFall {
-    0%   { transform: translateY(0) rotate(0deg) scale(1); opacity: 1; }
-    80%  { opacity: 1; }
-    100% { transform: translateY(100vh) rotate(var(--rot)) scale(0.5); opacity: 0; }
-  }
-  .celebration-bounce {
-    animation: celebrationBounce 0.6s ease-out;
-  }
-  @keyframes celebrationBounce {
-    0%   { transform: scale(0.3); opacity: 0; }
-    50%  { transform: scale(1.08); }
-    70%  { transform: scale(0.95); }
-    100% { transform: scale(1); opacity: 1; }
-  }
-  .stat-card {
-    animation: statReveal 0.5s ease-out backwards;
-  }
-  @keyframes statReveal {
-    from { transform: translateY(20px); opacity: 0; }
-    to   { transform: translateY(0); opacity: 1; }
-  }
+  :root{--ink:#0d0d0f;--ink-2:#13131a;--ink-3:#1c1c26;--border:rgba(255,255,255,0.07);--text:#e4e4f0;--text-dim:#7a7a96;--accent:#f26020;--green:#22c55e;}
+  body{background:var(--ink)!important;color:var(--text)!important;font-family:'DM Sans',sans-serif;}
+  .conf-wrap{max-width:480px;margin:0 auto;padding:40px 20px 80px;text-align:center;}
+  /* Confetti */
+  .confetti-container{position:fixed;inset:0;pointer-events:none;z-index:999;overflow:hidden;}
+  .confetti{position:absolute;top:-20px;width:10px;height:10px;border-radius:2px;animation:confettiFall var(--duration) var(--delay) ease-in forwards;}
+  @keyframes confettiFall{0%{transform:translateY(0) rotate(0deg) scale(1);opacity:1;}80%{opacity:1;}100%{transform:translateY(100vh) rotate(var(--rot)) scale(0.5);opacity:0;}}
+  /* Avatar bounce */
+  @keyframes celebBounce{0%{transform:scale(0.3);opacity:0;}50%{transform:scale(1.08);}70%{transform:scale(0.95);}100%{transform:scale(1);opacity:1;}}
+  .celeb-avatar{animation:celebBounce 0.6s ease-out both;}
+  @keyframes slideUp{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:none;}}
+  .slide-1{animation:slideUp 0.5s 0.1s both;}
+  .slide-2{animation:slideUp 0.5s 0.2s both;}
+  .slide-3{animation:slideUp 0.5s 0.3s both;}
+  .slide-4{animation:slideUp 0.5s 0.4s both;}
+  /* Avatar ring pulse */
+  @keyframes ring-pulse{0%,100%{box-shadow:0 0 0 0 rgba(34,197,94,0.4);}50%{box-shadow:0 0 0 12px rgba(34,197,94,0);}}
+  .avatar-img{animation:ring-pulse 2s ease-in-out 0.8s infinite;}
+  /* Stats grid */
+  .stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:24px 0;}
+  .stat-card{background:var(--ink-2);border:1px solid var(--border);border-radius:14px;padding:16px;text-align:center;}
+  .stat-val{font-family:'Syne',sans-serif;font-size:24px;font-weight:800;color:#fff;}
+  .stat-label{font-size:11px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.08em;margin-top:3px;}
+  /* Buttons */
+  .btn-primary{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:14px 28px;background:var(--accent);color:#fff;border:none;border-radius:12px;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:700;cursor:pointer;transition:all 0.2s;text-decoration:none;width:100%;}
+  .btn-primary:hover{background:var(--accent-light);transform:translateY(-1px);color:#fff;text-decoration:none;}
+  .btn-ghost{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:13px 28px;background:transparent;color:var(--text-dim);border:1px solid var(--border);border-radius:12px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.15s;text-decoration:none;width:100%;margin-top:8px;}
+  .btn-ghost:hover{border-color:var(--border-hover);color:var(--text);text-decoration:none;}
+  /* Share */
+  .share-row{display:flex;gap:10px;margin-top:16px;}
+  .share-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 10px;background:var(--ink-2);border:1px solid var(--border);border-radius:12px;cursor:pointer;transition:all 0.15s;font-size:12px;font-weight:700;color:var(--text-dim);}
+  .share-btn:hover{border-color:var(--border-hover);color:var(--text);}
+  .share-btn i{font-size:20px;}
 </style>
 ` %>
 <%- include('../partials/header') %>
 
-<!-- Confete -->
+<!-- Confetti -->
 <div class="confetti-container" id="confettiBox"></div>
 
-<main class="flex-1 container mx-auto px-4 py-8 max-w-lg text-center">
+<main class="flex-1">
+  <div class="conf-wrap">
 
-  <!-- Badge de celebracao -->
-  <div class="celebration-bounce mb-6">
-    <div class="relative inline-block">
+    <!-- Avatar -->
+    <div class="celeb-avatar" style="position:relative;display:inline-block;margin-bottom:24px;">
       <% if (dados.petFoto) { %>
         <img src="<%= dados.petFoto %>" alt="<%= dados.petNome %>"
-             class="w-32 h-32 rounded-full object-cover ring-4 ring-emerald-400 shadow-xl mx-auto">
+             class="avatar-img"
+             style="width:120px;height:120px;border-radius:50%;object-fit:cover;border:4px solid rgba(34,197,94,0.5);">
       <% } else { %>
-        <div class="w-32 h-32 rounded-full bg-emerald-100 flex items-center justify-center ring-4 ring-emerald-400 shadow-xl mx-auto">
-          <i class="fa-solid fa-paw text-emerald-500 text-4xl"></i>
-        </div>
+        <div class="avatar-img" style="width:120px;height:120px;border-radius:50%;background:rgba(34,197,94,0.1);display:flex;align-items:center;justify-content:center;border:4px solid rgba(34,197,94,0.4);font-size:48px;">🐾</div>
       <% } %>
-      <span class="absolute -bottom-2 -right-2 w-12 h-12 bg-emerald-500 rounded-full flex items-center justify-center ring-4 ring-white shadow-lg">
-        <i class="fa-solid fa-shield-halved text-white text-xl"></i>
+      <span style="position:absolute;bottom:-4px;right:-4px;width:40px;height:40px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;border:3px solid var(--ink);box-shadow:0 4px 12px rgba(34,197,94,0.4);">
+        <i class="fa-solid fa-shield-halved" style="color:#fff;font-size:16px;"></i>
       </span>
     </div>
-  </div>
 
-  <h1 class="text-3xl font-black text-gray-900 mb-2 celebration-bounce" style="animation-delay: 0.1s">
-    Que alivio!
-  </h1>
-  <p class="text-lg text-gray-600 mb-8 celebration-bounce" style="animation-delay: 0.2s">
-    <strong class="text-emerald-600"><%= dados.petNome %></strong> esta seguro e de volta ao lar.
-  </p>
+    <h1 class="slide-1" style="font-family:'Syne',sans-serif;font-size:32px;font-weight:800;color:#fff;margin-bottom:8px;">
+      Que alívio! 🎉
+    </h1>
+    <p class="slide-2" style="font-size:16px;color:var(--text-dim);line-height:1.6;margin-bottom:4px;">
+      <strong style="color:var(--text)"><%= dados.petNome %></strong> está protegido pelo AIRPET.
+    </p>
+    <p class="slide-2" style="font-size:14px;color:var(--text-dim);">A tag NFC fará toda a diferença na próxima aventura.</p>
 
-  <!-- Estatisticas -->
-  <div class="grid grid-cols-2 gap-3 mb-8">
-    <div class="stat-card card !p-4 text-center" style="animation-delay: 0.3s">
-      <i class="fa-solid fa-clock text-amber-400 text-xl mb-2"></i>
-      <p class="text-xs text-gray-400 uppercase font-medium">Tempo perdido</p>
-      <p class="text-lg font-bold text-gray-800"><%= dados.tempoPerdido %></p>
-    </div>
-    <div class="stat-card card !p-4 text-center" style="animation-delay: 0.4s">
-      <i class="fa-solid fa-magnifying-glass text-blue-400 text-xl mb-2"></i>
-      <p class="text-xs text-gray-400 uppercase font-medium">Encontrado via</p>
-      <p class="text-lg font-bold text-gray-800">
-        <% if (dados.comoEncontrado === 'voltou_sozinho') { %>Voltou sozinho
-        <% } else if (dados.comoEncontrado === 'alguem_encontrou') { %>Ajuda de alguem
-        <% } else if (dados.comoEncontrado === 'tag_nfc') { %>Tag NFC
-        <% } else { %>Outra forma<% } %>
-      </p>
-    </div>
-  </div>
+    <!-- Stats (somente chaves que vêm do petPerdidoController) -->
+    <% if (dados.tempoPerdido || dados.comoEncontrado || dados.descricao) { %>
+      <div class="stats-grid slide-3">
+        <% if (dados.tempoPerdido) { %>
+          <div class="stat-card">
+            <div class="stat-val"><%= dados.tempoPerdido %></div>
+            <div class="stat-label">Tempo perdido</div>
+          </div>
+        <% } %>
+        <% if (dados.comoEncontrado) { %>
+          <div class="stat-card">
+            <div class="stat-val" style="font-size:16px;line-height:1.3;"><%= dados.comoEncontrado %></div>
+            <div class="stat-label">Como foi encontrado</div>
+          </div>
+        <% } %>
+        <% if (dados.descricao) { %>
+          <div class="stat-card" style="grid-column:1/-1;">
+            <div class="stat-label" style="margin-top:0;">Detalhes</div>
+            <div style="font-size:13px;color:var(--text-dim);line-height:1.6;margin-top:6px;"><%= dados.descricao %></div>
+          </div>
+        <% } %>
+      </div>
+    <% } %>
 
-  <% if (dados.mensagemAgradecimento) { %>
-    <div class="stat-card card mb-8 bg-emerald-50 border border-emerald-200 text-left" style="animation-delay: 0.5s">
-      <div class="flex items-start gap-3">
-        <div class="w-10 h-10 rounded-full bg-emerald-200 flex items-center justify-center flex-shrink-0 mt-0.5">
-          <i class="fa-solid fa-heart text-emerald-600"></i>
-        </div>
-        <div>
-          <p class="text-sm font-semibold text-emerald-800 mb-1">Mensagem de agradecimento</p>
-          <p class="text-sm text-gray-600 leading-relaxed whitespace-pre-line"><%= dados.mensagemAgradecimento %></p>
-        </div>
+    <!-- Actions -->
+    <div class="slide-4">
+      <a href="/pets/<%= dados.petId %>" class="btn-primary">
+        <i class="fa-solid fa-paw"></i> Ver perfil de <%= dados.petNome %>
+      </a>
+      <a href="/feed" class="btn-ghost">
+        <i class="fa-solid fa-house"></i> Ir para o Feed
+      </a>
+
+      <!-- Share -->
+      <div class="share-row">
+        <button class="share-btn" onclick="compartilhar('whatsapp')">
+          <i class="fa-brands fa-whatsapp" style="color:#25d366;"></i>
+          WhatsApp
+        </button>
+        <button class="share-btn" onclick="compartilhar('copy')">
+          <i class="fa-solid fa-link" style="color:var(--accent);"></i>
+          Copiar link
+        </button>
+        <button class="share-btn" onclick="compartilhar('share')">
+          <i class="fa-solid fa-share-from-square" style="color:var(--blue);"></i>
+          Compartilhar
+        </button>
       </div>
     </div>
-  <% } %>
 
-  <!-- Acoes -->
-  <div class="space-y-3 stat-card" style="animation-delay: 0.6s">
-    <a href="/pets/<%= dados.petId %>"
-       class="block w-full py-3.5 rounded-xl font-semibold text-white bg-emerald-500 hover:bg-emerald-600 transition-colors text-center">
-      <i class="fa-solid fa-paw mr-2"></i> Ver perfil de <%= dados.petNome %>
-    </a>
-    <a href="/pets"
-       class="block w-full py-3 rounded-xl font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors text-center">
-      <i class="fa-solid fa-list mr-2"></i> Meus Pets
-    </a>
   </div>
-
 </main>
 
 <script>
-(function () {
-  var cores = ['#10b981', '#34d399', '#6ee7b7', '#fbbf24', '#f59e0b', '#ec5a1c', '#3b82f6', '#8b5cf6', '#ec4899'];
-  var container = document.getElementById('confettiBox');
-  var total = 60;
-
-  for (var i = 0; i < total; i++) {
-    var piece = document.createElement('div');
-    piece.className = 'confetti';
-    piece.style.left = Math.random() * 100 + '%';
-    piece.style.background = cores[Math.floor(Math.random() * cores.length)];
-    piece.style.width = (Math.random() * 8 + 6) + 'px';
-    piece.style.height = (Math.random() * 8 + 4) + 'px';
-    piece.style.setProperty('--duration', (Math.random() * 2 + 2) + 's');
-    piece.style.setProperty('--delay', (Math.random() * 1.5) + 's');
-    piece.style.setProperty('--rot', (Math.random() * 720 - 360) + 'deg');
-    if (Math.random() > 0.5) piece.style.borderRadius = '50%';
-    container.appendChild(piece);
+// Confetti
+(function(){
+  var box = document.getElementById('confettiBox');
+  var colors = ['#f26020','#ff7a3d','#22c55e','#a78bfa','#facc15','#60a5fa','#f472b6'];
+  for (var i = 0; i < 70; i++) {
+    var c = document.createElement('div');
+    c.className = 'confetti';
+    c.style.setProperty('--duration', (Math.random()*1.5+1.2)+'s');
+    c.style.setProperty('--delay', (Math.random()*1.5)+'s');
+    c.style.setProperty('--rot', (Math.random()*720-360)+'deg');
+    c.style.left = Math.random()*100+'vw';
+    c.style.background = colors[Math.floor(Math.random()*colors.length)];
+    c.style.width = (Math.random()*8+5)+'px';
+    c.style.height = (Math.random()*8+5)+'px';
+    c.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+    box.appendChild(c);
   }
-
-  setTimeout(function () {
-    container.style.transition = 'opacity 1s';
-    container.style.opacity = '0';
-    setTimeout(function () { container.remove(); }, 1000);
-  }, 5000);
 })();
+
+function compartilhar(tipo) {
+  var url = window.location.origin + '/explorar/pet/<%= dados.petId %>';
+  var text = 'Boa notícia! <%= dados.petNome %> está seguro e protegido pelo AIRPET 🐾';
+  if (tipo === 'whatsapp') {
+    window.open('https://wa.me/?text='+encodeURIComponent(text+' '+url),'_blank');
+  } else if (tipo === 'copy') {
+    navigator.clipboard.writeText(url).then(function(){ alert('Link copiado!'); });
+  } else if (tipo === 'share' && navigator.share) {
+    navigator.share({ title: text, url: url });
+  }
+}
 </script>
 
 <%- include('../partials/footer') %>

@@ -2,867 +2,1053 @@
 <%- include('partials/header') %>
 <%- include('partials/flash') %>
 
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,700;1,9..40,400&display=swap');
+
+  :root {
+    --font-display: 'Syne', sans-serif;
+    --font-body: 'DM Sans', sans-serif;
+  }
+
+  /* ── PAGE HEADER ── */
+  .page-header {
+    position: sticky; top: 56px; z-index: 40;
+    background: rgba(255,255,255,0.78);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 0;
+  }
+
+  .page-header-inner {
+    max-width: 720px; margin: 0 auto; padding: 0 20px;
+    display: flex; align-items: center; gap: 12px;
+  }
+
+  .page-header h1 {
+    font-family: var(--font-display);
+    font-size: 18px; font-weight: 800; color: var(--text); letter-spacing: -0.01em;
+  }
+
+  .page-header-icon {
+    width: 32px; height: 32px;
+    border-radius: 9px;
+    background: var(--accent-glow);
+    border: 1px solid rgba(242,96,32,0.2);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--accent); font-size: 14px;
+  }
+
+  /* ── MAIN LAYOUT ── */
+  .settings-layout {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 24px 20px 80px;
+  }
+
+  /* ── PROFILE HERO CARD ── */
+  .profile-hero {
+    background: var(--ink-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    margin-bottom: 14px;
+  }
+
+  .profile-hero-banner {
+    height: 100px;
+    background: linear-gradient(135deg, #1a1018 0%, #2d1a10 50%, #1a1018 100%);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .profile-hero-banner-img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .profile-hero-banner-overlay {
+    position: absolute; inset: 0;
+    background: linear-gradient(to bottom, transparent 40%, rgba(19,19,26,0.6) 100%);
+  }
+
+  .profile-hero-banner-edit {
+    position: absolute; bottom: 8px; right: 8px;
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 5px 12px;
+    background: rgba(255,255,255,0.78);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(31,41,55,0.12);
+    border-radius: 8px;
+    font-size: 11px; font-weight: 600; color: rgba(31,41,55,0.85);
+    cursor: pointer; transition: all 0.15s;
+  }
+  .profile-hero-banner-edit:hover { border-color: rgba(31,41,55,0.28); color: var(--text); }
+
+  .profile-hero-body {
+    padding: 0 20px 20px;
+  }
+
+  .profile-hero-avatar-row {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    margin-top: -36px; margin-bottom: 14px;
+  }
+
+  .profile-avatar-wrap {
+    position: relative; display: inline-block;
+  }
+
+  .profile-avatar {
+    width: 72px; height: 72px; border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid var(--ink-2);
+    display: block;
+  }
+
+  .profile-avatar-initial {
+    width: 72px; height: 72px; border-radius: 50%;
+    border: 3px solid var(--ink-2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 26px; font-weight: 700; color: var(--text);
+    background: var(--ink-3);
+  }
+
+  .profile-avatar-edit-btn {
+    position: absolute; bottom: 0; right: 0;
+    width: 26px; height: 26px; border-radius: 50%;
+    background: var(--accent); border: 2px solid var(--ink-2);
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 11px; cursor: pointer; border: none;
+    transition: background 0.15s;
+  }
+  .profile-avatar-edit-btn:hover { background: var(--accent-light); }
+
+  .profile-hero-name {
+    font-family: var(--font-display);
+    font-size: 20px; font-weight: 700; color: var(--text);
+    margin-bottom: 2px;
+  }
+
+  .profile-hero-email {
+    font-size: 13px; color: var(--text-dim);
+  }
+
+  .profile-hero-location {
+    font-size: 12px; color: var(--text-dim); margin-top: 3px;
+  }
+
+  .profile-view-link {
+    display: inline-flex; align-items: center; gap: 6px;
+    margin-top: 10px;
+    padding: 7px 16px;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    font-size: 12px; font-weight: 600; color: var(--text-dim);
+    text-decoration: none; transition: all 0.15s;
+  }
+  .profile-view-link:hover { border-color: var(--border-hover); color: var(--text); text-decoration: none; background: var(--ink-3); }
+
+  /* ── SECTION CARD ── */
+  .section-card {
+    background: var(--ink-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 14px;
+    overflow: hidden;
+  }
+
+  .section-card-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 20px 14px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .section-card-title {
+    display: flex; align-items: center; gap: 10px;
+    font-family: var(--font-display);
+    font-size: 14px; font-weight: 700; color: var(--text);
+    letter-spacing: 0.01em;
+  }
+
+  .section-card-title-icon {
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    background: var(--accent-glow);
+    border: 1px solid rgba(242,96,32,0.15);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--accent); font-size: 12px;
+  }
+
+  .section-card-link {
+    font-size: 12px; font-weight: 600; color: var(--accent);
+    text-decoration: none; letter-spacing: 0.03em;
+  }
+  .section-card-link:hover { color: var(--accent-light); text-decoration: none; }
+
+  .section-card-body { padding: 18px 20px; }
+
+  /* ── PETS CAROUSEL ── */
+  .pets-scroll {
+    display: flex; gap: 10px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    scrollbar-width: none;
+  }
+  .pets-scroll::-webkit-scrollbar { display: none; }
+
+  .pet-chip {
+    flex-shrink: 0;
+    display: flex; flex-direction: column; align-items: center;
+    width: 72px; padding: 8px 4px;
+    border-radius: 14px;
+    border: 1px solid var(--border);
+    background: var(--ink-3);
+    text-decoration: none;
+    transition: all 0.15s;
+    gap: 6px;
+  }
+  .pet-chip:hover { border-color: var(--accent); background: var(--ink-3); text-decoration: none; }
+
+  .pet-chip-avatar {
+    width: 48px; height: 48px; border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid rgba(242,96,32,0.3);
+  }
+
+  .pet-chip-avatar-empty {
+    width: 48px; height: 48px; border-radius: 50%;
+    background: var(--ink-4);
+    border: 2px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; color: var(--text-muted);
+  }
+
+  .pet-chip-name {
+    font-size: 10px; font-weight: 600; color: var(--text);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    width: 100%; text-align: center;
+  }
+
+  .pets-empty {
+    text-align: center; padding: 28px 16px;
+    color: var(--text-dim);
+  }
+
+  .pets-empty-icon { font-size: 32px; opacity: 0.25; margin-bottom: 10px; display: block; }
+
+  /* ── POST COUNTER ── */
+  .posts-counter {
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  }
+
+  .posts-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 8px 16px;
+    border-radius: 10px;
+    font-size: 14px; font-weight: 700;
+  }
+
+  .posts-badge.ok { background: rgba(34,197,94,0.08); color: var(--green); border: 1px solid rgba(34,197,94,0.15); }
+  .posts-badge.warn { background: rgba(242,96,32,0.08); color: var(--accent); border: 1px solid rgba(242,96,32,0.15); }
+  .posts-badge.danger { background: rgba(239,68,68,0.08); color: #f87171; border: 1px solid rgba(239,68,68,0.15); }
+
+  .posts-progress {
+    width: 100%; height: 4px;
+    background: var(--ink-3);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-top: 10px;
+  }
+
+  .posts-progress-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.6s ease;
+  }
+
+  /* ── FORM FIELDS ── */
+  .field-group { margin-bottom: 18px; }
+
+  .field-label {
+    display: block;
+    font-size: 12px; font-weight: 600; color: var(--text-dim);
+    letter-spacing: 0.05em; text-transform: uppercase;
+    margin-bottom: 7px;
+  }
+
+  .field-input {
+    width: 100%;
+    background: var(--ink-3);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 11px 14px;
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .field-input:focus { border-color: rgba(242,96,32,0.5); box-shadow: 0 0 0 3px rgba(242,96,32,0.06); }
+  .field-input::placeholder { color: var(--text-muted); }
+
+  .field-row {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+  }
+
+  @media (max-width: 500px) { .field-row { grid-template-columns: 1fr; } }
+
+  .field-hint { font-size: 11px; color: var(--text-dim); margin-top: 5px; }
+
+  .field-input-row {
+    display: flex; gap: 8px;
+  }
+
+  .field-input-row .field-input { flex: 1; }
+
+  /* ── COLOR PICKER ── */
+  .color-row {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    margin-bottom: 18px;
+  }
+
+  .color-swatch {
+    width: 34px; height: 34px; border-radius: 50%; cursor: pointer;
+    border: 2px solid transparent;
+    transition: all 0.15s; position: relative;
+    flex-shrink: 0;
+  }
+  .color-swatch:hover { transform: scale(1.12); }
+  .color-swatch.active {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 30%, transparent);
+  }
+
+  .color-custom-input {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--ink-3); border: 1px solid var(--border); border-radius: 10px;
+    padding: 6px 12px;
+  }
+
+  .color-preview {
+    width: 22px; height: 22px; border-radius: 50%;
+    border: 2px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  /* ── BUTTONS ── */
+  .btn-primary {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 11px 22px;
+    background: var(--accent); color: #fff;
+    border: none; border-radius: 10px;
+    font-family: var(--font-body);
+    font-size: 14px; font-weight: 700;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .btn-primary:hover { background: var(--accent-light); transform: translateY(-1px); }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+  .btn-ghost {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 11px 22px;
+    background: transparent; color: var(--text-dim);
+    border: 1px solid var(--border); border-radius: 10px;
+    font-family: var(--font-body);
+    font-size: 14px; font-weight: 600;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .btn-ghost:hover { border-color: var(--border-hover); color: var(--text); background: var(--ink-3); }
+
+  .btn-danger {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 11px 22px;
+    background: rgba(239,68,68,0.08); color: #f87171;
+    border: 1px solid rgba(239,68,68,0.2); border-radius: 10px;
+    font-family: var(--font-body);
+    font-size: 14px; font-weight: 600;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .btn-danger:hover { background: rgba(239,68,68,0.15); border-color: rgba(239,68,68,0.35); }
+
+  .btn-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 20px; }
+
+  /* ── DANGER ZONE ── */
+  .danger-zone {
+    background: rgba(239,68,68,0.04);
+    border: 1px solid rgba(239,68,68,0.15);
+    border-radius: var(--radius);
+    padding: 18px 20px;
+    margin-bottom: 14px;
+  }
+
+  .danger-zone-title {
+    font-size: 13px; font-weight: 700; color: #f87171; margin-bottom: 6px;
+    display: flex; align-items: center; gap: 7px;
+  }
+
+  .danger-zone-desc { font-size: 13px; color: var(--text-dim); line-height: 1.6; margin-bottom: 14px; }
+
+  /* ── ANIMATE ── */
+  @keyframes slide-up { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:none; } }
+  .anim-1 { animation: slide-up 0.4s 0.05s both; }
+  .anim-2 { animation: slide-up 0.4s 0.1s both; }
+  .anim-3 { animation: slide-up 0.4s 0.15s both; }
+  .anim-4 { animation: slide-up 0.4s 0.2s both; }
+  .anim-5 { animation: slide-up 0.4s 0.25s both; }
+  .anim-6 { animation: slide-up 0.4s 0.3s both; }
+</style>
+
+<% var meusPets = typeof meusPets !== 'undefined' ? meusPets : (typeof pets !== 'undefined' ? pets : []); %>
+
 <main class="flex-1 pb-24 md:pb-6">
-  <div class="max-w-2xl mx-auto px-4 py-6">
 
-    <h1 class="text-2xl font-black text-gray-900 mb-6 animate-slideUp">
-      <i class="fa-solid fa-gear text-primary-500 mr-2"></i>Configurações
-    </h1>
-
-    <!-- Profile Card -->
-    <div class="card card-hover mb-6 overflow-hidden animate-slideUp" style="animation-delay: 0.05s">
-      <div class="h-20 rounded-t-3xl bg-gradient-to-r from-primary-500 to-primary-600 -m-6 mb-0"></div>
-      <div class="px-2 pb-2 -mt-8 relative">
-        <div class="flex items-end gap-4">
-          <% var corDestaque = perfil.cor_perfil || '#ec5a1c'; %>
-          <% if (perfil.foto_perfil) { %>
-            <img src="<%= perfil.foto_perfil %>" alt="" class="w-20 h-20 rounded-2xl object-cover border-4 border-white shadow-lg" style="box-shadow: 0 0 0 2px <%= corDestaque %>">
-          <% } else { %>
-            <div class="w-20 h-20 rounded-2xl border-4 border-white shadow-lg flex items-center justify-center text-2xl font-bold text-white bg-gray-400"
-                 style="box-shadow: 0 0 0 2px <%= corDestaque %>">
-              <%= perfil.nome ? perfil.nome.charAt(0).toUpperCase() : 'U' %>
-            </div>
-          <% } %>
-          <div class="pb-1">
-            <h2 class="text-xl font-bold text-gray-900"><%= perfil.nome %></h2>
-            <p class="text-sm text-gray-500"><%= perfil.email %></p>
-            <% if (perfil.cidade) { %>
-              <p class="text-xs text-gray-400 mt-0.5"><i class="fa-solid fa-location-dot mr-1"></i><%= perfil.bairro ? perfil.bairro + ', ' : '' %><%= perfil.cidade %><%= perfil.estado ? ' - ' + perfil.estado : '' %></p>
-            <% } %>
-          </div>
-        </div>
-        <a href="/explorar/perfil/<%= perfil.id %>" class="mt-4 inline-flex items-center gap-2 text-sm text-primary-500 font-medium hover:underline">
-          <i class="fa-solid fa-paw"></i> Ver meus pets no explorar
-        </a>
-      </div>
+  <!-- Page header -->
+  <div class="page-header">
+    <div class="page-header-inner">
+      <div class="page-header-icon"><i class="fa-solid fa-gear"></i></div>
+      <h1>Configurações</h1>
     </div>
+  </div>
 
-    <!-- Pets -->
-    <div class="card card-hover mb-6 animate-slideUp" style="animation-delay: 0.1s">
-      <div class="flex items-center justify-between mb-4">
-        <h2 class="text-lg font-bold text-gray-900"><i class="fa-solid fa-paw mr-2 text-primary-500"></i>Meus Pets</h2>
-        <a href="/pets" class="text-sm text-primary-500 font-medium hover:underline">Ver todos</a>
-      </div>
-      <% if (pets && pets.length > 0) { %>
-        <div class="flex gap-3 overflow-x-auto scrollbar-hide pb-2">
-          <% pets.slice(0, 8).forEach(function(pet) { %>
-            <a href="/pets/<%= pet.id %>" class="flex-shrink-0 flex flex-col items-center w-20 p-2 rounded-2xl hover:bg-primary-50 transition-colors">
-              <% if (pet.foto) { %>
-                <img src="<%= pet.foto %>" alt="<%= pet.nome %>" class="w-14 h-14 rounded-full object-cover ring-2 ring-primary-100">
-              <% } else { %>
-                <div class="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center">
-                  <i class="fa-solid fa-paw text-gray-400"></i>
-                </div>
-              <% } %>
-              <span class="text-xs font-semibold text-gray-800 mt-1.5 truncate w-full text-center"><%= pet.nome %></span>
-            </a>
-          <% }) %>
-        </div>
-      <% } else { %>
-        <div class="text-center py-6 text-gray-400">
-          <i class="fa-solid fa-dog text-3xl mb-2 opacity-40"></i>
-          <p class="text-sm">Nenhum pet cadastrado.</p>
-          <a href="/pets/cadastro" class="text-sm text-primary-500 font-medium hover:underline mt-1 inline-block">Cadastrar pet</a>
-        </div>
-      <% } %>
-      <p class="text-xs text-gray-400 mt-2">Gerencie e edite os perfis dos seus pets em <a href="/pets" class="text-primary-500 hover:underline">Meus Pets</a>.</p>
-    </div>
+  <div class="settings-layout">
 
-    <!-- Seção: Rede social — quantidade de postagem -->
-    <div class="card animate-slideUp mb-6" style="animation-delay: 0.13s">
-      <div class="flex items-center justify-between mb-2">
-        <h2 class="text-lg font-bold text-gray-900"><i class="fa-solid fa-images mr-2 text-primary-500"></i>Publicações</h2>
-      </div>
-      <p class="text-sm text-gray-600 mb-3">Você pode publicar até 10 fotos no feed. Exclua posts antigos para liberar espaço.</p>
-      <div class="flex items-center gap-3 flex-wrap">
-        <span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-sm font-semibold <%= (typeof totalPosts !== 'undefined' ? totalPosts : 0) >= 10 ? 'bg-red-50 text-red-600' : 'bg-gray-100 text-gray-700' %>">
-          <i class="fa-solid fa-camera"></i>
-          <%= typeof totalPosts !== 'undefined' ? totalPosts : 0 %>/10 publicações
-        </span>
-        <a href="/feed" class="inline-flex items-center gap-1.5 text-sm font-medium text-primary-500 hover:text-primary-600 hover:underline">
-          <i class="fa-solid fa-arrow-right"></i> Ver minhas publicações
-        </a>
-      </div>
-    </div>
+    <!-- ═══ PROFILE HERO ═══ -->
+    <div class="profile-hero anim-1">
+      <% var corDestaque = perfil.cor_perfil || '#ec5a1c'; %>
 
-    <!-- Seção: Foto de perfil -->
-    <div class="card animate-slideUp mb-6" style="animation-delay: 0.12s">
-      <div class="flex items-center justify-between mb-4">
-        <h2 class="text-lg font-bold text-gray-900"><i class="fa-solid fa-image mr-2 text-primary-500"></i>Foto de perfil</h2>
-      </div>
-      <div class="perfil-secao-view">
-        <div class="flex items-center gap-4">
-          <button type="button" id="btnAbrirFotoPerfil" class="relative flex-shrink-0 rounded-full focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2" title="Trocar ou ajustar foto">
-            <% if (perfil.foto_perfil) { %>
-              <img src="<%= perfil.foto_perfil %>" alt="" id="previewFotoPerfil" class="w-16 h-16 rounded-full object-cover border-2 border-gray-200 block" style="box-shadow: 0 0 0 2px <%= perfil.cor_perfil || '#ec5a1c' %>">
-            <% } else { %>
-              <div id="previewFotoPerfil" class="w-16 h-16 rounded-full border-2 border-gray-200 flex items-center justify-center text-2xl font-bold text-white bg-gray-400" style="box-shadow: 0 0 0 2px <%= perfil.cor_perfil || '#ec5a1c' %>"><%= (perfil.nome || 'U').charAt(0).toUpperCase() %></div>
-            <% } %>
-            <span class="absolute bottom-0 right-0 w-6 h-6 rounded-full bg-primary-500 text-white flex items-center justify-center text-xs shadow" title="Ajustar foto"><i class="fa-solid fa-crop"></i></span>
-          </button>
-          <div>
-            <p class="text-sm text-gray-600">Clique na foto para alterar e recortar.</p>
-            <div id="fotoPerfilAcoes" class="mt-2 hidden">
-              <button type="button" id="btnSalvarFotoPerfil" class="btn-primary text-sm py-1.5 px-3 mr-2"><i class="fa-solid fa-check mr-1"></i>Salvar foto</button>
-              <button type="button" id="btnCancelarFotoPerfil" class="text-sm text-gray-500 hover:text-gray-700">Cancelar</button>
-            </div>
-          </div>
-        </div>
-      </div>
-      <input type="file" id="foto_perfil" accept="image/*" class="hidden">
-    </div>
-
-    <!-- Seção: Capa -->
-    <div class="card animate-slideUp mb-6" style="animation-delay: 0.14s">
-      <div class="flex items-center justify-between mb-4">
-        <h2 class="text-lg font-bold text-gray-900"><i class="fa-solid fa-image mr-2 text-primary-500"></i>Capa do perfil</h2>
-      </div>
-      <div class="perfil-secao-view">
-        <p class="text-xs text-gray-500 mb-2">Banner exibido no topo do seu perfil.</p>
-        <button type="button" id="btnAbrirCapa" class="block w-full rounded-xl border-2 border-dashed border-gray-200 hover:border-primary-300 hover:bg-primary-50/30 transition-all overflow-hidden">
-          <div id="previewCapa" class="h-24 sm:h-28 bg-gray-100 flex items-center justify-center" style="<%= perfil.foto_capa ? 'background-image:url(' + perfil.foto_capa + '); background-size:cover; background-position:center' : '' %>">
-            <% if (!perfil.foto_capa) { %>
-              <span class="text-gray-400 text-sm font-medium"><i class="fa-solid fa-image mr-1"></i> Clique para escolher capa</span>
-            <% } else { %>
-              <span class="text-white/90 text-sm font-medium drop-shadow">Clique para trocar</span>
-            <% } %>
-          </div>
+      <!-- Banner -->
+      <div class="profile-hero-banner" id="bannerPreviewWrap" style="<%= perfil.foto_capa ? 'padding:0' : '' %>">
+        <% if (perfil.foto_capa) { %>
+          <img src="<%= perfil.foto_capa %>" class="profile-hero-banner-img" id="bannerImg" alt="">
+          <div class="profile-hero-banner-overlay"></div>
+        <% } else { %>
+          <!-- Pattern decoration -->
+          <svg style="position:absolute;inset:0;width:100%;height:100%;opacity:0.04" viewBox="0 0 100 100" preserveAspectRatio="none">
+            <defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="white" stroke-width="0.5"/></pattern></defs>
+            <rect width="100%" height="100%" fill="url(#grid)"/>
+          </svg>
+          <div style="position:absolute;top:20px;left:50%;transform:translateX(-50%);font-size:28px;opacity:0.1;">🐾</div>
+        <% } %>
+        <button type="button" class="profile-hero-banner-edit" id="btnAbrirCapa">
+          <i class="fa-solid fa-image"></i>
+          <% if (perfil.foto_capa) { %>Trocar capa<% } else { %>Adicionar capa<% } %>
         </button>
-        <input type="file" id="foto_capa" accept="image/*" class="hidden">
-        <div id="capaAcoes" class="mt-2 hidden">
-          <button type="button" id="btnSalvarCapa" class="btn-primary text-sm py-1.5 px-3 mr-2"><i class="fa-solid fa-check mr-1"></i>Salvar capa</button>
-          <button type="button" id="btnCancelarCapa" class="text-sm text-gray-500 hover:text-gray-700">Cancelar</button>
+      </div>
+
+      <!-- Body -->
+      <div class="profile-hero-body">
+        <div class="profile-hero-avatar-row">
+          <div class="profile-avatar-wrap" id="btnAbrirFotoPerfilWrap">
+            <% if (perfil.foto_perfil) { %>
+              <img src="<%= perfil.foto_perfil %>" id="previewFotoPerfil" class="profile-avatar" style="box-shadow:0 0 0 3px <%= corDestaque %>40;" alt="">
+            <% } else { %>
+              <div class="profile-avatar-initial" id="previewFotoPerfil" style="box-shadow:0 0 0 3px <%= corDestaque %>40;"><%= perfil.nome ? perfil.nome.charAt(0).toUpperCase() : 'U' %></div>
+            <% } %>
+            <button type="button" class="profile-avatar-edit-btn" id="btnAbrirFotoPerfil" title="Trocar foto">
+              <i class="fa-solid fa-camera"></i>
+            </button>
+          </div>
+          <div id="fotoPerfilAcoes" class="hidden" style="display:flex;gap:8px;align-items:center;">
+            <button type="button" id="btnSalvarFotoPerfil" class="btn-primary" style="padding:8px 16px;font-size:13px;">
+              <i class="fa-solid fa-check"></i>Salvar
+            </button>
+            <button type="button" id="btnCancelarFotoPerfil" class="btn-ghost" style="padding:8px 14px;font-size:13px;">Cancelar</button>
+          </div>
+        </div>
+
+        <div class="profile-hero-name"><%= perfil.nome %></div>
+        <div class="profile-hero-email"><%= perfil.email %></div>
+        <% if (perfil.cidade) { %>
+          <div class="profile-hero-location">
+            <i class="fa-solid fa-location-dot" style="margin-right:4px;color:var(--accent);font-size:11px;"></i>
+            <%= perfil.bairro ? perfil.bairro + ', ' : '' %><%= perfil.cidade %><%= perfil.estado ? ' — ' + perfil.estado : '' %>
+          </div>
+        <% } %>
+        <a href="/explorar/perfil/<%= perfil.id %>" class="profile-view-link">
+          <i class="fa-solid fa-arrow-up-right-from-square" style="font-size:11px;"></i>
+          Ver perfil público
+        </a>
+      </div>
+
+      <input type="file" id="foto_perfil" accept="image/*" class="hidden">
+      <input type="file" id="foto_capa" accept="image/*" class="hidden">
+    </div>
+
+    <!-- Banner save actions -->
+    <div id="capaAcoes" class="hidden anim-1" style="background:var(--ink-2);border:1px solid var(--border);border-radius:var(--radius);padding:14px 20px;display:flex;gap:10px;align-items:center;margin-bottom:14px;">
+      <button type="button" id="btnSalvarCapa" class="btn-primary" style="font-size:13px;padding:9px 18px;">
+        <i class="fa-solid fa-check"></i>Salvar capa
+      </button>
+      <button type="button" id="btnCancelarCapa" class="btn-ghost" style="font-size:13px;padding:9px 14px;">Cancelar</button>
+    </div>
+
+    <!-- ═══ PETS ═══ -->
+    <div class="section-card anim-2">
+      <div class="section-card-header">
+        <div class="section-card-title">
+          <div class="section-card-title-icon"><i class="fa-solid fa-paw"></i></div>
+          Meus Pets
+        </div>
+        <a href="/pets" class="section-card-link">Ver todos →</a>
+      </div>
+      <div class="section-card-body">
+        <% if (pets && pets.length > 0) { %>
+        <div class="pets-scroll">
+          <% pets.slice(0, 8).forEach(function(pet) { %>
+          <a href="/pets/<%= pet.id %>" class="pet-chip">
+            <% if (pet.foto) { %>
+              <img src="<%= pet.foto %>" class="pet-chip-avatar" alt="<%= pet.nome %>">
+            <% } else { %>
+              <div class="pet-chip-avatar-empty">🐾</div>
+            <% } %>
+            <span class="pet-chip-name"><%= pet.nome %></span>
+          </a>
+          <% }); %>
+          <a href="/pets/cadastro" class="pet-chip" style="border-style:dashed;border-color:rgba(242,96,32,0.3);">
+            <div class="pet-chip-avatar-empty" style="border-color:rgba(242,96,32,0.3);color:var(--accent);font-size:22px;">+</div>
+            <span class="pet-chip-name" style="color:var(--accent);">Novo pet</span>
+          </a>
+        </div>
+        <% } else { %>
+        <div class="pets-empty">
+          <span class="pets-empty-icon">🐾</span>
+          <p style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:6px;">Nenhum pet cadastrado</p>
+          <p style="font-size:13px;margin-bottom:14px;">Adicione seu primeiro pet para começar.</p>
+          <a href="/pets/cadastro" class="btn-primary" style="font-size:13px;padding:9px 20px;">
+            <i class="fa-solid fa-plus"></i>Cadastrar pet
+          </a>
+        </div>
+        <% } %>
+        <p style="font-size:11px;color:var(--text-dim);margin-top:10px;">Gerencie em <a href="/pets" style="color:var(--accent);text-decoration:none;">Meus Pets</a></p>
+      </div>
+    </div>
+
+    <!-- ═══ PUBLICAÇÕES ═══ -->
+    <div class="section-card anim-2">
+      <div class="section-card-header">
+        <div class="section-card-title">
+          <div class="section-card-title-icon"><i class="fa-solid fa-images"></i></div>
+          Publicações
+        </div>
+        <a href="/feed" class="section-card-link">Ver feed →</a>
+      </div>
+      <div class="section-card-body">
+        <%
+          var total = typeof totalPosts !== 'undefined' ? totalPosts : 0;
+          var pct = Math.min(Math.round((total / 10) * 100), 100);
+          var badgeClass = total >= 10 ? 'danger' : total >= 7 ? 'warn' : 'ok';
+        %>
+        <div class="posts-counter">
+          <div class="posts-badge <%= badgeClass %>">
+            <i class="fa-solid fa-camera"></i>
+            <%= total %>/10 publicações
+          </div>
+          <% if (total >= 10) { %>
+            <span style="font-size:13px;color:#f87171;">Limite atingido — exclua posts para publicar mais.</span>
+          <% } %>
+        </div>
+        <div class="posts-progress" style="margin-top:12px;">
+          <div class="posts-progress-fill" style="width:<%= pct %>%;background:<%= total >= 10 ? '#ef4444' : total >= 7 ? 'var(--accent)' : 'var(--green)' %>"></div>
         </div>
       </div>
     </div>
 
-    <!-- Seção: Dados pessoais -->
-    <div class="card animate-slideUp mb-6" style="animation-delay: 0.16s">
-      <div class="flex items-center justify-between mb-4">
-        <h2 class="text-lg font-bold text-gray-900"><i class="fa-solid fa-user mr-2 text-primary-500"></i>Dados pessoais</h2>
-        <button type="button" class="perfil-btn-editar secao-dados text-sm text-primary-500 font-medium hover:underline"><i class="fa-solid fa-pen-to-square mr-1"></i>Editar</button>
-      </div>
-      <div class="perfil-secao-view secao-dados-view">
-        <dl class="space-y-2 text-sm">
-          <div><dt class="text-gray-500 font-medium">Nome</dt><dd class="text-gray-900" id="viewNome"><%= perfil.nome %></dd></div>
-          <div><dt class="text-gray-500 font-medium">Telefone</dt><dd class="text-gray-900" id="viewTelefone"><%= perfil.telefone || '—' %></dd></div>
-          <div><dt class="text-gray-500 font-medium">Data de nascimento</dt><dd class="text-gray-900" id="viewDataNascimento"><%= perfil.data_nascimento ? new Date(perfil.data_nascimento).toISOString().split('T')[0] : '—' %></dd></div>
-          <div><dt class="text-gray-500 font-medium">Contato extra</dt><dd class="text-gray-900" id="viewContatoExtra"><%= perfil.contato_extra || '—' %></dd></div>
-          <div><dt class="text-gray-500 font-medium">Bio</dt><dd class="text-gray-900 whitespace-pre-wrap" id="viewBio"><%= perfil.bio || '—' %></dd></div>
-        </dl>
-      </div>
-      <div class="perfil-secao-edit secao-dados-edit hidden">
-        <div class="space-y-4">
-          <div>
-            <label for="nome" class="block text-sm font-semibold text-gray-700 mb-1">Nome</label>
-            <input type="text" id="nome" value="<%= perfil.nome %>" required class="input-field">
-          </div>
-          <div>
-            <label for="telefone" class="block text-sm font-semibold text-gray-700 mb-1">Telefone</label>
-            <input type="tel" id="telefone" value="<%= perfil.telefone || '' %>" placeholder="(00) 00000-0000" class="input-field">
-          </div>
-          <div>
-            <label for="data_nascimento" class="block text-sm font-semibold text-gray-700 mb-1">Data de nascimento</label>
-            <input type="date" id="data_nascimento" value="<%= perfil.data_nascimento ? new Date(perfil.data_nascimento).toISOString().split('T')[0] : '' %>" class="input-field">
-          </div>
-          <div>
-            <label for="contato_extra" class="block text-sm font-semibold text-gray-700 mb-1">Contato extra</label>
-            <input type="text" id="contato_extra" value="<%= perfil.contato_extra || '' %>" placeholder="Ex: @usuario ou link" class="input-field">
-          </div>
-          <div>
-            <label for="bio" class="block text-sm font-semibold text-gray-700 mb-1">Bio</label>
-            <textarea id="bio" maxlength="160" rows="2" placeholder="Conte sobre você e seus pets..." class="input-field resize-none"><%= perfil.bio || '' %></textarea>
-            <p class="text-xs text-gray-400 mt-1"><span id="bioCount"><%= (perfil.bio || '').length %></span>/160</p>
-          </div>
-          <div class="flex gap-2">
-            <button type="button" id="btnSalvarDados" class="btn-primary text-sm py-2 px-4"><i class="fa-solid fa-check mr-1"></i>Salvar</button>
-            <button type="button" id="btnCancelarDados" class="text-sm text-gray-500 hover:text-gray-700 py-2">Cancelar</button>
+    <!-- ═══ DADOS PESSOAIS ═══ -->
+    <form id="formDadosPessoais" action="/perfil?_method=PUT" method="POST" autocomplete="off">
+      <div class="section-card anim-3">
+        <div class="section-card-header">
+          <div class="section-card-title">
+            <div class="section-card-title-icon"><i class="fa-solid fa-user"></i></div>
+            Dados pessoais
           </div>
         </div>
-      </div>
-    </div>
-
-    <!-- Seção: Recuperar senha -->
-    <div class="card animate-slideUp mb-6" style="animation-delay: 0.17s">
-      <div class="flex items-center justify-between mb-2">
-        <h2 class="text-lg font-bold text-gray-900"><i class="fa-solid fa-key mr-2 text-primary-500"></i>Conta e segurança</h2>
-      </div>
-      <p class="text-sm text-gray-600 mb-3">Altere sua senha de acesso caso tenha esquecido ou queira atualizá-la.</p>
-      <a href="/auth/esqueci-senha" class="inline-flex items-center gap-2 text-sm font-medium text-primary-500 hover:text-primary-600 hover:underline">
-        <i class="fa-solid fa-lock"></i> Recuperar ou alterar senha
-      </a>
-    </div>
-
-    <!-- Seção: Endereço -->
-    <div class="card animate-slideUp mb-6" style="animation-delay: 0.18s">
-      <div class="flex items-center justify-between mb-4">
-        <h2 class="text-lg font-bold text-gray-900"><i class="fa-solid fa-location-dot mr-2 text-primary-500"></i>Endereço</h2>
-        <button type="button" class="perfil-btn-editar secao-endereco text-sm text-primary-500 font-medium hover:underline"><i class="fa-solid fa-pen-to-square mr-1"></i>Editar</button>
-      </div>
-      <div class="perfil-secao-view secao-endereco-view">
-        <dl class="space-y-2 text-sm">
-          <div><dt class="text-gray-500 font-medium">CEP</dt><dd class="text-gray-900" id="viewCep"><%= perfil.cep || '—' %></dd></div>
-          <div><dt class="text-gray-500 font-medium">Endereço</dt><dd class="text-gray-900" id="viewEndereco"><%= perfil.endereco || '—' %></dd></div>
-          <div><dt class="text-gray-500 font-medium">Bairro, cidade, estado</dt><dd class="text-gray-900" id="viewBairroCidadeEstado"><%= [perfil.bairro, perfil.cidade, perfil.estado].filter(Boolean).join(', ') || '—' %></dd></div>
-        </dl>
-      </div>
-      <div class="perfil-secao-edit secao-endereco-edit hidden">
-        <p class="text-xs text-gray-400 mb-4">Usado para recomendar tutores e pets próximos.</p>
-        <div class="space-y-4">
-          <div>
-            <label for="cep" class="block text-sm font-semibold text-gray-700 mb-1">CEP</label>
-            <div class="relative">
-              <input type="text" id="cep" value="<%= perfil.cep || '' %>" placeholder="00000-000" maxlength="9" class="input-field pr-10">
-              <button type="button" id="btnBuscarCep" class="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-primary-500 hover:bg-primary-50 rounded-lg transition-colors" title="Buscar CEP"><i class="fa-solid fa-magnifying-glass text-sm"></i></button>
+        <div class="section-card-body">
+          <div class="field-row">
+            <div class="field-group" style="margin-bottom:0">
+              <label class="field-label" for="nome">Nome</label>
+              <input type="text" id="nome" name="nome" class="field-input" value="<%= perfil.nome || '' %>" maxlength="80" required>
+            </div>
+            <div class="field-group" style="margin-bottom:0">
+              <label class="field-label" for="apelido">Apelido / Username</label>
+              <input type="text" id="apelido" name="apelido" class="field-input" value="<%= perfil.apelido || '' %>" maxlength="40" placeholder="Opcional">
             </div>
           </div>
-          <div>
-            <label for="endereco" class="block text-sm font-semibold text-gray-700 mb-1">Endereço</label>
-            <input type="text" id="endereco" value="<%= perfil.endereco || '' %>" placeholder="Rua, número" class="input-field">
+
+          <div class="field-group" style="margin-top:14px;">
+            <label class="field-label" for="bio">Bio</label>
+            <textarea id="bio" name="bio" class="field-input" rows="3" maxlength="160" placeholder="Conte um pouco sobre você e seus pets..."><%= perfil.bio || '' %></textarea>
+            <div class="field-hint"><span id="bioCount"><%= (perfil.bio || '').length %></span>/160</div>
           </div>
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label for="bairro" class="block text-sm font-semibold text-gray-700 mb-1">Bairro</label>
-              <input type="text" id="bairro" value="<%= perfil.bairro || '' %>" class="input-field">
+
+          <!-- Cor do perfil -->
+          <div class="field-group">
+            <label class="field-label">Cor de destaque</label>
+            <div class="color-row" id="colorSwatches">
+              <% var cores = ['#f26020','#ef4444','#a855f7','#3b82f6','#22c55e','#eab308','#ec4899','#14b8a6']; %>
+              <% cores.forEach(function(c) { %>
+                <div class="color-swatch <%= perfil.cor_perfil === c ? 'active' : '' %>"
+                     style="background:<%= c %>;" data-cor="<%= c %>" title="<%= c %>"></div>
+              <% }); %>
+              <div class="color-custom-input">
+                <div class="color-preview" id="corPreview" style="background:<%= corDestaque %>;"></div>
+                <input type="color" id="inputCor" name="cor_perfil" value="<%= corDestaque %>"
+                       style="background:transparent;border:none;width:24px;height:24px;cursor:pointer;padding:0;outline:none;">
+              </div>
             </div>
-            <div>
-              <label for="cidade" class="block text-sm font-semibold text-gray-700 mb-1">Cidade</label>
-              <input type="text" id="cidade" value="<%= perfil.cidade || '' %>" class="input-field">
+          </div>
+
+          <div class="btn-row">
+            <button type="submit" class="btn-primary">
+              <i class="fa-solid fa-floppy-disk"></i>Salvar dados
+            </button>
+          </div>
+        </div>
+      </div>
+    </form>
+
+    <!-- ═══ LOCALIZAÇÃO ═══ -->
+    <form id="formLocalizacao" action="/perfil?_method=PUT" method="POST" autocomplete="off">
+      <div class="section-card anim-4">
+        <div class="section-card-header">
+          <div class="section-card-title">
+            <div class="section-card-title-icon"><i class="fa-solid fa-location-dot"></i></div>
+            Localização
+          </div>
+        </div>
+        <div class="section-card-body">
+          <div class="field-group">
+            <label class="field-label" for="cep">CEP</label>
+            <div class="field-input-row">
+              <input type="text" id="cep" name="cep" class="field-input" value="<%= perfil.cep || '' %>" maxlength="9" placeholder="00000-000">
+              <button type="button" id="btnBuscarCep" class="btn-ghost" style="flex-shrink:0;padding:11px 16px;font-size:13px;">
+                <i class="fa-solid fa-magnifying-glass"></i>
+              </button>
             </div>
           </div>
-          <div>
-            <label for="estado" class="block text-sm font-semibold text-gray-700 mb-1">Estado</label>
-            <select id="estado" class="input-field">
-              <option value="">Selecione</option>
-              <% var estados = [{s:'AC',n:'Acre'},{s:'AL',n:'Alagoas'},{s:'AP',n:'Amapá'},{s:'AM',n:'Amazonas'},{s:'BA',n:'Bahia'},{s:'CE',n:'Ceará'},{s:'DF',n:'Distrito Federal'},{s:'ES',n:'Espírito Santo'},{s:'GO',n:'Goiás'},{s:'MA',n:'Maranhão'},{s:'MT',n:'Mato Grosso'},{s:'MS',n:'Mato Grosso do Sul'},{s:'MG',n:'Minas Gerais'},{s:'PA',n:'Pará'},{s:'PB',n:'Paraíba'},{s:'PR',n:'Paraná'},{s:'PE',n:'Pernambuco'},{s:'PI',n:'Piauí'},{s:'RJ',n:'Rio de Janeiro'},{s:'RN',n:'Rio Grande do Norte'},{s:'RS',n:'Rio Grande do Sul'},{s:'RO',n:'Rondônia'},{s:'RR',n:'Roraima'},{s:'SC',n:'Santa Catarina'},{s:'SP',n:'São Paulo'},{s:'SE',n:'Sergipe'},{s:'TO',n:'Tocantins'}]; %>
-              <% estados.forEach(function(e) { %>
-                <option value="<%= e.s %>" <%= (perfil.estado || '') === e.s ? 'selected' : '' %>><%= e.n %></option>
-              <% }) %>
-            </select>
+          <div class="field-row">
+            <div class="field-group" style="margin-bottom:0;">
+              <label class="field-label" for="endereco">Endereço</label>
+              <input type="text" id="endereco" name="endereco" class="field-input" value="<%= perfil.endereco || '' %>" maxlength="100">
+            </div>
+            <div class="field-group" style="margin-bottom:0;">
+              <label class="field-label" for="bairro">Bairro</label>
+              <input type="text" id="bairro" name="bairro" class="field-input" value="<%= perfil.bairro || '' %>" maxlength="60">
+            </div>
           </div>
-          <button type="button" id="btnGeolocalizacao" class="w-full flex items-center justify-center gap-2 py-2.5 px-4 border-2 border-dashed border-primary-200 rounded-2xl text-sm font-semibold text-primary-500 hover:bg-primary-50 hover:border-primary-300 transition-all">
-            <i class="fa-solid fa-crosshairs"></i> Usar minha localização atual
-          </button>
-          <div class="flex gap-2">
-            <button type="button" id="btnSalvarEndereco" class="btn-primary text-sm py-2 px-4"><i class="fa-solid fa-check mr-1"></i>Salvar</button>
-            <button type="button" id="btnCancelarEndereco" class="text-sm text-gray-500 hover:text-gray-700 py-2">Cancelar</button>
+          <div class="field-row" style="margin-top:14px;">
+            <div class="field-group" style="margin-bottom:0;">
+              <label class="field-label" for="cidade">Cidade</label>
+              <input type="text" id="cidade" name="cidade" class="field-input" value="<%= perfil.cidade || '' %>" maxlength="80">
+            </div>
+            <div class="field-group" style="margin-bottom:0;">
+              <label class="field-label" for="estado">Estado</label>
+              <input type="text" id="estado" name="estado" class="field-input" value="<%= perfil.estado || '' %>" maxlength="2" placeholder="SP">
+            </div>
+          </div>
+          <div class="btn-row">
+            <button type="submit" class="btn-primary">
+              <i class="fa-solid fa-floppy-disk"></i>Salvar localização
+            </button>
+            <button type="button" id="btnGeolocalizacao" class="btn-ghost">
+              <i class="fa-solid fa-crosshairs"></i>Usar localização atual
+            </button>
           </div>
         </div>
       </div>
-    </div>
+    </form>
 
-    <!-- Seção: Cor de destaque -->
-    <div class="card animate-slideUp mb-6" style="animation-delay: 0.2s">
-      <div class="flex items-center justify-between mb-2">
-        <h2 class="text-lg font-bold text-gray-900"><i class="fa-solid fa-palette mr-2 text-primary-500"></i>Cor de destaque</h2>
-        <button type="button" class="perfil-btn-editar secao-cor text-sm text-primary-500 font-medium hover:underline"><i class="fa-solid fa-pen-to-square mr-1"></i>Editar</button>
-      </div>
-      <p class="text-sm text-gray-500 mb-3">Define a cor das bordas do seu avatar e dos destaques no seu perfil (estilo Twitter).</p>
-      <div class="perfil-secao-view secao-cor-view">
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-full bg-gray-400 flex items-center justify-center text-white text-xs font-bold" id="viewCorSwatch" style="box-shadow: 0 0 0 3px <%= perfil.cor_perfil || '#ec5a1c' %>">U</div>
-          <span class="text-sm text-gray-600" id="viewCorHex"><%= perfil.cor_perfil || '#ec5a1c' %></span>
+    <!-- ═══ ALTERAR SENHA ═══ -->
+    <div class="section-card anim-5">
+      <div class="section-card-header">
+        <div class="section-card-title">
+          <div class="section-card-title-icon"><i class="fa-solid fa-lock"></i></div>
+          Segurança da conta
         </div>
       </div>
-      <div class="perfil-secao-edit secao-cor-edit hidden">
-        <div class="flex flex-wrap gap-2 mb-4" id="colorPicker">
-          <% var cores = ['#ec5a1c','#e74c3c','#e91e63','#9b59b6','#673ab7','#3f51b5','#2196f3','#03a9f4','#00bcd4','#009688','#4caf50','#8bc34a','#ff9800','#ff5722','#795548','#607d8b','#000000']; %>
-          <% cores.forEach(function(cor) { %>
-            <button type="button" class="cor-picker-btn w-9 h-9 rounded-full border-2 transition-all duration-200 hover:scale-110 active:scale-95 <%= (perfil.cor_perfil || '#ec5a1c') === cor ? 'border-gray-900 ring-2 ring-offset-2 ring-gray-400 scale-110' : 'border-transparent' %>" style="background: <%= cor %>" data-cor="<%= cor %>"></button>
-          <% }) %>
-        </div>
-        <input type="hidden" id="cor_perfil" value="<%= perfil.cor_perfil || '#ec5a1c' %>">
-        <div class="flex gap-2">
-          <button type="button" id="btnSalvarCor" class="btn-primary text-sm py-2 px-4"><i class="fa-solid fa-check mr-1"></i>Salvar</button>
-          <button type="button" id="btnCancelarCor" class="text-sm text-gray-500 hover:text-gray-700 py-2">Cancelar</button>
-        </div>
+      <div class="section-card-body">
+        <p style="font-size:13px;color:var(--text-dim);line-height:1.6;margin-bottom:14px;">
+          Para alterar sua senha, use o fluxo de recuperação seguro do sistema.
+        </p>
+        <a href="/auth/esqueci-senha" class="btn-primary" style="text-decoration:none;">
+          <i class="fa-solid fa-key"></i>Recuperar/alterar senha
+        </a>
       </div>
     </div>
 
-    <!-- Seção: Notificações (alertas de pets perdidos) -->
-    <div class="card animate-slideUp mb-6" style="animation-delay: 0.2s">
-      <div class="flex items-center justify-between mb-2">
-        <h2 class="text-lg font-bold text-gray-900"><i class="fa-solid fa-bell mr-2 text-primary-500"></i>Notificações</h2>
+    <!-- ═══ GALERIA ═══ -->
+    <div class="section-card anim-5">
+      <div class="section-card-header">
+        <div class="section-card-title">
+          <div class="section-card-title-icon" style="background:rgba(167,139,250,0.1);border-color:rgba(167,139,250,0.15);color:#a78bfa;"><i class="fa-solid fa-photo-film"></i></div>
+          Galeria dos pets
+        </div>
       </div>
-      <p class="text-sm text-gray-500 mb-3">Receber alertas quando um pet estiver perdido na sua região (por localização do app).</p>
-      <div class="flex items-center gap-3">
-        <label class="relative inline-flex items-center cursor-pointer">
-          <input type="checkbox" id="receber_alertas_pet_perdido" class="sr-only peer" <%= (perfil.receber_alertas_pet_perdido !== false && perfil.receber_alertas_pet_perdido !== 'false') ? 'checked' : '' %>>
-          <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-500"></div>
-          <span class="ms-3 text-sm font-medium text-gray-700">Receber alertas de pets perdidos na minha região</span>
-        </label>
-      </div>
-      <p class="text-xs text-gray-400 mt-2">Ao desativar, você deixa de receber notificações de pets perdidos próximos à sua localização.</p>
-    </div>
-
-    <!-- Fotos dos pets no perfil -->
-    <% if (pets && pets.length > 0) { %>
-    <div class="card animate-slideUp mt-6" style="animation-delay: 0.2s">
-      <h2 class="text-lg font-bold text-gray-900 mb-4"><i class="fa-solid fa-images mr-2 text-primary-500"></i>Fotos dos pets no seu perfil</h2>
-      <p class="text-sm text-gray-500 mb-4">Adicione fotos que aparecerão no seu perfil público, organizadas por pet.</p>
-      <div class="flex flex-wrap gap-3 items-end mb-4">
-        <div class="flex-1 min-w-[140px]">
-          <label class="block text-xs font-semibold text-gray-500 mb-1">Pet</label>
-          <select id="galeriaPetSelect" class="input-field py-2">
-            <% pets.forEach(function(p) { %>
-              <option value="<%= p.id %>"><%= p.nome %></option>
-            <% }); %>
+      <div class="section-card-body">
+        <% if (typeof meusPets !== 'undefined' && meusPets && meusPets.length > 0) { %>
+        <div class="field-group">
+          <label class="field-label" for="galeriaPetSelect">Pet</label>
+          <select id="galeriaPetSelect" class="field-input" style="cursor:pointer;">
+            <% meusPets.forEach(function(p) { %><option value="<%= p.id %>"><%= p.nome %></option><% }); %>
           </select>
         </div>
-        <button type="button" id="btnAdicionarFotoGaleria" class="px-4 py-2 rounded-xl bg-primary-500 text-white text-sm font-semibold hover:bg-primary-600 transition-colors">
-          <i class="fa-solid fa-plus mr-1"></i> Adicionar foto
-        </button>
-      </div>
-      <input type="file" id="galeriaFileInput" accept="image/*" class="hidden">
-      <div id="galeriaPorPetContainer" class="space-y-4">
-        <div class="text-center py-6 text-gray-400" id="galeriaLoading"><i class="fa-solid fa-spinner fa-spin"></i> Carregando…</div>
+        <% } %>
+        <div id="galeriaLoading" style="text-align:center;padding:24px;color:var(--text-dim);font-size:13px;">
+          <i class="fa-solid fa-spinner fa-spin mr-2"></i>Carregando galeria...
+        </div>
+        <div id="galeriaPorPetContainer" class="hidden"></div>
+        <div class="btn-row">
+          <button type="button" id="btnAdicionarFotoGaleria" class="btn-primary">
+            <i class="fa-solid fa-plus"></i>Adicionar foto
+          </button>
+        </div>
+        <input type="file" id="galeriaFileInput" accept="image/jpeg,image/png,image/gif,image/webp" class="hidden">
       </div>
     </div>
-    <% } %>
 
-    <!-- Central de ajuda -->
-    <div class="card animate-slideUp mb-6" style="animation-delay: 0.22s">
-      <div class="flex items-center justify-between mb-4">
-        <h2 class="text-lg font-bold text-gray-900"><i class="fa-solid fa-circle-question mr-2 text-primary-500"></i>Central de ajuda</h2>
+    <!-- ═══ DANGER ZONE ═══ -->
+    <div class="danger-zone anim-6">
+      <div class="danger-zone-title">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+        Zona de perigo
       </div>
-      <p class="text-sm text-gray-600 mb-4">Documentos e informações importantes do AIRPET.</p>
-      <ul class="space-y-2">
-        <li>
-          <a href="/termos" class="flex items-center gap-3 py-2.5 px-3 rounded-xl hover:bg-gray-50 transition-colors text-gray-700">
-            <i class="fa-solid fa-file-lines w-5 text-center text-gray-400"></i>
-            <span class="font-medium">Termos de uso</span>
-            <i class="fa-solid fa-chevron-right text-xs text-gray-300 ml-auto"></i>
-          </a>
-        </li>
-        <li>
-          <a href="/privacidade" class="flex items-center gap-3 py-2.5 px-3 rounded-xl hover:bg-gray-50 transition-colors text-gray-700">
-            <i class="fa-solid fa-shield-halved w-5 text-center text-gray-400"></i>
-            <span class="font-medium">Política de privacidade</span>
-            <i class="fa-solid fa-chevron-right text-xs text-gray-300 ml-auto"></i>
-          </a>
-        </li>
-      </ul>
-    </div>
-
-    <!-- Sair -->
-    <div class="mt-6 text-center">
-      <a href="/auth/logout" class="inline-flex items-center gap-2 text-sm text-red-500 hover:text-red-600 font-medium transition-colors">
-        <i class="fa-solid fa-right-from-bracket"></i> Sair da conta
+      <div class="danger-zone-desc">
+        A exclusão de conta não está disponível nesta área. Para sua segurança, finalize sua sessão quando estiver em dispositivo compartilhado.
+      </div>
+      <a href="/auth/logout" class="btn-danger" style="text-decoration:none;">
+        <i class="fa-solid fa-right-from-bracket"></i>
+        Sair da conta
       </a>
     </div>
 
   </div>
 </main>
 
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css"
-      integrity="sha512-0x6JxdTnmQSFJb7g8+YovV0OXFWVQlpnYbJwY9FpZ0P4B+GacePAfjxqRgJ0hnW50Omh2kHh2k9nN1F4b0q1Sw=="
-      crossorigin="anonymous" referrerpolicy="no-referrer">
-<%- include('partials/modal-crop') %>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"
-        integrity="sha512-9KkIqdfN7ipE6L4oF4lF0W5f+Yk3nN7+E2n1Q0Y1kHjAPiVnJjOVT1fE2YTYL4e1kCwTxmU1nPqkRIKO1pV4Eg=="
-        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script src="/js/crop-modal.js"></script>
 <script>
-var croppedProfileFile = null;
-var croppedCapaFile = null;
-var perfilInicial = <%- JSON.stringify({
-  nome: perfil.nome || '',
-  telefone: perfil.telefone || '',
-  data_nascimento: perfil.data_nascimento ? new Date(perfil.data_nascimento).toISOString().split('T')[0] : '',
-  contato_extra: perfil.contato_extra || '',
-  bio: perfil.bio || '',
-  cep: perfil.cep || '',
-  endereco: perfil.endereco || '',
-  bairro: perfil.bairro || '',
-  cidade: perfil.cidade || '',
-  estado: perfil.estado || '',
-  cor_perfil: perfil.cor_perfil || '#ec5a1c'
-}) %>;
+(function () {
+  'use strict';
 
-function tryOpenCropModal(dataUrl, options, fallbackFile) {
-  function doOpen() {
-    if (typeof openCropModal === 'function' && typeof Cropper !== 'undefined') {
-      openCropModal(options);
-      return true;
-    }
-    return false;
+  // ── Bio counter ──
+  var bioEl = document.getElementById('bio');
+  var bioCount = document.getElementById('bioCount');
+  if (bioEl && bioCount) {
+    bioEl.addEventListener('input', function() { bioCount.textContent = this.value.length; });
   }
-  if (doOpen()) return;
-  var attempts = 0;
-  var maxAttempts = 15;
-  var interval = setInterval(function() {
-    attempts++;
-    if (doOpen()) { clearInterval(interval); return; }
-    if (attempts >= maxAttempts) {
-      clearInterval(interval);
-      if (fallbackFile && options.onConfirm) {
-        fetch(dataUrl).then(function(r) { return r.blob(); }).then(function(blob) {
-          options.onConfirm(blob);
-        }).catch(function() {
-          alert('Não foi possível carregar o editor de fotos. Tente recarregar a página ou use outra rede.');
-        });
-      } else {
-        alert('Não foi possível carregar o editor de fotos. Tente recarregar a página ou use outra rede.');
-      }
-    }
-  }, 200);
-}
 
-document.getElementById('btnAbrirFotoPerfil').addEventListener('click', function() {
-  document.getElementById('foto_perfil').click();
-});
+  // ── Color swatches ──
+  var swatches = document.querySelectorAll('.color-swatch');
+  var inputCor = document.getElementById('inputCor');
+  var corPreview = document.getElementById('corPreview');
 
-document.getElementById('btnAbrirCapa').addEventListener('click', function() {
-  document.getElementById('foto_capa').click();
-});
-document.getElementById('foto_capa').addEventListener('change', function() {
-  var input = this;
-  if (!input.files || !input.files[0]) return;
-  var file = input.files[0];
-  if (!file.type.match(/^image\/(jpeg|png|gif|webp)$/)) { alert('Formato não suportado.'); input.value = ''; return; }
-  if (file.size > 5 * 1024 * 1024) { alert('Imagem muito grande (máx. 5MB).'); input.value = ''; return; }
-  var reader = new FileReader();
-  reader.onload = function(ev) {
-    var dataUrl = ev.target.result;
-    tryOpenCropModal(dataUrl, {
-      src: dataUrl,
-      aspectRatio: 3 / 1,
-      maxWidth: 1200,
-      maxHeight: 400,
-      onConfirm: function(blob) {
-        croppedCapaFile = new File([blob], 'capa.jpg', { type: 'image/jpeg' });
-        input.value = '';
-        var url = URL.createObjectURL(blob);
-        var preview = document.getElementById('previewCapa');
-        preview.style.backgroundImage = 'url(' + url + ')';
-        preview.style.backgroundSize = 'cover';
-        preview.style.backgroundPosition = 'center';
-        var span = preview.querySelector('span');
-        if (span) span.textContent = 'Clique para trocar';
-        document.getElementById('capaAcoes').classList.remove('hidden');
-      }
-    }, file);
-  };
-  reader.readAsDataURL(file);
-});
-
-document.getElementById('foto_perfil').addEventListener('change', function() {
-  var input = this;
-  if (!input.files || !input.files[0]) return;
-  var file = input.files[0];
-  if (!file.type.match(/^image\/(jpeg|png|gif|webp)$/)) { alert('Formato não suportado.'); input.value = ''; return; }
-  if (file.size > 5 * 1024 * 1024) { alert('Imagem muito grande (máx. 5MB).'); input.value = ''; return; }
-  var reader = new FileReader();
-  reader.onload = function(ev) {
-    var dataUrl = ev.target.result;
-    tryOpenCropModal(dataUrl, {
-      src: dataUrl,
-      aspectRatio: 1,
-      maxWidth: 500,
-      maxHeight: 500,
-      onConfirm: function(blob) {
-        croppedProfileFile = new File([blob], 'foto-perfil.jpg', { type: 'image/jpeg' });
-        input.value = '';
-        var url = URL.createObjectURL(blob);
-        var preview = document.getElementById('previewFotoPerfil');
-        if (preview.tagName === 'IMG') {
-          preview.src = url;
-        } else {
-          var img = document.createElement('img');
-          img.id = 'previewFotoPerfil';
-          img.alt = '';
-          img.className = 'w-16 h-16 rounded-full object-cover border-2 border-gray-200';
-          img.src = url;
-          preview.parentNode.replaceChild(img, preview);
-        }
-        document.getElementById('fotoPerfilAcoes').classList.remove('hidden');
-      }
-    }, file);
-  };
-  reader.readAsDataURL(file);
-});
-
-document.getElementById('btnSalvarFotoPerfil').addEventListener('click', function() {
-  if (!croppedProfileFile) return;
-  var fd = new FormData();
-  fd.append('_method', 'PUT');
-  fd.append('foto_perfil', croppedProfileFile);
-  var btn = this;
-  btn.disabled = true;
-  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i>Salvando…';
-  fetch('/perfil?_method=PUT', { method: 'POST', body: fd, credentials: 'same-origin' })
-    .then(function(r) {
-      if (r.ok) { window.location.href = '/perfil'; return; }
-      return r.text().then(function() { throw new Error('Erro'); });
-    })
-    .catch(function() {
-      alert('Não foi possível salvar a foto.');
-      btn.disabled = false;
-      btn.innerHTML = '<i class="fa-solid fa-check mr-1"></i>Salvar foto';
+  swatches.forEach(function(s) {
+    s.addEventListener('click', function() {
+      swatches.forEach(function(x) { x.classList.remove('active'); });
+      s.classList.add('active');
+      var c = s.getAttribute('data-cor');
+      inputCor.value = c;
+      corPreview.style.background = c;
     });
-});
-document.getElementById('btnCancelarFotoPerfil').addEventListener('click', function() {
-  croppedProfileFile = null;
-  document.getElementById('fotoPerfilAcoes').classList.add('hidden');
-  window.location.reload();
-});
+  });
 
-document.getElementById('btnSalvarCapa').addEventListener('click', function() {
-  if (!croppedCapaFile) return;
-  var fd = new FormData();
-  fd.append('_method', 'PUT');
-  fd.append('foto_capa', croppedCapaFile);
-  var btn = this;
-  btn.disabled = true;
-  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i>Salvando…';
-  fetch('/perfil?_method=PUT', { method: 'POST', body: fd, credentials: 'same-origin' })
-    .then(function(r) {
-      if (r.ok) { window.location.href = '/perfil'; return; }
-      return r.text().then(function() { throw new Error('Erro'); });
-    })
-    .catch(function() {
-      alert('Não foi possível salvar a capa.');
-      btn.disabled = false;
-      btn.innerHTML = '<i class="fa-solid fa-check mr-1"></i>Salvar capa';
+  if (inputCor) {
+    inputCor.addEventListener('input', function() {
+      corPreview.style.background = this.value;
+      swatches.forEach(function(x) { x.classList.remove('active'); });
     });
-});
-document.getElementById('btnCancelarCapa').addEventListener('click', function() {
-  croppedCapaFile = null;
-  document.getElementById('capaAcoes').classList.add('hidden');
-  window.location.reload();
-});
-
-function toggleSecao(secao) {
-  var view = document.querySelector('.secao-' + secao + '-view');
-  var edit = document.querySelector('.secao-' + secao + '-edit');
-  var btns = document.querySelectorAll('.secao-' + secao);
-  if (!view || !edit) return;
-  if (edit.classList.contains('hidden')) {
-    view.classList.add('hidden');
-    edit.classList.remove('hidden');
-    btns.forEach(function(b) { if (b.classList.contains('perfil-btn-editar')) b.classList.add('hidden'); });
-  } else {
-    edit.classList.add('hidden');
-    view.classList.remove('hidden');
-    btns.forEach(function(b) { if (b.classList.contains('perfil-btn-editar')) b.classList.remove('hidden'); });
   }
-}
 
-document.querySelector('.secao-dados.perfil-btn-editar').addEventListener('click', function() { toggleSecao('dados'); });
-document.querySelector('.secao-endereco.perfil-btn-editar').addEventListener('click', function() { toggleSecao('endereco'); });
-document.querySelector('.secao-cor.perfil-btn-editar').addEventListener('click', function() { toggleSecao('cor'); });
+  // ── Avatar crop ──
+  var btnAbrirFoto = document.getElementById('btnAbrirFotoPerfil');
+  var inputFoto = document.getElementById('foto_perfil');
+  var fotoAcoes = document.getElementById('fotoPerfilAcoes');
+  var previewFoto = document.getElementById('previewFotoPerfil');
+  var btnSalvarFoto = document.getElementById('btnSalvarFotoPerfil');
+  var btnCancelarFoto = document.getElementById('btnCancelarFotoPerfil');
+  var fotoBlob = null;
+  var fotoOrigSrc = previewFoto ? (previewFoto.src || '') : '';
 
-var cbAlertas = document.getElementById('receber_alertas_pet_perdido');
-if (cbAlertas) {
-  cbAlertas.addEventListener('change', function() {
-    var payload = new URLSearchParams();
-    payload.append('_method', 'PUT');
-    payload.append('receber_alertas_pet_perdido', this.checked ? 'true' : 'false');
-    fetch('/perfil?_method=PUT', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Accept': 'application/json' }, body: payload.toString(), credentials: 'same-origin' })
-      .then(function(r) { if (!r.ok) throw new Error(); return r.json(); })
-      .catch(function() { alert('Erro ao salvar preferência.'); cbAlertas.checked = !cbAlertas.checked; });
-  });
-}
+  if (btnAbrirFoto) {
+    btnAbrirFoto.addEventListener('click', function() { inputFoto.click(); });
+  }
 
-document.getElementById('btnSalvarDados').addEventListener('click', function() {
-  var payload = new URLSearchParams();
-  payload.append('_method', 'PUT');
-  payload.append('nome', document.getElementById('nome').value.trim());
-  payload.append('telefone', document.getElementById('telefone').value.trim());
-  payload.append('data_nascimento', document.getElementById('data_nascimento').value || '');
-  payload.append('contato_extra', document.getElementById('contato_extra').value.trim());
-  payload.append('bio', document.getElementById('bio').value.trim());
-  var btn = this;
-  btn.disabled = true;
-  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i>Salvando…';
-  fetch('/perfil?_method=PUT', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Accept': 'application/json' }, body: payload.toString(), credentials: 'same-origin' })
-    .then(function(r) {
-      if (!r.ok) throw new Error();
-      return r.json();
-    })
-    .then(function() {
-      document.getElementById('viewNome').textContent = document.getElementById('nome').value.trim();
-      document.getElementById('viewTelefone').textContent = document.getElementById('telefone').value.trim() || '—';
-      document.getElementById('viewDataNascimento').textContent = document.getElementById('data_nascimento').value || '—';
-      document.getElementById('viewContatoExtra').textContent = document.getElementById('contato_extra').value.trim() || '—';
-      document.getElementById('viewBio').textContent = document.getElementById('bio').value.trim() || '—';
-      toggleSecao('dados');
-      btn.disabled = false;
-      btn.innerHTML = '<i class="fa-solid fa-check mr-1"></i>Salvar';
-    })
-    .catch(function() {
-      alert('Erro ao salvar.');
-      btn.disabled = false;
-      btn.innerHTML = '<i class="fa-solid fa-check mr-1"></i>Salvar';
-    });
-});
-document.getElementById('btnCancelarDados').addEventListener('click', function() {
-  var p = perfilInicial;
-  document.getElementById('nome').value = p.nome;
-  document.getElementById('telefone').value = p.telefone;
-  document.getElementById('data_nascimento').value = p.data_nascimento;
-  document.getElementById('contato_extra').value = p.contato_extra;
-  document.getElementById('bio').value = p.bio;
-  if (document.getElementById('bioCount')) document.getElementById('bioCount').textContent = p.bio.length;
-  toggleSecao('dados');
-});
-
-document.getElementById('btnSalvarEndereco').addEventListener('click', function() {
-  var payload = new URLSearchParams();
-  payload.append('_method', 'PUT');
-  payload.append('cep', document.getElementById('cep').value.trim());
-  payload.append('endereco', document.getElementById('endereco').value.trim());
-  payload.append('bairro', document.getElementById('bairro').value.trim());
-  payload.append('cidade', document.getElementById('cidade').value.trim());
-  payload.append('estado', document.getElementById('estado').value);
-  var btn = this;
-  btn.disabled = true;
-  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i>Salvando…';
-  fetch('/perfil?_method=PUT', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Accept': 'application/json' }, body: payload.toString(), credentials: 'same-origin' })
-    .then(function(r) {
-      if (!r.ok) throw new Error();
-      return r.json();
-    })
-    .then(function() {
-      document.getElementById('viewCep').textContent = document.getElementById('cep').value.trim() || '—';
-      document.getElementById('viewEndereco').textContent = document.getElementById('endereco').value.trim() || '—';
-      document.getElementById('viewBairroCidadeEstado').textContent = [document.getElementById('bairro').value.trim(), document.getElementById('cidade').value.trim(), document.getElementById('estado').value].filter(Boolean).join(', ') || '—';
-      toggleSecao('endereco');
-      btn.disabled = false;
-      btn.innerHTML = '<i class="fa-solid fa-check mr-1"></i>Salvar';
-    })
-    .catch(function() {
-      alert('Erro ao salvar.');
-      btn.disabled = false;
-      btn.innerHTML = '<i class="fa-solid fa-check mr-1"></i>Salvar';
-    });
-});
-document.getElementById('btnCancelarEndereco').addEventListener('click', function() {
-  var p = perfilInicial;
-  document.getElementById('cep').value = p.cep;
-  document.getElementById('endereco').value = p.endereco;
-  document.getElementById('bairro').value = p.bairro;
-  document.getElementById('cidade').value = p.cidade;
-  document.getElementById('estado').value = p.estado;
-  toggleSecao('endereco');
-});
-
-document.querySelectorAll('#colorPicker .cor-picker-btn').forEach(function(btn) {
-  btn.addEventListener('click', function() {
-    var cor = this.getAttribute('data-cor');
-    document.getElementById('cor_perfil').value = cor;
-    document.querySelectorAll('#colorPicker .cor-picker-btn').forEach(function(b) {
-      b.classList.remove('border-gray-900', 'ring-2', 'ring-offset-2', 'ring-gray-400', 'scale-110');
-      b.classList.add('border-transparent');
-    });
-    this.classList.remove('border-transparent');
-    this.classList.add('border-gray-900', 'ring-2', 'ring-offset-2', 'ring-gray-400', 'scale-110');
-  });
-});
-document.getElementById('btnSalvarCor').addEventListener('click', function() {
-  var cor = document.getElementById('cor_perfil').value;
-  var payload = new URLSearchParams();
-  payload.append('_method', 'PUT');
-  payload.append('cor_perfil', cor);
-  var btn = this;
-  btn.disabled = true;
-  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i>Salvando…';
-  fetch('/perfil?_method=PUT', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Accept': 'application/json' }, body: payload.toString(), credentials: 'same-origin' })
-    .then(function(r) {
-      if (!r.ok) throw new Error();
-      return r.json();
-    })
-    .then(function() {
-      document.getElementById('viewCorSwatch').style.boxShadow = '0 0 0 3px ' + cor;
-      document.getElementById('viewCorHex').textContent = cor;
-      var previewAvatar = document.getElementById('previewFotoPerfil');
-      if (previewAvatar && !previewAvatar.src) previewAvatar.style.boxShadow = '0 0 0 2px ' + cor;
-      toggleSecao('cor');
-      btn.disabled = false;
-      btn.innerHTML = '<i class="fa-solid fa-check mr-1"></i>Salvar';
-    })
-    .catch(function() {
-      alert('Erro ao salvar.');
-      btn.disabled = false;
-      btn.innerHTML = '<i class="fa-solid fa-check mr-1"></i>Salvar';
-    });
-});
-document.getElementById('btnCancelarCor').addEventListener('click', function() {
-  var cor = perfilInicial.cor_perfil;
-  document.getElementById('cor_perfil').value = cor;
-  document.querySelectorAll('#colorPicker .cor-picker-btn').forEach(function(b) {
-    var c = b.getAttribute('data-cor');
-    b.classList.toggle('border-gray-900', c === cor);
-    b.classList.toggle('ring-2', c === cor);
-    b.classList.toggle('ring-offset-2', c === cor);
-    b.classList.toggle('ring-gray-400', c === cor);
-    b.classList.toggle('scale-110', c === cor);
-    b.classList.toggle('border-transparent', c !== cor);
-  });
-  toggleSecao('cor');
-});
-
-var bioEl = document.getElementById('bio');
-var bioCount = document.getElementById('bioCount');
-if (bioEl) {
-  bioEl.addEventListener('input', function() {
-    bioCount.textContent = this.value.length;
-  });
-}
-
-var cepInput = document.getElementById('cep');
-if (cepInput) {
-  cepInput.addEventListener('input', function() {
-    var v = this.value.replace(/\D/g, '');
-    if (v.length > 5) v = v.slice(0,5) + '-' + v.slice(5,8);
-    this.value = v;
-  });
-}
-
-document.getElementById('btnBuscarCep').addEventListener('click', function() {
-  var cep = cepInput.value.replace(/\D/g, '');
-  if (cep.length !== 8) return;
-  var btn = this;
-  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-sm"></i>';
-  fetch('https://viacep.com.br/ws/' + cep + '/json/')
-    .then(function(r) { return r.json(); })
-    .then(function(d) {
-      if (d.erro) { alert('CEP não encontrado.'); return; }
-      if (d.logradouro) document.getElementById('endereco').value = d.logradouro;
-      if (d.bairro) document.getElementById('bairro').value = d.bairro;
-      if (d.localidade) document.getElementById('cidade').value = d.localidade;
-      if (d.uf) document.getElementById('estado').value = d.uf;
-    })
-    .catch(function() { alert('Erro ao buscar CEP.'); })
-    .finally(function() { btn.innerHTML = '<i class="fa-solid fa-magnifying-glass text-sm"></i>'; });
-});
-
-document.getElementById('btnGeolocalizacao').addEventListener('click', function() {
-  var btn = this;
-  if (!navigator.geolocation) { alert('Geolocalização não suportada.'); return; }
-  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Obtendo localização...';
-  btn.disabled = true;
-  navigator.geolocation.getCurrentPosition(
-    function(pos) {
-      var lat = pos.coords.latitude;
-      var lng = pos.coords.longitude;
-      fetch('/api/localizacao/atualizar', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ latitude: lat, longitude: lng })
-      }).then(function() {
-        fetch('https://nominatim.openstreetmap.org/reverse?lat=' + lat + '&lon=' + lng + '&format=json&accept-language=pt-BR')
-          .then(function(r) { return r.json(); })
-          .then(function(d) {
-            var a = d.address || {};
-            if (a.road) document.getElementById('endereco').value = a.road + (a.house_number ? ', ' + a.house_number : '');
-            if (a.suburb || a.neighbourhood) document.getElementById('bairro').value = a.suburb || a.neighbourhood;
-            if (a.city || a.town || a.municipality) document.getElementById('cidade').value = a.city || a.town || a.municipality;
-            var ufMap = {'São Paulo':'SP','Rio de Janeiro':'RJ','Minas Gerais':'MG','Bahia':'BA','Paraná':'PR','Rio Grande do Sul':'RS','Pernambuco':'PE','Ceará':'CE','Pará':'PA','Maranhão':'MA','Santa Catarina':'SC','Goiás':'GO','Paraíba':'PB','Espírito Santo':'ES','Amazonas':'AM','Rio Grande do Norte':'RN','Alagoas':'AL','Piauí':'PI','Mato Grosso':'MT','Distrito Federal':'DF','Mato Grosso do Sul':'MS','Sergipe':'SE','Rondônia':'RO','Tocantins':'TO','Acre':'AC','Amapá':'AP','Roraima':'RR'};
-            if (a.state && ufMap[a.state]) document.getElementById('estado').value = ufMap[a.state];
-            if (a.postcode) {
-              var cepVal = a.postcode.replace(/\D/g, '');
-              if (cepVal.length >= 8) {
-                cepInput.value = cepVal.slice(0,5) + '-' + cepVal.slice(5,8);
-              }
+  if (inputFoto) {
+    inputFoto.addEventListener('change', function() {
+      var file = this.files[0];
+      if (!file) return;
+      var reader = new FileReader();
+      reader.onload = function(ev) {
+        if (typeof openCropModal === 'function') {
+          openCropModal({
+            src: ev.target.result, aspectRatio: 1, maxWidth: 600, maxHeight: 600,
+            onConfirm: function(blob) {
+              fotoBlob = blob;
+              var url = URL.createObjectURL(blob);
+              if (previewFoto.tagName === 'IMG') { previewFoto.src = url; }
+              else { var img = document.createElement('img'); img.src = url; img.id = 'previewFotoPerfil'; img.className = previewFoto.className; img.style.cssText = previewFoto.style.cssText; previewFoto.parentNode.replaceChild(img, previewFoto); previewFoto = img; }
+              fotoAcoes.classList.remove('hidden');
             }
-            btn.innerHTML = '<i class="fa-solid fa-check text-green-500 mr-2"></i> Localização obtida!';
-            setTimeout(function() { btn.innerHTML = '<i class="fa-solid fa-crosshairs"></i> Usar minha localização atual'; btn.disabled = false; }, 2000);
           });
+        } else {
+          fotoBlob = file;
+          if (previewFoto.tagName === 'IMG') { previewFoto.src = ev.target.result; }
+          fotoAcoes.classList.remove('hidden');
+        }
+      };
+      reader.readAsDataURL(file);
+      this.value = '';
+    });
+  }
+
+  if (btnCancelarFoto) {
+    btnCancelarFoto.addEventListener('click', function() {
+      fotoAcoes.classList.add('hidden');
+      fotoBlob = null;
+      if (previewFoto.tagName === 'IMG' && fotoOrigSrc) previewFoto.src = fotoOrigSrc;
+    });
+  }
+
+  if (btnSalvarFoto) {
+    btnSalvarFoto.addEventListener('click', function() {
+      if (!fotoBlob) return;
+      btnSalvarFoto.disabled = true;
+      btnSalvarFoto.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>Salvando...';
+      var fd = new FormData();
+      fd.append('foto_perfil', new File([fotoBlob], 'foto.jpg', { type: 'image/jpeg' }));
+      fetch('/perfil?_method=PUT', { method: 'POST', body: fd, headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+          if (d.sucesso) {
+            fotoAcoes.classList.add('hidden');
+            fotoBlob = null;
+            btnSalvarFoto.innerHTML = '<i class="fa-solid fa-check"></i>Salvo!';
+            setTimeout(function() { btnSalvarFoto.innerHTML = '<i class="fa-solid fa-check"></i>Salvar'; btnSalvarFoto.disabled = false; }, 1500);
+          } else {
+            alert(d.mensagem || 'Erro ao salvar.');
+            btnSalvarFoto.disabled = false;
+            btnSalvarFoto.innerHTML = '<i class="fa-solid fa-check"></i>Salvar';
+          }
+        });
+    });
+  }
+
+  // ── Banner ──
+  var btnAbrirCapa = document.getElementById('btnAbrirCapa');
+  var inputCapa = document.getElementById('foto_capa');
+  var capaAcoes = document.getElementById('capaAcoes');
+  var btnSalvarCapa = document.getElementById('btnSalvarCapa');
+  var btnCancelarCapa = document.getElementById('btnCancelarCapa');
+  var capaBlob = null;
+  var bannerWrap = document.getElementById('bannerPreviewWrap');
+
+  if (btnAbrirCapa) btnAbrirCapa.addEventListener('click', function() { inputCapa.click(); });
+
+  if (inputCapa) {
+    inputCapa.addEventListener('change', function() {
+      var file = this.files[0];
+      if (!file) return;
+      var reader = new FileReader();
+      reader.onload = function(ev) {
+        capaBlob = file;
+        bannerWrap.style.backgroundImage = 'url(' + ev.target.result + ')';
+        bannerWrap.style.backgroundSize = 'cover';
+        bannerWrap.style.backgroundPosition = 'center';
+        capaAcoes.classList.remove('hidden');
+        var img = bannerWrap.querySelector('img');
+        if (img) { img.src = ev.target.result; }
+      };
+      reader.readAsDataURL(file);
+      this.value = '';
+    });
+  }
+
+  if (btnCancelarCapa) {
+    btnCancelarCapa.addEventListener('click', function() {
+      capaAcoes.classList.add('hidden');
+      capaBlob = null;
+    });
+  }
+
+  if (btnSalvarCapa) {
+    btnSalvarCapa.addEventListener('click', function() {
+      if (!capaBlob) return;
+      btnSalvarCapa.disabled = true;
+      btnSalvarCapa.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>Salvando...';
+      var fd = new FormData();
+      fd.append('foto_capa', new File([capaBlob], 'capa.jpg', { type: 'image/jpeg' }));
+      fetch('/perfil?_method=PUT', { method: 'POST', body: fd, headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+          if (d.sucesso) {
+            capaAcoes.classList.add('hidden');
+            capaBlob = null;
+            btnSalvarCapa.innerHTML = '<i class="fa-solid fa-check"></i>Salvo!';
+            setTimeout(function() { btnSalvarCapa.innerHTML = '<i class="fa-solid fa-check"></i>Salvar capa'; btnSalvarCapa.disabled = false; }, 1500);
+          } else {
+            alert(d.mensagem || 'Erro.');
+            btnSalvarCapa.disabled = false;
+            btnSalvarCapa.innerHTML = '<i class="fa-solid fa-check"></i>Salvar capa';
+          }
+        });
+    });
+  }
+
+  // ── CEP lookup ──
+  var cepInput = document.getElementById('cep');
+  if (cepInput) {
+    cepInput.addEventListener('input', function() {
+      var v = this.value.replace(/\D/g, '');
+      if (v.length > 5) v = v.slice(0,5) + '-' + v.slice(5,8);
+      this.value = v;
+    });
+  }
+
+  var btnBuscarCep = document.getElementById('btnBuscarCep');
+  if (btnBuscarCep) {
+    btnBuscarCep.addEventListener('click', function() {
+      var btn = this;
+      var cep = (cepInput.value || '').replace(/\D/g,'');
+      if (cep.length !== 8) { alert('CEP inválido.'); return; }
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+      fetch('https://viacep.com.br/ws/' + cep + '/json/')
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+          if (d.erro) { alert('CEP não encontrado.'); return; }
+          if (d.logradouro) document.getElementById('endereco').value = d.logradouro;
+          if (d.bairro) document.getElementById('bairro').value = d.bairro;
+          if (d.localidade) document.getElementById('cidade').value = d.localidade;
+          if (d.uf) document.getElementById('estado').value = d.uf;
+        })
+        .catch(function() { alert('Erro ao buscar CEP.'); })
+        .finally(function() { btn.innerHTML = '<i class="fa-solid fa-magnifying-glass"></i>'; });
+    });
+  }
+
+  // ── Geolocation ──
+  var btnGeo = document.getElementById('btnGeolocalizacao');
+  if (btnGeo) {
+    btnGeo.addEventListener('click', function() {
+      if (!navigator.geolocation) { alert('Geolocalização não suportada.'); return; }
+      var btn = this;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>Obtendo localização...';
+      btn.disabled = true;
+      navigator.geolocation.getCurrentPosition(
+        function(pos) {
+          fetch('https://nominatim.openstreetmap.org/reverse?lat=' + pos.coords.latitude + '&lon=' + pos.coords.longitude + '&format=json&accept-language=pt-BR')
+            .then(function(r) { return r.json(); })
+            .then(function(d) {
+              var a = d.address || {};
+              if (a.road) document.getElementById('endereco').value = a.road + (a.house_number ? ', ' + a.house_number : '');
+              if (a.suburb || a.neighbourhood) document.getElementById('bairro').value = a.suburb || a.neighbourhood;
+              if (a.city || a.town || a.municipality) document.getElementById('cidade').value = a.city || a.town || a.municipality;
+              btn.innerHTML = '<i class="fa-solid fa-check"></i>Localização obtida!';
+              setTimeout(function() { btn.innerHTML = '<i class="fa-solid fa-crosshairs"></i>Usar localização atual'; btn.disabled = false; }, 2000);
+            });
+        },
+        function() {
+          alert('Não foi possível obter localização.');
+          btn.innerHTML = '<i class="fa-solid fa-crosshairs"></i>Usar localização atual';
+          btn.disabled = false;
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
+      );
+    });
+  }
+
+  // ── Galeria ──
+  (function galeria() {
+    var container = document.getElementById('galeriaPorPetContainer');
+    var loading = document.getElementById('galeriaLoading');
+    var btnAdd = document.getElementById('btnAdicionarFotoGaleria');
+    var fileInput = document.getElementById('galeriaFileInput');
+    var petSelect = document.getElementById('galeriaPetSelect');
+    if (!container || !btnAdd) return;
+
+    function renderGaleria(data) {
+      loading.classList.add('hidden');
+      container.classList.remove('hidden');
+      if (!data || data.length === 0) {
+        container.innerHTML = '<p style="font-size:13px;color:var(--text-dim);text-align:center;padding:16px 0;">Nenhuma foto ainda. Selecione um pet e adicione fotos.</p>';
+        return;
+      }
+      var html = '';
+      data.forEach(function(item) {
+        html += '<div style="margin-bottom:16px;" data-pet-id="' + item.pet_id + '">';
+        html += '<h4 style="font-size:12px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px;">' + (item.pet_nome || 'Pet') + '</h4>';
+        html += '<div style="display:flex;flex-wrap:wrap;gap:8px;">';
+        (item.fotos || []).forEach(function(f) {
+          html += '<div style="position:relative;" class="galeria-item-wrap">';
+          html += '<img src="' + f.foto + '" alt="" style="width:80px;height:80px;object-fit:cover;border-radius:10px;display:block;border:1px solid var(--border);">';
+          html += '<button type="button" class="btn-remover-foto-galeria" data-id="' + f.id + '" style="position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:50%;background:rgba(0,0,0,0.7);backdrop-filter:blur(4px);border:none;color:#fff;cursor:pointer;font-size:10px;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity 0.15s;">';
+          html += '<i class="fa-solid fa-xmark"></i></button></div>';
+        });
+        html += '</div></div>';
       });
-    },
-    function() {
-      alert('Não foi possível obter sua localização.');
-      btn.innerHTML = '<i class="fa-solid fa-crosshairs"></i> Usar minha localização atual';
-      btn.disabled = false;
-    },
-    { enableHighAccuracy: true, timeout: 10000 }
-  );
-});
-
-(function galeriaPerfil() {
-  var container = document.getElementById('galeriaPorPetContainer');
-  var loading = document.getElementById('galeriaLoading');
-  var btnAdd = document.getElementById('btnAdicionarFotoGaleria');
-  var fileInput = document.getElementById('galeriaFileInput');
-  var petSelect = document.getElementById('galeriaPetSelect');
-  if (!container || !btnAdd) return;
-
-  function renderGaleria(galeria) {
-    if (!galeria || galeria.length === 0) {
-      container.innerHTML = '<p class="text-sm text-gray-500 text-center py-4">Nenhuma foto ainda. Escolha um pet e clique em Adicionar foto.</p>';
-      return;
+      container.innerHTML = html;
+      container.querySelectorAll('.galeria-item-wrap').forEach(function(w) {
+        w.addEventListener('mouseenter', function() { w.querySelector('.btn-remover-foto-galeria').style.opacity = '1'; });
+        w.addEventListener('mouseleave', function() { w.querySelector('.btn-remover-foto-galeria').style.opacity = '0'; });
+      });
+      container.querySelectorAll('.btn-remover-foto-galeria').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          if (!confirm('Remover esta foto?')) return;
+          fetch('/perfil/galeria/' + this.getAttribute('data-id'), { method: 'DELETE', credentials: 'same-origin' })
+            .then(function(r) { return r.json(); })
+            .then(function(d) { if (d.sucesso) carregarGaleria(); });
+        });
+      });
     }
-    var html = '';
-    galeria.forEach(function(item) {
-      html += '<div class="border border-gray-100 rounded-xl p-3" data-pet-id="' + item.pet_id + '">';
-      html += '<h4 class="text-sm font-bold text-gray-700 mb-2">' + (item.pet_nome || 'Pet') + '</h4>';
-      html += '<div class="flex flex-wrap gap-2">';
-      (item.fotos || []).forEach(function(f) {
-        html += '<div class="relative group"><img src="' + f.foto + '" alt="" class="w-20 h-20 object-cover rounded-lg">';
-        html += '<button type="button" class="absolute top-1 right-1 w-6 h-6 rounded-full bg-red-500 text-white text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity btn-remover-foto-galeria" data-id="' + f.id + '"><i class="fa-solid fa-xmark"></i></button></div>';
-      });
-      html += '</div></div>';
-    });
-    container.innerHTML = html;
-    container.querySelectorAll('.btn-remover-foto-galeria').forEach(function(btn) {
-      btn.addEventListener('click', function() {
-        var id = this.getAttribute('data-id');
-        if (!confirm('Remover esta foto?')) return;
-        fetch('/perfil/galeria/' + id, { method: 'DELETE', credentials: 'same-origin' })
-          .then(function(r) { return r.json(); })
-          .then(function(data) {
-            if (data.sucesso) carregarGaleria();
+
+    function carregarGaleria() {
+      loading.classList.remove('hidden');
+      container.classList.add('hidden');
+      fetch('/perfil/galeria', { credentials: 'same-origin' })
+        .then(function(r) { return r.json(); })
+        .then(function(d) { renderGaleria(d.galeria || []); })
+        .catch(function() {
+          loading.classList.add('hidden');
+          container.classList.remove('hidden');
+          container.innerHTML = '<p style="color:#f87171;font-size:13px;">Erro ao carregar galeria.</p>';
+        });
+    }
+
+    btnAdd.addEventListener('click', function() { fileInput.click(); });
+    fileInput.addEventListener('change', function() {
+      var file = this.files[0];
+      if (!file) return;
+      if (!file.type.match(/^image\//)) { alert('Formato não suportado.'); this.value = ''; return; }
+      var reader = new FileReader();
+      reader.onload = function(ev) {
+        fileInput.value = '';
+        var petId = petSelect ? petSelect.value : '';
+        if (!petId) { alert('Selecione um pet.'); return; }
+        if (typeof openCropModal === 'function') {
+          openCropModal({
+            src: ev.target.result, aspectRatio: 0, maxWidth: 1200, maxHeight: 1200,
+            onConfirm: function(blob) {
+              var fd = new FormData();
+              fd.append('pet_id', petId);
+              fd.append('foto', new File([blob], 'foto.jpg', { type: 'image/jpeg' }));
+              fetch('/perfil/galeria', { method: 'POST', body: fd, credentials: 'same-origin' })
+                .then(function(r) { return r.json(); })
+                .then(function(d) { if (d.sucesso) carregarGaleria(); else alert(d.mensagem || 'Erro.'); })
+                .catch(function() { alert('Erro ao enviar.'); });
+            }
           });
-      });
-    });
-  }
-
-  function carregarGaleria() {
-    fetch('/perfil/galeria', { credentials: 'same-origin' })
-      .then(function(r) { return r.json(); })
-      .then(function(data) {
-        renderGaleria(data.galeria || []);
-      })
-      .catch(function() {
-        container.innerHTML = '<p class="text-sm text-red-500 text-center py-4">Erro ao carregar.</p>';
-      });
-  }
-
-  btnAdd.addEventListener('click', function() { fileInput.click(); });
-  fileInput.addEventListener('change', function() {
-    if (!this.files || !this.files[0]) return;
-    var file = this.files[0];
-    if (!file.type.match(/^image\/(jpeg|png|gif|webp)$/)) { alert('Formato não suportado.'); this.value = ''; return; }
-    var reader = new FileReader();
-    reader.onload = function(ev) {
-      fileInput.value = '';
-      if (typeof openCropModal !== 'function') { alert('Recorte não disponível.'); return; }
-      var petId = petSelect ? petSelect.value : '';
-      if (!petId) { alert('Selecione um pet.'); return; }
-      openCropModal({
-        src: ev.target.result,
-        aspectRatio: 0,
-        maxWidth: 1200,
-        maxHeight: 1200,
-        onConfirm: function(blob) {
+        } else {
           var fd = new FormData();
           fd.append('pet_id', petId);
-          fd.append('foto', new File([blob], 'foto.jpg', { type: 'image/jpeg' }));
+          fd.append('foto', file);
           fetch('/perfil/galeria', { method: 'POST', body: fd, credentials: 'same-origin' })
             .then(function(r) { return r.json(); })
-            .then(function(data) {
-              if (data.sucesso) carregarGaleria();
-              else alert(data.mensagem || 'Erro.');
-            })
-            .catch(function() { alert('Erro ao enviar.'); });
+            .then(function(d) { if (d.sucesso) carregarGaleria(); else alert(d.mensagem || 'Erro.'); });
         }
-      });
-    };
-    reader.readAsDataURL(file);
-  });
+      };
+      reader.readAsDataURL(file);
+    });
 
-  carregarGaleria();
+    carregarGaleria();
+  })();
+
 })();
 </script>
 

@@ -1,18 +1,70 @@
 <% locals.titulo = 'Login do Parceiro' %>
+<%
+  locals.extraHead = `
+  <style>
+    .partner-login-shell { max-width: 960px; }
+    .partner-login-wrap {
+      display: grid;
+      grid-template-columns: 1.1fr 1fr;
+      background: var(--ink-2);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow: 0 24px 60px rgba(0,0,0,.35);
+    }
+    .partner-login-hero {
+      position: relative;
+      padding: 42px 34px;
+      background: radial-gradient(circle at 25% 15%, color-mix(in srgb, var(--accent) 22%, transparent), transparent 45%), var(--ink-3);
+      border-right: 1px solid var(--border);
+    }
+    .partner-login-card { padding: 34px; }
+    .partner-pill {
+      display: inline-flex; align-items: center; gap: 8px;
+      border-radius: 999px; padding: 7px 12px;
+      font-size: 11px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase;
+      background: color-mix(in srgb, var(--accent) 15%, transparent);
+      color: var(--accent-light);
+      border: 1px solid color-mix(in srgb, var(--accent) 28%, transparent);
+    }
+    .partner-login-title { font-size: 2rem; line-height: 1.08; color: var(--text); font-weight: 900; margin-top: 16px; }
+    .partner-login-sub { color: var(--text-dim); margin-top: 10px; }
+    .partner-login-form .input { height: 46px; border-radius: 12px; }
+    .partner-login-form .btn-primary { width: 100%; height: 48px; border-radius: 12px; font-weight: 800; }
+    @media (max-width: 900px) {
+      .partner-login-wrap { grid-template-columns: 1fr; }
+      .partner-login-hero { border-right: none; border-bottom: 1px solid var(--border); padding: 28px 22px; }
+      .partner-login-card { padding: 24px 20px; }
+      .partner-login-title { font-size: 1.6rem; }
+    }
+  </style>
+  `;
+%>
 <%- include('../partials/header') %>
 <%- include('../partials/flash') %>
 
-<main class="flex-1 container mx-auto max-w-md px-4 py-12">
-  <div class="card">
-    <h1 class="text-2xl font-bold text-gray-900 mb-2">Painel do Petshop Parceiro</h1>
-    <p class="text-sm text-gray-500 mb-6">Acesse com o e-mail aprovado na parceria.</p>
-
-    <form action="/petshop-panel/auth/login" method="POST" class="space-y-4">
-      <input class="input w-full" type="email" name="email" placeholder="E-mail" required />
-      <input class="input w-full" type="password" name="senha" placeholder="Senha" required />
-      <button class="btn-primary">Entrar</button>
-    </form>
-  </div>
+<main class="flex-1 container mx-auto partner-login-shell px-4 py-10">
+  <section class="partner-login-wrap">
+    <div class="partner-login-hero">
+      <span class="partner-pill"><i class="fa-solid fa-circle-check"></i> Parceiro AIRPET</span>
+      <h1 class="partner-login-title">Seu petshop no estilo rede social</h1>
+      <p class="partner-login-sub">Publique ofertas, organize agenda e transforme seu perfil em vitrine com UX moderna.</p>
+      <div class="mt-6 text-sm" style="color:var(--text-dim);">
+        <div class="mb-2"><i class="fa-solid fa-store mr-2"></i>Vitrine visual do parceiro</div>
+        <div class="mb-2"><i class="fa-solid fa-calendar-check mr-2"></i>Gestão de agendamentos</div>
+        <div><i class="fa-solid fa-bullhorn mr-2"></i>Posts e promoções no feed</div>
+      </div>
+    </div>
+    <div class="partner-login-card">
+      <h2 class="text-2xl font-extrabold mb-2" style="color:var(--text);">Entrar no Painel</h2>
+      <p class="text-sm mb-6" style="color:var(--text-dim);">Acesse com o e-mail aprovado na parceria.</p>
+      <form action="/petshop-panel/auth/login" method="POST" class="space-y-4 partner-login-form">
+        <input class="input w-full" type="email" name="email" placeholder="E-mail" required />
+        <input class="input w-full" type="password" name="senha" placeholder="Senha" required />
+        <button class="btn-primary">Entrar</button>
+      </form>
+    </div>
+  </section>
 </main>
 
 <%- include('../partials/footer') %>

@@ -955,7 +955,21 @@ async function mostrarAparencia(req, res) {
   try {
     const configs = await ConfigSistema.listarTodas();
     const aparencia = {};
-    const chaves = ['pwa_theme_color', 'pwa_background_color', 'pwa_icon_192', 'pwa_icon_512', 'app_primary_color', 'app_name'];
+    const chaves = [
+      'pwa_theme_color',
+      'pwa_background_color',
+      'pwa_icon_192',
+      'pwa_icon_512',
+      'app_primary_color',
+      'app_primary_hover_color',
+      'app_accent_glow',
+      'app_green_color',
+      'app_red_color',
+      'app_purple_color',
+      'app_blue_color',
+      'app_yellow_color',
+      'app_name',
+    ];
     chaves.forEach(chave => {
       const c = configs.find(x => x.chave === chave);
       if (c) aparencia[chave] = c.valor;
@@ -999,14 +1013,39 @@ async function salvarAparencia(req, res) {
       }
     }
 
-    const pwaThemeColor = (req.body.pwa_theme_color || '#ec5a1c').trim();
+    const hexRegex = /^#[0-9A-Fa-f]{6}$/;
+    const rgbaRegex = /^rgba?\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}(?:\s*,\s*(0|1|0?\.\d+))?\s*\)$/;
+    const hexOrFallback = (value, fallback) => {
+      const v = String(value || '').trim();
+      return hexRegex.test(v) ? v : fallback;
+    };
+    const rgbaOrFallback = (value, fallback) => {
+      const v = String(value || '').trim();
+      return rgbaRegex.test(v) ? v : fallback;
+    };
+
+    const pwaThemeColor = hexOrFallback(req.body.pwa_theme_color, '#f26020');
     const pwaBackgroundColor = (req.body.pwa_background_color || '#ffffff').trim();
-    const appPrimaryColor = (req.body.app_primary_color || '#ec5a1c').trim();
+    const appPrimaryColor = hexOrFallback(req.body.app_primary_color, '#f26020');
+    const appPrimaryHoverColor = hexOrFallback(req.body.app_primary_hover_color, '#ff7a3d');
+    const appAccentGlow = rgbaOrFallback(req.body.app_accent_glow, 'rgba(242,96,32,0.12)');
+    const appGreenColor = hexOrFallback(req.body.app_green_color, '#22c55e');
+    const appRedColor = hexOrFallback(req.body.app_red_color, '#ef4444');
+    const appPurpleColor = hexOrFallback(req.body.app_purple_color, '#a78bfa');
+    const appBlueColor = hexOrFallback(req.body.app_blue_color, '#60a5fa');
+    const appYellowColor = hexOrFallback(req.body.app_yellow_color, '#facc15');
     const appName = (req.body.app_name || 'AIRPET').trim().slice(0, 30);
 
     await ConfigSistema.inserirOuAtualizar('pwa_theme_color', pwaThemeColor, 'Cor do tema PWA e barra do navegador');
     await ConfigSistema.inserirOuAtualizar('pwa_background_color', pwaBackgroundColor, 'Cor de fundo do PWA');
     await ConfigSistema.inserirOuAtualizar('app_primary_color', appPrimaryColor, 'Cor principal do site (botões, links)');
+    await ConfigSistema.inserirOuAtualizar('app_primary_hover_color', appPrimaryHoverColor, 'Cor de hover da primária');
+    await ConfigSistema.inserirOuAtualizar('app_accent_glow', appAccentGlow, 'Glow da cor primária');
+    await ConfigSistema.inserirOuAtualizar('app_green_color', appGreenColor, 'Cor global de sucesso');
+    await ConfigSistema.inserirOuAtualizar('app_red_color', appRedColor, 'Cor global de erro');
+    await ConfigSistema.inserirOuAtualizar('app_purple_color', appPurpleColor, 'Cor global roxa');
+    await ConfigSistema.inserirOuAtualizar('app_blue_color', appBlueColor, 'Cor global azul');
+    await ConfigSistema.inserirOuAtualizar('app_yellow_color', appYellowColor, 'Cor global amarela');
     await ConfigSistema.inserirOuAtualizar('app_name', appName || 'AIRPET', 'Nome curto do aplicativo');
 
     req.session.flash = { tipo: 'sucesso', mensagem: 'Aparência salva com sucesso! O site e o PWA usarão as novas cores e ícones.' };
