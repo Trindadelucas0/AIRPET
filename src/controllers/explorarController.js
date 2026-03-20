@@ -810,9 +810,10 @@ const explorarController = {
         return res.redirect('/explorar');
       }
 
-      const [pets, galeriaLinhas] = await Promise.all([
+      const [pets, galeriaLinhas, totalPosts] = await Promise.all([
         Pet.buscarPorUsuario(id),
         FotoPerfilPet.listarPorUsuario(id),
+        Publicacao.contarAtivas(id),
       ]);
 
       const galeriaPorPet = {};
@@ -832,7 +833,7 @@ const explorarController = {
         estaSeguindo: false,
         eMeuPerfil: uid === parseInt(id),
         perfilTab: 'posts',
-        totalPosts: 0,
+        totalPosts: totalPosts || 0,
         totalFixadas: 0,
         soPets: true,
         galeriaPorPet: galeriaPorPetLista,

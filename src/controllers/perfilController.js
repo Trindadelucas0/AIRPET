@@ -1,7 +1,6 @@
 const Usuario = require('../models/Usuario');
 const Pet = require('../models/Pet');
 const FotoPerfilPet = require('../models/FotoPerfilPet');
-const Publicacao = require('../models/Publicacao');
 const path = require('path');
 const fs = require('fs');
 const { query } = require('../config/database');
@@ -17,16 +16,12 @@ const perfilController = {
         return res.redirect('/');
       }
 
-      const [pets, totalPosts] = await Promise.all([
-        Pet.buscarPorUsuario(usuario.id),
-        Publicacao.contarAtivas(usuario.id),
-      ]);
+      const meusPets = await Pet.buscarPorUsuario(usuario.id);
 
       res.render('perfil', {
         titulo: 'Configurações',
         perfil: usuario,
-        pets,
-        totalPosts: totalPosts || 0,
+        meusPets,
       });
     } catch (erro) {
       logger.error('PERFIL_CTRL', 'Erro ao carregar perfil', erro);

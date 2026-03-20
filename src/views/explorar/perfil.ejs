@@ -156,20 +156,20 @@
           <% } %>
         </div>
 
-        <!-- Stats row (oculto quando perfil só pets) -->
-        <% if (!soPets) { %>
+        <!-- Stats row -->
         <div class="flex items-center gap-5 mt-3">
           <span class="text-sm text-gray-500">
             <strong class="text-gray-900 font-black"><%= totalPosts %></strong> posts
           </span>
-          <span class="text-sm text-gray-500 cursor-pointer hover:text-primary-500 transition-colors" id="btnVerSeguidores" title="Ver seguidores">
-            <strong class="text-gray-900 font-black" id="seguidoresCount"><%= seguidores %></strong> seguidores
-          </span>
-          <span class="text-sm text-gray-500 cursor-pointer hover:text-primary-500 transition-colors" id="btnVerSeguindo" title="Ver seguindo">
-            <strong class="text-gray-900 font-black"><%= seguindo %></strong> seguindo
-          </span>
+          <% if (!soPets) { %>
+            <span class="text-sm text-gray-500 cursor-pointer hover:text-primary-500 transition-colors" id="btnVerSeguidores" title="Ver seguidores">
+              <strong class="text-gray-900 font-black" id="seguidoresCount"><%= seguidores %></strong> seguidores
+            </span>
+            <span class="text-sm text-gray-500 cursor-pointer hover:text-primary-500 transition-colors" id="btnVerSeguindo" title="Ver seguindo">
+              <strong class="text-gray-900 font-black"><%= seguindo %></strong> seguindo
+            </span>
+          <% } %>
         </div>
-        <% } %>
 
         <!-- Capacity indicators -->
         <% if (eMeuPerfil && !soPets) { %>
@@ -682,15 +682,18 @@
   }
 
   /* ── Share profile ── */
-  document.querySelector('.btn-share-profile').addEventListener('click', function () {
-    var url = window.location.origin + '/explorar/perfil/' + perfilId;
-    var text = 'Veja o perfil de <%= perfil.nome.replace(/'/g, "\\'") %> no AIRPET! ' + url;
-    if (navigator.share) {
-      navigator.share({ title: '<%= perfil.nome.replace(/'/g, "\\'") %> — AIRPET', url: url }).catch(function () {});
-    } else {
-      window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
-    }
-  });
+  var btnShareProfile = document.querySelector('.btn-share-profile');
+  if (btnShareProfile) {
+    btnShareProfile.addEventListener('click', function () {
+      var url = window.location.origin + '/explorar/perfil/' + perfilId;
+      var text = 'Veja o perfil de <%= perfil.nome.replace(/'/g, "\\'") %> no AIRPET! ' + url;
+      if (navigator.share) {
+        navigator.share({ title: '<%= perfil.nome.replace(/'/g, "\\'") %> — AIRPET', url: url }).catch(function () {});
+      } else {
+        window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
+      }
+    });
+  }
 
   /* ── Modal lista seguidores / seguindo ── */
   var listaSegModal = document.getElementById('listaSegModal');

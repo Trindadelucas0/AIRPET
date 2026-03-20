@@ -399,7 +399,7 @@
   .anim-6 { animation: slide-up 0.4s 0.3s both; }
 </style>
 
-<% var meusPets = typeof meusPets !== 'undefined' ? meusPets : (typeof pets !== 'undefined' ? pets : []); %>
+<% var meusPets = typeof meusPets !== 'undefined' ? meusPets : []; %>
 
 <main class="flex-1 pb-24 md:pb-6">
 
@@ -481,77 +481,6 @@
         <i class="fa-solid fa-check"></i>Salvar capa
       </button>
       <button type="button" id="btnCancelarCapa" class="btn-ghost" style="font-size:13px;padding:9px 14px;">Cancelar</button>
-    </div>
-
-    <!-- ═══ PETS ═══ -->
-    <div class="section-card anim-2">
-      <div class="section-card-header">
-        <div class="section-card-title">
-          <div class="section-card-title-icon"><i class="fa-solid fa-paw"></i></div>
-          Meus Pets
-        </div>
-        <a href="/pets" class="section-card-link">Ver todos →</a>
-      </div>
-      <div class="section-card-body">
-        <% if (pets && pets.length > 0) { %>
-        <div class="pets-scroll">
-          <% pets.slice(0, 8).forEach(function(pet) { %>
-          <a href="/pets/<%= pet.id %>" class="pet-chip">
-            <% if (pet.foto) { %>
-              <img src="<%= pet.foto %>" class="pet-chip-avatar" alt="<%= pet.nome %>">
-            <% } else { %>
-              <div class="pet-chip-avatar-empty">🐾</div>
-            <% } %>
-            <span class="pet-chip-name"><%= pet.nome %></span>
-          </a>
-          <% }); %>
-          <a href="/pets/cadastro" class="pet-chip" style="border-style:dashed;border-color:rgba(242,96,32,0.3);">
-            <div class="pet-chip-avatar-empty" style="border-color:rgba(242,96,32,0.3);color:var(--accent);font-size:22px;">+</div>
-            <span class="pet-chip-name" style="color:var(--accent);">Novo pet</span>
-          </a>
-        </div>
-        <% } else { %>
-        <div class="pets-empty">
-          <span class="pets-empty-icon">🐾</span>
-          <p style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:6px;">Nenhum pet cadastrado</p>
-          <p style="font-size:13px;margin-bottom:14px;">Adicione seu primeiro pet para começar.</p>
-          <a href="/pets/cadastro" class="btn-primary" style="font-size:13px;padding:9px 20px;">
-            <i class="fa-solid fa-plus"></i>Cadastrar pet
-          </a>
-        </div>
-        <% } %>
-        <p style="font-size:11px;color:var(--text-dim);margin-top:10px;">Gerencie em <a href="/pets" style="color:var(--accent);text-decoration:none;">Meus Pets</a></p>
-      </div>
-    </div>
-
-    <!-- ═══ PUBLICAÇÕES ═══ -->
-    <div class="section-card anim-2">
-      <div class="section-card-header">
-        <div class="section-card-title">
-          <div class="section-card-title-icon"><i class="fa-solid fa-images"></i></div>
-          Publicações
-        </div>
-        <a href="/feed" class="section-card-link">Ver feed →</a>
-      </div>
-      <div class="section-card-body">
-        <%
-          var total = typeof totalPosts !== 'undefined' ? totalPosts : 0;
-          var pct = Math.min(Math.round((total / 10) * 100), 100);
-          var badgeClass = total >= 10 ? 'danger' : total >= 7 ? 'warn' : 'ok';
-        %>
-        <div class="posts-counter">
-          <div class="posts-badge <%= badgeClass %>">
-            <i class="fa-solid fa-camera"></i>
-            <%= total %>/10 publicações
-          </div>
-          <% if (total >= 10) { %>
-            <span style="font-size:13px;color:#f87171;">Limite atingido — exclua posts para publicar mais.</span>
-          <% } %>
-        </div>
-        <div class="posts-progress" style="margin-top:12px;">
-          <div class="posts-progress-fill" style="width:<%= pct %>%;background:<%= total >= 10 ? '#ef4444' : total >= 7 ? 'var(--accent)' : 'var(--green)' %>"></div>
-        </div>
-      </div>
     </div>
 
     <!-- ═══ DADOS PESSOAIS ═══ -->
