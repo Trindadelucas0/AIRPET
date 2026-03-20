@@ -1610,7 +1610,7 @@ async function runMigrations() {
     }
   }
 
-  ['capa', 'perfil-galeria', 'petshops', 'perfil', 'pets', 'chat', 'diario'].forEach((dir) => {
+  ['capa', 'perfil-galeria', 'petshops', 'perfil', 'pets', 'chat'].forEach((dir) => {
     try {
       const full = path.join(__dirname, '..', 'public', 'images', dir);
       fs.mkdirSync(full, { recursive: true });

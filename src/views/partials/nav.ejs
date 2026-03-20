@@ -164,7 +164,7 @@
 
 <style>
   #navbar {
-    background: rgba(255, 255, 255, 0.78) !important;
+    background: rgba(255, 255, 255, 0.88) !important;
     border-bottom: 1px solid var(--border) !important;
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
@@ -202,14 +202,31 @@
     background: var(--ink-4) !important;
   }
   #mobileMenu {
-    background: rgba(255, 255, 255, 0.95) !important;
+    background: var(--ink-2) !important;
     border-top: 1px solid var(--border) !important;
   }
   #bottomNav {
-    background: rgba(255, 255, 255, 0.95) !important;
+    background: var(--ink-2) !important;
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     border-top: 1px solid var(--border) !important;
+  }
+  #mobileMenu a {
+    color: var(--text) !important;
+  }
+  #mobileMenu a:first-child {
+    background: var(--ink-3) !important;
+    border: 1px solid var(--border) !important;
+  }
+  #mobileMenu a:last-child {
+    background: var(--accent) !important;
+  }
+  #bottomNav .bottom-tab {
+    color: var(--text-dim) !important;
+  }
+  #bottomNav .bottom-tab.text-primary-500,
+  #bottomNav .bottom-tab:hover {
+    color: var(--accent) !important;
   }
 </style>
 

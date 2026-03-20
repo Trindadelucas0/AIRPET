@@ -5,6 +5,7 @@
   var listEl = document.getElementById('mensagensList');
   var countBadge = document.getElementById('pendingCount');
   var emptyState = document.getElementById('emptyState');
+  var pendingIds = Object.create(null);
 
   function updateCount(delta) {
     if (!countBadge) return;
@@ -74,16 +75,20 @@
     if (btnAprovar) {
       btnAprovar.addEventListener('click', function () {
         var id = this.getAttribute('data-id');
+        if (pendingIds[id]) return;
+        pendingIds[id] = true;
         socket.emit('moderar_mensagem', { id: id, acao: 'aprovar' });
-        removeCard(id);
+        this.disabled = true;
       });
     }
 
     if (btnRejeitar) {
       btnRejeitar.addEventListener('click', function () {
         var id = this.getAttribute('data-id');
+        if (pendingIds[id]) return;
+        pendingIds[id] = true;
         socket.emit('moderar_mensagem', { id: id, acao: 'rejeitar' });
-        removeCard(id);
+        this.disabled = true;
       });
     }
   }
@@ -100,7 +105,16 @@
 
   // --- Confirmation from server ---
   socket.on('mensagem_moderada', function (data) {
+    if (data && data.id) delete pendingIds[data.id];
     removeCard(data.id);
+  });
+
+  socket.on('erro', function (payload) {
+    var msg = payload && payload.mensagem ? payload.mensagem : 'Nao foi possivel moderar a mensagem.';
+    alert(msg);
+    pendingIds = Object.create(null);
+    var buttons = document.querySelectorAll('.btn-aprovar, .btn-rejeitar');
+    buttons.forEach(function (btn) { btn.disabled = false; });
   });
 
   // --- Bind existing cards ---

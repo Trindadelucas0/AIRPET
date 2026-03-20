@@ -33,6 +33,16 @@ body {
   color-scheme: light;
 }
 
+main {
+  width: 100%;
+}
+
+.air-page-container {
+  width: min(100%, 1120px);
+  margin: 0 auto;
+  padding: 24px 20px 88px;
+}
+
 a {
   color: inherit;
 }
@@ -121,6 +131,49 @@ nav.sticky {
   border-bottom: 1px solid var(--border) !important;
 }
 
+.air-sticky-topbar {
+  position: sticky;
+  top: 56px;
+  z-index: 40;
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+}
+
+.air-section-card {
+  background: var(--ink-2);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 22px;
+}
+
+.air-field-group {
+  margin-bottom: 14px;
+}
+
+.air-field-label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.air-empty-state {
+  text-align: center;
+  padding: 64px 24px;
+  color: var(--text-dim);
+}
+
+.air-empty-state-icon {
+  font-size: 52px;
+  opacity: 0.15;
+  margin-bottom: 16px;
+}
+
 .badge-accent {
   background: color-mix(in srgb, var(--accent) 12%, transparent);
   border: 1px solid color-mix(in srgb, var(--accent) 22%, transparent);
@@ -137,6 +190,40 @@ nav.sticky {
 .bg-primary-50,
 .hover\:bg-primary-50:hover {
   background: color-mix(in srgb, var(--accent) 12%, transparent) !important;
+}
+
+.admin-shell body,
+body.admin-shell {
+  background: var(--ink) !important;
+  color: var(--text) !important;
+}
+
+.admin-shell header,
+.admin-shell footer {
+  background: var(--ink-2) !important;
+  border-color: var(--border) !important;
+}
+
+.admin-shell .text-gray-800,
+.admin-shell .text-gray-900,
+.admin-shell .text-gray-700 {
+  color: var(--text) !important;
+}
+
+.admin-shell .text-gray-600,
+.admin-shell .text-gray-500,
+.admin-shell .text-gray-400 {
+  color: var(--text-dim) !important;
+}
+
+.admin-shell .bg-white,
+.admin-shell [class*="bg-white"] {
+  background: var(--ink-2) !important;
+}
+
+.admin-shell .border-gray-100,
+.admin-shell .border-gray-200 {
+  border-color: var(--border) !important;
 }
 
 /* IMPORTANTE:

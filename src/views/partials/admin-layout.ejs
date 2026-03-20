@@ -5,6 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title><%= typeof titulo !== 'undefined' ? titulo + ' | AIRPET Admin' : 'Painel de Controle | AIRPET Admin' %></title>
   <link rel="stylesheet" href="/css/output.css">
+  <link rel="stylesheet" href="/css/design-system.css">
+  <link rel="stylesheet" href="/css/theme-override.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
   <style>
     .admin-nav a { transition: background-color .15s ease, color .15s ease; }
@@ -20,7 +25,7 @@
     }
   </style>
 </head>
-<body class="bg-gray-100 min-h-screen antialiased text-gray-800">
+<body class="admin-shell bg-gray-100 min-h-screen antialiased text-gray-800">
 
 <header class="bg-white border-b border-gray-200 sticky top-0 z-40 shadow-sm">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -59,7 +64,7 @@
       <a href="<%= adminPath %>/moderacao" class="px-3 py-2 rounded-lg text-sm font-medium transition-colors <%= p === '/moderacao' ? 'active' : 'text-gray-600' %>">
         <i class="fa-solid fa-comment-dots mr-1.5 w-4"></i>Moderação
       </a>
-      <a href="/tags/admin/lista" class="px-3 py-2 rounded-lg text-sm font-medium transition-colors <%= p === 'tags' ? 'active' : 'text-gray-600 hover:bg-gray-50' %>">
+      <a href="/tags/admin/lista" class="px-3 py-2 rounded-lg text-sm font-medium transition-colors <%= p.includes('/tags') ? 'active' : 'text-gray-600 hover:bg-gray-50' %>">
         <i class="fa-solid fa-tag mr-1.5 w-4"></i>Tags
       </a>
       <a href="<%= adminPath %>/gerenciar-mapa" class="px-3 py-2 rounded-lg text-sm font-medium transition-colors <%= p === '/gerenciar-mapa' ? 'active' : 'text-gray-600' %>">

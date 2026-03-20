@@ -39,7 +39,14 @@ if (process.env.NODE_ENV === 'production') {
 app.use(helmet({
   contentSecurityPolicy: false,
   crossOriginEmbedderPolicy: false,
+  // Evita sinalizar "download options" em respostas HTML/JSON do app.
+  downloadOptions: false,
 }));
+app.use((req, res, next) => {
+  // Alguns browsers podem interpretar esse header de forma agressiva.
+  res.removeHeader('X-Download-Options');
+  next();
+});
 
 app.use(logger.requestLogger());
 app.use(express.json());
@@ -47,9 +54,6 @@ app.use(express.urlencoded({ extended: true }));
 app.use(methodOverride('_method'));
 app.use(cookieParser());
 app.use(sessionMiddleware);
-
-// Arquivos estaticos (CSS, JS, imagens)
-app.use(express.static(path.join(__dirname, 'src', 'public')));
 
 // ========================
 // VIEW ENGINE (EJS)
@@ -170,6 +174,11 @@ app.get('/manifest.json', async (req, res) => {
 // ========================
 
 app.use('/', routes);
+
+// Arquivos estaticos (CSS, JS, imagens)
+// Mantido após as rotas para evitar que caminhos dinâmicos (ex: /mapa)
+// sejam interceptados por arquivos estáticos homônimos.
+app.use(express.static(path.join(__dirname, 'src', 'public')));
 
 // ========================
 // PAGINAS DE ERRO

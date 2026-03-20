@@ -112,7 +112,6 @@ router.use('/chat', chatRoutes);
 router.use('/pets', estaAutenticado, petRoutes);
 router.use('/notificacoes', estaAutenticado, notificacaoRoutes);
 router.use('/saude', estaAutenticado, saudeRoutes);
-router.use('/diario', estaAutenticado, require('./diarioRoutes'));
 router.use('/agenda', estaAutenticado, agendaRoutes);
 router.use('/perdidos', estaAutenticado, petPerdidoRoutes);
 router.use('/explorar', estaAutenticado, explorarRoutes);

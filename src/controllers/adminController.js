@@ -795,6 +795,13 @@ async function mostrarGerenciarMapa(req, res) {
   try {
     const pontos = await PontoMapa.listarTodos();
 
+    // Garante renderização HTML (nunca download) e evita cache de página administrativa.
+    res.removeHeader('Content-Disposition');
+    res.type('html');
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
+
     return res.render('admin/gerenciar-mapa', {
       titulo: 'Gerenciar Mapa - AIRPET',
       pontos,
@@ -833,6 +840,13 @@ async function mostrarMapa(req, res) {
       Localizacao.listarParaAdminMapa(500),
       Localizacao.contarPorCidade(30),
     ]);
+
+    // Garante renderização HTML (nunca download) e evita cache de página administrativa.
+    res.removeHeader('Content-Disposition');
+    res.type('html');
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
 
     return res.render('admin/mapa', {
       titulo: 'Mapa Administrativo - AIRPET',

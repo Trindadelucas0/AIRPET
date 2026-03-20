@@ -4,7 +4,7 @@
  * Este middleware protege rotas que exigem que o usuario esteja logado.
  * Ele verifica duas formas de autenticacao:
  *   1. Sessao (req.session.usuario) — metodo principal, usado nas rotas web
- *   2. Token JWT no cookie "token" — fallback para quando a sessao nao existe,
+ *   2. Token JWT no cookie "airpet_token" (ou "token" legado) — fallback para quando a sessao nao existe,
  *      util em cenarios de API ou quando o cookie de sessao expirou mas o JWT ainda e valido
  *
  * Exporta duas funcoes:
@@ -17,7 +17,7 @@ const Usuario = require('../models/Usuario');
 const logger = require('../utils/logger');
 
 /**
- * Tenta extrair e verificar o token JWT do cookie "token".
+ * Tenta extrair e verificar o token JWT dos cookies de autenticacao.
  * Se o token for valido, retorna o payload decodificado com os dados do usuario.
  * Se nao houver token ou ele for invalido/expirado, retorna null.
  *
@@ -25,8 +25,8 @@ const logger = require('../utils/logger');
  * @returns {object|null} Payload do JWT decodificado ou null
  */
 function verificarTokenJWT(req) {
-  // Busca o token no cookie "token" da requisicao
-  const token = req.cookies && req.cookies.token;
+  // Prioriza o cookie atual do AIRPET e mantém compatibilidade com cookie legado.
+  const token = req.cookies && (req.cookies.airpet_token || req.cookies.token);
 
   // Se nao existe cookie com token, nao ha fallback possivel
   if (!token) return null;

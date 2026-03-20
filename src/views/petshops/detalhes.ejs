@@ -3,62 +3,46 @@
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
-  :root{--ink:#0d0d0f;--ink-2:#13131a;--ink-3:#1c1c26;--ink-4:#242432;--border:rgba(255,255,255,0.07);--border-hover:rgba(255,255,255,0.13);--text:#e4e4f0;--text-dim:#7a7a96;--accent:#f26020;--green:#22c55e;--blue:#60a5fa;--purple:#a78bfa;--red:#ef4444;}
-  body{background:var(--ink)!important;color:var(--text)!important;font-family:'DM Sans',sans-serif;}
-  .det-wrap{max-width:700px;margin:0 auto;padding:24px 20px 80px;}
-  .page-topbar{position:sticky;top:56px;z-index:40;background:rgba(13,13,15,0.88);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:12px 0;}
-  .topbar-inner{max-width:700px;margin:0 auto;padding:0 20px;}
-  .back-link{color:var(--text-dim);font-size:13px;text-decoration:none;display:flex;align-items:center;gap:6px;transition:color 0.15s;}
-  .back-link:hover{color:var(--accent);text-decoration:none;}
-  .hero-card{background:var(--ink-2);border:1px solid var(--border);border-radius:18px;overflow:hidden;margin-bottom:14px;}
-  .hero-banner{height:180px;background:linear-gradient(135deg,#1a1018 0%,#2d1a10 100%);display:flex;align-items:flex-end;padding:20px;}
-  .tipo-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:100px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;backdrop-filter:blur(8px);}
-  .hero-body{padding:20px;}
-  .hero-title{font-family:'Syne',sans-serif;font-size:24px;font-weight:800;color:#fff;margin-bottom:14px;}
-  .info-row{display:flex;align-items:flex-start;gap:12px;padding:13px 0;border-bottom:1px solid var(--border);}
-  .info-row:last-child{border-bottom:none;}
-  .info-icon{width:36px;height:36px;border-radius:10px;background:var(--ink-3);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px;color:var(--text-dim);}
-  .info-label{font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:3px;}
-  .info-val{font-size:14px;color:var(--text);}
-  .info-val a{color:var(--accent);text-decoration:none;}
-  .info-val a:hover{text-decoration:underline;}
-  #mapPonto{height:220px;border-radius:14px;overflow:hidden;filter:brightness(0.85) saturate(0.7);border:1px solid var(--border);}
-  .actions-row{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;}
-  .btn-action{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 16px;border-radius:11px;font-size:14px;font-weight:700;text-decoration:none;transition:all 0.2s;cursor:pointer;border:none;font-family:'DM Sans',sans-serif;}
-  .btn-action.primary{background:var(--accent);color:#fff;}
-  .btn-action.primary:hover{background:var(--accent-light);transform:translateY(-1px);text-decoration:none;color:#fff;}
-  .btn-action.ghost{background:var(--ink-3);color:var(--text-dim);border:1px solid var(--border);}
-  .btn-action.ghost:hover{border-color:var(--border-hover);color:var(--text);text-decoration:none;}
+  body { font-family:'DM Sans',sans-serif; }
+  .det-wrap { max-width: 760px; margin: 0 auto; padding: 24px 20px 80px; }
+  .page-topbar { position: sticky; top: 56px; z-index: 40; background: rgba(255,255,255,0.88); backdrop-filter: blur(20px); border-bottom: 1px solid var(--border); padding: 12px 0; }
+  .topbar-inner { max-width: 760px; margin: 0 auto; padding: 0 20px; }
+  .back-link { color: var(--text-dim); font-size: 13px; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
+  .back-link:hover { color: var(--accent); }
+  .hero-card { background: var(--ink-2); border: 1px solid var(--border); border-radius: 18px; overflow: hidden; margin-bottom: 14px; }
+  .hero-banner { height: 180px; background: linear-gradient(135deg, rgba(242,96,32,0.18) 0%, rgba(13,13,15,0.25) 100%); display: flex; align-items: flex-end; padding: 20px; }
+  .tipo-chip { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 100px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; background: rgba(242,96,32,0.12); border: 1px solid rgba(242,96,32,0.24); color: var(--accent); }
+  .hero-body { padding: 20px; }
+  .hero-title { font-family: 'Syne',sans-serif; font-size: 24px; font-weight: 800; color: var(--text); margin-bottom: 14px; }
+  .info-row { display: flex; align-items: flex-start; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border); }
+  .info-row:last-child { border-bottom: none; }
+  .info-icon { width: 36px; height: 36px; border-radius: 10px; background: var(--ink-3); display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--text-dim); }
+  .info-label { font-size: 10px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 3px; }
+  .info-val { font-size: 14px; color: var(--text); }
+  .info-val a { color: var(--accent); text-decoration: none; }
+  .actions-row { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
+  .btn-action { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 16px; border-radius: 11px; font-size: 14px; font-weight: 700; text-decoration: none; transition: all .2s; border: none; cursor: pointer; }
+  .btn-action.primary { background: var(--accent); color: #fff; }
+  .btn-action.primary:hover { background: var(--accent-light); transform: translateY(-1px); }
+  .btn-action.ghost { background: var(--ink-3); color: var(--text-dim); border: 1px solid var(--border); }
+  .btn-action.ghost:hover { border-color: var(--border-hover); color: var(--text); }
+  #mapPonto { height: 240px; border-radius: 14px; overflow: hidden; border: 1px solid var(--border); }
 </style>
 ` %>
 <%- include('../partials/header') %>
 <%- include('../partials/flash') %>
 
-<%
-  var tipoIcone = {
-    veterinario: { icon: 'fa-stethoscope', color: 'rgba(96,165,250,0.15)', labelColor:'#60a5fa', label: 'Veterinário' },
-    abrigo:      { icon: 'fa-house-chimney', color: 'rgba(167,139,250,0.15)', labelColor:'#a78bfa', label: 'Abrigo' },
-    petshop:     { icon: 'fa-store', color: 'rgba(242,96,32,0.15)', labelColor:'#ff7a3d', label: 'Petshop' },
-    parque:      { icon: 'fa-tree', color: 'rgba(34,197,94,0.15)', labelColor:'#22c55e', label: 'Parque' },
-    hospital:    { icon: 'fa-hospital', color: 'rgba(239,68,68,0.15)', labelColor:'#f87171', label: 'Hospital' }
-  };
-  var tp = tipoIcone.petshop;
-%>
-
 <div class="page-topbar">
   <div class="topbar-inner">
-    <a href="/mapa" class="back-link"><i class="fa-solid fa-arrow-left"></i> Voltar ao mapa</a>
+    <a href="/petshops" class="back-link"><i class="fa-solid fa-arrow-left"></i> Voltar aos petshops</a>
   </div>
 </div>
 
 <main class="flex-1">
   <div class="det-wrap">
-
     <div class="hero-card">
-      <div class="hero-banner" style="background:linear-gradient(135deg, <%= tp.color %> 0%, rgba(13,13,15,0.6) 100%);">
-        <span class="tipo-chip" style="background:<%= tp.color %>;color:<%= tp.labelColor %>;border:1px solid <%= tp.labelColor %>40;">
-          <i class="fa-solid <%= tp.icon %>"></i> <%= tp.label %>
-        </span>
+      <div class="hero-banner">
+        <span class="tipo-chip"><i class="fa-solid fa-store"></i> Petshop parceiro</span>
       </div>
       <div class="hero-body">
         <h1 class="hero-title"><%= petshop.nome %></h1>
@@ -70,25 +54,25 @@
         <div>
           <% if (petshop.endereco) { %>
             <div class="info-row">
-              <div class="info-icon"><i class="fa-solid fa-location-dot" style="color:var(--accent);"></i></div>
+              <div class="info-icon"><i class="fa-solid fa-location-dot"></i></div>
               <div><div class="info-label">Endereço</div><div class="info-val"><%= petshop.endereco %></div></div>
             </div>
           <% } %>
           <% if (petshop.telefone) { %>
             <div class="info-row">
-              <div class="info-icon"><i class="fa-solid fa-phone" style="color:var(--green);"></i></div>
+              <div class="info-icon"><i class="fa-solid fa-phone"></i></div>
               <div><div class="info-label">Telefone</div><div class="info-val"><a href="tel:<%= petshop.telefone %>"><%= petshop.telefone %></a></div></div>
             </div>
           <% } %>
           <% if (petshop.horario) { %>
             <div class="info-row">
-              <div class="info-icon"><i class="fa-regular fa-clock" style="color:var(--blue);"></i></div>
+              <div class="info-icon"><i class="fa-regular fa-clock"></i></div>
               <div><div class="info-label">Horário</div><div class="info-val"><%= petshop.horario %></div></div>
             </div>
           <% } %>
           <% if (petshop.website) { %>
             <div class="info-row">
-              <div class="info-icon"><i class="fa-solid fa-globe" style="color:var(--purple);"></i></div>
+              <div class="info-icon"><i class="fa-solid fa-globe"></i></div>
               <div><div class="info-label">Website</div><div class="info-val"><a href="<%= petshop.website %>" target="_blank" rel="noopener"><%= petshop.website.replace(/^https?:\/\//, '') %></a></div></div>
             </div>
           <% } %>
@@ -109,14 +93,12 @@
       </div>
     </div>
 
-    <!-- Mapa -->
     <% if (petshop.latitude && petshop.longitude) { %>
-      <div style="background:var(--ink-2);border:1px solid var(--border);border-radius:18px;padding:16px;">
-        <div style="font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:12px;">Localização</div>
+      <div class="hero-card" style="padding:16px;">
+        <div style="font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px;">Localização</div>
         <div id="mapPonto"></div>
       </div>
     <% } %>
-
   </div>
 </main>
 
@@ -125,669 +107,18 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 (function(){
-  var map = L.map('mapPonto',{zoomControl:false}).setView([${petshop.latitude},${petshop.longitude}],15);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OSM'}).addTo(map);
-  var icon = L.divIcon({html:'<div style="width:36px;height:36px;border-radius:50%;background:#f26020;border:3px solid #fff;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(0,0,0,0.5);"><i class=\\"fa-solid ${tp.icon}\\" style=\\"color:#fff;font-size:14px;\\"></i></div>',className:'',iconSize:[36,36],iconAnchor:[18,18]});
-  L.marker([${petshop.latitude},${petshop.longitude}],{icon}).addTo(map).bindPopup('<strong>${petshop.nome}</strong>').openPopup();
+  var map = L.map('mapPonto',{ zoomControl:false }).setView([${petshop.latitude}, ${petshop.longitude}], 15);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{ attribution:'© OSM' }).addTo(map);
+  var icon = L.divIcon({
+    html:'<div style="width:36px;height:36px;border-radius:50%;background:#f26020;border:3px solid #fff;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(0,0,0,.25);"><i class="fa-solid fa-store" style="color:#fff;font-size:13px;"></i></div>',
+    className:'',
+    iconSize:[36,36],
+    iconAnchor:[18,18]
+  });
+  L.marker([${petshop.latitude}, ${petshop.longitude}], { icon:icon }).addTo(map).bindPopup('<strong>${String(petshop.nome || '').replace(/'/g, "\\'")}</strong>').openPopup();
 })();
 </script>
 ` %>
 <% } %>
-
-<%- include('../partials/footer') %>
-<% return; %>
-<% locals.titulo = ponto.nome %>
-<% locals.extraHead = `
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<style>
-  :root{--ink:#0d0d0f;--ink-2:#13131a;--ink-3:#1c1c26;--ink-4:#242432;--border:rgba(255,255,255,0.07);--border-hover:rgba(255,255,255,0.13);--text:#e4e4f0;--text-dim:#7a7a96;--accent:#f26020;--green:#22c55e;--blue:#60a5fa;--purple:#a78bfa;--red:#ef4444;}
-  body{background:var(--ink)!important;color:var(--text)!important;font-family:'DM Sans',sans-serif;}
-  .det-wrap{max-width:700px;margin:0 auto;padding:24px 20px 80px;}
-  .page-topbar{position:sticky;top:56px;z-index:40;background:rgba(13,13,15,0.88);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:12px 0;}
-  .topbar-inner{max-width:700px;margin:0 auto;padding:0 20px;}
-  .back-link{color:var(--text-dim);font-size:13px;text-decoration:none;display:flex;align-items:center;gap:6px;transition:color 0.15s;}
-  .back-link:hover{color:var(--accent);text-decoration:none;}
-  .hero-card{background:var(--ink-2);border:1px solid var(--border);border-radius:18px;overflow:hidden;margin-bottom:14px;}
-  .hero-banner{height:180px;background:linear-gradient(135deg,#1a1018 0%,#2d1a10 100%);display:flex;align-items:flex-end;padding:20px;}
-  .tipo-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:100px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;backdrop-filter:blur(8px);}
-  .hero-body{padding:20px;}
-  .hero-title{font-family:'Syne',sans-serif;font-size:24px;font-weight:800;color:#fff;margin-bottom:14px;}
-  .info-row{display:flex;align-items:flex-start;gap:12px;padding:13px 0;border-bottom:1px solid var(--border);}
-  .info-row:last-child{border-bottom:none;}
-  .info-icon{width:36px;height:36px;border-radius:10px;background:var(--ink-3);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px;color:var(--text-dim);}
-  .info-label{font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:3px;}
-  .info-val{font-size:14px;color:var(--text);}
-  .info-val a{color:var(--accent);text-decoration:none;}
-  .info-val a:hover{text-decoration:underline;}
-  #mapPonto{height:220px;border-radius:14px;overflow:hidden;filter:brightness(0.85) saturate(0.7);border:1px solid var(--border);}
-  .actions-row{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;}
-  .btn-action{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 16px;border-radius:11px;font-size:14px;font-weight:700;text-decoration:none;transition:all 0.2s;cursor:pointer;border:none;font-family:'DM Sans',sans-serif;}
-  .btn-action.primary{background:var(--accent);color:#fff;}
-  .btn-action.primary:hover{background:var(--accent-light);transform:translateY(-1px);text-decoration:none;color:#fff;}
-  .btn-action.ghost{background:var(--ink-3);color:var(--text-dim);border:1px solid var(--border);}
-  .btn-action.ghost:hover{border-color:var(--border-hover);color:var(--text);text-decoration:none;}
-</style>
-` %>
-<%- include('../partials/header') %>
-<%- include('../partials/flash') %>
-
-<%    
-  var tipoIcone = {
-    veterinario: { icon: 'fa-stethoscope', color: 'rgba(96,165,250,0.15)', labelColor:'#60a5fa', label: 'Veterinário' },
-    abrigo:      { icon: 'fa-house-chimney', color: 'rgba(167,139,250,0.15)', labelColor:'#a78bfa', label: 'Abrigo' },
-    petshop:     { icon: 'fa-store', color: 'rgba(242,96,32,0.15)', labelColor:'#ff7a3d', label: 'Petshop' },
-    parque:      { icon: 'fa-tree', color: 'rgba(34,197,94,0.15)', labelColor:'#22c55e', label: 'Parque' },
-    hospital:    { icon: 'fa-hospital', color: 'rgba(239,68,68,0.15)', labelColor:'#f87171', label: 'Hospital' }
-  };
-  var tp = tipoIcone[ponto.tipo] || { icon:'fa-map-pin', color:'rgba(255,255,255,0.07)', labelColor:'#7a7a96', label: ponto.tipo || 'Ponto' };
-%>
-
-<div class="page-topbar">
-  <div class="topbar-inner">
-    <a href="/mapa" class="back-link"><i class="fa-solid fa-arrow-left"></i> Voltar ao mapa</a>
-  </div>
-</div>
-
-<main class="flex-1">
-  <div class="det-wrap">
-
-    <div class="hero-card">
-      <div class="hero-banner" style="background:linear-gradient(135deg, <%= tp.color %> 0%, rgba(13,13,15,0.6) 100%);">
-        <span class="tipo-chip" style="background:<%= tp.color %>;color:<%= tp.labelColor %>;border:1px solid <%= tp.labelColor %>40;">
-          <i class="fa-solid <%= tp.icon %>"></i> <%= tp.label %>
-        </span>
-      </div>
-      <div class="hero-body">
-        <h1 class="hero-title"><%= ponto.nome %></h1>
-
-        <% if (ponto.descricao) { %>
-          <p style="font-size:14px;color:var(--text-dim);line-height:1.7;margin-bottom:16px;"><%= ponto.descricao %></p>
-        <% } %>
-
-        <div>
-          <% if (ponto.endereco) { %>
-            <div class="info-row">
-              <div class="info-icon"><i class="fa-solid fa-location-dot" style="color:var(--accent);"></i></div>
-              <div><div class="info-label">Endereço</div><div class="info-val"><%= ponto.endereco %></div></div>
-            </div>
-          <% } %>
-          <% if (ponto.telefone) { %>
-            <div class="info-row">
-              <div class="info-icon"><i class="fa-solid fa-phone" style="color:var(--green);"></i></div>
-              <div><div class="info-label">Telefone</div><div class="info-val"><a href="tel:<%= ponto.telefone %>"><%= ponto.telefone %></a></div></div>
-            </div>
-          <% } %>
-          <% if (ponto.horario) { %>
-            <div class="info-row">
-              <div class="info-icon"><i class="fa-regular fa-clock" style="color:var(--blue);"></i></div>
-              <div><div class="info-label">Horário</div><div class="info-val"><%= ponto.horario %></div></div>
-            </div>
-          <% } %>
-          <% if (ponto.website) { %>
-            <div class="info-row">
-              <div class="info-icon"><i class="fa-solid fa-globe" style="color:var(--purple);"></i></div>
-              <div><div class="info-label">Website</div><div class="info-val"><a href="<%= ponto.website %>" target="_blank" rel="noopener"><%= ponto.website.replace(/^https?:\/\//, '') %></a></div></div>
-            </div>
-          <% } %>
-        </div>
-
-        <div class="actions-row">
-          <% if (ponto.latitude && ponto.longitude) { %>
-            <a href="https://maps.google.com/?q=<%= ponto.latitude %>,<%= ponto.longitude %>" target="_blank" rel="noopener" class="btn-action primary">
-              <i class="fa-solid fa-diamond-turn-right"></i> Como chegar
-            </a>
-          <% } %>
-          <% if (ponto.telefone) { %>
-            <a href="tel:<%= ponto.telefone %>" class="btn-action ghost">
-              <i class="fa-solid fa-phone"></i> Ligar
-            </a>
-          <% } %>
-        </div>
-      </div>
-    </div>
-
-    <!-- Mapa -->
-    <% if (ponto.latitude && ponto.longitude) { %>
-      <div style="background:var(--ink-2);border:1px solid var(--border);border-radius:18px;padding:16px;">
-        <div style="font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:12px;">Localização</div>
-        <div id="mapPonto"></div>
-      </div>
-    <% } %>
-
-  </div>
-</main>
-
-<% if (ponto.latitude && ponto.longitude) { %>
-<% locals.extraScripts = `
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script>
-(function(){
-  var map = L.map('mapPonto',{zoomControl:false}).setView([${ponto.latitude},${ponto.longitude}],15);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OSM'}).addTo(map);
-  var icon = L.divIcon({html:'<div style="width:36px;height:36px;border-radius:50%;background:#f26020;border:3px solid #fff;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(0,0,0,0.5);"><i class=\\"fa-solid ${tp.icon}\\" style=\\"color:#fff;font-size:14px;\\"></i></div>',className:'',iconSize:[36,36],iconAnchor:[18,18]});
-  L.marker([${ponto.latitude},${ponto.longitude}],{icon}).addTo(map).bindPopup('<strong>${ponto.nome}</strong>').openPopup();
-})();
-</script>
-` %>
-<% } %>
-
-<%- include('../partials/footer') %>
-<% locals.titulo = ponto.nome %>
-<% locals.extraHead = `
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<style>
-  :root{--ink:#0d0d0f;--ink-2:#13131a;--ink-3:#1c1c26;--ink-4:#242432;--border:rgba(255,255,255,0.07);--border-hover:rgba(255,255,255,0.13);--text:#e4e4f0;--text-dim:#7a7a96;--accent:#f26020;--green:#22c55e;--blue:#60a5fa;--purple:#a78bfa;--red:#ef4444;}
-  body{background:var(--ink)!important;color:var(--text)!important;font-family:'DM Sans',sans-serif;}
-  .det-wrap{max-width:700px;margin:0 auto;padding:24px 20px 80px;}
-  .page-topbar{position:sticky;top:56px;z-index:40;background:rgba(13,13,15,0.88);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:12px 0;}
-  .topbar-inner{max-width:700px;margin:0 auto;padding:0 20px;}
-  .back-link{color:var(--text-dim);font-size:13px;text-decoration:none;display:flex;align-items:center;gap:6px;transition:color 0.15s;}
-  .back-link:hover{color:var(--accent);text-decoration:none;}
-  .hero-card{background:var(--ink-2);border:1px solid var(--border);border-radius:18px;overflow:hidden;margin-bottom:14px;}
-  .hero-banner{height:180px;background:linear-gradient(135deg,#1a1018 0%,#2d1a10 100%);display:flex;align-items:flex-end;padding:20px;}
-  .tipo-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:100px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;backdrop-filter:blur(8px);}
-  .hero-body{padding:20px;}
-  .hero-title{font-family:'Syne',sans-serif;font-size:24px;font-weight:800;color:#fff;margin-bottom:14px;}
-  .info-row{display:flex;align-items:flex-start;gap:12px;padding:13px 0;border-bottom:1px solid var(--border);}
-  .info-row:last-child{border-bottom:none;}
-  .info-icon{width:36px;height:36px;border-radius:10px;background:var(--ink-3);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px;color:var(--text-dim);}
-  .info-label{font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:3px;}
-  .info-val{font-size:14px;color:var(--text);}
-  .info-val a{color:var(--accent);text-decoration:none;}
-  .info-val a:hover{text-decoration:underline;}
-  #mapPonto{height:220px;border-radius:14px;overflow:hidden;filter:brightness(0.85) saturate(0.7);border:1px solid var(--border);}
-  .actions-row{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;}
-  .btn-action{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 16px;border-radius:11px;font-size:14px;font-weight:700;text-decoration:none;transition:all 0.2s;cursor:pointer;border:none;font-family:'DM Sans',sans-serif;}
-  .btn-action.primary{background:var(--accent);color:#fff;}
-  .btn-action.primary:hover{background:var(--accent-light);transform:translateY(-1px);text-decoration:none;color:#fff;}
-  .btn-action.ghost{background:var(--ink-3);color:var(--text-dim);border:1px solid var(--border);}
-  .btn-action.ghost:hover{border-color:var(--border-hover);color:var(--text);text-decoration:none;}
-</style>
-` %>
-<%- include('../partials/header') %>
-<%- include('../partials/flash') %>
-
-<%
-  var tipoIcone = {
-    veterinario: { icon: 'fa-stethoscope', color: 'rgba(96,165,250,0.15)', labelColor:'#60a5fa', label: 'Veterinário' },
-    abrigo:      { icon: 'fa-house-chimney', color: 'rgba(167,139,250,0.15)', labelColor:'#a78bfa', label: 'Abrigo' },
-    petshop:     { icon: 'fa-store', color: 'rgba(242,96,32,0.15)', labelColor:'#ff7a3d', label: 'Petshop' },
-    parque:      { icon: 'fa-tree', color: 'rgba(34,197,94,0.15)', labelColor:'#22c55e', label: 'Parque' },
-    hospital:    { icon: 'fa-hospital', color: 'rgba(239,68,68,0.15)', labelColor:'#f87171', label: 'Hospital' }
-  };
-  var tp = tipoIcone[ponto.tipo] || { icon:'fa-map-pin', color:'rgba(255,255,255,0.07)', labelColor:'#7a7a96', label: ponto.tipo || 'Ponto' };
-%>
-
-<div class="page-topbar">
-  <div class="topbar-inner">
-    <a href="/mapa" class="back-link"><i class="fa-solid fa-arrow-left"></i> Voltar ao mapa</a>
-  </div>
-</div>
-
-<main class="flex-1">
-  <div class="det-wrap">
-
-    <div class="hero-card">
-      <div class="hero-banner" style="background:linear-gradient(135deg, <%= tp.color %> 0%, rgba(13,13,15,0.6) 100%);">
-        <span class="tipo-chip" style="background:<%= tp.color %>;color:<%= tp.labelColor %>;border:1px solid <%= tp.labelColor %>40;">
-          <i class="fa-solid <%= tp.icon %>"></i> <%= tp.label %>
-        </span>
-      </div>
-      <div class="hero-body">
-        <h1 class="hero-title"><%= ponto.nome %></h1>
-
-        <% if (ponto.descricao) { %>
-          <p style="font-size:14px;color:var(--text-dim);line-height:1.7;margin-bottom:16px;"><%= ponto.descricao %></p>
-        <% } %>
-
-        <div>
-          <% if (ponto.endereco) { %>
-            <div class="info-row">
-              <div class="info-icon"><i class="fa-solid fa-location-dot" style="color:var(--accent);"></i></div>
-              <div><div class="info-label">Endereço</div><div class="info-val"><%= ponto.endereco %></div></div>
-            </div>
-          <% } %>
-          <% if (ponto.telefone) { %>
-            <div class="info-row">
-              <div class="info-icon"><i class="fa-solid fa-phone" style="color:var(--green);"></i></div>
-              <div><div class="info-label">Telefone</div><div class="info-val"><a href="tel:<%= ponto.telefone %>"><%= ponto.telefone %></a></div></div>
-            </div>
-          <% } %>
-          <% if (ponto.horario) { %>
-            <div class="info-row">
-              <div class="info-icon"><i class="fa-regular fa-clock" style="color:var(--blue);"></i></div>
-              <div><div class="info-label">Horário</div><div class="info-val"><%= ponto.horario %></div></div>
-            </div>
-          <% } %>
-          <% if (ponto.website) { %>
-            <div class="info-row">
-              <div class="info-icon"><i class="fa-solid fa-globe" style="color:var(--purple);"></i></div>
-              <div><div class="info-label">Website</div><div class="info-val"><a href="<%= ponto.website %>" target="_blank" rel="noopener"><%= ponto.website.replace(/^https?:\/\//, '') %></a></div></div>
-            </div>
-          <% } %>
-        </div>
-
-        <div class="actions-row">
-          <% if (ponto.latitude && ponto.longitude) { %>
-            <a href="https://maps.google.com/?q=<%= ponto.latitude %>,<%= ponto.longitude %>" target="_blank" rel="noopener" class="btn-action primary">
-              <i class="fa-solid fa-diamond-turn-right"></i> Como chegar
-            </a>
-          <% } %>
-          <% if (ponto.telefone) { %>
-            <a href="tel:<%= ponto.telefone %>" class="btn-action ghost">
-              <i class="fa-solid fa-phone"></i> Ligar
-            </a>
-          <% } %>
-        </div>
-      </div>
-    </div>
-
-    <!-- Mapa -->
-    <% if (ponto.latitude && ponto.longitude) { %>
-      <div style="background:var(--ink-2);border:1px solid var(--border);border-radius:18px;padding:16px;">
-        <div style="font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:12px;">Localização</div>
-        <div id="mapPonto"></div>
-      </div>
-    <% } %>
-
-  </div>
-</main>
-
-<% if (ponto.latitude && ponto.longitude) { %>
-<% locals.extraScripts = `
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script>
-(function(){
-  var map = L.map('mapPonto',{zoomControl:false}).setView([${ponto.latitude},${ponto.longitude}],15);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OSM'}).addTo(map);
-  var icon = L.divIcon({html:'<div style="width:36px;height:36px;border-radius:50%;background:#f26020;border:3px solid #fff;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(0,0,0,0.5);"><i class=\\"fa-solid ${tp.icon}\\" style=\\"color:#fff;font-size:14px;\\"></i></div>',className:'',iconSize:[36,36],iconAnchor:[18,18]});
-  L.marker([${ponto.latitude},${ponto.longitude}],{icon}).addTo(map).bindPopup('<strong>${ponto.nome}</strong>').openPopup();
-})();
-</script>
-` %>
-<% } %>
-
-<%- include('../partials/footer') %>
-<%
-  locals.titulo = petshop.nome;
-  const capaUrl = petshop.foto_capa ? `/images/petshops/${petshop.foto_capa}` : (petshop.foto_capa_url || null);
-  const avatarUrl = petshop.logo_url || null;
-  const servicosSafe = (typeof servicos !== 'undefined' && Array.isArray(servicos)) ? servicos : [];
-  const profileSafe = (typeof profile !== 'undefined' && profile) ? profile : null;
-  const categoria = (servicosSafe && servicosSafe.length > 0) ? servicosSafe[0].nome : null;
-  const reviewMedia = Number((reviewSummary && reviewSummary.media) ? reviewSummary.media : 0);
-  const reviewTotal = Number((reviewSummary && reviewSummary.total) ? reviewSummary.total : 0);
-
-  const whatsappPublico = (profileSafe && profileSafe.whatsapp_publico) ? profileSafe.whatsapp_publico : null;
-  const whatsappNumero = whatsappPublico || petshop.whatsapp || null;
-  const whatsappHref = whatsappNumero ? `https://wa.me/55${String(whatsappNumero).replace(/\\D/g, '')}` : null;
-  const contatoHref = (profileSafe && profileSafe.contato_link) ? profileSafe.contato_link : whatsappHref;
-
-  const agendamentoDisponivel = Boolean(profileSafe && profileSafe.aceita_agendamento) && petshop.agenda_aberta !== false;
-
-  const publicacoesLista = publicacoes || [];
-  const publicacoesServisPromo = publicacoesLista.filter(p => p && (p.publicationType === 'promocao' || p.is_promocao));
-  const publicacoesServicos = publicacoesLista.filter(p => p && p.publicationType === 'servico');
-  const publicacoesGrid = publicacoesLista.filter(p => p && (p.publicationType === 'post' || p.publicationType === 'promocao' || p.is_promocao));
-%>
-
-<% locals.extraHead = '<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""><style>#mapPetshop{height:260px;border-radius:16px;z-index:0;}.shop-ig-grid img{transition:transform .35s ease}.shop-ig-grid .group:hover img{transform:scale(1.06)}.shop-quick-action{border-radius:14px;font-weight:700}.shop-story-pill{background:color-mix(in srgb,var(--accent) 12%,transparent);border:1px solid color-mix(in srgb,var(--accent) 28%,transparent);color:var(--accent-light)}</style>' %>
-<%- include('../partials/header') %>
-<%- include('../partials/flash') %>
-
-<main class="flex-1 container mx-auto px-4 py-6 max-w-3xl space-y-6">
-  <!-- Header premium -->
-  <section class="relative overflow-hidden rounded-3xl border bg-white shadow-sm">
-    <div class="relative h-52 sm:h-64 bg-gradient-to-br from-emerald-500/10 via-orange-500/10 to-gray-50">
-      <% if (capaUrl) { %>
-        <img src="<%= capaUrl %>" alt="<%= petshop.nome %>" class="absolute inset-0 w-full h-full object-cover">
-      <% } else { %>
-        <div class="absolute inset-0 flex items-center justify-center">
-          <i class="fa-solid fa-store text-6xl text-emerald-500/25"></i>
-        </div>
-      <% } %>
-      <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent"></div>
-
-      <div class="absolute left-4 right-4 bottom-4 sm:left-6 sm:right-6">
-        <div class="flex items-end justify-between gap-4">
-          <div class="flex items-center gap-4 min-w-0">
-            <div class="w-16 h-16 rounded-2xl bg-white/95 border shadow flex items-center justify-center overflow-hidden flex-shrink-0">
-              <% if (avatarUrl) { %>
-                <img src="<%= avatarUrl %>" alt="<%= petshop.nome %>" class="w-full h-full object-cover">
-              <% } else { %>
-                <i class="fa-solid fa-paw text-emerald-500 text-2xl"></i>
-              <% } %>
-            </div>
-
-            <div class="min-w-0">
-              <% if (petshop.ponto_de_apoio) { %>
-                <span class="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-full shadow-sm mb-2 shop-story-pill">
-                  <i class="fa-solid fa-shield-check"></i> Ponto de Apoio Oficial
-                </span>
-              <% } %>
-              <h1 class="text-white text-2xl sm:text-3xl font-extrabold drop-shadow truncate"><%= petshop.nome %></h1>
-              <div class="mt-1 flex flex-wrap items-center gap-2">
-                <% if (categoria) { %>
-                  <span class="bg-white/15 text-white text-xs font-semibold px-3 py-1 rounded-full inline-flex items-center gap-1.5">
-                    <i class="fa-solid fa-tags text-white/80"></i> <%= categoria.charAt(0).toUpperCase() + categoria.slice(1) %>
-                  </span>
-                <% } %>
-                <% if (petshop.endereco) { %>
-                  <span class="text-white/90 text-xs inline-flex items-center gap-1">
-                    <i class="fa-solid fa-location-dot"></i> <span class="truncate max-w-[220px]"><%= petshop.endereco %></span>
-                  </span>
-                <% } %>
-              </div>
-            </div>
-          </div>
-
-          <div class="hidden sm:block text-right">
-            <div class="flex items-center justify-end gap-2">
-              <span class="text-amber-400 text-sm drop-shadow">
-                <%= '★'.repeat(Math.max(0, Math.min(5, Math.round(reviewMedia)))) %>
-              </span>
-              <div class="flex flex-col leading-tight">
-                <span class="text-white font-extrabold"><%= reviewMedia.toFixed(1) %> <span class="text-white/80 text-xs">/ 5</span></span>
-                <span class="text-white/80 text-xs"><%= reviewTotal %> avaliações</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="p-4 sm:p-5">
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <!-- Contato -->
-        <a href="<%= contatoHref || '#petshops-' + petshop.id %>" target="<%= (profileSafe && profileSafe.contato_link) ? '_blank' : '_self' %>" rel="noopener"
-           class="btn-primary shop-quick-action rounded-2xl flex items-center justify-center gap-2 px-4 py-3 text-base font-semibold <%= contatoHref ? '' : 'opacity-60 pointer-events-none' %>">
-          <i class="fa-brands fa-whatsapp"></i>
-          Entrar em contato
-        </a>
-
-        <!-- Mapa -->
-        <a href="<%= (petshop.latitude && petshop.longitude) ? '#mapPetshop' : '/petshops/mapa' %>"
-           class="bg-emerald-50 hover:bg-emerald-100 text-emerald-800 shop-quick-action rounded-2xl border border-emerald-200 px-4 py-3 font-semibold flex items-center justify-center gap-2">
-          <i class="fa-solid fa-map"></i>
-          Ver no mapa
-        </a>
-
-        <!-- Agendar -->
-        <% if (agendamentoDisponivel) { %>
-          <a href="/agenda?petshop_id=<%= petshop.id %>"
-             class="bg-primary-500 text-white hover:bg-primary-600 shop-quick-action rounded-2xl px-4 py-3 font-semibold flex items-center justify-center gap-2">
-            <i class="fa-solid fa-calendar-check"></i>
-            Agendar serviço
-          </a>
-        <% } else { %>
-          <div class="rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 flex items-center justify-center gap-2 text-gray-400 font-semibold">
-            <i class="fa-solid fa-lock"></i>
-            Agendamento indisponível
-          </div>
-        <% } %>
-      </div>
-
-      <!-- Seguir (opcional) -->
-      <% if (typeof userSegue !== 'undefined') { %>
-        <div class="mt-3">
-          <form action="/petshops/<%= petshop.id %>/seguir" method="POST">
-            <button class="w-full px-4 py-3 rounded-2xl font-semibold border <%= userSegue ? 'bg-gray-100 text-gray-700 border-gray-200' : 'bg-white text-gray-900 hover:bg-gray-50 border-gray-200' %>">
-              <%= userSegue ? 'Seguindo este petshop' : 'Seguir petshop' %>
-            </button>
-          </form>
-        </div>
-      <% } %>
-
-      <% if ((profileSafe && profileSafe.slogan) || (profileSafe && profileSafe.descricao_curta)) { %>
-        <div class="mt-4">
-          <% if (profileSafe && profileSafe.slogan) { %>
-            <p class="text-gray-900 font-extrabold text-lg"><%= profileSafe.slogan %></p>
-          <% } %>
-          <% if (profileSafe && profileSafe.descricao_curta) { %>
-            <p class="text-gray-600 mt-1 text-sm leading-relaxed"><%= profileSafe.descricao_curta %></p>
-          <% } %>
-        </div>
-      <% } %>
-
-      <div class="mt-4 sm:hidden">
-        <div class="flex items-center justify-between gap-3 bg-gray-50 border border-gray-100 rounded-2xl p-3">
-          <div class="text-left">
-            <p class="text-xs text-gray-500">Avaliação</p>
-            <p class="font-extrabold text-gray-900"><%= reviewMedia.toFixed(1) %> <span class="text-sm text-amber-500">⭐</span></p>
-          </div>
-          <div class="text-right">
-            <p class="text-xs text-gray-500">Avaliações</p>
-            <p class="font-extrabold text-gray-900"><%= reviewTotal %></p>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Destaques: serviços + promoções -->
-  <section class="space-y-4">
-    <% if (publicacoesServicos && publicacoesServicos.length > 0) { %>
-      <div class="card">
-        <h2 class="text-lg font-extrabold text-gray-900 mb-3">
-          <i class="fa-solid fa-concierge-bell text-[#ec5a1c] mr-2"></i>Serviços em destaque
-        </h2>
-        <div class="flex gap-3 overflow-x-auto pb-2">
-          <% publicacoesServicos.slice(0, 10).forEach(function(pub) { %>
-            <a href="<%= contatoHref || '#' %>" class="relative group min-w-[220px] rounded-2xl overflow-hidden border border-gray-200 bg-gray-50 hover:shadow-sm transition">
-              <% if (pub.foto_url) { %>
-                <img src="<%= pub.foto_url %>" alt="<%= pub.titulo %>" class="w-full h-28 object-cover">
-              <% } else { %>
-                <div class="w-full h-28 bg-gradient-to-br from-emerald-500/15 to-orange-500/10 flex items-center justify-center">
-                  <i class="fa-solid fa-badge-check text-3xl text-emerald-500/40"></i>
-                </div>
-              <% } %>
-              <div class="absolute left-3 top-3">
-                <span class="bg-emerald-600 text-white text-[11px] font-extrabold px-3 py-1 rounded-full inline-flex items-center gap-2 shadow-sm">
-                  <i class="fa-solid fa-concierge-bell"></i> Serviço
-                </span>
-              </div>
-              <div class="p-3">
-                <p class="font-extrabold text-gray-900 text-sm line-clamp-2"><%= pub.titulo || 'Serviço' %></p>
-                <% if (pub.preco != null) { %>
-                  <p class="text-[#ec5a1c] font-extrabold mt-1">
-                    R$ <%= Number(pub.preco || 0).toFixed(2).replace('.', ',') %>
-                  </p>
-                <% } %>
-              </div>
-            </a>
-          <% }); %>
-        </div>
-      </div>
-    <% } else if (servicosSafe && servicosSafe.length > 0) { %>
-      <div class="card">
-        <h2 class="text-lg font-extrabold text-gray-900 mb-3">
-          <i class="fa-solid fa-concierge-bell text-[#ec5a1c] mr-2"></i>Serviços em destaque
-        </h2>
-        <div class="flex gap-2 overflow-x-auto pb-2">
-          <% var iconeServico = { banho: 'fa-shower', tosa: 'fa-scissors', consulta: 'fa-stethoscope', vacina: 'fa-syringe', hospedagem: 'fa-house', adestramento: 'fa-graduation-cap', transporte: 'fa-car', creche: 'fa-children' }; %>
-          <% servicosSafe.slice(0, 12).forEach(function(srv) { %>
-            <% const nomeServico = srv.nome || srv; %>
-            <span class="inline-flex items-center gap-2 bg-gray-100 text-gray-800 text-sm font-semibold px-4 py-2 rounded-2xl whitespace-nowrap border border-gray-200">
-              <i class="fa-solid <%= iconeServico[String(nomeServico || '').toLowerCase()] || 'fa-paw' %> text-[#ec5a1c]"></i>
-              <%= String(nomeServico || '').charAt(0).toUpperCase() + String(nomeServico || '').slice(1) %>
-            </span>
-          <% }); %>
-        </div>
-      </div>
-    <% } %>
-
-    <% if (publicacoesServisPromo.length > 0) { %>
-      <div class="card">
-        <h2 class="text-lg font-extrabold text-gray-900 mb-3">
-          <i class="fa-solid fa-tag text-[#ec5a1c] mr-2"></i>Promoções para você
-        </h2>
-        <div class="flex gap-3 overflow-x-auto pb-2">
-          <% publicacoesServisPromo.slice(0, 10).forEach(function(pub) { %>
-            <a href="<%= contatoHref || '#' %>" class="relative group min-w-[220px] rounded-2xl overflow-hidden border border-gray-200 bg-gray-50 hover:shadow-sm transition">
-              <% if (pub.foto_url) { %>
-                <img src="<%= pub.foto_url %>" alt="<%= pub.titulo %>" class="w-full h-28 object-cover">
-              <% } else { %>
-                <div class="w-full h-28 bg-gradient-to-br from-emerald-500/15 to-orange-500/10 flex items-center justify-center">
-                  <i class="fa-solid fa-badge-percent text-3xl text-emerald-500/40"></i>
-                </div>
-              <% } %>
-              <div class="absolute left-3 top-3">
-                <span class="bg-emerald-600 text-white text-[11px] font-extrabold px-3 py-1 rounded-full inline-flex items-center gap-2 shadow-sm">
-                  <i class="fa-solid fa-badge-percent"></i> Promoção
-                </span>
-              </div>
-              <div class="p-3">
-                <p class="font-extrabold text-gray-900 text-sm line-clamp-2"><%= pub.titulo || 'Oferta' %></p>
-                <% if (pub.preco != null) { %>
-                  <p class="text-[#ec5a1c] font-extrabold mt-1">
-                    R$ <%= Number(pub.preco || 0).toFixed(2).replace('.', ',') %>
-                  </p>
-                <% } %>
-              </div>
-            </a>
-          <% }); %>
-        </div>
-      </div>
-    <% } %>
-  </section>
-
-  <!-- Grade estilo Instagram -->
-  <section class="card">
-    <div class="flex items-center justify-between gap-3 mb-3">
-      <h2 class="text-lg font-extrabold text-gray-900">
-        <i class="fa-solid fa-grid-2 text-emerald-600 mr-2"></i>Vitrine do petshop
-      </h2>
-      <span class="text-xs text-gray-500 font-semibold">
-        <%= publicacoesGrid.length %> publicações
-      </span>
-    </div>
-
-    <div class="grid grid-cols-3 gap-2 shop-ig-grid">
-      <% publicacoesGrid.slice(0, 30).forEach(function(pub) { %>
-        <div class="relative group rounded-2xl overflow-hidden bg-gray-50 border border-gray-200">
-          <% if (pub.foto_url) { %>
-            <img src="<%= pub.foto_url %>" alt="<%= pub.titulo %>" class="w-full h-full min-h-[118px] object-cover">
-          <% } else { %>
-            <div class="w-full h-[118px] bg-gradient-to-br from-emerald-500/10 to-orange-500/10 flex items-center justify-center">
-              <i class="fa-solid fa-paw text-3xl text-emerald-500/35"></i>
-            </div>
-          <% } %>
-
-          <div class="absolute left-2 top-2">
-            <% if (pub.publicationType === 'promocao' || pub.is_promocao) { %>
-              <span class="bg-emerald-600 text-white text-[11px] font-extrabold px-2.5 py-1 rounded-full inline-flex items-center gap-1 shadow-sm">
-                <i class="fa-solid fa-badge-percent"></i>
-                Promo
-              </span>
-            <% } else { %>
-              <span class="bg-black/55 text-white text-[11px] font-extrabold px-2.5 py-1 rounded-full inline-flex items-center gap-1 shadow-sm">
-                <i class="fa-solid fa-camera"></i>
-                Post
-              </span>
-            <% } %>
-          </div>
-
-          <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-end justify-center p-2">
-            <div class="w-full">
-              <% if (contatoHref) { %>
-                <a href="<%= contatoHref %>" class="btn-primary w-full rounded-xl flex items-center justify-center gap-2 py-2 text-sm font-bold">
-                  <i class="fa-brands fa-whatsapp"></i>
-                  Contatar
-                </a>
-              <% } %>
-            </div>
-          </div>
-        </div>
-      <% }) %>
-    </div>
-  </section>
-
-  <!-- Avaliações -->
-  <section class="card">
-    <div class="flex items-center justify-between gap-3 mb-3">
-      <h2 class="text-lg font-extrabold text-gray-900">
-        <i class="fa-solid fa-star text-amber-500 mr-2"></i>Avaliações
-      </h2>
-      <span class="text-xs text-gray-500 font-semibold">
-        <%= reviewTotal %> avaliações
-      </span>
-    </div>
-
-    <form action="/petshops/<%= petshop.id %>/avaliar" method="POST" class="grid md:grid-cols-3 gap-3 mb-5">
-      <select class="input" name="rating" required>
-        <option value="">Sua nota</option>
-        <option value="5">⭐ ⭐ ⭐ ⭐ ⭐</option>
-        <option value="4">⭐ ⭐ ⭐ ⭐</option>
-        <option value="3">⭐ ⭐ ⭐</option>
-        <option value="2">⭐ ⭐</option>
-        <option value="1">⭐</option>
-      </select>
-      <input class="input" name="pet_id" placeholder="ID do pet (opcional)">
-      <button class="btn-primary">Enviar avaliação</button>
-      <textarea class="input md:col-span-3 min-h-20" name="comentario" placeholder="Como foi sua experiência?"></textarea>
-    </form>
-
-    <div class="space-y-3">
-      <% (reviews || []).forEach(function(rv) { %>
-        <div class="border rounded-2xl p-4">
-          <div class="flex items-start justify-between gap-3">
-            <div class="min-w-0">
-              <p class="font-extrabold text-sm text-gray-900 truncate"><%= rv.usuario_nome %></p>
-              <p class="text-xs text-gray-500 mt-1">
-                <span class="text-amber-500"><%= '⭐ '.repeat(rv.rating) %></span>
-              </p>
-            </div>
-          </div>
-          <p class="text-sm text-gray-600 mt-2"><%= rv.comentario || 'Sem comentário.' %></p>
-        </div>
-      <% }) %>
-    </div>
-  </section>
-
-  <!-- Horários -->
-  <% if (petshop.horario_funcionamento) { %>
-    <section class="card">
-      <h2 class="text-lg font-extrabold text-gray-900 mb-3">
-        <i class="fa-solid fa-clock text-primary-500 mr-2"></i>Horários
-      </h2>
-      <div class="text-sm text-gray-600 whitespace-pre-line leading-relaxed"><%= petshop.horario_funcionamento %></div>
-    </section>
-  <% } %>
-
-  <!-- Localização + mapa -->
-  <% if (petshop.latitude && petshop.longitude) { %>
-    <section class="card !p-0 overflow-hidden">
-      <div class="p-4 pb-2">
-        <h2 class="text-lg font-extrabold text-gray-900">
-          <i class="fa-solid fa-map text-primary-500 mr-2"></i>Localização
-        </h2>
-      </div>
-      <div class="px-4 pb-4">
-        <div id="mapPetshop"></div>
-      </div>
-    </section>
-  <% } %>
-</main>
-
-<% locals.extraScripts = `
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-<script>
-(function() {
-  var lat = ${petshop.latitude || 0};
-  var lng = ${petshop.longitude || 0};
-  if (lat && lng) {
-    var map = L.map('mapPetshop', { scrollWheelZoom: false }).setView([lat, lng], 16);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; OpenStreetMap'
-    }).addTo(map);
-    L.marker([lat, lng]).addTo(map)
-      .bindPopup('<strong>${petshop.nome.replace(/'/g, "\\\\'")}</strong>')
-      .openPopup();
-  }
-})();
-</script>
-` %>
 
 <%- include('../partials/footer') %>

@@ -31,7 +31,6 @@ function criarUpload(destino) {
 
 module.exports = {
   uploadPets: criarUpload('pets'),
-  uploadDiario: criarUpload('diario'),
   uploadChat: criarUpload('chat'),
   uploadCapa: criarUpload('capa'),
   uploadPerfilGaleria: criarUpload('perfil-galeria'),

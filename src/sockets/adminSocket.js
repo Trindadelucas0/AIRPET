@@ -12,7 +12,9 @@ const notificacaoService = require('../services/notificacaoService');
 module.exports = function (adminNs) {
   adminNs.use((socket, next) => {
     const session = socket.request.session;
-    if (session?.usuario?.role === 'admin') {
+    const adminViaUsuario = session?.usuario?.role === 'admin';
+    const adminViaSessaoLegada = !!session?.admin;
+    if (adminViaUsuario || adminViaSessaoLegada) {
       return next();
     }
     return next(new Error('Acesso negado: apenas admin'));
@@ -25,11 +27,12 @@ module.exports = function (adminNs) {
     const handleAprovar = async (mensagemId) => {
       try {
         const { query } = require('../config/database');
+        const adminId = socket.request.session?.usuario?.id || socket.request.session?.admin?.id || null;
 
         const resultado = await query(
           `UPDATE mensagens_chat SET status_moderacao = 'aprovada', moderado_por = $1, moderado_em = NOW()
            WHERE id = $2 RETURNING *`,
-          [socket.request.session.usuario.id, mensagemId]
+          [adminId, mensagemId]
         );
 
         if (resultado.rows.length === 0) return;
@@ -66,11 +69,12 @@ module.exports = function (adminNs) {
     const handleRejeitar = async (mensagemId) => {
       try {
         const { query } = require('../config/database');
+        const adminId = socket.request.session?.usuario?.id || socket.request.session?.admin?.id || null;
 
         await query(
           `UPDATE mensagens_chat SET status_moderacao = 'rejeitada', moderado_por = $1, moderado_em = NOW()
            WHERE id = $2`,
-          [socket.request.session.usuario.id, mensagemId]
+          [adminId, mensagemId]
         );
 
         socket.emit('mensagem_moderada', { id: mensagemId, status: 'rejeitada' });

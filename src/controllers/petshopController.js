@@ -47,6 +47,8 @@ async function listar(req, res) {
     }
 
     /* Renderiza a lista de petshops parceiros */
+    res.removeHeader('Content-Disposition');
+    res.type('html');
     return res.render('petshops/lista', {
       titulo: 'Petshops Parceiros - AIRPET',
       petshops,
@@ -86,6 +88,8 @@ async function mostrarDetalhes(req, res) {
 
     /* Se o petshop não existe, exibe 404 */
     if (!petshop || petshop.ativo === false) {
+      res.removeHeader('Content-Disposition');
+      res.type('html');
       return res.status(404).render('partials/erro', {
         titulo: 'Petshop não encontrado',
         mensagem: 'O petshop que você procura não existe ou foi removido.',
@@ -110,6 +114,8 @@ async function mostrarDetalhes(req, res) {
     const usuarioId = req.session && req.session.usuario && req.session.usuario.id;
     const userSegue = usuarioId ? await PetshopFollower.usuarioSegue(petshop.id, usuarioId) : false;
 
+    res.removeHeader('Content-Disposition');
+    res.type('html');
     return res.render('petshops/detalhes', {
       titulo: `${petshop.nome} - AIRPET`,
       petshop,
@@ -133,6 +139,8 @@ async function mostrarDetalhes(req, res) {
 async function mapa(req, res) {
   try {
     const petshops = await Petshop.listarAtivos();
+    res.removeHeader('Content-Disposition');
+    res.type('html');
     return res.render('petshops/mapa', {
       titulo: 'Mapa de Petshops Parceiros',
       petshops,

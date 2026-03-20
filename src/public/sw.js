@@ -14,7 +14,7 @@
  *  - NOTIFICATIONCLICK: abre a URL da notificacao ao clicar
  */
 
-const CACHE_VERSION = 'airpet-v4';
+const CACHE_VERSION = 'airpet-v5';
 
 const SHELL_ASSETS = [
   '/',
@@ -71,6 +71,19 @@ self.addEventListener('fetch', function (event) {
   // Ignora requests para APIs externas (Nominatim, etc)
   if (url.origin !== self.location.origin) {
     event.respondWith(fetch(req).catch(function () { return caches.match(req); }));
+    return;
+  }
+
+  // Nunca intercepta/cacheia área administrativa.
+  // Isso evita comportamento inconsistente em páginas sensíveis do painel.
+  if (
+    url.pathname.startsWith('/admin') ||
+    url.pathname.startsWith('/petshops') ||
+    url.pathname.startsWith('/petshop-panel') ||
+    url.pathname.startsWith('/_painel_') ||
+    url.pathname.indexOf('/_painel_') !== -1
+  ) {
+    event.respondWith(fetch(req));
     return;
   }
 
