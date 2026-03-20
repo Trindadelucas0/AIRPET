@@ -263,7 +263,7 @@ const explorarController = {
         page === 1 ? recomendacaoService.recomendarPessoas(uid, 6).catch(() => []) : [],
         page === 1 ? recomendacaoService.petsRecomendados(uid, 8).catch(() => []) : [],
       ]);
-      const petshopDestaques = page === 1 ? (await Petshop.listarAtivos()).slice(0, 6) : [];
+      const petshopsProximos = page === 1 ? (await Petshop.listarAtivos()).slice(0, 6) : [];
 
       if (req.headers.accept && req.headers.accept.includes('application/json')) {
         return res.json({
@@ -286,7 +286,7 @@ const explorarController = {
         temMais: postsOrganicos.length === limite,
         recomendacoes,
         petsRecomendados,
-        petshopDestaques,
+        petshopsProximos,
         promocoesFeed: promocoesElegiveis,
       });
     } catch (err) {

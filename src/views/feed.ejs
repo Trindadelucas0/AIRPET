@@ -14,11 +14,11 @@
       /* ── TOP HEADER BAR ── */
       .feed-topbar {
         position: sticky; top: 56px; z-index: 40;
-        background: rgba(255,255,255,0.78);
-        backdrop-filter: blur(20px) saturate(160%);
-        -webkit-backdrop-filter: blur(20px);
+        background: color-mix(in srgb, var(--ink-2) 86%, transparent);
+        backdrop-filter: blur(18px) saturate(140%);
+        -webkit-backdrop-filter: blur(18px);
         border-bottom: 1px solid var(--border);
-        padding: 12px 0;
+        padding: 10px 0;
       }
 
       .feed-topbar-inner {
@@ -31,11 +31,21 @@
       }
 
       .feed-topbar h1 {
-        font-family: var(--font-display);
-        font-size: 20px;
-        font-weight: 800;
+        font-family: var(--font-body);
+        font-size: 19px;
+        font-weight: 700;
         color: var(--text);
-        letter-spacing: -0.01em;
+        letter-spacing: -0.015em;
+      }
+
+      .feed-welcome {
+        font-size: 12px;
+        color: var(--text-dim);
+        background: var(--ink-3);
+        border: 1px solid var(--border);
+        padding: 6px 10px;
+        border-radius: 999px;
+        line-height: 1;
       }
 
       /* ── LAYOUT ── */
@@ -67,71 +77,14 @@
       }
       .mobile-search:hover { border-color: var(--border-hover); color: var(--text-dim); text-decoration: none; }
 
-      /* ── PETSHOP DESTAQUES ── */
-      .petshop-section {
-        background: var(--ink-2);
-        border: 1px solid var(--border);
-        border-radius: var(--radius-card);
-        padding: 18px;
-        margin-bottom: 16px;
-      }
-
-      .petshop-header {
-        display: flex; align-items: center; justify-content: space-between;
-        margin-bottom: 14px;
-      }
-
-      .petshop-header h2 {
-        font-family: var(--font-display);
-        font-size: 13px;
-        font-weight: 700;
-        color: var(--text);
-        letter-spacing: 0.01em;
-      }
-
-      .petshop-header a {
-        font-size: 11px; font-weight: 700;
-        color: var(--accent); text-decoration: none;
-        letter-spacing: 0.05em; text-transform: uppercase;
-      }
-
-      .petshop-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-
-      .petshop-card {
-        background: var(--ink-3);
-        border: 1px solid var(--border);
-        border-radius: 12px;
-        padding: 10px;
-        text-decoration: none;
-        transition: all 0.2s;
-        display: block;
-      }
-      .petshop-card:hover { border-color: var(--border-hover); background: var(--ink-4); text-decoration: none; }
-
-      .petshop-card img, .petshop-card-empty {
-        width: 100%; height: 64px;
-        border-radius: 8px;
-        object-fit: cover;
-        display: flex;
-        background: var(--ink-4);
-        align-items: center;
-        justify-content: center;
-        color: var(--text-muted);
-        margin-bottom: 8px;
-      }
-
-      .petshop-card p {
-        font-size: 11px; font-weight: 600; color: var(--text);
-        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-      }
-
       /* ── COMPOSER ── */
       .composer {
         background: var(--ink-2);
         border: 1px solid var(--border);
-        border-radius: var(--radius-card);
+        border-radius: 16px;
         padding: 18px;
         margin-bottom: 16px;
+        box-shadow: 0 8px 28px rgba(15, 23, 42, 0.05);
       }
 
       .composer-top {
@@ -190,13 +143,14 @@
       .post-card {
         background: var(--ink-2);
         border: 1px solid var(--border);
-        border-radius: var(--radius-card);
+        border-radius: 16px;
         overflow: hidden;
         margin-bottom: 12px;
-        transition: border-color 0.2s;
+        transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
       }
 
-      .post-card:hover { border-color: var(--border-hover); }
+      .post-card:hover { border-color: var(--border-hover); transform: translateY(-1px); box-shadow: 0 10px 28px rgba(15, 23, 42, 0.07); }
 
       /* Repost / Pinned strip */
       .post-strip {
@@ -244,6 +198,7 @@
       .post-author-name {
         font-weight: 700; font-size: 14px; color: var(--text);
         text-decoration: none;
+        letter-spacing: -0.01em;
       }
       .post-author-name:hover { color: var(--accent); text-decoration: none; }
 
@@ -559,7 +514,7 @@
         padding: 13px;
         background: var(--ink-2);
         border: 1px solid var(--border);
-        border-radius: var(--radius-card);
+        border-radius: 14px;
         color: var(--text-dim);
         font-family: var(--font-body);
         font-size: 14px; font-weight: 500;
@@ -586,8 +541,12 @@
   <div class="feed-topbar">
     <div class="feed-topbar-inner">
       <h1>Feed</h1>
-      <div style="font-size:12px; color:var(--text-dim);">
-        <% if (isLogado) { %>Bem-vindo, <%= usuario.nome.split(' ')[0] %><% } %>
+      <div class="feed-welcome">
+        <% if (isLogado) { %>
+          <% var primeiroNome = (usuario.nome || '').split(' ')[0] || ''; %>
+          <% var primeiroNomeFormatado = primeiroNome ? (primeiroNome.charAt(0).toUpperCase() + primeiroNome.slice(1).toLowerCase()) : ''; %>
+          Bem-vindo, <%= primeiroNomeFormatado %>
+        <% } %>
       </div>
     </div>
   </div>
@@ -604,28 +563,6 @@
           Buscar pets ou pessoas...
         </a>
       </div>
-
-      <!-- Petshop destaques -->
-      <% if (petshopDestaques && petshopDestaques.length > 0) { %>
-      <div class="petshop-section">
-        <div class="petshop-header">
-          <h2>Parceiros perto de você</h2>
-          <a href="/petshops/mapa"><i class="fa-solid fa-map-location-dot mr-1"></i>Mapa</a>
-        </div>
-        <div class="petshop-grid">
-          <% petshopDestaques.slice(0, 4).forEach(function(ps) { %>
-          <a href="/petshops/<%= ps.slug || ps.id %>" class="petshop-card">
-            <% if (ps.logo_url) { %>
-              <img src="<%= ps.logo_url %>" alt="<%= ps.nome %>">
-            <% } else { %>
-              <div class="petshop-card-empty"><i class="fa-solid fa-store"></i></div>
-            <% } %>
-            <p><%= ps.nome %></p>
-          </a>
-          <% }) %>
-        </div>
-      </div>
-      <% } %>
 
       <!-- Composer -->
       <% if (isLogado) { %>
