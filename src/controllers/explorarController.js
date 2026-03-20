@@ -768,12 +768,11 @@ const explorarController = {
         return res.redirect('/explorar');
       }
       const posts = await Publicacao.buscarPorPet(id, uid, 50);
-      const [totalSeguidores, totalSeguindo, estaSeguindo, petshopsVinculados, petshopsAtivos] = await Promise.all([
+      const [totalSeguidores, totalSeguindo, estaSeguindo, petshopsVinculados] = await Promise.all([
         SeguidorPet.contarSeguidores(id),
         SeguidorPet.contarSeguindo(pet.usuario_id),
         uid ? SeguidorPet.estaSeguindo(uid, id) : false,
         PetPetshopLink.listarPorPet(id),
-        Petshop.listarAtivos(),
       ]);
       const dono = await Usuario.buscarPorId(pet.usuario_id);
       const petshopsVinculadosComFollow = await Promise.all(
@@ -792,7 +791,6 @@ const explorarController = {
         estaSeguindo,
         eMeuPet: uid === pet.usuario_id,
         petshopsVinculados: petshopsVinculadosComFollow,
-        petshopsAtivos: petshopsAtivos || [],
       });
     } catch (err) {
       logger.error('EXPLORAR', 'Erro no perfil do pet', err);
@@ -1159,6 +1157,29 @@ const explorarController = {
     } catch (err) {
       logger.error('EXPLORAR', 'Erro ao desvincular petshop do pet', err);
       return res.status(500).json({ sucesso: false, mensagem: 'Erro ao desvincular petshop.' });
+    }
+  },
+
+  async atualizarCapaPet(req, res) {
+    try {
+      const uid = req.session?.usuario?.id;
+      const petId = parseInt(req.params.id, 10);
+      if (!uid || !petId) {
+        return res.status(400).json({ sucesso: false, mensagem: 'Dados inválidos.' });
+      }
+      const pet = await Pet.buscarPorId(petId);
+      if (!pet || pet.usuario_id !== uid) {
+        return res.status(403).json({ sucesso: false, mensagem: 'Sem permissão para atualizar capa deste pet.' });
+      }
+      if (!req.file) {
+        return res.status(400).json({ sucesso: false, mensagem: 'Envie uma imagem para a capa.' });
+      }
+      const capaPath = `/images/pets/capa/${req.file.filename}`;
+      const atualizado = await Pet.atualizarCapa(petId, capaPath);
+      return res.json({ sucesso: true, foto_capa: atualizado ? atualizado.foto_capa : capaPath });
+    } catch (err) {
+      logger.error('EXPLORAR', 'Erro ao atualizar capa do pet', err);
+      return res.status(500).json({ sucesso: false, mensagem: 'Erro ao atualizar capa.' });
     }
   },
 

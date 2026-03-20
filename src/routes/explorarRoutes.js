@@ -12,6 +12,10 @@ const postsDir = path.join(__dirname, '..', 'public', 'images', 'posts');
 if (!fs.existsSync(postsDir)) {
   fs.mkdirSync(postsDir, { recursive: true });
 }
+const petCoverDir = path.join(__dirname, '..', 'public', 'images', 'pets', 'capa');
+if (!fs.existsSync(petCoverDir)) {
+  fs.mkdirSync(petCoverDir, { recursive: true });
+}
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, postsDir),
@@ -27,6 +31,22 @@ const upload = multer({
     const ext = (path.extname(file.originalname) || '').toLowerCase();
     const extOk = /\.(jpe?g|png|gif|webp)$/.test(ext);
     const mimeOk = !file.mimetype || /image\/(jpeg|png|gif|webp)/.test(file.mimetype);
+    cb(null, !!(extOk || mimeOk));
+  },
+});
+const uploadPetCover = multer({
+  storage: multer.diskStorage({
+    destination: (req, file, cb) => cb(null, petCoverDir),
+    filename: (req, file, cb) => {
+      const ext = (path.extname(file.originalname) || '.jpg').toLowerCase().replace(/[^a-z.]/g, '') || '.jpg';
+      cb(null, 'pet-cover-' + crypto.randomBytes(12).toString('hex') + ext);
+    },
+  }),
+  limits: { fileSize: 8 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const ext = (path.extname(file.originalname) || '').toLowerCase();
+    const extOk = /\.(jpe?g|png|webp)$/.test(ext);
+    const mimeOk = !file.mimetype || /image\/(jpeg|png|webp)/.test(file.mimetype);
     cb(null, !!(extOk || mimeOk));
   },
 });
@@ -115,8 +135,18 @@ router.get('/api/pets', explorarController.buscarPets);
 
 router.post('/pet/:id/seguir', estaAutenticadoAPI, explorarController.seguirPet);
 router.delete('/pet/:id/seguir', estaAutenticadoAPI, explorarController.deixarDeSeguirPet);
-router.post('/pet/:id/petshops', estaAutenticadoAPI, explorarController.vincularPetshop);
 router.delete('/pet/:id/petshops/:petshopId', estaAutenticadoAPI, explorarController.desvincularPetshop);
+router.post('/pet/:id/capa', estaAutenticadoAPI, function (req, res, next) {
+  uploadPetCover.single('foto_capa')(req, res, function (err) {
+    if (err) {
+      const msg = err.code === 'LIMIT_FILE_SIZE'
+        ? 'Imagem muito grande (máx. 8 MB).'
+        : 'Envie uma capa válida (JPEG, PNG ou WebP).';
+      return res.status(400).json({ sucesso: false, mensagem: msg });
+    }
+    next();
+  });
+}, explorarController.atualizarCapaPet);
 router.delete('/pet/:id/seguidor/:usuarioId', estaAutenticadoAPI, explorarController.removerSeguidorPet);
 
 router.get('/busca', explorarController.paginaBusca);

@@ -7,6 +7,7 @@ const PetshopProduct = require('../models/PetshopProduct');
 const PetshopAppointment = require('../models/PetshopAppointment');
 const PetshopProfile = require('../models/PetshopProfile');
 const PetshopPartnerRequest = require('../models/PetshopPartnerRequest');
+const PetPetshopLinkRequest = require('../models/PetPetshopLinkRequest');
 const petshopPublishingService = require('../services/petshopPublishingService');
 const petshopScheduleService = require('../services/petshopScheduleService');
 const petshopAppointmentService = require('../services/petshopAppointmentService');
@@ -87,12 +88,13 @@ const petshopPanelController = {
   async dashboard(req, res) {
     try {
       const petshopId = req.petshopAccount.petshop_id;
-      const [services, products, posts, appointments, profile] = await Promise.all([
+      const [services, products, posts, appointments, profile, solicitacoesVinculo] = await Promise.all([
         PetshopService.listarAtivos(petshopId),
         PetshopProduct.listarAtivosPorPetshop(petshopId),
         PetshopPost.listarPublicosPorPetshop(petshopId),
         PetshopAppointment.listarPorPetshop(petshopId),
         PetshopProfile.buscarPorPetshopId(petshopId),
+        PetPetshopLinkRequest.listarPendentesPorPetshop(petshopId, 100),
       ]);
       const solicitacao = await PetshopPartnerRequest.buscarPorPetshopId(petshopId);
       return res.render('petshop-panel/dashboard', {
@@ -102,6 +104,7 @@ const petshopPanelController = {
         posts,
         appointments,
         profile,
+        solicitacoesVinculo,
         solicitacao,
         accountStatus: req.petshopAccount.status,
       });
@@ -176,6 +179,69 @@ const petshopPanelController = {
     } catch (erro) {
       req.session.flash = { tipo: 'erro', mensagem: 'Erro ao salvar perfil.' };
       return res.redirect('/petshop-panel/dashboard');
+    }
+  },
+
+  async aprovarSolicitacaoVinculo(req, res) {
+    try {
+      const petshopId = req.petshopAccount.petshop_id;
+      const requestId = parseInt(req.params.id, 10);
+      if (!requestId) {
+        req.session.flash = { tipo: 'erro', mensagem: 'Solicitação inválida.' };
+        return res.redirect('/petshop-panel/dashboard');
+      }
+      const aprovado = await PetPetshopLinkRequest.aprovarComVinculo({
+        requestId,
+        petshop_id: petshopId,
+        reviewed_by_petshop_account_id: req.petshopAccount.id,
+      });
+      if (!aprovado) {
+        req.session.flash = { tipo: 'erro', mensagem: 'Solicitação não encontrada ou já tratada.' };
+        return res.redirect('/petshop-panel/dashboard');
+      }
+      req.session.flash = { tipo: 'sucesso', mensagem: 'Solicitação aprovada e vínculo ativado.' };
+      return res.redirect('/petshop-panel/dashboard');
+    } catch (erro) {
+      logger.error('PetshopPanelController', 'Erro ao aprovar solicitação de vínculo', erro);
+      req.session.flash = { tipo: 'erro', mensagem: 'Erro ao aprovar solicitação.' };
+      return res.redirect('/petshop-panel/dashboard');
+    }
+  },
+
+  async recusarSolicitacaoVinculo(req, res) {
+    try {
+      const petshopId = req.petshopAccount.petshop_id;
+      const requestId = parseInt(req.params.id, 10);
+      if (!requestId) {
+        req.session.flash = { tipo: 'erro', mensagem: 'Solicitação inválida.' };
+        return res.redirect('/petshop-panel/dashboard');
+      }
+      const recusada = await PetPetshopLinkRequest.marcarRecusada({
+        requestId,
+        petshop_id: petshopId,
+        reviewed_by_petshop_account_id: req.petshopAccount.id,
+      });
+      if (!recusada) {
+        req.session.flash = { tipo: 'erro', mensagem: 'Solicitação não encontrada ou já tratada.' };
+        return res.redirect('/petshop-panel/dashboard');
+      }
+      req.session.flash = { tipo: 'sucesso', mensagem: 'Solicitação recusada.' };
+      return res.redirect('/petshop-panel/dashboard');
+    } catch (erro) {
+      logger.error('PetshopPanelController', 'Erro ao recusar solicitação de vínculo', erro);
+      req.session.flash = { tipo: 'erro', mensagem: 'Erro ao recusar solicitação.' };
+      return res.redirect('/petshop-panel/dashboard');
+    }
+  },
+
+  async listarSolicitacoesVinculo(req, res) {
+    try {
+      const petshopId = req.petshopAccount.petshop_id;
+      const lista = await PetPetshopLinkRequest.listarPendentesPorPetshop(petshopId, 200);
+      return res.json({ sucesso: true, solicitacoes: lista });
+    } catch (erro) {
+      logger.error('PetshopPanelController', 'Erro ao listar solicitações de vínculo', erro);
+      return res.status(500).json({ sucesso: false, solicitacoes: [] });
     }
   },
 };

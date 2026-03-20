@@ -26,7 +26,20 @@
   .btn-action.primary:hover { background: var(--accent-light); transform: translateY(-1px); }
   .btn-action.ghost { background: var(--ink-3); color: var(--text-dim); border: 1px solid var(--border); }
   .btn-action.ghost:hover { border-color: var(--border-hover); color: var(--text); }
+  .btn-action.secondary { background: rgba(242,96,32,.12); color: var(--accent); border: 1px solid rgba(242,96,32,.28); }
+  .btn-action.secondary:hover { background: rgba(242,96,32,.2); }
   #mapPonto { height: 240px; border-radius: 14px; overflow: hidden; border: 1px solid var(--border); }
+  .modal-shell { position: fixed; inset: 0; z-index: 70; display: none; }
+  .modal-shell.show { display: block; }
+  .modal-overlay { position: absolute; inset: 0; background: rgba(0,0,0,.45); backdrop-filter: blur(3px); }
+  .modal-card {
+    position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+    width: min(94vw, 460px); background: #fff; border-radius: 18px; border: 1px solid #f1f5f9;
+    box-shadow: 0 24px 60px rgba(2, 6, 23, .25); padding: 16px;
+  }
+  .modal-title { font-size: 18px; font-weight: 900; color: #111827; }
+  .modal-hint { color: #6b7280; font-size: 13px; margin-top: 4px; }
+  .toast-msg { font-size: 13px; margin-top: 8px; }
 </style>
 ` %>
 <%- include('../partials/header') %>
@@ -79,6 +92,15 @@
         </div>
 
         <div class="actions-row">
+          <% if (typeof usuario !== 'undefined' && usuario) { %>
+            <button type="button" id="btnOpenLinkRequest" class="btn-action secondary">
+              <i class="fa-solid fa-link"></i> Solicitar vínculo
+            </button>
+          <% } else { %>
+            <a href="/auth/login" class="btn-action secondary">
+              <i class="fa-solid fa-link"></i> Entrar para vincular
+            </a>
+          <% } %>
           <% if (petshop.latitude && petshop.longitude) { %>
             <a href="https://maps.google.com/?q=<%= petshop.latitude %>,<%= petshop.longitude %>" target="_blank" rel="noopener" class="btn-action primary">
               <i class="fa-solid fa-diamond-turn-right"></i> Como chegar
@@ -102,6 +124,42 @@
   </div>
 </main>
 
+<% if (typeof usuario !== 'undefined' && usuario) { %>
+<div id="modalLinkRequest" class="modal-shell" aria-hidden="true">
+  <div class="modal-overlay" id="closeLinkOverlay"></div>
+  <div class="modal-card">
+    <div class="flex items-center justify-between gap-2">
+      <h3 class="modal-title">Solicitar vínculo com PetParceiro</h3>
+      <button type="button" id="closeLinkModal" class="text-gray-400 hover:text-gray-700">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+    <p class="modal-hint">Selecione um pet seu para pedir vínculo com <strong><%= petshop.nome %></strong>.</p>
+    <div class="mt-3 space-y-2">
+      <label class="text-xs font-semibold uppercase tracking-wide text-gray-400">Seu pet</label>
+      <select id="petSelectForLink" class="input w-full">
+        <option value="">Escolha um pet</option>
+        <% (meusPets || []).forEach(function(p) { %>
+          <% const statusV = (statusSolicitacoesPorPet && statusSolicitacoesPorPet[p.id]) || 'disponivel'; %>
+          <option value="<%= p.id %>" data-status="<%= statusV %>">
+            <%= p.nome %> · <%= statusV === 'aprovada' ? 'vinculado' : statusV === 'pendente' ? 'pendente' : 'disponível' %>
+          </option>
+        <% }) %>
+      </select>
+      <label class="text-xs font-semibold uppercase tracking-wide text-gray-400">Mensagem (opcional)</label>
+      <textarea id="linkRequestMessage" class="input w-full min-h-20" maxlength="280" placeholder="Ex: já atendemos nesse petshop e queremos exibir no perfil do pet."></textarea>
+    </div>
+    <div class="mt-4 flex gap-2 justify-end">
+      <button type="button" id="cancelLinkRequest" class="btn-action ghost !flex-none !px-4 !py-2">Cancelar</button>
+      <button type="button" id="submitLinkRequest" class="btn-action primary !flex-none !px-4 !py-2">
+        <i class="fa-solid fa-paper-plane"></i> Enviar solicitação
+      </button>
+    </div>
+    <p id="linkRequestToast" class="toast-msg text-gray-500"></p>
+  </div>
+</div>
+<% } %>
+
 <% if (petshop.latitude && petshop.longitude) { %>
 <% locals.extraScripts = `
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -119,6 +177,77 @@
 })();
 </script>
 ` %>
+<% } %>
+
+<% if (typeof usuario !== 'undefined' && usuario) { %>
+<script>
+(function () {
+  var petshopId = '<%= petshop.id %>';
+  var modal = document.getElementById('modalLinkRequest');
+  var btnOpen = document.getElementById('btnOpenLinkRequest');
+  var btnClose = document.getElementById('closeLinkModal');
+  var btnCancel = document.getElementById('cancelLinkRequest');
+  var overlay = document.getElementById('closeLinkOverlay');
+  var btnSubmit = document.getElementById('submitLinkRequest');
+  var select = document.getElementById('petSelectForLink');
+  var textarea = document.getElementById('linkRequestMessage');
+  var toast = document.getElementById('linkRequestToast');
+
+  function openModal() { modal.classList.add('show'); }
+  function closeModal() { modal.classList.remove('show'); }
+  function setToast(msg, isError) {
+    toast.textContent = msg || '';
+    toast.className = 'toast-msg ' + (isError ? 'text-red-600' : 'text-emerald-600');
+  }
+
+  if (btnOpen) btnOpen.addEventListener('click', openModal);
+  if (btnClose) btnClose.addEventListener('click', closeModal);
+  if (btnCancel) btnCancel.addEventListener('click', closeModal);
+  if (overlay) overlay.addEventListener('click', closeModal);
+
+  btnSubmit.addEventListener('click', function () {
+    var petId = select.value ? parseInt(select.value, 10) : null;
+    if (!petId) {
+      setToast('Escolha um pet para solicitar vínculo.', true);
+      return;
+    }
+    var currentStatus = select.options[select.selectedIndex].getAttribute('data-status');
+    if (currentStatus === 'aprovada') {
+      setToast('Esse pet já está vinculado a este PetParceiro.', true);
+      return;
+    }
+    if (currentStatus === 'pendente') {
+      setToast('Já existe solicitação pendente para esse pet.', true);
+      return;
+    }
+    btnSubmit.disabled = true;
+    btnSubmit.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Enviando';
+    fetch('/petshops/' + petshopId + '/solicitar-vinculo', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      credentials: 'same-origin',
+      body: JSON.stringify({ pet_id: petId, mensagem: (textarea.value || '').trim() })
+    })
+    .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
+    .then(function (result) {
+      btnSubmit.disabled = false;
+      btnSubmit.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Enviar solicitação';
+      if (!result.ok || !result.data.sucesso) {
+        setToast((result.data && result.data.mensagem) || 'Não foi possível enviar a solicitação.', true);
+        return;
+      }
+      setToast('Solicitação enviada com sucesso.', false);
+      select.options[select.selectedIndex].setAttribute('data-status', 'pendente');
+      closeModal();
+    })
+    .catch(function () {
+      btnSubmit.disabled = false;
+      btnSubmit.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Enviar solicitação';
+      setToast('Erro de conexão ao enviar solicitação.', true);
+    });
+  });
+})();
+</script>
 <% } %>
 
 <%- include('../partials/footer') %>

@@ -193,6 +193,18 @@ const Pet = {
     return resultado.rows[0];
   },
 
+  async atualizarCapa(id, fotoCapaPath) {
+    const resultado = await query(
+      `UPDATE pets
+       SET foto_capa = $2,
+           data_atualizacao = NOW()
+       WHERE id = $1
+       RETURNING *`,
+      [id, fotoCapaPath]
+    );
+    return resultado.rows[0];
+  },
+
   /**
    * Remove permanentemente um pet do banco de dados.
    *

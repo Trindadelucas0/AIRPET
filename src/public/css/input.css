@@ -153,4 +153,18 @@
     border-color: var(--ring);
     background-color: #ffffff;
   }
+
+  .info-chip {
+    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold;
+    background-color: color-mix(in srgb, var(--accent) 12%, white);
+    color: var(--accent-foreground);
+    border: 1px solid color-mix(in srgb, var(--accent) 22%, transparent);
+  }
+
+  .info-card {
+    @apply rounded-2xl p-3 text-sm;
+    background-color: var(--muted);
+    border: 1px solid var(--border);
+    color: var(--foreground);
+  }
 }

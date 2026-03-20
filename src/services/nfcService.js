@@ -132,6 +132,7 @@ const nfcService = {
     let dadosDono = null;
     let alertaAtivo = null;
     let petshopMaisProximo = null;
+    let ultimaLocalizacao = null;
 
     switch (tag.status) {
       /**
@@ -217,6 +218,18 @@ const nfcService = {
           }
         }
 
+        if (tag.pet_id) {
+          const ultimaLocalizacaoResult = await query(
+            `SELECT cidade, latitude, longitude, data
+             FROM localizacoes
+             WHERE pet_id = $1
+             ORDER BY data DESC
+             LIMIT 1`,
+            [tag.pet_id]
+          );
+          ultimaLocalizacao = ultimaLocalizacaoResult.rows[0] || null;
+        }
+
         if (!petshopMaisProximo && alertaAtivo && alertaAtivo.latitude && alertaAtivo.longitude) {
           petshopMaisProximo = await petshopRecoveryIntegrationService.sugerirPetshopMaisProximo(
             alertaAtivo.latitude,
@@ -275,6 +288,7 @@ const nfcService = {
       petPerdido,
       petPerdidoAlerta: alertaAtivo,
       petshopMaisProximo,
+      ultimaLocalizacao,
     };
   },
 };

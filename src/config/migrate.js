@@ -933,6 +933,9 @@ const migrations = [
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='pets' AND column_name='observacoes') THEN
       ALTER TABLE pets ADD COLUMN observacoes TEXT;
     END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='pets' AND column_name='foto_capa') THEN
+      ALTER TABLE pets ADD COLUMN foto_capa TEXT;
+    END IF;
   END $$;`,
 
   // 27. Seguidores de pets
@@ -1498,6 +1501,23 @@ const migrations = [
   END $$;`,
   `CREATE INDEX IF NOT EXISTS idx_pet_petshop_links_petshop ON pet_petshop_links (petshop_id, ativo);`,
   `CREATE INDEX IF NOT EXISTS idx_pet_petshop_links_principal ON pet_petshop_links (pet_id, is_principal);`,
+  `CREATE TABLE IF NOT EXISTS pet_petshop_link_requests (
+    id SERIAL PRIMARY KEY,
+    pet_id INTEGER NOT NULL REFERENCES pets(id) ON DELETE CASCADE,
+    petshop_id INTEGER NOT NULL REFERENCES petshops(id) ON DELETE CASCADE,
+    usuario_solicitante_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+    mensagem TEXT,
+    status VARCHAR(20) NOT NULL DEFAULT 'pendente',
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP,
+    reviewed_at TIMESTAMP,
+    reviewed_by_petshop_account_id INTEGER REFERENCES petshop_accounts(id) ON DELETE SET NULL
+  );`,
+  `CREATE INDEX IF NOT EXISTS idx_pet_petshop_link_requests_petshop ON pet_petshop_link_requests (petshop_id, status, created_at DESC);`,
+  `CREATE INDEX IF NOT EXISTS idx_pet_petshop_link_requests_pet ON pet_petshop_link_requests (pet_id, status, created_at DESC);`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS uq_pet_petshop_link_requests_pending
+    ON pet_petshop_link_requests (pet_id, petshop_id)
+    WHERE status = 'pendente';`,
 
   // Agenda profissional do petshop
   `CREATE TABLE IF NOT EXISTS petshop_services (

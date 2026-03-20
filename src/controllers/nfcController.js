@@ -130,6 +130,7 @@ const nfcController = {
             dono: resultado.dono,
             petPerdido: resultado.petPerdidoAlerta,
             petshopMaisProximo: resultado.petshopMaisProximo || null,
+            ultimaLocalizacao: resultado.ultimaLocalizacao || null,
           });
 
         /*

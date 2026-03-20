@@ -100,6 +100,38 @@
     <div class="partner-kpi"><p class="label">Agendamentos</p><p class="value"><%= (appointments || []).length %></p></div>
   </section>
 
+  <section class="partner-card">
+    <div class="flex items-center justify-between mb-3">
+      <h2 class="font-bold">Solicitações de vínculo de pets</h2>
+      <span class="text-xs text-gray-500"><%= (solicitacoesVinculo || []).length %> pendentes</span>
+    </div>
+    <% if (!(solicitacoesVinculo || []).length) { %>
+      <p class="text-sm text-gray-500">Nenhuma solicitação pendente no momento.</p>
+    <% } else { %>
+      <div class="space-y-3">
+        <% (solicitacoesVinculo || []).forEach(function(s) { %>
+          <div class="partner-list-item flex flex-col md:flex-row md:items-center gap-3 md:justify-between">
+            <div>
+              <p class="font-semibold text-gray-900"><%= s.pet_nome %> <span class="text-gray-400">· tutor <%= s.tutor_nome %></span></p>
+              <% if (s.mensagem) { %>
+                <p class="text-sm text-gray-500 mt-1"><%= s.mensagem %></p>
+              <% } %>
+              <p class="text-xs text-gray-400 mt-1">Recebida em <%= new Date(s.created_at).toLocaleString('pt-BR') %></p>
+            </div>
+            <div class="flex items-center gap-2">
+              <form action="/petshop-panel/vinculos/solicitacoes/<%= s.id %>/recusar" method="POST">
+                <button class="px-3 py-2 rounded-lg border border-red-200 bg-red-50 text-red-600 text-xs font-semibold">Recusar</button>
+              </form>
+              <form action="/petshop-panel/vinculos/solicitacoes/<%= s.id %>/aprovar" method="POST">
+                <button class="btn-primary-inline text-xs !px-3 !py-2">Aprovar vínculo</button>
+              </form>
+            </div>
+          </div>
+        <% }) %>
+      </div>
+    <% } %>
+  </section>
+
   <section class="grid lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1.2fr)] gap-6">
     <%- include('../partials/petshop-calendar-card') %>
 

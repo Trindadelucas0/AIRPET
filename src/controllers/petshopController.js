@@ -25,6 +25,9 @@ const PetshopPublication = require('../models/PetshopPublication');
 const PetshopFollower = require('../models/PetshopFollower');
 const PetshopReview = require('../models/PetshopReview');
 const PetshopService = require('../models/PetshopService');
+const Pet = require('../models/Pet');
+const PetPetshopLink = require('../models/PetPetshopLink');
+const PetPetshopLinkRequest = require('../models/PetPetshopLinkRequest');
 const logger = require('../utils/logger');
 
 /**
@@ -113,6 +116,25 @@ async function mostrarDetalhes(req, res) {
 
     const usuarioId = req.session && req.session.usuario && req.session.usuario.id;
     const userSegue = usuarioId ? await PetshopFollower.usuarioSegue(petshop.id, usuarioId) : false;
+    let meusPets = [];
+    let statusSolicitacoesPorPet = {};
+    if (usuarioId) {
+      meusPets = await Pet.buscarPorUsuario(usuarioId);
+      const rows = await Promise.all(
+        (meusPets || []).map(async (pet) => {
+          const linkAtivo = await PetPetshopLink.listarPorPet(pet.id);
+          const jaVinculado = (linkAtivo || []).some((l) => l.petshop_id === petshop.id && l.ativo !== false);
+          if (jaVinculado) return { pet_id: pet.id, status: 'aprovada' };
+          const pendente = await PetPetshopLinkRequest.buscarPendente(pet.id, petshop.id);
+          if (pendente) return { pet_id: pet.id, status: 'pendente' };
+          return { pet_id: pet.id, status: 'disponivel' };
+        })
+      );
+      statusSolicitacoesPorPet = rows.reduce((acc, row) => {
+        acc[row.pet_id] = row.status;
+        return acc;
+      }, {});
+    }
 
     res.removeHeader('Content-Disposition');
     res.type('html');
@@ -128,11 +150,54 @@ async function mostrarDetalhes(req, res) {
       reviewSummary,
       followerCount,
       userSegue,
+      meusPets,
+      statusSolicitacoesPorPet,
     });
   } catch (erro) {
     logger.error('PetshopController', 'Erro ao exibir detalhes do petshop', erro);
     req.session.flash = { tipo: 'erro', mensagem: 'Erro ao carregar os detalhes do petshop.' };
     return res.redirect('/petshops');
+  }
+}
+
+async function solicitarVinculo(req, res) {
+  try {
+    const usuario = req.session && req.session.usuario;
+    if (!usuario) {
+      return res.status(401).json({ sucesso: false, mensagem: 'Faça login para solicitar vínculo.' });
+    }
+    const petshopId = parseInt(req.params.id, 10);
+    const petId = parseInt(req.body?.pet_id, 10);
+    const mensagem = String(req.body?.mensagem || '').trim().slice(0, 280);
+    if (!petshopId || !petId) {
+      return res.status(400).json({ sucesso: false, mensagem: 'Dados inválidos para solicitação.' });
+    }
+
+    const pet = await Pet.buscarPorId(petId);
+    if (!pet || pet.usuario_id !== usuario.id) {
+      return res.status(403).json({ sucesso: false, mensagem: 'Você só pode solicitar vínculo para pets seus.' });
+    }
+
+    const links = await PetPetshopLink.listarPorPet(petId);
+    if ((links || []).some((l) => l.petshop_id === petshopId && l.ativo !== false)) {
+      return res.status(409).json({ sucesso: false, mensagem: 'Este pet já está vinculado a este PetParceiro.' });
+    }
+
+    const pendente = await PetPetshopLinkRequest.buscarPendente(petId, petshopId);
+    if (pendente) {
+      return res.status(409).json({ sucesso: false, mensagem: 'Já existe uma solicitação pendente para este pet.' });
+    }
+
+    await PetPetshopLinkRequest.criar({
+      pet_id: petId,
+      petshop_id: petshopId,
+      usuario_solicitante_id: usuario.id,
+      mensagem: mensagem || null,
+    });
+    return res.json({ sucesso: true, mensagem: 'Solicitação enviada para o PetParceiro.' });
+  } catch (erro) {
+    logger.error('PetshopController', 'Erro ao solicitar vínculo de petshop', erro);
+    return res.status(500).json({ sucesso: false, mensagem: 'Erro ao enviar solicitação.' });
   }
 }
 
@@ -220,4 +285,5 @@ module.exports = {
   mapa,
   seguir,
   avaliar,
+  solicitarVinculo,
 };

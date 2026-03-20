@@ -15,7 +15,10 @@ router.get('/auth/logout', petshopPanelController.logout);
 router.use(petshopAuthMiddleware, petshopOwnerMiddleware);
 
 router.get('/dashboard', petshopPanelController.dashboard);
+router.get('/vinculos/solicitacoes', petshopPanelController.listarSolicitacoesVinculo);
 router.post('/perfil', petshopPanelController.salvarPerfil);
+router.post('/vinculos/solicitacoes/:id/aprovar', petshopPanelController.aprovarSolicitacaoVinculo);
+router.post('/vinculos/solicitacoes/:id/recusar', petshopPanelController.recusarSolicitacaoVinculo);
 router.post('/servicos', petshopApprovalMiddleware, petshopPanelController.criarServico);
 router.post('/agenda', petshopApprovalMiddleware, petshopPanelController.criarAgendamento);
 router.post('/agenda/:id/status', petshopApprovalMiddleware, petshopPanelController.atualizarAgendamento);

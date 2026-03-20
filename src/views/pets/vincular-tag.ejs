@@ -57,6 +57,39 @@
 
 <main class="flex-1">
   <div class="nfc-wrap">
+    <section style="background:var(--ink-2);border:1px solid var(--border);border-radius:18px;padding:18px;margin-bottom:14px;">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div style="width:56px;height:56px;border-radius:14px;overflow:hidden;background:var(--ink-3);display:flex;align-items:center;justify-content:center;">
+          <% if (pet.foto) { %>
+            <img src="<%= pet.foto %>" alt="<%= pet.nome %>" style="width:100%;height:100%;object-fit:cover;">
+          <% } else { %>
+            <i class="fa-solid fa-paw" style="font-size:20px;color:var(--text-dim);"></i>
+          <% } %>
+        </div>
+        <div>
+          <div style="font-family:'Syne',sans-serif;font-size:17px;color:#fff;"><%= pet.nome %></div>
+          <div style="font-size:12px;color:var(--text-dim);">
+            <%= pet.tipo ? pet.tipo.charAt(0).toUpperCase() + pet.tipo.slice(1) : 'Pet' %>
+            <% if (pet.raca) { %> • <%= pet.raca %><% } %>
+            <% if (pet.porte) { %> • <%= pet.porte %><% } %>
+          </div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr;gap:8px;margin-top:12px;">
+        <div style="background:var(--ink-3);border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-size:12px;color:var(--text-dim);">
+          <strong style="display:block;color:var(--text);font-size:12px;">Saúde</strong>
+          <%= pet.alergias_medicacoes || 'Sem alergias/medicações cadastradas' %>
+        </div>
+        <div style="background:var(--ink-3);border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-size:12px;color:var(--text-dim);">
+          <strong style="display:block;color:var(--text);font-size:12px;">Comportamento e observações</strong>
+          <%= pet.observacoes || pet.descricao_emocional || 'Sem observações cadastradas' %>
+        </div>
+        <div style="background:var(--ink-3);border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-size:12px;color:var(--text-dim);">
+          <strong style="display:block;color:var(--text);font-size:12px;">Contato para resgate</strong>
+          <%= pet.telefone_contato || 'Não informado no cadastro do pet' %>
+        </div>
+      </div>
+    </section>
 
     <% if (pet.tag_uid) { %>
       <!-- Tag já vinculada -->

@@ -15,6 +15,98 @@
   @keyframes floatHeart { 0% { opacity: 1; transform: translateY(0) scale(1); } 100% { opacity: 0; transform: translateY(-80px) scale(1.6); } }
   .repost-quote { border-left: 3px solid #e5e7eb; }
   .caption-expanded .line-clamp-3 { -webkit-line-clamp: unset !important; }
+  .pet-hero {
+    position: relative;
+    overflow: hidden;
+    border-radius: 0 0 28px 28px;
+    background:
+      radial-gradient(120% 120% at 88% -20%, rgba(255, 255, 255, .26) 0%, rgba(255, 255, 255, 0) 52%),
+      radial-gradient(120% 150% at -12% -40%, rgba(253, 177, 118, .48) 0%, rgba(236, 90, 28, 0) 58%),
+      linear-gradient(130deg, #ff8d5a 0%, #ec5a1c 44%, #b53e10 100%);
+  }
+  .pet-hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: linear-gradient(135deg, rgba(255, 255, 255, .06) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, .06) 50%, rgba(255, 255, 255, .06) 75%, transparent 75%, transparent);
+    background-size: 28px 28px;
+    opacity: .25;
+    pointer-events: none;
+  }
+  .pet-hero.has-cover {
+    background: #111827;
+  }
+  .pet-hero.has-cover::before {
+    background-image: linear-gradient(180deg, rgba(0,0,0,.12) 0%, rgba(0,0,0,.52) 100%);
+    opacity: 1;
+  }
+  .pet-hero-cover {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: 0;
+  }
+  .glass-chip {
+    background: rgba(255, 255, 255, .16);
+    border: 1px solid rgba(255, 255, 255, .26);
+    backdrop-filter: blur(8px);
+  }
+  .petshop-card {
+    border: 1px solid #f2e4dc;
+    background: linear-gradient(180deg, #fffdfc 0%, #fff8f4 100%);
+    transition: all .25s ease;
+  }
+  .petshop-card:hover {
+    border-color: #f8c5ae;
+    transform: translateY(-1px);
+    box-shadow: 0 10px 22px rgba(236, 90, 28, .08);
+  }
+  .btn-soft {
+    transition: all .2s ease;
+  }
+  .btn-soft:hover { transform: translateY(-1px); }
+  .btn-soft:active { transform: translateY(0); }
+  .airpet-toast-wrap {
+    position: fixed;
+    right: 14px;
+    bottom: 82px;
+    z-index: 90;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    pointer-events: none;
+  }
+  .airpet-toast {
+    min-width: 220px;
+    max-width: min(88vw, 320px);
+    border-radius: 12px;
+    padding: 10px 12px;
+    color: #111827;
+    font-size: 13px;
+    font-weight: 600;
+    background: #fff;
+    border: 1px solid #f3f4f6;
+    box-shadow: 0 10px 26px rgba(15, 23, 42, .16);
+    animation: toastIn .2s ease-out both;
+  }
+  .airpet-toast--success { border-color: #c8f1d8; background: #f4fff8; color: #13653a; }
+  .airpet-toast--error { border-color: #ffd8d8; background: #fff6f6; color: #a02121; }
+  @keyframes toastIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  .mini-link-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    max-width: 190px;
+    padding: 5px 8px;
+    border-radius: 999px;
+    border: 1px solid #f5d5c4;
+    background: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    color: #4b5563;
+  }
 </style>
 ` %>
 <%- include('../partials/header') %>
@@ -22,12 +114,40 @@
 
 <main class="flex-1 pb-24 md:pb-6">
   <div class="max-w-2xl mx-auto">
-    <div class="h-[120px] sm:h-[160px] bg-gradient-to-br from-primary-500 to-primary-700"></div>
+    <!-- Bloco hero -->
+    <section class="pet-hero <%= pet.foto_capa ? 'has-cover' : '' %> h-[170px] sm:h-[220px] px-4 pt-4 sm:pt-6 profile-reveal">
+      <% if (pet.foto_capa) { %>
+        <img src="<%= pet.foto_capa %>" alt="" class="pet-hero-cover">
+      <% } %>
+      <div class="relative z-10 flex items-start justify-between">
+        <div class="glass-chip rounded-full px-3 py-1.5 text-[11px] text-white font-semibold tracking-wide uppercase">
+          Perfil oficial do pet
+        </div>
+        <% if (eMeuPet) { %>
+          <div>
+            <input type="file" id="inputCapaPet" accept="image/*" class="hidden">
+            <button type="button" id="btnEditarCapaPet" class="glass-chip rounded-full px-3 py-1.5 text-[11px] text-white/90 font-semibold">
+              <i class="fa-solid fa-camera mr-1"></i>Editar capa
+            </button>
+          </div>
+        <% } else { %>
+          <div class="glass-chip rounded-full px-3 py-1.5 text-[11px] text-white/90 font-semibold">
+            <i class="fa-solid fa-sparkles mr-1"></i>Vibe AIRPET
+          </div>
+        <% } %>
+      </div>
+      <div class="relative z-10 mt-5 sm:mt-8">
+        <h2 class="text-white font-black text-xl sm:text-2xl leading-tight drop-shadow-sm">Momento pet com estilo e carinho</h2>
+        <p class="text-white/90 text-xs sm:text-sm mt-1 max-w-xs">Conecte petshops parceiros, compartilhe histórias e fortaleça a jornada do seu pet.</p>
+      </div>
+    </section>
+
     <div class="px-4">
+      <!-- Bloco identidade -->
       <div class="flex items-end justify-between -mt-12 sm:-mt-14 mb-3 profile-reveal">
         <div class="flex-shrink-0">
           <% if (pet.foto) { %>
-            <img src="<%= pet.foto %>" alt="<%= pet.nome %>" class="w-24 h-24 sm:w-28 sm:h-28 rounded-full object-cover ring-4 ring-white shadow-xl">
+            <img src="<%= pet.foto %>" alt="<%= pet.nome %>" class="w-24 h-24 sm:w-28 sm:h-28 rounded-full object-cover ring-4 ring-white shadow-xl shadow-primary-900/20">
           <% } else { %>
             <span class="w-24 h-24 sm:w-28 sm:h-28 rounded-full flex items-center justify-center text-3xl font-black text-white shadow-xl ring-4 ring-white bg-primary-500">
               <i class="fa-solid fa-paw"></i>
@@ -45,62 +165,85 @@
         </div>
         <% } %>
       </div>
+
       <section class="profile-reveal" style="animation-delay: .05s">
-        <h1 class="text-2xl font-black text-gray-900 leading-tight"><%= pet.nome %></h1>
+        <div class="flex flex-wrap items-center gap-2">
+          <h1 class="text-2xl font-black text-gray-900 leading-tight"><%= pet.nome %></h1>
+          <span class="inline-flex items-center gap-1 rounded-full bg-orange-50 text-orange-700 px-2.5 py-1 text-[11px] font-bold">
+            <i class="fa-solid fa-paw text-[10px]"></i> Verificado
+          </span>
+        </div>
         <% if (dono) { %>
-          <p class="text-sm text-gray-500 mt-0.5">
-            Tutor: <a href="/explorar/perfil/<%= dono.id %>" class="text-primary-500 hover:underline font-medium"><%= dono.nome %></a>
+          <p class="text-sm text-gray-500 mt-1">
+            Tutor:
+            <a href="/explorar/perfil/<%= dono.id %>" class="text-primary-500 hover:underline font-semibold"><%= dono.nome %></a>
           </p>
         <% } %>
-        <div class="flex items-center gap-4 mt-3 text-sm text-gray-500">
-          <span><strong class="text-gray-900 font-black"><%= posts.length %></strong> posts</span>
-          <span class="cursor-pointer hover:text-primary-500 transition-colors" id="btnVerSeguidores" title="Ver seguidores">
-            <strong class="text-gray-900 font-black" id="seguidoresCount"><%= totalSeguidores %></strong> seguidores
-          </span>
-          <span class="cursor-pointer hover:text-primary-500 transition-colors" id="btnVerSeguindo" title="Ver seguindo">
-            <strong class="text-gray-900 font-black"><%= totalSeguindo %></strong> seguindo
-          </span>
+
+        <div class="grid grid-cols-3 gap-2 mt-4">
+          <div class="rounded-xl border border-gray-100 bg-white p-2.5 text-center">
+            <p class="text-[11px] uppercase tracking-wide text-gray-400 font-semibold">Posts</p>
+            <p class="text-lg font-black text-gray-900 leading-none mt-1"><%= posts.length %></p>
+          </div>
+          <button type="button" id="btnVerSeguidores" title="Ver seguidores" class="rounded-xl border border-gray-100 bg-white p-2.5 text-center hover:border-primary-200 hover:bg-orange-50/50 transition-colors">
+            <p class="text-[11px] uppercase tracking-wide text-gray-400 font-semibold">Seguidores</p>
+            <p class="text-lg font-black text-gray-900 leading-none mt-1" id="seguidoresCount"><%= totalSeguidores %></p>
+          </button>
+          <button type="button" id="btnVerSeguindo" title="Ver seguindo" class="rounded-xl border border-gray-100 bg-white p-2.5 text-center hover:border-primary-200 hover:bg-orange-50/50 transition-colors">
+            <p class="text-[11px] uppercase tracking-wide text-gray-400 font-semibold">Seguindo</p>
+            <p class="text-lg font-black text-gray-900 leading-none mt-1"><%= totalSeguindo %></p>
+          </button>
         </div>
       </section>
 
-      <section class="profile-reveal mt-4 bg-white rounded-2xl border border-gray-100 p-4" style="animation-delay: .08s">
-        <div class="flex items-center justify-between mb-2">
-          <h2 class="font-bold text-gray-900 text-sm">Petshops vinculados</h2>
-          <% if (eMeuPet) { %>
-            <span class="text-xs text-gray-500">Você pode vincular/desvincular</span>
-          <% } %>
+      <!-- Bloco petshops -->
+      <section class="profile-reveal mt-5 rounded-2xl border border-[#f4dbce] bg-gradient-to-b from-[#fff5ee] via-[#fffaf7] to-white p-4 sm:p-5 shadow-[0_8px_24px_rgba(236,90,28,.08)]" style="animation-delay: .08s">
+        <div class="flex items-start justify-between gap-3 mb-3">
+          <div>
+            <h2 class="font-black text-gray-900 text-base sm:text-lg">Parceiros do pet</h2>
+            <p class="text-xs text-gray-500 mt-0.5">Vínculos ativos aprovados pelos PetParceiros.</p>
+          </div>
+          <a href="/petshops" class="text-[11px] font-semibold text-orange-700 bg-orange-100/70 rounded-full px-2.5 py-1 hover:bg-orange-200/70">Buscar PetParceiro</a>
         </div>
-        <div id="petshopLinksWrap" class="space-y-2">
+
+        <div id="petshopLinksWrap" class="space-y-2.5">
           <% if ((petshopsVinculados || []).length === 0) { %>
-            <p class="text-xs text-gray-500">Nenhum petshop vinculado até o momento.</p>
+            <div class="rounded-2xl border border-dashed border-orange-200 bg-white/80 px-4 py-5 text-center">
+              <div class="w-11 h-11 mx-auto rounded-full bg-orange-100 text-orange-600 flex items-center justify-center mb-2">
+                <i class="fa-solid fa-store text-sm"></i>
+              </div>
+              <p class="text-sm font-semibold text-gray-700">Nenhum petshop vinculado por enquanto</p>
+              <p class="text-xs text-gray-500 mt-1">Abra uma solicitação direto na página do PetParceiro para aparecer aqui.</p>
+            </div>
           <% } %>
           <% (petshopsVinculados || []).forEach(function(link) { %>
-            <div class="rounded-xl border border-gray-100 p-2.5 flex items-center justify-between gap-2" data-linked-petshop-id="<%= link.petshop_id %>">
-              <a href="/petshops/<%= link.petshop_slug || link.petshop_id %>" class="text-sm font-semibold text-gray-800 hover:text-primary-500"><%= link.petshop_nome %></a>
-              <div class="flex items-center gap-2">
+            <div class="petshop-card rounded-2xl p-3 sm:p-3.5 flex items-center justify-between gap-3" data-linked-petshop-id="<%= link.petshop_id %>">
+              <div class="min-w-0">
+                <a href="/petshops/<%= link.petshop_slug || link.petshop_id %>" class="text-sm sm:text-[15px] font-bold text-gray-800 hover:text-primary-500 block truncate"><%= link.petshop_nome %></a>
+                <div class="mt-1">
+                  <span class="mini-link-badge" title="Vinculado">
+                    <% if (link.logo_url) { %>
+                      <img src="<%= link.logo_url %>" alt="" class="w-4 h-4 rounded-full object-cover">
+                    <% } else { %>
+                      <span class="w-4 h-4 rounded-full bg-orange-200 text-orange-700 inline-flex items-center justify-center"><i class="fa-solid fa-store text-[8px]"></i></span>
+                    <% } %>
+                    Vinculado
+                  </span>
+                </div>
+              </div>
+              <div class="flex items-center gap-2 shrink-0">
                 <button type="button"
-                        class="btn-toggle-follow-petshop text-xs px-2.5 py-1.5 rounded-lg border <%= link.usuario_segue ? 'border-gray-300 text-gray-600' : 'border-primary-500 text-primary-600' %>"
+                        class="btn-toggle-follow-petshop btn-soft text-xs px-3 py-1.5 rounded-xl border font-semibold <%= link.usuario_segue ? 'border-gray-300 bg-white text-gray-600' : 'border-primary-500 bg-white text-primary-600' %>"
                         data-petshop-id="<%= link.petshop_id %>">
                   <%= link.usuario_segue ? 'Seguindo' : 'Seguir' %>
                 </button>
                 <% if (eMeuPet) { %>
-                  <button type="button" class="btn-unlink-petshop text-xs px-2.5 py-1.5 rounded-lg bg-red-50 text-red-600" data-petshop-id="<%= link.petshop_id %>">Desvincular</button>
+                  <button type="button" class="btn-unlink-petshop btn-soft text-xs px-3 py-1.5 rounded-xl border border-red-200 bg-red-50 text-red-600 font-semibold" data-petshop-id="<%= link.petshop_id %>">Desvincular</button>
                 <% } %>
               </div>
             </div>
           <% }) %>
         </div>
-        <% if (eMeuPet) { %>
-          <div class="mt-3 flex gap-2">
-            <select id="selectPetshopVinculo" class="input text-sm flex-1">
-              <option value="">Selecionar petshop para vincular</option>
-              <% (petshopsAtivos || []).forEach(function(ps) { %>
-                <option value="<%= ps.id %>"><%= ps.nome %></option>
-              <% }) %>
-            </select>
-            <button type="button" id="btnVincularPetshop" class="btn-primary-inline text-sm">Vincular</button>
-          </div>
-        <% } %>
       </section>
     </div>
 
@@ -116,7 +259,7 @@
       <% } %>
 
       <% posts.forEach(function(post, idx) { %>
-        <article class="bg-white rounded-2xl shadow-sm border border-gray-100/80 mb-4 overflow-hidden post-enter"
+        <article class="bg-white rounded-2xl shadow-[0_8px_22px_rgba(17,24,39,.06)] border border-orange-100/70 mb-4 overflow-hidden post-enter"
                  data-post-id="<%= post.id %>" data-author-id="<%= post.usuario_id %>"
                  style="animation-delay: <%= (idx * 50) + 200 %>ms">
           <% if (post.fixada) { %>
@@ -124,7 +267,7 @@
               <i class="fa-solid fa-thumbtack text-[10px]"></i><span>Fixado</span>
             </div>
           <% } %>
-          <div class="flex items-center gap-3 px-4 pt-3 pb-2">
+          <div class="flex items-center gap-3 px-4 pt-3 pb-2 bg-gradient-to-r from-orange-50/40 to-transparent">
             <a href="/explorar/perfil/<%= post.usuario_id %>" class="flex-shrink-0">
               <% if (post.foto_perfil) { %>
                 <img src="<%= post.foto_perfil %>" alt="" class="w-10 h-10 rounded-full object-cover ring-2 ring-gray-100">
@@ -165,7 +308,7 @@
               <% if (post.orig_foto) { %><img src="<%= post.orig_foto %>" alt="" class="w-full rounded-lg object-cover max-h-[200px]" loading="lazy"><% } %>
             </div>
           <% } %>
-          <div class="px-4 pb-3">
+          <div class="px-4 pb-3 pt-1">
             <div class="flex items-center justify-between max-w-md">
               <button type="button" class="btn-open-comments action-btn group flex items-center gap-1.5 text-gray-500 hover:text-accent-500" data-post-id="<%= post.id %>">
                 <div class="p-1.5 rounded-full group-hover:bg-blue-50"><i class="fa-regular fa-comment text-[15px]"></i></div>
@@ -189,7 +332,7 @@
   <!-- Modal lista seguidores/seguindo -->
   <div id="listaSegModal" class="fixed inset-0 z-[60] hidden">
     <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" id="listaSegOverlay"></div>
-    <div class="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl max-h-[70vh] flex flex-col safe-bottom md:relative md:top-1/2 md:-translate-y-1/2 md:max-w-md md:mx-auto md:rounded-2xl md:max-h-[60vh]">
+    <div class="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl max-h-[70vh] flex flex-col safe-bottom md:relative md:top-1/2 md:-translate-y-1/2 md:max-w-md md:mx-auto md:rounded-2xl md:max-h-[60vh] shadow-[0_20px_50px_rgba(17,24,39,.2)] border border-orange-100">
       <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100">
         <h3 class="font-bold text-gray-900" id="listaSegTitulo">Seguidores</h3>
         <button type="button" id="closeListaSeg" class="p-1 text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark text-lg"></i></button>
@@ -201,7 +344,7 @@
   <!-- Modal comentários -->
   <div id="commentsModal" class="fixed inset-0 z-[60] hidden">
     <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" id="commentsOverlay"></div>
-    <div class="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl max-h-[75vh] flex flex-col safe-bottom md:relative md:top-1/2 md:-translate-y-1/2 md:max-w-lg md:mx-auto md:rounded-2xl md:max-h-[70vh]">
+    <div class="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl max-h-[75vh] flex flex-col safe-bottom md:relative md:top-1/2 md:-translate-y-1/2 md:max-w-lg md:mx-auto md:rounded-2xl md:max-h-[70vh] shadow-[0_20px_50px_rgba(17,24,39,.2)] border border-orange-100">
       <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100">
         <h3 class="font-bold text-gray-900">Comentários</h3>
         <button type="button" id="closeComments" class="p-1 text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark text-lg"></i></button>
@@ -219,6 +362,7 @@
 (function () {
   var petId = '<%= pet.id %>';
   var eMeuPet = <%= typeof eMeuPet !== 'undefined' && eMeuPet ? 'true' : 'false' %>;
+  var toastWrap = null;
   function tempoRelativo(dateStr) {
     var d = new Date(dateStr);
     var diff = Date.now() - d.getTime();
@@ -267,34 +411,62 @@
     });
   }
 
-  function toastPetshop(msg) {
-    try { window.alert(msg); } catch (_) {}
+  function ensureToastWrap() {
+    if (toastWrap) return toastWrap;
+    toastWrap = document.createElement('div');
+    toastWrap.className = 'airpet-toast-wrap';
+    document.body.appendChild(toastWrap);
+    return toastWrap;
   }
 
-  var btnVincularPetshop = document.getElementById('btnVincularPetshop');
-  if (btnVincularPetshop) {
-    btnVincularPetshop.addEventListener('click', function () {
-      var select = document.getElementById('selectPetshopVinculo');
-      var petshopId = select && select.value ? parseInt(select.value, 10) : null;
-      if (!petshopId) return;
-      btnVincularPetshop.disabled = true;
-      fetch('/explorar/pet/' + petId + '/petshops', {
+  function toastPetshop(msg, type) {
+    if (!msg) return;
+    var wrap = ensureToastWrap();
+    var el = document.createElement('div');
+    el.className = 'airpet-toast ' + (type === 'error' ? 'airpet-toast--error' : 'airpet-toast--success');
+    el.textContent = msg;
+    wrap.appendChild(el);
+    setTimeout(function () {
+      el.style.opacity = '0';
+      el.style.transform = 'translateY(6px)';
+      el.style.transition = 'opacity .15s ease, transform .15s ease';
+      setTimeout(function () { el.remove(); }, 180);
+    }, 2400);
+  }
+
+  var btnEditarCapaPet = document.getElementById('btnEditarCapaPet');
+  var inputCapaPet = document.getElementById('inputCapaPet');
+  if (btnEditarCapaPet && inputCapaPet) {
+    btnEditarCapaPet.addEventListener('click', function () {
+      inputCapaPet.click();
+    });
+    inputCapaPet.addEventListener('change', function () {
+      var file = inputCapaPet.files && inputCapaPet.files[0] ? inputCapaPet.files[0] : null;
+      if (!file) return;
+      var fd = new FormData();
+      fd.append('foto_capa', file);
+      btnEditarCapaPet.disabled = true;
+      btnEditarCapaPet.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i>Enviando';
+      fetch('/explorar/pet/' + petId + '/capa', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
         credentials: 'same-origin',
-        body: JSON.stringify({ petshop_id: petshopId, tipo_vinculo: 'cliente' })
+        body: fd
       })
       .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
       .then(function (result) {
-        btnVincularPetshop.disabled = false;
+        btnEditarCapaPet.disabled = false;
+        btnEditarCapaPet.innerHTML = '<i class="fa-solid fa-camera mr-1"></i>Editar capa';
         if (!result.ok || !result.data.sucesso) {
-          toastPetshop(result.data && result.data.mensagem ? result.data.mensagem : 'Não foi possível vincular.');
+          toastPetshop((result.data && result.data.mensagem) || 'Nao foi possivel atualizar capa.', 'error');
           return;
         }
+        toastPetshop('Capa atualizada com sucesso.', 'success');
         window.location.reload();
       })
       .catch(function () {
-        btnVincularPetshop.disabled = false;
+        btnEditarCapaPet.disabled = false;
+        btnEditarCapaPet.innerHTML = '<i class="fa-solid fa-camera mr-1"></i>Editar capa';
+        toastPetshop('Erro de conexao ao atualizar capa.', 'error');
       });
     });
   }
@@ -313,14 +485,16 @@
       .then(function (result) {
         if (!result.ok || !result.data.sucesso) {
           btn.disabled = false;
-          toastPetshop(result.data && result.data.mensagem ? result.data.mensagem : 'Não foi possível desvincular.');
+          toastPetshop(result.data && result.data.mensagem ? result.data.mensagem : 'Nao foi possivel desvincular.', 'error');
           return;
         }
         var row = btn.closest('[data-linked-petshop-id]');
         if (row) row.remove();
+        toastPetshop('Petshop desvinculado.', 'success');
       })
       .catch(function () {
         btn.disabled = false;
+        toastPetshop('Erro de conexao ao desvincular.', 'error');
       });
     });
   });
@@ -339,16 +513,18 @@
       .then(function (result) {
         btn.disabled = false;
         if (!result.ok || !result.data.sucesso) {
-          toastPetshop(result.data && result.data.mensagem ? result.data.mensagem : 'Não foi possível atualizar.');
+          toastPetshop(result.data && result.data.mensagem ? result.data.mensagem : 'Nao foi possivel atualizar.', 'error');
           return;
         }
         var seguindo = !!result.data.seguindo;
         btn.textContent = seguindo ? 'Seguindo' : 'Seguir';
-        btn.className = 'btn-toggle-follow-petshop text-xs px-2.5 py-1.5 rounded-lg border ' +
-          (seguindo ? 'border-gray-300 text-gray-600' : 'border-primary-500 text-primary-600');
+        btn.className = 'btn-toggle-follow-petshop btn-soft text-xs px-3 py-1.5 rounded-xl border font-semibold ' +
+          (seguindo ? 'border-gray-300 bg-white text-gray-600' : 'border-primary-500 bg-white text-primary-600');
+        toastPetshop(seguindo ? 'Agora voce segue este petshop.' : 'Voce deixou de seguir este petshop.', 'success');
       })
       .catch(function () {
         btn.disabled = false;
+        toastPetshop('Erro de conexao ao atualizar seguimento.', 'error');
       });
     });
   });

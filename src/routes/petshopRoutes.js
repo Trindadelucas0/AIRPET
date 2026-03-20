@@ -15,6 +15,7 @@ router.get('/api/mapa', async (req, res) => {
 router.post('/:id/seguir', estaAutenticado, petshopController.seguir);
 router.post('/:id/seguir-json', estaAutenticadoAPI, petshopController.seguir);
 router.post('/:id/avaliar', estaAutenticado, petshopController.avaliar);
+router.post('/:id/solicitar-vinculo', estaAutenticadoAPI, petshopController.solicitarVinculo);
 
 // Detalhes de um petshop específico
 router.get('/:id', petshopController.mostrarDetalhes);
