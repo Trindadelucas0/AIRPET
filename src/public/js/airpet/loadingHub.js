@@ -10,8 +10,11 @@
     'Reunindo patinhas e ronrons…'
   ];
 
+  var DEFERRED_OVERLAY_MS = 2000;
+
   var microcopy = DEFAULT_MICROCOPY.slice();
   var routeDepth = 0;
+  var longWaitDepth = 0;
   var microInterval = null;
   var microIndex = 0;
   var screens = {};
@@ -56,41 +59,106 @@
     }, 2800);
   }
 
-  function showRoute() {
+  function overlayShouldShow() {
+    return routeDepth > 0 || longWaitDepth > 0;
+  }
+
+  function showOverlayShell() {
     var el = getOverlay();
     if (!el) return;
-    routeDepth++;
-    if (routeDepth === 1) {
-      el.classList.remove('airpet-route-overlay--hide');
-      el.setAttribute('aria-hidden', 'false');
-      document.body.classList.add('airpet-route-loading');
-      startMicrocopyRotation();
-    }
+    el.classList.remove('airpet-route-overlay--hide');
+    el.setAttribute('aria-hidden', 'false');
+    document.body.classList.add('airpet-route-loading');
   }
 
-  function hideRoute() {
+  function hideOverlayShell() {
     var el = getOverlay();
-    routeDepth = Math.max(0, routeDepth - 1);
-    if (routeDepth === 0) {
-      stopMicrocopyRotation();
-      if (el) {
-        el.classList.add('airpet-route-overlay--hide');
-        el.setAttribute('aria-hidden', 'true');
-      }
-      document.body.classList.remove('airpet-route-loading');
-    }
-  }
-
-  /** Nova página ou bfcache: força overlay fechado */
-  function resetRouteOverlay() {
-    routeDepth = 0;
     stopMicrocopyRotation();
-    var el = getOverlay();
     if (el) {
       el.classList.add('airpet-route-overlay--hide');
       el.setAttribute('aria-hidden', 'true');
     }
     document.body.classList.remove('airpet-route-loading');
+    applyMicrocopyIndex();
+  }
+
+  function showRoute() {
+    var el = getOverlay();
+    if (!el) return;
+    routeDepth++;
+    showOverlayShell();
+    if (longWaitDepth === 0) {
+      startMicrocopyRotation();
+    }
+  }
+
+  function hideRoute() {
+    routeDepth = Math.max(0, routeDepth - 1);
+    if (routeDepth > 0) return;
+    if (longWaitDepth > 0) {
+      stopMicrocopyRotation();
+      return;
+    }
+    hideOverlayShell();
+  }
+
+  /** Nova página ou bfcache: força overlay fechado */
+  function resetRouteOverlay() {
+    routeDepth = 0;
+    longWaitDepth = 0;
+    hideOverlayShell();
+  }
+
+  /**
+   * Overlay por operação longa (ex.: após 2s). Independente de routeDepth.
+   * @param {string} [message] texto fixo no microcopy
+   */
+  function beginLongWaitOverlay(message) {
+    longWaitDepth++;
+    showOverlayShell();
+    stopMicrocopyRotation();
+    var m = getMicroEl();
+    if (m) {
+      m.textContent = message || 'Ainda a processar…';
+    }
+  }
+
+  function endLongWaitOverlay() {
+    longWaitDepth = Math.max(0, longWaitDepth - 1);
+    if (longWaitDepth > 0) return;
+    if (routeDepth > 0) {
+      startMicrocopyRotation();
+      return;
+    }
+    hideOverlayShell();
+  }
+
+  /**
+   * @param {() => Promise<any>} workFn
+   * @param {object} [opts]
+   * @param {number} [opts.thresholdMs]
+   * @param {string} [opts.message]
+   */
+  function withDeferredOverlay(workFn, opts) {
+    opts = opts || {};
+    var threshold = Number.isFinite(opts.thresholdMs) ? opts.thresholdMs : DEFERRED_OVERLAY_MS;
+    var message = opts.message != null ? opts.message : 'Ainda a processar…';
+    var timer = null;
+    var shown = false;
+    timer = setTimeout(function () {
+      if (shown) return;
+      shown = true;
+      beginLongWaitOverlay(message);
+    }, threshold);
+    return Promise.resolve()
+      .then(workFn)
+      .finally(function () {
+        if (timer) {
+          clearTimeout(timer);
+          timer = null;
+        }
+        if (shown) endLongWaitOverlay();
+      });
   }
 
   function setMicrocopyMessages(arr) {
@@ -166,9 +234,13 @@
   }
 
   global.AIRPET_LOADING = {
+    DEFERRED_OVERLAY_MS: DEFERRED_OVERLAY_MS,
     showRoute: showRoute,
     hideRoute: hideRoute,
     resetRouteOverlay: resetRouteOverlay,
+    beginLongWaitOverlay: beginLongWaitOverlay,
+    endLongWaitOverlay: endLongWaitOverlay,
+    withDeferredOverlay: withDeferredOverlay,
     reducedMotion: reducedMotion,
     runLocked: runLocked,
     debounce: debounce,
