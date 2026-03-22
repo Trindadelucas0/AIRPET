@@ -111,7 +111,7 @@ function banner(opcoes = {}) {
     ? (migrations.erros > 0
       ? `${c.yellow}${migrations.ok}/${migrations.total} OK, ${migrations.erros} erro(s)${c.reset}`
       : `${c.green}${migrations.ok}/${migrations.total} OK${c.reset}`)
-    : `${c.dim}aguardando...${c.reset}`;
+    : `${c.dim}npm run db:migrate${c.reset}`;
 
   console.log('');
   console.log(`${c.cyan}╔${borda}╗${c.reset}`);

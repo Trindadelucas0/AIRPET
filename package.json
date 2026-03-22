@@ -11,7 +11,10 @@
     "start:prod": "npm run css:build && node server.js",
     "css:build": "node node_modules/tailwindcss/lib/cli.js -i ./src/public/css/input.css -o ./src/public/css/output.css --minify",
     "css:watch": "node node_modules/tailwindcss/lib/cli.js -i ./src/public/css/input.css -o ./src/public/css/output.css --watch",
-    "send:test-emails": "node scripts/debug/send-test-emails-once.js --to=lucasrodrigues4@live.com"
+    "send:test-emails": "node scripts/debug/send-test-emails-once.js --to=lucasrodrigues4@live.com",
+    "db:migrate": "node scripts/run-pgm.cjs up",
+    "db:migrate:down": "node scripts/run-pgm.cjs down",
+    "db:migrate:create": "node scripts/run-pgm.cjs create"
   },
   "keywords": [
     "pet",
@@ -43,6 +46,7 @@
   },
   "devDependencies": {
     "autoprefixer": "^10.4.27",
+    "node-pg-migrate": "^8.0.4",
     "nodemon": "^3.1.14",
     "postcss": "^8.5.8",
     "tailwindcss": "^3.4.17"

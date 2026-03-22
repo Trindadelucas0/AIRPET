@@ -177,17 +177,12 @@ async function deletarVacina(req, res) {
   try {
     const { id } = req.params;
     const { pet_id } = req.body;
-    const { query: dbQuery } = require('../config/database');
-
-    const check = await dbQuery(
-      `SELECT v.*, p.usuario_id FROM vacinas v JOIN pets p ON p.id = v.pet_id WHERE v.id = $1`,
-      [id]
-    );
-    if (!check.rows[0]) {
+    const check = await Vacina.buscarPorIdComUsuarioDono(id);
+    if (!check) {
       req.session.flash = { tipo: 'erro', mensagem: 'Vacina não encontrada.' };
       return res.redirect('/pets');
     }
-    if (check.rows[0].usuario_id !== req.session.usuario.id) {
+    if (check.usuario_id !== req.session.usuario.id) {
       req.session.flash = { tipo: 'erro', mensagem: 'Você não tem permissão para remover esta vacina.' };
       return res.redirect('/pets');
     }
@@ -220,17 +215,12 @@ async function deletarRegistro(req, res) {
   try {
     const { id } = req.params;
     const { pet_id } = req.body;
-    const { query: dbQuery } = require('../config/database');
-
-    const check = await dbQuery(
-      `SELECT r.*, p.usuario_id FROM registros_saude r JOIN pets p ON p.id = r.pet_id WHERE r.id = $1`,
-      [id]
-    );
-    if (!check.rows[0]) {
+    const check = await RegistroSaude.buscarPorIdComUsuarioDono(id);
+    if (!check) {
       req.session.flash = { tipo: 'erro', mensagem: 'Registro de saúde não encontrado.' };
       return res.redirect('/pets');
     }
-    if (check.rows[0].usuario_id !== req.session.usuario.id) {
+    if (check.usuario_id !== req.session.usuario.id) {
       req.session.flash = { tipo: 'erro', mensagem: 'Você não tem permissão para remover este registro.' };
       return res.redirect('/pets');
     }

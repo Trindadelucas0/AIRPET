@@ -18,7 +18,7 @@
  * para calcular distâncias reais na superfície da Terra.
  */
 
-const { query } = require('../config/database');
+const Usuario = require('../models/Usuario');
 const PetPerdido = require('../models/PetPerdido');
 const ConfigSistema = require('../models/ConfigSistema');
 const Notificacao = require('../models/Notificacao');
@@ -86,20 +86,7 @@ const proximidadeService = {
      * Filtro ultima_localizacao IS NOT NULL:
      *   Ignora usuários que nunca compartilharam sua localização.
      */
-    const resultado = await query(
-      `SELECT id
-       FROM usuarios
-       WHERE ultima_localizacao IS NOT NULL
-         AND ST_DWithin(
-               ultima_localizacao,
-               ST_SetSRID(ST_MakePoint($2, $1), 4326)::geography,
-               $3
-             )`,
-      [lat, lng, raioMetros]
-    );
-
-    /* Extrai os UUIDs dos usuários encontrados */
-    const usuarioIds = resultado.rows.map(row => row.id);
+    const usuarioIds = await Usuario.listarIdsDentroRaioMetros(lat, lng, raioMetros);
 
     logger.info('ProximidadeService', `Encontrados ${usuarioIds.length} usuário(s) no raio de ${raioKm}km`);
 

@@ -12,7 +12,7 @@
  *                    data_criacao, data_atualizacao
  */
 
-const { query } = require('../config/database');
+const { query, pool } = require('../config/database');
 
 const Usuario = {
 
@@ -27,10 +27,11 @@ const Usuario = {
    * @param {string} dados.role - Papel do usuário ('tutor' ou 'admin')
    * @returns {Promise<object>} O registro do usuário recém-criado
    */
-  async criar(dados) {
+  async criar(dados, client = null) {
     const { nome, email, senha_hash, telefone, role, bio, endereco, bairro, cidade, estado, cep } = dados;
+    const executor = client || pool;
 
-    const resultado = await query(
+    const resultado = await executor.query(
       `INSERT INTO usuarios (nome, email, senha_hash, telefone, role, bio, endereco, bairro, cidade, estado, cep)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
        RETURNING *`,
@@ -266,6 +267,25 @@ const Usuario = {
    * @param {number} lng - Longitude (ex: -46.6333)
    * @returns {Promise<object>} O registro atualizado do usuário
    */
+  async atualizarSenhaHash(userId, senhaHash) {
+    await query(
+      'UPDATE usuarios SET senha_hash = $1, data_atualizacao = NOW() WHERE id = $2',
+      [senhaHash, userId]
+    );
+  },
+
+  async anularReferenciasAntesExcluir(id) {
+    await query('UPDATE tag_batches SET criado_por = NULL WHERE criado_por = $1', [id]);
+    await query('UPDATE nfc_tags SET user_id = NULL WHERE user_id = $1', [id]);
+    await query('UPDATE conversas SET dono_id = NULL WHERE dono_id = $1', [id]);
+    await query('UPDATE conversas SET tutor_id = NULL WHERE tutor_id = $1', [id]);
+    await query('UPDATE conversas SET iniciador_id = NULL WHERE iniciador_id = $1', [id]);
+    await query('UPDATE mensagens_chat SET moderado_por = NULL WHERE moderado_por = $1', [id]);
+    await query('UPDATE agenda_petshop SET usuario_id = NULL WHERE usuario_id = $1', [id]);
+    await query('UPDATE pontos_mapa SET criado_por = NULL WHERE criado_por = $1', [id]);
+    await query('UPDATE diario_pet SET usuario_id = NULL WHERE usuario_id = $1', [id]);
+  },
+
   async atualizarLocalizacao(id, lat, lng) {
     const resultado = await query(
       `UPDATE usuarios
@@ -293,6 +313,178 @@ const Usuario = {
     );
 
     return parseInt(resultado.rows[0].total, 10);
+  },
+
+  async buscarPorNomeParcialParaAdmin(termo, limite = 20) {
+    const resultado = await query(
+      `SELECT id, nome, foto_perfil, cidade, estado
+       FROM usuarios
+       WHERE LOWER(nome) LIKE $1
+       ORDER BY nome
+       LIMIT $2`,
+      [`%${String(termo).toLowerCase()}%`, limite]
+    );
+    return resultado.rows;
+  },
+
+  async buscarContatoBasicoPorId(id) {
+    const r = await query(
+      'SELECT id, nome, telefone, email FROM usuarios WHERE id = $1',
+      [id]
+    );
+    return r.rows[0] || null;
+  },
+
+  async listarIdsDentroRaioMetros(lat, lng, raioMetros) {
+    const r = await query(
+      `SELECT id
+       FROM usuarios
+       WHERE ultima_localizacao IS NOT NULL
+         AND ST_DWithin(
+               ultima_localizacao,
+               ST_SetSRID(ST_MakePoint($2, $1), 4326)::geography,
+               $3
+             )`,
+      [lat, lng, raioMetros]
+    );
+    return r.rows.map((row) => row.id);
+  },
+
+  async listarIdsParaAlertaPerdidoProximos(lat, lng, raioMetros, excluirUsuarioId) {
+    const r = await query(
+      `SELECT id
+       FROM usuarios
+       WHERE ultima_localizacao IS NOT NULL
+         AND id != $1
+         AND (receber_alertas_pet_perdido IS NULL OR receber_alertas_pet_perdido = true)
+         AND ST_DWithin(
+               ultima_localizacao,
+               ST_SetSRID(ST_MakePoint($3, $2), 4326)::geography,
+               $4
+             )`,
+      [excluirUsuarioId, lat, lng, raioMetros]
+    );
+    return r.rows.map((row) => row.id);
+  },
+
+  async listarIdsRecebendoAlertasPerdidoExceto(excluirUsuarioId) {
+    const r = await query(
+      `SELECT id FROM usuarios
+       WHERE id != $1
+         AND (receber_alertas_pet_perdido IS NULL OR receber_alertas_pet_perdido = true)`,
+      [excluirUsuarioId]
+    );
+    return r.rows.map((row) => row.id);
+  },
+
+  async listarIdsPorCidadeEstadoPairs(cidades) {
+    if (!Array.isArray(cidades) || cidades.length === 0) return [];
+    const condicoes = cidades.map((_, i) => `(cidade = $${2 * i + 1} AND estado = $${2 * i + 2})`).join(' OR ');
+    const valores = cidades.flatMap((c) => [String(c.cidade).trim(), String(c.estado).trim()]);
+    const r = await query(`SELECT id FROM usuarios WHERE (${condicoes})`, valores);
+    return r.rows.map((row) => row.id);
+  },
+
+  async listarIdsPorFiltrosPerfilRegiao(filtros = {}) {
+    const condicoes = [];
+    const valores = [];
+    function adicionarIgual(coluna, valor) {
+      if (!valor || !String(valor).trim()) return;
+      valores.push(String(valor).trim());
+      condicoes.push(`LOWER(TRIM(${coluna})) = LOWER(TRIM($${valores.length}))`);
+    }
+    adicionarIgual('estado', filtros.estado);
+    adicionarIgual('cidade', filtros.cidade);
+    adicionarIgual('bairro', filtros.bairro);
+    adicionarIgual('cep', filtros.cep);
+    if (filtros.endereco && String(filtros.endereco).trim()) {
+      valores.push(`%${String(filtros.endereco).trim()}%`);
+      condicoes.push(`endereco ILIKE $${valores.length}`);
+    }
+    if (!condicoes.length) return [];
+    const r = await query(
+      `SELECT id FROM usuarios WHERE ${condicoes.join(' AND ')}`,
+      valores
+    );
+    return r.rows.map((row) => row.id);
+  },
+
+  async listarRecomendadosProximosGeo(usuarioId, limiteMetros, max) {
+    const resultado = await query(
+      `SELECT u.id, u.nome, u.cor_perfil, u.foto_perfil, u.bio, u.cidade, u.bairro,
+              ROUND(ST_Distance(u.ultima_localizacao, eu.ultima_localizacao)::numeric / 1000, 1) AS distancia_km,
+              (SELECT COUNT(*)::int FROM publicacoes WHERE usuario_id = u.id) AS total_posts,
+              (SELECT COUNT(*)::int FROM seguidores WHERE seguido_id = u.id) AS total_seguidores
+       FROM usuarios u
+       CROSS JOIN usuarios eu
+       WHERE eu.id = $1
+         AND u.id != $1
+         AND u.ultima_localizacao IS NOT NULL
+         AND eu.ultima_localizacao IS NOT NULL
+         AND ST_DWithin(u.ultima_localizacao, eu.ultima_localizacao, $2)
+         AND u.id NOT IN (SELECT seguido_id FROM seguidores WHERE seguidor_id = $1)
+       ORDER BY ST_Distance(u.ultima_localizacao, eu.ultima_localizacao) ASC
+       LIMIT $3`,
+      [usuarioId, limiteMetros, max]
+    );
+    return resultado.rows;
+  },
+
+  async buscarBasicoPorNomeLike(patternLower, limite = 10) {
+    const resultado = await query(
+      `SELECT id, nome, cor_perfil, foto_perfil FROM usuarios WHERE LOWER(nome) LIKE $1 ORDER BY nome LIMIT $2`,
+      [patternLower, limite]
+    );
+    return resultado.rows;
+  },
+
+  async buscarParaPaginaBuscaExplorar(patternLower, viewerId, limite = 20) {
+    const resultado = await query(
+      `SELECT u.id, u.nome, u.cor_perfil, u.foto_perfil, u.bio, u.cidade, u.bairro,
+              (SELECT COUNT(*)::int FROM seguidores WHERE seguido_id = u.id) AS total_seguidores,
+              (SELECT COUNT(*)::int FROM seguidores WHERE seguidor_id = $2 AND seguido_id = u.id) > 0 AS seguindo
+       FROM usuarios u WHERE LOWER(u.nome) LIKE $1 ORDER BY u.nome LIMIT $3`,
+      [patternLower, viewerId, limite]
+    );
+    return resultado.rows;
+  },
+
+  async buscarParaMencaoAutocomplete(patternLower, viewerId, limite = 10) {
+    const params = [`%${patternLower}%`];
+    let whereExtra = '';
+    if (viewerId) {
+      params.push(viewerId);
+      whereExtra = ' OR u.id IN (SELECT seguido_id FROM seguidores WHERE seguidor_id = $2) ';
+    }
+    params.push(limite);
+    const resultado = await query(
+      `SELECT u.id, u.nome, u.foto_perfil, u.cor_perfil
+         FROM usuarios u
+        WHERE LOWER(u.nome) LIKE $1 ${whereExtra}
+        ORDER BY u.nome
+        LIMIT $${params.length}`,
+      params
+    );
+    return resultado.rows;
+  },
+
+  async listarRecomendadosMesmaCidade(usuarioId, max) {
+    const resultado = await query(
+      `SELECT u.id, u.nome, u.cor_perfil, u.foto_perfil, u.bio, u.cidade, u.bairro,
+              (SELECT COUNT(*)::int FROM publicacoes WHERE usuario_id = u.id) AS total_posts,
+              (SELECT COUNT(*)::int FROM seguidores WHERE seguido_id = u.id) AS total_seguidores
+       FROM usuarios u
+       WHERE u.id != $1
+         AND u.cidade IS NOT NULL
+         AND LOWER(u.cidade) = LOWER((SELECT cidade FROM usuarios WHERE id = $1))
+         AND u.id NOT IN (SELECT seguido_id FROM seguidores WHERE seguidor_id = $1)
+       ORDER BY
+         CASE WHEN LOWER(u.bairro) = LOWER((SELECT bairro FROM usuarios WHERE id = $1)) THEN 0 ELSE 1 END,
+         (SELECT COUNT(*) FROM seguidores WHERE seguido_id = u.id) DESC
+       LIMIT $2`,
+      [usuarioId, max]
+    );
+    return resultado.rows;
   },
 
   /**

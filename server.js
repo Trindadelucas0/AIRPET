@@ -1,12 +1,15 @@
 /**
  * server.js — Ponto de entrada do sistema AIRPET
  *
- * Inicializa Express, conecta ao banco, roda migrations,
+ * Inicializa Express, conecta ao banco, garante pastas de upload,
  * configura middlewares globais, Socket.IO e inicia o servidor HTTP.
+ *
+ * Schema do PostgreSQL: rode `npm run db:migrate` antes de subir a API (node-pg-migrate).
  */
 
 require('dotenv').config();
 
+const fs = require('fs');
 const express = require('express');
 const http = require('http');
 const path = require('path');
@@ -16,11 +19,21 @@ const { Server } = require('socket.io');
 
 const methodOverride = require('method-override');
 const sessionMiddleware = require('./src/config/session');
-const { runMigrations } = require('./src/config/migrate');
 const { pool } = require('./src/config/database');
 const routes = require('./src/routes');
 const logger = require('./src/utils/logger');
 const ConfigSistema = require('./src/models/ConfigSistema');
+
+function ensurePublicImageDirs() {
+  const base = path.join(__dirname, 'src', 'public', 'images');
+  ['capa', 'perfil-galeria', 'petshops', 'perfil', 'pets', 'chat'].forEach((dir) => {
+    try {
+      fs.mkdirSync(path.join(base, dir), { recursive: true });
+    } catch (e) {
+      /* ignore */
+    }
+  });
+}
 
 const app = express();
 const server = http.createServer(app);
@@ -264,8 +277,7 @@ async function iniciar() {
     await pool.query('SELECT NOW()');
     logger.info('DB', 'Conectado ao PostgreSQL com sucesso');
 
-    logger.secao('Migrations');
-    const migResult = await runMigrations();
+    ensurePublicImageDirs();
 
     logger.secao('Services');
     await schedulerService.iniciar();
@@ -277,7 +289,7 @@ async function iniciar() {
         porta: PORT,
         ambiente: process.env.NODE_ENV || 'development',
         db: 'Conectado',
-        migrations: migResult,
+        migrations: null,
       });
       logger.secao('Servidor Pronto');
       logger.info('SERVER', `Acesse http://localhost:${PORT}`);

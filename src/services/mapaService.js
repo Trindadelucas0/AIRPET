@@ -19,7 +19,10 @@
  *   - Limite de 200 features por requisição para performance
  */
 
-const { query } = require('../config/database');
+const Petshop = require('../models/Petshop');
+const PontoMapa = require('../models/PontoMapa');
+const PetPerdido = require('../models/PetPerdido');
+const Localizacao = require('../models/Localizacao');
 const logger = require('../utils/logger');
 
 const mapaService = {
@@ -114,26 +117,7 @@ const mapaService = {
      * Ícone: varia conforme a categoria do ponto
      */
     if (categoriasAtivas.includes('pontos')) {
-      promessas.push(
-        query(
-          `SELECT id, nome, latitude, longitude, categoria,
-                  CASE categoria
-                    WHEN 'abrigo' THEN 'home'
-                    WHEN 'ong' THEN 'heart'
-                    WHEN 'clinica' THEN 'medkit'
-                    WHEN 'parque' THEN 'tree'
-                    ELSE 'pin'
-                  END AS icone,
-                  'ponto_mapa' AS tipo_original
-           FROM pontos_mapa
-           WHERE ativo = true
-             AND ST_Within(
-                   localizacao::geometry,
-                   ST_MakeEnvelope($2, $1, $4, $3, 4326)
-                 )`,
-          [swLat, swLng, neLat, neLng]
-        ).then(res => res.rows)
-      );
+      promessas.push(PontoMapa.listarPinsParaMapaBBox(swLat, swLng, neLat, neLng));
     }
 
     /**
@@ -142,21 +126,7 @@ const mapaService = {
      * Ícone: 'alert' (ponto de exclamação vermelho no mapa)
      */
     if (categoriasAtivas.includes('perdidos')) {
-      promessas.push(
-        query(
-          `SELECT pp.id, p.nome, pp.latitude, pp.longitude,
-                  'pet_perdido' AS categoria, 'alert' AS icone,
-                  'pet_perdido' AS tipo_original
-           FROM pets_perdidos pp
-           JOIN pets p ON p.id = pp.pet_id
-           WHERE pp.status = 'aprovado'
-             AND ST_Within(
-                   pp.ultima_localizacao::geometry,
-                   ST_MakeEnvelope($2, $1, $4, $3, 4326)
-                 )`,
-          [swLat, swLng, neLat, neLng]
-        ).then(res => res.rows)
-      );
+      promessas.push(PetPerdido.listarPinsParaMapaBBox(swLat, swLng, neLat, neLng));
     }
 
     /**
@@ -166,23 +136,7 @@ const mapaService = {
      * Apenas a localização mais recente de cada pet (DISTINCT ON).
      */
     if (categoriasAtivas.includes('localizacoes')) {
-      promessas.push(
-        query(
-          `SELECT DISTINCT ON (l.pet_id)
-                  l.id, p.nome AS pet_nome, l.latitude, l.longitude,
-                  l.foto_url, p.foto AS pet_foto,
-                  'localizacao' AS categoria, 'paw' AS icone,
-                  'localizacao' AS tipo_original
-           FROM localizacoes l
-           JOIN pets p ON p.id = l.pet_id
-           WHERE ST_Within(
-                   l.ponto::geometry,
-                   ST_MakeEnvelope($2, $1, $4, $3, 4326)
-                 )
-           ORDER BY l.pet_id, l.data DESC`,
-          [swLat, swLng, neLat, neLng]
-        ).then(res => res.rows)
-      );
+      promessas.push(Localizacao.listarUltimasPorPetParaMapaBBox(swLat, swLng, neLat, neLng));
     }
 
     /**

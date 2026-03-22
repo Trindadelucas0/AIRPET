@@ -5,33 +5,35 @@
 (function () {
   'use strict';
 
-  if (!('serviceWorker' in navigator)) return;
-
   var swRegistration = null;
 
-  window.addEventListener('load', function () {
-    navigator.serviceWorker.register('/sw.js').then(function (reg) {
-      console.log('[PWA] SW registrado:', reg.scope);
-      swRegistration = reg;
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('/sw.js').then(function (reg) {
+        console.log('[PWA] SW registrado:', reg.scope);
+        swRegistration = reg;
 
-      reg.addEventListener('updatefound', function () {
-        var newWorker = reg.installing;
-        if (newWorker) {
-          newWorker.addEventListener('statechange', function () {
-            if (newWorker.state === 'activated' && navigator.serviceWorker.controller) {
-              if (confirm('Nova versao do AIRPET disponivel! Deseja atualizar?')) {
-                window.location.reload();
+        reg.addEventListener('updatefound', function () {
+          var newWorker = reg.installing;
+          if (newWorker) {
+            newWorker.addEventListener('statechange', function () {
+              if (newWorker.state === 'activated' && navigator.serviceWorker.controller) {
+                if (confirm('Nova versao do AIRPET disponivel! Deseja atualizar?')) {
+                  window.location.reload();
+                }
               }
-            }
-          });
-        }
-      });
+            });
+          }
+        });
 
-      subscribePush(reg);
-    }).catch(function (err) {
-      console.warn('[PWA] Erro SW:', err);
+        subscribePush(reg);
+      }).catch(function (err) {
+        console.warn('[PWA] Erro SW:', err);
+      });
     });
-  });
+  } else {
+    console.warn('[PWA] Service Worker indisponivel neste contexto');
+  }
 
   function subscribePush(reg) {
     var isLogado = document.body && document.body.getAttribute('data-logado') === 'true';
@@ -106,18 +108,74 @@
     return outputArray;
   }
 
-  /* Install prompt banner */
+  /* Install prompt banner + manual install actions */
   var deferredPrompt = null;
+  var suppressAutoInstallBanner = false;
 
   window.addEventListener('beforeinstallprompt', function (e) {
     e.preventDefault();
     deferredPrompt = e;
-    showInstallBanner();
+    if (!suppressAutoInstallBanner) showInstallBanner();
   });
+
+  function isStandaloneMode() {
+    return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+  }
+
+  function isIOSDevice() {
+    return /iphone|ipad|ipod/i.test(window.navigator.userAgent || '');
+  }
+
+  function isSafariBrowser() {
+    var ua = window.navigator.userAgent || '';
+    var isSafari = /^((?!chrome|android|crios|fxios|edgios).)*safari/i.test(ua);
+    return isSafari;
+  }
+
+  function getInstallStatusEl() {
+    return document.querySelector('[data-install-status]');
+  }
+
+  function setInstallStatus(message) {
+    var statusEl = getInstallStatusEl();
+    if (statusEl) statusEl.textContent = message || '';
+  }
+
+  function hideInstallBanner() {
+    var banner = document.getElementById('pwa-install-banner');
+    if (banner) banner.remove();
+  }
+
+  function showInstallHelpModal(title, description, steps) {
+    var existingModal = document.getElementById('pwa-install-help-modal');
+    if (existingModal) existingModal.remove();
+
+    var listHtml = '';
+    (steps || []).forEach(function (step) {
+      listHtml += '<li>' + step + '</li>';
+    });
+
+    var modal = document.createElement('div');
+    modal.id = 'pwa-install-help-modal';
+    modal.style.cssText = 'position:fixed;inset:0;z-index:10000;background:rgba(15,23,42,0.6);display:flex;align-items:center;justify-content:center;padding:16px;';
+    modal.innerHTML =
+      '<div style="max-width:420px;width:100%;background:#111827;color:#fff;border-radius:16px;padding:20px;border:1px solid rgba(255,255,255,0.08)">' +
+        '<h3 style="margin:0 0 10px;font-size:18px;font-weight:700">' + title + '</h3>' +
+        '<p style="margin:0 0 10px;color:#d1d5db;font-size:14px;line-height:1.5">' + description + '</p>' +
+        '<ol style="margin:0 0 16px 18px;padding:0;color:#e5e7eb;font-size:14px;line-height:1.6">' + listHtml + '</ol>' +
+        '<button id="pwa-install-help-close" style="width:100%;background:#ec5a1c;color:#fff;border:none;border-radius:10px;padding:10px 14px;font-weight:700;cursor:pointer">Entendi</button>' +
+      '</div>';
+    document.body.appendChild(modal);
+
+    document.getElementById('pwa-install-help-close').addEventListener('click', function () {
+      modal.remove();
+    });
+  }
 
   function showInstallBanner() {
     if (document.getElementById('pwa-install-banner')) return;
-    if (window.matchMedia('(display-mode: standalone)').matches) return;
+    if (isStandaloneMode()) return;
+    if (suppressAutoInstallBanner) return;
 
     var banner = document.createElement('div');
     banner.id = 'pwa-install-banner';
@@ -141,8 +199,12 @@
 
     document.getElementById('pwa-install-btn').addEventListener('click', function () {
       if (deferredPrompt) {
+        suppressAutoInstallBanner = true;
         deferredPrompt.prompt();
-        deferredPrompt.userChoice.then(function () { deferredPrompt = null; banner.remove(); });
+        deferredPrompt.userChoice.then(function () {
+          deferredPrompt = null;
+          banner.remove();
+        });
       }
     });
 
@@ -153,10 +215,112 @@
 
   window.addEventListener('appinstalled', function () {
     console.log('[PWA] App instalado!');
-    var banner = document.getElementById('pwa-install-banner');
-    if (banner) banner.remove();
+    hideInstallBanner();
+    setInstallStatus('AIRPET instalado na tela inicial.');
     deferredPrompt = null;
   });
+
+  function showIosInstructions() {
+    suppressAutoInstallBanner = true;
+    hideInstallBanner();
+
+    if (isStandaloneMode()) {
+      setInstallStatus('O AIRPET ja esta instalado na tela inicial.');
+      return Promise.resolve('already-installed');
+    }
+
+    if (!isIOSDevice()) {
+      setInstallStatus('Este passo e para iOS. Use o botao Android neste dispositivo.');
+      showInstallHelpModal(
+        'Instalacao iOS',
+        'Este botao funciona apenas em iPhone/iPad.',
+        ['Abra esta pagina no iPhone ou iPad.', 'No iPhone, toque em Compartilhar.', 'Depois toque em "Adicionar a Tela de Inicio".']
+      );
+      return Promise.resolve('wrong-platform');
+    }
+
+    if (!isSafariBrowser()) {
+      setInstallStatus('No iOS, abra no Safari para adicionar a tela inicial.');
+      showInstallHelpModal(
+        'Abra no Safari',
+        'No iOS, a instalacao so aparece no Safari.',
+        ['Copie o link desta pagina.', 'Abra o Safari e cole o link.', 'Toque em Compartilhar e em "Adicionar a Tela de Inicio".']
+      );
+      return Promise.resolve('open-safari');
+    }
+
+    showInstallHelpModal(
+      'Instalar no iOS',
+      'No Safari, siga estes passos para adicionar na tela inicial:',
+      ['Toque no botao Compartilhar.', 'Escolha "Adicionar a Tela de Inicio".', 'Confirme para instalar o AIRPET.']
+    );
+
+    setInstallStatus('Siga os passos no Safari para adicionar na tela inicial.');
+    return Promise.resolve('ios-guided');
+  }
+
+  function installAndroid() {
+    suppressAutoInstallBanner = true;
+    hideInstallBanner();
+
+    if (isStandaloneMode()) {
+      setInstallStatus('O AIRPET ja esta instalado na tela inicial.');
+      return Promise.resolve('already-installed');
+    }
+
+    if (!deferredPrompt) {
+      setInstallStatus('Instalacao indisponivel agora. Abra no Chrome Android para instalar.');
+      showInstallHelpModal(
+        'Instalacao no Android',
+        'Nao foi possivel abrir o popup automatico agora.',
+        ['Use Chrome no Android.', 'Toque no menu do navegador.', 'Escolha "Instalar app" ou "Adicionar a tela inicial".']
+      );
+      return Promise.resolve('prompt-unavailable');
+    }
+
+    setInstallStatus('Abrindo instalacao...');
+    deferredPrompt.prompt();
+    return deferredPrompt.userChoice.then(function (choiceResult) {
+      deferredPrompt = null;
+      if (choiceResult && choiceResult.outcome === 'accepted') {
+        setInstallStatus('Instalacao iniciada no Android.');
+        return 'accepted';
+      }
+      setInstallStatus('Instalacao cancelada.');
+      return 'dismissed';
+    }).catch(function () {
+      setInstallStatus('Nao foi possivel abrir a instalacao agora.');
+      return 'error';
+    });
+  }
+
+  function bindInstallButtons() {
+    var buttons = document.querySelectorAll('[data-install-platform]');
+    if (!buttons || !buttons.length) return;
+
+    buttons.forEach(function (button) {
+      button.addEventListener('click', function () {
+        var platform = button.getAttribute('data-install-platform');
+        if (platform === 'android') {
+          installAndroid();
+          return;
+        }
+        if (platform === 'ios') {
+          showIosInstructions();
+        }
+      });
+    });
+
+    if (isStandaloneMode()) {
+      setInstallStatus('O AIRPET ja esta instalado na tela inicial.');
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', bindInstallButtons);
+  } else {
+    bindInstallButtons();
+  }
 
   window.airpetPush = {
     subscribe: function () {
@@ -165,5 +329,12 @@
     getRegistration: function () {
       return swRegistration;
     }
+  };
+
+  window.airpetPwa = {
+    installAndroid: installAndroid,
+    showIosInstructions: showIosInstructions,
+    hideInstallBanner: hideInstallBanner,
+    isStandalone: isStandaloneMode
   };
 })();

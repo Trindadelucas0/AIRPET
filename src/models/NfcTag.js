@@ -89,6 +89,14 @@ const NfcTag = {
     return resultado.rows[0];
   },
 
+  async buscarAtivaPorCodigo(tagCode) {
+    const resultado = await query(
+      `SELECT * FROM nfc_tags WHERE tag_code = $1 AND status = $2`,
+      [tagCode, 'active']
+    );
+    return resultado.rows[0] || null;
+  },
+
   /**
    * Busca uma tag pelo seu ID (chave primária).
    *
@@ -177,8 +185,9 @@ const NfcTag = {
    * @param {string} userId - UUID do usuário que está reservando
    * @returns {Promise<object>} Tag atualizada
    */
-  async reservar(id, userId) {
-    const resultado = await query(
+  async reservar(id, userId, client = null) {
+    const executor = client || pool;
+    const resultado = await executor.query(
       `UPDATE nfc_tags
        SET status = 'reserved',
            user_id = $2,
@@ -307,8 +316,9 @@ const NfcTag = {
     return resultado.rows;
   },
 
-  async incrementarTentativas(id) {
-    const resultado = await query(
+  async incrementarTentativas(id, client = null) {
+    const executor = client || pool;
+    const resultado = await executor.query(
       `UPDATE nfc_tags
        SET tentativas_ativacao = COALESCE(tentativas_ativacao, 0) + 1
        WHERE id = $1
@@ -318,8 +328,9 @@ const NfcTag = {
     return resultado.rows[0];
   },
 
-  async bloquearTemporariamente(id, minutos) {
-    const resultado = await query(
+  async bloquearTemporariamente(id, minutos, client = null) {
+    const executor = client || pool;
+    const resultado = await executor.query(
       `UPDATE nfc_tags
        SET bloqueada_ate = NOW() + ($2 || ' minutes')::INTERVAL
        WHERE id = $1
@@ -329,8 +340,9 @@ const NfcTag = {
     return resultado.rows[0];
   },
 
-  async resetarTentativas(id) {
-    const resultado = await query(
+  async resetarTentativas(id, client = null) {
+    const executor = client || pool;
+    const resultado = await executor.query(
       `UPDATE nfc_tags
        SET tentativas_ativacao = 0,
            bloqueada_ate = NULL

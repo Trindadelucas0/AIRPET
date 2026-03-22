@@ -12,6 +12,14 @@ const Comentario = {
     return resultado.rows[0];
   },
 
+  async buscarPorId(id) {
+    const resultado = await query(
+      `SELECT * FROM comentarios WHERE id = $1`,
+      [id]
+    );
+    return resultado.rows[0] || null;
+  },
+
   async buscarPorPublicacao(publicacaoId, limite = 50) {
     const resultado = await query(
       `SELECT c.*, u.nome AS autor_nome, u.cor_perfil, u.foto_perfil

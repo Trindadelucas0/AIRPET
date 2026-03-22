@@ -1,18 +1,23 @@
 <% locals.titulo = 'Cadastro de Petshop Parceiro' %>
-<% locals.extraHead = '<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">' %>
+<% locals.extraHead = '<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"><link rel="stylesheet" href="/css/partner-ui.css">' %>
 <%- include('../partials/header') %>
 <%- include('../partials/flash') %>
 
 <% const f = typeof formData !== 'undefined' && formData ? formData : {}; %>
 <% const fieldErrorsSafe = typeof fieldErrors !== 'undefined' && fieldErrors ? fieldErrors : {}; %>
-<main class="flex-1 container mx-auto max-w-5xl px-4 py-8">
-  <div class="card space-y-6">
-    <div>
-      <h1 class="text-2xl font-bold text-gray-900 mb-2">Seja um Petshop Parceiro AIRPET</h1>
-      <p class="text-sm text-gray-500">
-        Cadastro rápido e guiado. O status inicial da solicitação será <strong>PENDENTE</strong>.
-      </p>
+<main class="flex-1 container mx-auto max-w-6xl px-4 py-8 partner-page">
+  <section class="partner-hero mb-6">
+    <span class="partner-pill"><i class="fa-solid fa-store"></i> Programa Parceiros</span>
+    <h1 class="partner-title">Cadastre seu petshop e cresca com o AIRPET</h1>
+    <p class="partner-subtitle">Fluxo guiado com foco em conversao, operacao e marketing da sua loja.</p>
+    <div class="partner-stepper">
+      <a href="#step1" class="step-chip active">1. Empresa</a>
+      <a href="#step2" class="step-chip">2. Localizacao</a>
+      <a href="#step3" class="step-chip">3. Marketing</a>
+      <a href="#step4" class="step-chip">4. Midia</a>
     </div>
+  </section>
+  <div class="card space-y-6 partner-form-card">
     <% if (typeof localError !== 'undefined' && localError) { %>
       <div class="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
         <%= localError %>
@@ -20,7 +25,7 @@
     <% } %>
 
     <form id="partnerForm" action="/parceiros/cadastro" method="POST" enctype="multipart/form-data" class="space-y-6">
-      <section class="border border-gray-100 rounded-2xl p-4 md:p-5">
+      <section id="step1" class="border border-gray-100 rounded-2xl p-4 md:p-5">
         <h2 class="font-semibold text-gray-900 mb-3">1) Dados da empresa</h2>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <input name="empresa_nome" required placeholder="Nome da empresa" class="input" value="<%= f.empresa_nome || '' %>" />
@@ -52,7 +57,7 @@
         </p>
       </section>
 
-      <section class="border border-gray-100 rounded-2xl p-4 md:p-5">
+      <section id="step2" class="border border-gray-100 rounded-2xl p-4 md:p-5">
         <h2 class="font-semibold text-gray-900 mb-3">2) Localização do petshop</h2>
         <p class="text-sm text-gray-500 mb-4">
           Você pode usar sua localização atual ou preencher o endereço manualmente.
@@ -108,7 +113,7 @@
         <div id="partnerMap" class="rounded-xl border border-gray-200" style="height: 320px;"></div>
       </section>
 
-      <section class="border border-gray-100 rounded-2xl p-4 md:p-5">
+      <section id="step3" class="border border-gray-100 rounded-2xl p-4 md:p-5">
         <h2 class="font-semibold text-gray-900 mb-3">3) Serviços e redes sociais</h2>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <input name="instagram" placeholder="Instagram" class="input" value="<%= f.instagram || '' %>" />
@@ -120,7 +125,7 @@
         </div>
       </section>
 
-      <section class="border border-gray-100 rounded-2xl p-4 md:p-5">
+      <section id="step4" class="border border-gray-100 rounded-2xl p-4 md:p-5">
         <h2 class="font-semibold text-gray-900 mb-3">4) Mídia da loja</h2>
         <div class="grid md:grid-cols-2 gap-4">
           <label class="text-sm text-gray-600">Logo
@@ -324,6 +329,32 @@
       }).trim();
     }
   });
+
+  var stepLinks = Array.prototype.slice.call(document.querySelectorAll('.partner-stepper .step-chip'));
+  var stepSections = Array.prototype.slice.call(document.querySelectorAll('#step1, #step2, #step3, #step4'));
+
+  function setActiveStep(stepId) {
+    stepLinks.forEach(function(link) {
+      var isActive = link.getAttribute('href') === '#' + stepId;
+      link.classList.toggle('active', isActive);
+    });
+  }
+
+  stepLinks.forEach(function(link) {
+    link.addEventListener('click', function() {
+      var id = (link.getAttribute('href') || '').replace('#', '');
+      if (id) setActiveStep(id);
+    });
+  });
+
+  var stepObserver = new IntersectionObserver(function(entries) {
+    entries.forEach(function(entry) {
+      if (entry.isIntersecting && entry.target && entry.target.id) {
+        setActiveStep(entry.target.id);
+      }
+    });
+  }, { threshold: 0.35 });
+  stepSections.forEach(function(section) { if (section) stepObserver.observe(section); });
 })();
 </script>
 ` %>

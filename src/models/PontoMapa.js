@@ -130,6 +130,28 @@ const PontoMapa = {
     return resultado.rows;
   },
 
+  async listarPinsParaMapaBBox(swLat, swLng, neLat, neLng) {
+    const resultado = await query(
+      `SELECT id, nome, latitude, longitude, categoria,
+              CASE categoria
+                WHEN 'abrigo' THEN 'home'
+                WHEN 'ong' THEN 'heart'
+                WHEN 'clinica' THEN 'medkit'
+                WHEN 'parque' THEN 'tree'
+                ELSE 'pin'
+              END AS icone,
+              'ponto_mapa' AS tipo_original
+       FROM pontos_mapa
+       WHERE ativo = true
+         AND ST_Within(
+               localizacao::geometry,
+               ST_MakeEnvelope($2, $1, $4, $3, 4326)
+             )`,
+      [swLat, swLng, neLat, neLng]
+    );
+    return resultado.rows;
+  },
+
   /**
    * Atualiza os dados de um ponto de interesse.
    * Recalcula a coluna geography com as novas coordenadas.

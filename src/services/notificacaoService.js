@@ -1,4 +1,4 @@
-const { query } = require('../config/database');
+const Usuario = require('../models/Usuario');
 const Notificacao = require('../models/Notificacao');
 const PetPerdido = require('../models/PetPerdido');
 const ConfigSistema = require('../models/ConfigSistema');
@@ -28,43 +28,6 @@ function montarMensagemAlerta(alerta) {
     return `${base} Recompensa oferecida: ${val}.`;
   }
   return base;
-}
-
-function montarWherePerfilRegiao(filtros = {}) {
-  const condicoes = [];
-  const valores = [];
-
-  function adicionarIgual(coluna, valor) {
-    if (!valor || !String(valor).trim()) return;
-    valores.push(String(valor).trim());
-    condicoes.push(`LOWER(TRIM(${coluna})) = LOWER(TRIM($${valores.length}))`);
-  }
-
-  adicionarIgual('estado', filtros.estado);
-  adicionarIgual('cidade', filtros.cidade);
-  adicionarIgual('bairro', filtros.bairro);
-  adicionarIgual('cep', filtros.cep);
-
-  if (filtros.endereco && String(filtros.endereco).trim()) {
-    valores.push(`%${String(filtros.endereco).trim()}%`);
-    condicoes.push(`endereco ILIKE $${valores.length}`);
-  }
-
-  return { condicoes, valores };
-}
-
-async function buscarIdsUsuariosPorPerfilRegiao(filtros = {}) {
-  const { condicoes, valores } = montarWherePerfilRegiao(filtros);
-  if (!condicoes.length) return [];
-
-  const resultado = await query(
-    `SELECT id
-     FROM usuarios
-     WHERE ${condicoes.join(' AND ')}`,
-    valores
-  );
-
-  return resultado.rows.map(row => row.id);
 }
 
 const notificacaoService = {
@@ -126,21 +89,12 @@ const notificacaoService = {
 
     const raioMetros = raioKm * 1000;
 
-    const resultado = await query(
-      `SELECT id
-       FROM usuarios
-       WHERE ultima_localizacao IS NOT NULL
-         AND id != $1
-         AND (receber_alertas_pet_perdido IS NULL OR receber_alertas_pet_perdido = true)
-         AND ST_DWithin(
-               ultima_localizacao,
-               ST_SetSRID(ST_MakePoint($3, $2), 4326)::geography,
-               $4
-             )`,
-      [alerta.usuario_id, alerta.latitude, alerta.longitude, raioMetros]
+    let usuarioIds = await Usuario.listarIdsParaAlertaPerdidoProximos(
+      alerta.latitude,
+      alerta.longitude,
+      raioMetros,
+      alerta.usuario_id
     );
-
-    let usuarioIds = resultado.rows.map(row => row.id);
 
     const cooldownHoras = await ConfigSistema.buscarPorChave('alerta_cooldown_horas');
     const horasCooldown = cooldownHoras ? parseInt(cooldownHoras, 10) : 24;
@@ -196,18 +150,8 @@ const notificacaoService = {
    */
   async contarUsuariosNaRegiao(latitude, longitude, raioKm) {
     const raioMetros = raioKm * 1000;
-    const resultado = await query(
-      `SELECT id
-       FROM usuarios
-       WHERE ultima_localizacao IS NOT NULL
-         AND ST_DWithin(
-               ultima_localizacao,
-               ST_SetSRID(ST_MakePoint($2, $1), 4326)::geography,
-               $3
-             )`,
-      [latitude, longitude, raioMetros]
-    );
-    return resultado.rows.length;
+    const ids = await Usuario.listarIdsDentroRaioMetros(latitude, longitude, raioMetros);
+    return ids.length;
   },
 
   /**
@@ -222,18 +166,7 @@ const notificacaoService = {
    */
   async notificarPorRegiao(latitude, longitude, raioKm, titulo, mensagem, link) {
     const raioMetros = raioKm * 1000;
-    const resultado = await query(
-      `SELECT id
-       FROM usuarios
-       WHERE ultima_localizacao IS NOT NULL
-         AND ST_DWithin(
-               ultima_localizacao,
-               ST_SetSRID(ST_MakePoint($2, $1), 4326)::geography,
-               $3
-             )`,
-      [latitude, longitude, raioMetros]
-    );
-    const usuarioIds = resultado.rows.map(row => row.id);
+    const usuarioIds = await Usuario.listarIdsDentroRaioMetros(latitude, longitude, raioMetros);
 
     logger.info('NotificacaoService', `Notificar por região: ${usuarioIds.length} usuário(s) no raio de ${raioKm}km`);
 
@@ -275,7 +208,7 @@ const notificacaoService = {
    * @returns {Promise<number>}
    */
   async contarUsuariosPorPerfilRegiao(filtros) {
-    const usuarioIds = await buscarIdsUsuariosPorPerfilRegiao(filtros);
+    const usuarioIds = await Usuario.listarIdsPorFiltrosPerfilRegiao(filtros);
     return usuarioIds.length;
   },
 
@@ -288,7 +221,7 @@ const notificacaoService = {
    * @returns {Promise<Array>}
    */
   async notificarPorPerfilRegiao(filtros, titulo, mensagem, link) {
-    const usuarioIds = await buscarIdsUsuariosPorPerfilRegiao(filtros);
+    const usuarioIds = await Usuario.listarIdsPorFiltrosPerfilRegiao(filtros);
 
     logger.info('NotificacaoService', `Notificar por perfil/região: ${usuarioIds.length} usuário(s)`);
 
@@ -332,13 +265,8 @@ const notificacaoService = {
    */
   async contarUsuariosPorCidadeEstado(cidades) {
     if (!Array.isArray(cidades) || cidades.length === 0) return 0;
-    const condicoes = cidades.map((_, i) => `(cidade = $${2 * i + 1} AND estado = $${2 * i + 2})`).join(' OR ');
-    const valores = cidades.flatMap(c => [String(c.cidade).trim(), String(c.estado).trim()]);
-    const resultado = await query(
-      `SELECT id FROM usuarios WHERE (${condicoes})`,
-      valores
-    );
-    return resultado.rows.length;
+    const ids = await Usuario.listarIdsPorCidadeEstadoPairs(cidades);
+    return ids.length;
   },
 
   /**
@@ -351,13 +279,7 @@ const notificacaoService = {
    */
   async notificarPorCidadeEstado(cidades, titulo, mensagem, link) {
     if (!Array.isArray(cidades) || cidades.length === 0) return [];
-    const condicoes = cidades.map((_, i) => `(cidade = $${2 * i + 1} AND estado = $${2 * i + 2})`).join(' OR ');
-    const valores = cidades.flatMap(c => [String(c.cidade).trim(), String(c.estado).trim()]);
-    const resultado = await query(
-      `SELECT id FROM usuarios WHERE (${condicoes})`,
-      valores
-    );
-    const usuarioIds = resultado.rows.map(row => row.id);
+    const usuarioIds = await Usuario.listarIdsPorCidadeEstadoPairs(cidades);
     logger.info('NotificacaoService', `Notificar por cidade/estado: ${usuarioIds.length} usuário(s)`);
     if (usuarioIds.length === 0) return [];
     const notificacoes = await Notificacao.criarParaMultiplos(
@@ -394,14 +316,7 @@ const notificacaoService = {
       throw new Error('Alerta de pet perdido não encontrado');
     }
 
-    const resultado = await query(
-      `SELECT id FROM usuarios
-       WHERE id != $1
-         AND (receber_alertas_pet_perdido IS NULL OR receber_alertas_pet_perdido = true)`,
-      [alerta.usuario_id]
-    );
-
-    let usuarioIds = resultado.rows.map(row => row.id);
+    let usuarioIds = await Usuario.listarIdsRecebendoAlertasPerdidoExceto(alerta.usuario_id);
 
     const cooldownHoras = await ConfigSistema.buscarPorChave('alerta_cooldown_horas');
     const horasCooldown = cooldownHoras ? parseInt(cooldownHoras, 10) : 24;

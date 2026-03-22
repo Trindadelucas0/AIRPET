@@ -139,6 +139,37 @@ const Localizacao = {
     );
     return resultado.rows;
   },
+
+  async buscarUltimaPorPetId(petId) {
+    const resultado = await query(
+      `SELECT cidade, latitude, longitude, data
+       FROM localizacoes
+       WHERE pet_id = $1
+       ORDER BY data DESC
+       LIMIT 1`,
+      [petId]
+    );
+    return resultado.rows[0] || null;
+  },
+
+  async listarUltimasPorPetParaMapaBBox(swLat, swLng, neLat, neLng) {
+    const resultado = await query(
+      `SELECT DISTINCT ON (l.pet_id)
+              l.id, p.nome AS pet_nome, l.latitude, l.longitude,
+              l.foto_url, p.foto AS pet_foto,
+              'localizacao' AS categoria, 'paw' AS icone,
+              'localizacao' AS tipo_original
+       FROM localizacoes l
+       JOIN pets p ON p.id = l.pet_id
+       WHERE ST_Within(
+               l.ponto::geometry,
+               ST_MakeEnvelope($2, $1, $4, $3, 4326)
+             )
+       ORDER BY l.pet_id, l.data DESC`,
+      [swLat, swLng, neLat, neLng]
+    );
+    return resultado.rows;
+  },
 };
 
 module.exports = Localizacao;

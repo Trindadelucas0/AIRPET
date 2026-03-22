@@ -1,4 +1,4 @@
-const { query } = require('../config/database');
+const { query, pool } = require('../config/database');
 
 const PetshopProfile = {
   async buscarPorPetshopId(petshopId) {
@@ -6,8 +6,9 @@ const PetshopProfile = {
     return result.rows[0];
   },
 
-  async upsert(petshopId, dados) {
-    const result = await query(
+  async upsert(petshopId, dados, client = null) {
+    const executor = client || pool;
+    const result = await executor.query(
       `INSERT INTO petshop_profiles (
         petshop_id, slogan, descricao_curta, descricao_longa,
         instagram_url, facebook_url, website_url, whatsapp_publico, contato_link, aceita_agendamento

@@ -1,14 +1,10 @@
 /**
- * migrate.js — Auto-criacao de tabelas no boot do servidor
+ * migrationBaselineStatements.js — SQL da baseline AIRPET
  *
- * Executado toda vez que o servidor inicia.
- * Verifica se as tabelas existem e cria as que faltam.
- * Usa CREATE TABLE IF NOT EXISTS para ser idempotente (seguro rodar varias vezes).
- * A ordem respeita foreign keys (tabelas referenciadas sao criadas primeiro).
+ * Usado por node-pg-migrate (migrations/..._baseline.js).
+ * Idempotente: CREATE IF NOT EXISTS / DO $$ com checks.
  */
 
-const path = require('path');
-const fs = require('fs');
 const { pool } = require('./database');
 const logger = require('../utils/logger');
 
@@ -1609,42 +1605,4 @@ async function garantirPostGIS() {
   logger.info('MIGRATE', 'PostGIS disponivel');
 }
 
-/**
- * Executa todas as migrations em sequencia.
- * Exige PostGIS antes; cada statement roda no pool — se uma falhar, as outras continuam.
- */
-async function runMigrations() {
-  await garantirPostGIS();
-
-  const total = migrations.length;
-  let erros = 0;
-
-  logger.info('MIGRATE', `Verificando ${total} migrations...`);
-
-  for (let i = 0; i < total; i++) {
-    try {
-      await pool.query(migrations[i]);
-    } catch (err) {
-      erros++;
-      logger.error('MIGRATE', `Migration ${i + 1}/${total} falhou`, err);
-    }
-  }
-
-  ['capa', 'perfil-galeria', 'petshops', 'perfil', 'pets', 'chat'].forEach((dir) => {
-    try {
-      const full = path.join(__dirname, '..', 'public', 'images', dir);
-      fs.mkdirSync(full, { recursive: true });
-    } catch (e) {}
-  });
-
-  const ok = total - erros;
-  if (erros > 0) {
-    logger.warn('MIGRATE', `Concluido: ${ok}/${total} OK, ${erros} erro(s)`);
-  } else {
-    logger.info('MIGRATE', `Todas as ${total} migrations executadas com sucesso`);
-  }
-
-  return { total, ok, erros };
-}
-
-module.exports = { runMigrations };
+module.exports = { migrations, garantirPostGIS };

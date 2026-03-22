@@ -8,6 +8,8 @@
  * - mensagem_rejeitada: admin rejeitou, notifica remetente
  */
 
+const MensagemChat = require('../models/MensagemChat');
+
 module.exports = function (chatNs) {
   chatNs.on('connection', (socket) => {
     const session = socket.request.session;
@@ -33,15 +35,13 @@ module.exports = function (chatNs) {
           socket.emit('erro', { mensagem: 'Dados inválidos para enviar mensagem.' });
           return;
         }
-        const { query } = require('../config/database');
-
-        const resultado = await query(
-          `INSERT INTO mensagens_chat (conversa_id, remetente, tipo, conteudo, foto_url)
-           VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-          [conversaId, String(usuarioId), dados.tipo || 'texto', conteudo, dados.foto_url || null]
-        );
-
-        const mensagem = resultado.rows[0];
+        const mensagem = await MensagemChat.criar({
+          conversa_id: conversaId,
+          remetente: String(usuarioId),
+          conteudo,
+          tipo: dados.tipo || 'texto',
+          foto_url: dados.foto_url || null,
+        });
 
         // Avisa o namespace admin que tem mensagem pendente
         const adminNs = socket.nsp.server.of('/admin');

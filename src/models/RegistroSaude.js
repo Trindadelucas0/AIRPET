@@ -62,6 +62,14 @@ const RegistroSaude = {
     return resultado.rows;
   },
 
+  async buscarPorIdComUsuarioDono(id) {
+    const resultado = await query(
+      `SELECT r.*, p.usuario_id FROM registros_saude r JOIN pets p ON p.id = r.pet_id WHERE r.id = $1`,
+      [id]
+    );
+    return resultado.rows[0] || null;
+  },
+
   /**
    * Lista registros de saúde de um pet filtrados por tipo.
    * Útil para ver apenas consultas, apenas exames, etc.

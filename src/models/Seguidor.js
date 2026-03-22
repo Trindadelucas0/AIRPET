@@ -71,6 +71,21 @@ const Seguidor = {
     );
     return resultado.rows;
   },
+
+  async listarSeguidosParaMencao(seguidorId, termoLower, limite = 15) {
+    const params = [seguidorId];
+    let sql = `SELECT u.id, u.nome, u.cor_perfil, u.foto_perfil
+      FROM seguidores s
+      JOIN usuarios u ON u.id = s.seguido_id
+      WHERE s.seguidor_id = $1`;
+    if (termoLower && String(termoLower).length >= 1) {
+      params.push(`%${String(termoLower)}%`);
+      sql += ` AND LOWER(u.nome) LIKE $2`;
+    }
+    sql += ` ORDER BY u.nome LIMIT ${limite}`;
+    const resultado = await query(sql, params);
+    return resultado.rows;
+  },
 };
 
 module.exports = Seguidor;

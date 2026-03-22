@@ -306,3 +306,428 @@ body.admin-shell {
     scroll-behavior: auto !important;
   }
 }
+
+/* =========================================================
+   AIRPET Permissions Modal (premium redesign)
+   ========================================================= */
+
+.airpet-perm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(15, 23, 42, 0.5);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.airpet-perm-modal {
+  width: 100%;
+  max-width: 460px;
+  max-height: 92vh;
+  overflow-y: auto;
+  border-radius: 24px;
+  background: #fff;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.22);
+  transform: translateY(20px);
+  transition: transform 0.3s ease;
+  -webkit-overflow-scrolling: touch;
+}
+
+.airpet-perm-header {
+  padding: 26px 22px 20px;
+  border-radius: 24px 24px 0 0;
+  background: radial-gradient(circle at top right, rgba(255, 224, 207, 0.35), transparent 42%),
+    linear-gradient(140deg, #f4712a 0%, #d95112 100%);
+  color: #fff;
+  text-align: center;
+}
+
+.airpet-perm-header-icon {
+  width: 66px;
+  height: 66px;
+  margin: 0 auto 12px;
+  border-radius: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.24);
+}
+
+.airpet-perm-title {
+  margin: 0;
+  font-size: 1.5rem;
+  line-height: 1.2;
+  font-weight: 800;
+}
+
+.airpet-perm-subtitle {
+  margin: 8px auto 0;
+  max-width: 310px;
+  line-height: 1.45;
+  font-size: 0.86rem;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.airpet-platform-notice {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-bottom: 1px solid #dbeafe;
+  background: #f8fbff;
+  color: #1d4ed8;
+  font-size: 0.78rem;
+  text-align: center;
+}
+
+.airpet-install-card {
+  border: 1px solid rgba(226, 232, 240, 0.95);
+  border-radius: 14px;
+  background: #fff;
+  padding: 14px;
+}
+
+.airpet-install-text {
+  margin: 0;
+  color: #374151;
+  font-size: 0.86rem;
+  line-height: 1.45;
+  text-align: center;
+}
+
+.airpet-perm-list {
+  padding: 16px 18px 0;
+}
+
+.airpet-perm-card {
+  margin-bottom: 12px;
+  padding: 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(226, 232, 240, 0.95);
+  background: linear-gradient(180deg, #ffffff 0%, #fffcf8 100%);
+}
+
+.airpet-perm-card-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.airpet-perm-icon-wrap {
+  width: 46px;
+  height: 46px;
+  min-width: 46px;
+  border-radius: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.airpet-perm-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.airpet-perm-headline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.airpet-perm-name {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #111827;
+}
+
+.airpet-perm-desc {
+  margin: 0;
+  color: #6b7280;
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.airpet-perm-actions {
+  margin-left: 8px;
+  display: flex;
+  align-items: center;
+}
+
+.airpet-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 999px;
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.airpet-badge-required {
+  border: 1px solid #fecaca;
+  background: #fff1f2;
+  color: #be123c;
+}
+
+.airpet-badge-status-ok {
+  border: 1px solid #bbf7d0;
+  background: #f0fdf4;
+  color: #15803d;
+}
+
+.airpet-badge-status-warn {
+  border: 1px solid #fecaca;
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.airpet-badge-status-off {
+  border: 1px solid #e5e7eb;
+  background: #f9fafb;
+  color: #6b7280;
+}
+
+.airpet-perm-btn {
+  border: none;
+  border-radius: 10px;
+  padding: 8px 14px;
+  font-size: 0.74rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.2s ease, opacity 0.2s ease, background 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+  white-space: nowrap;
+  min-height: 38px;
+}
+
+.airpet-perm-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.airpet-perm-btn:focus-visible {
+  outline: 2px solid rgba(59, 130, 246, 0.5);
+  outline-offset: 2px;
+}
+
+.airpet-perm-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.airpet-perm-btn-allow {
+  background: linear-gradient(140deg, #f4712a 0%, #e25819 100%);
+  color: #fff;
+  box-shadow: 0 8px 18px rgba(242, 96, 32, 0.28);
+}
+
+.airpet-perm-btn-retry {
+  background: #fff5f5;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+.airpet-instruction-box {
+  margin-top: 10px;
+  padding: 11px 12px;
+  border-radius: 12px;
+  border: 1px solid #fde68a;
+  background: linear-gradient(180deg, #fffbeb 0%, #fef3c7 100%);
+}
+
+.airpet-instruction-title {
+  margin: 0 0 6px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #92400e;
+}
+
+.airpet-instruction-list {
+  margin: 0;
+  padding-left: 18px;
+  color: #78350f;
+  font-size: 0.72rem;
+  line-height: 1.55;
+}
+
+.airpet-instruction-text {
+  margin: 0;
+  color: #78350f;
+  font-size: 0.72rem;
+  line-height: 1.45;
+}
+
+.airpet-perm-footer {
+  padding: 8px 18px 18px;
+}
+
+.airpet-perm-progress {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 7px;
+  margin-bottom: 14px;
+}
+
+.airpet-perm-progress-step {
+  height: 6px;
+  border-radius: 999px;
+  background: #e5e7eb;
+  transition: background 0.25s ease;
+}
+
+.airpet-perm-progress-step.is-ok {
+  background: #10b981;
+}
+
+.airpet-perm-progress-step.is-blocked {
+  background: #ef4444;
+}
+
+.airpet-main-action,
+.airpet-secondary-action {
+  width: 100%;
+  border-radius: 12px;
+  font-weight: 800;
+  border: none;
+  transition: all 0.2s ease;
+}
+
+.airpet-main-action {
+  min-height: 48px;
+  padding: 13px 14px;
+  color: #fff;
+  background: linear-gradient(140deg, #f4712a 0%, #db4f12 100%);
+  box-shadow: 0 14px 24px rgba(242, 96, 32, 0.3);
+  font-size: 0.96rem;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.airpet-main-action:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.airpet-main-action[data-tone="success"] {
+  background: linear-gradient(140deg, #16a34a 0%, #15803d 100%);
+  box-shadow: 0 12px 22px rgba(22, 163, 74, 0.24);
+}
+
+.airpet-main-action[data-tone="info"] {
+  background: linear-gradient(140deg, #2563eb 0%, #1d4ed8 100%);
+  box-shadow: 0 12px 22px rgba(37, 99, 235, 0.26);
+}
+
+.airpet-main-action:disabled {
+  opacity: 0.72;
+  cursor: not-allowed;
+}
+
+.airpet-secondary-action {
+  margin-top: 8px;
+  min-height: 42px;
+  padding: 10px 12px;
+  background: transparent;
+  color: #6b7280;
+  font-size: 0.88rem;
+  white-space: nowrap;
+}
+
+.airpet-secondary-action:hover {
+  background: #f8fafc;
+  color: #374151;
+}
+
+@media (max-width: 520px) {
+  .airpet-perm-overlay {
+    padding: 10px;
+  }
+
+  .airpet-perm-modal {
+    max-height: 95vh;
+    border-radius: 18px;
+  }
+
+  .airpet-perm-header {
+    border-radius: 18px 18px 0 0;
+    padding: 18px 14px 14px;
+  }
+
+  .airpet-perm-title {
+    font-size: 1.2rem;
+  }
+
+  .airpet-perm-subtitle {
+    font-size: 0.76rem;
+    max-width: 100%;
+  }
+
+  .airpet-perm-list,
+  .airpet-perm-footer {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  .airpet-perm-card {
+    padding: 10px;
+  }
+
+  .airpet-perm-card-top {
+    gap: 8px;
+  }
+
+  .airpet-perm-name {
+    font-size: 0.84rem;
+  }
+
+  .airpet-perm-desc {
+    font-size: 0.73rem;
+    line-height: 1.35;
+  }
+
+  .airpet-perm-icon-wrap {
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+  }
+
+  .airpet-perm-actions {
+    margin-left: 4px;
+  }
+
+  .airpet-perm-btn {
+    padding: 7px 10px;
+    font-size: 0.67rem;
+    min-height: 34px;
+  }
+
+  .airpet-main-action {
+    min-height: 44px;
+    font-size: 0.86rem;
+    padding: 10px 12px;
+  }
+
+  .airpet-secondary-action {
+    min-height: 40px;
+    font-size: 0.8rem;
+    padding: 9px 10px;
+  }
+
+  .airpet-platform-notice {
+    font-size: 0.72rem;
+    padding: 9px 10px;
+  }
+}

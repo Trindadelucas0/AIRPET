@@ -14,7 +14,7 @@
  *                    status, nivel_alerta, data_criacao
  */
 
-const { query } = require('../config/database');
+const { query, pool } = require('../config/database');
 
 const PetPerdido = {
 
@@ -31,8 +31,9 @@ const PetPerdido = {
    * @param {number} dados.longitude - Longitude da última localização conhecida
    * @returns {Promise<object>} O registro do alerta criado
    */
-  async criar(dados) {
+  async criar(dados, client = null) {
     const { pet_id, descricao, latitude, longitude, cidade, recompensa } = dados;
+    const executor = client || pool;
 
     const hasCoords = latitude !== null && latitude !== undefined &&
                       longitude !== null && longitude !== undefined;
@@ -53,7 +54,7 @@ const PetPerdido = {
       ? [pet_id, descricao, latitude, longitude, cidade, recompensa]
       : [pet_id, descricao, cidade, recompensa];
 
-    const resultado = await query(sql, params);
+    const resultado = await executor.query(sql, params);
     return resultado.rows[0];
   },
 
@@ -199,8 +200,9 @@ const PetPerdido = {
     return resultado.rows[0];
   },
 
-  async resolver(id) {
-    const resultado = await query(
+  async resolver(id, client = null) {
+    const executor = client || pool;
+    const resultado = await executor.query(
       `UPDATE pets_perdidos
        SET status = 'resolvido'
        WHERE id = $1
@@ -274,6 +276,33 @@ const PetPerdido = {
     );
 
     return parseInt(resultado.rows[0].total, 10);
+  },
+
+  async listarAprovadosComCoordenadasOrdenadosPorData() {
+    const resultado = await query(
+      `SELECT pp.*, pp.ultima_lat AS latitude, pp.ultima_lng AS longitude
+       FROM pets_perdidos pp
+       WHERE pp.status = 'aprovado'
+       ORDER BY pp.data ASC`
+    );
+    return resultado.rows;
+  },
+
+  async listarPinsParaMapaBBox(swLat, swLng, neLat, neLng) {
+    const resultado = await query(
+      `SELECT pp.id, p.nome, pp.latitude, pp.longitude,
+              'pet_perdido' AS categoria, 'alert' AS icone,
+              'pet_perdido' AS tipo_original
+       FROM pets_perdidos pp
+       JOIN pets p ON p.id = pp.pet_id
+       WHERE pp.status = 'aprovado'
+         AND ST_Within(
+               pp.ultima_localizacao::geometry,
+               ST_MakeEnvelope($2, $1, $4, $3, 4326)
+             )`,
+      [swLat, swLng, neLat, neLng]
+    );
+    return resultado.rows;
   },
 };
 

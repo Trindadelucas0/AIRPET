@@ -1,6 +1,7 @@
 <% locals.titulo = 'Dashboard do Petshop' %>
 <%
   locals.extraHead = `
+  <link rel="stylesheet" href="/css/partner-ui.css">
   <style>
     .partner-app { max-width: 1200px; }
     .partner-top {
@@ -29,6 +30,18 @@
     .partner-status { border-radius: 16px; padding: 14px; background: var(--ink-2); border:1px solid var(--border); }
     .partner-status p, .partner-status .text-gray-600, .partner-status .text-gray-500 { color: var(--text-dim) !important; }
     .partner-list-item { border: 1px solid var(--border); border-radius: 14px; padding: 12px; background: var(--ink-3); }
+    .partner-quick-nav { display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
+    .partner-quick-nav a {
+      border:1px solid var(--border);
+      background: var(--ink-2);
+      color: var(--text-dim);
+      border-radius: 999px;
+      padding: 7px 12px;
+      font-size: 12px;
+      font-weight: 700;
+      text-decoration: none;
+    }
+    .partner-quick-nav a:hover { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 28%, var(--border)); }
     @media (max-width: 980px) {
       .partner-kpis { grid-template-columns: repeat(2, minmax(0,1fr)); }
     }
@@ -66,8 +79,16 @@
       <a href="/petshop-panel/auth/logout" class="text-sm text-gray-500 hover:text-gray-800">Sair</a>
     </div>
   </div>
+  <div class="partner-quick-nav">
+    <a href="#status-parceria">Status</a>
+    <a href="#vinculos-pendentes">Vinculos</a>
+    <a href="#perfil-publico">Perfil</a>
+    <a href="#novo-servico">Servicos</a>
+    <a href="#nova-postagem">Marketing</a>
+    <a href="#agendamentos">Agenda</a>
+  </div>
 
-  <section class="partner-status space-y-3">
+  <section id="status-parceria" class="partner-status space-y-3">
     <div class="flex items-center justify-between">
       <h2 class="font-bold text-gray-900">Status da parceria</h2>
       <span class="px-3 py-1 rounded-full text-xs font-semibold uppercase <%= statusClasses %>"><%= statusAtual.replace('_', ' ') %></span>
@@ -100,7 +121,7 @@
     <div class="partner-kpi"><p class="label">Agendamentos</p><p class="value"><%= (appointments || []).length %></p></div>
   </section>
 
-  <section class="partner-card">
+  <section id="vinculos-pendentes" class="partner-card">
     <div class="flex items-center justify-between mb-3">
       <h2 class="font-bold">Solicitações de vínculo de pets</h2>
       <span class="text-xs text-gray-500"><%= (solicitacoesVinculo || []).length %> pendentes</span>
@@ -135,7 +156,7 @@
   <section class="grid lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1.2fr)] gap-6">
     <%- include('../partials/petshop-calendar-card') %>
 
-    <div class="partner-card">
+    <div id="perfil-publico" class="partner-card">
       <h2 class="font-bold mb-3">Atualizar perfil público</h2>
       <p class="hint mb-3">Deixe seu perfil com cara de feed: slogan curto, descrição objetiva e links sociais.</p>
       <form action="/petshop-panel/perfil" method="POST" class="space-y-3">
@@ -148,7 +169,7 @@
       </form>
     </div>
 
-    <div class="partner-card">
+    <div id="novo-servico" class="partner-card">
       <h2 class="font-bold mb-3">Novo serviço</h2>
       <form action="/petshop-panel/servicos" method="POST" class="space-y-3">
         <input class="input w-full" name="nome" placeholder="Nome do serviço" required>
@@ -161,7 +182,7 @@
   </section>
 
   <section class="grid lg:grid-cols-2 gap-6">
-    <div class="partner-card">
+    <div id="nova-postagem" class="partner-card">
       <h2 class="font-bold mb-3">Nova postagem/produto</h2>
       <p class="hint mb-3">Use título curto e imagem forte para parecer uma vitrine tipo Instagram.</p>
       <form action="/petshop-panel/posts" method="POST" enctype="multipart/form-data" class="space-y-3">
@@ -197,7 +218,8 @@
     </div>
 
     <div class="partner-card">
-      <h2 class="font-bold mb-3">Agendamento (teste interno)</h2>
+      <h2 class="font-bold mb-3">Agendamento interno rapido</h2>
+      <p class="hint mb-3">Preencha dados para testes operacionais e ajuste de fluxo antes de abrir agenda publica.</p>
       <form action="/petshop-panel/agenda" method="POST" class="space-y-3">
         <input class="input w-full" name="usuario_id" placeholder="ID do usuário" required>
         <input class="input w-full" name="pet_id" placeholder="ID do pet" required>
@@ -209,7 +231,7 @@
     </div>
   </section>
 
-  <section class="partner-card">
+  <section id="agendamentos" class="partner-card">
     <h2 class="font-bold mb-3">Agendamentos recebidos</h2>
     <div class="space-y-3">
       <% (appointments || []).forEach(function(a) { %>

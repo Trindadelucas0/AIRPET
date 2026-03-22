@@ -183,6 +183,21 @@ const Petshop = {
     return resultado.rows;
   },
 
+  async listarPinsParaMapaBBox(swLat, swLng, neLat, neLng) {
+    const resultado = await query(
+      `SELECT id, nome, latitude, longitude, 'petshop' AS categoria,
+              'store' AS icone, 'petshop' AS tipo_original
+       FROM petshops
+       WHERE ativo = true
+         AND ST_Within(
+               localizacao::geometry,
+               ST_MakeEnvelope($2, $1, $4, $3, 4326)
+             )`,
+      [swLat, swLng, neLat, neLng]
+    );
+    return resultado.rows;
+  },
+
   /**
    * Conta o número total de petshops cadastrados.
    *
@@ -271,6 +286,165 @@ const Petshop = {
       params
     );
     return resultado.rows;
+  },
+
+  async existeSlug(slug) {
+    const r = await query('SELECT 1 FROM petshops WHERE slug = $1 LIMIT 1', [slug]);
+    return r.rows.length > 0;
+  },
+
+  async criarRascunhoCadastroPublico({
+    nome,
+    endereco,
+    telefone,
+    emailContato,
+    latitude,
+    longitude,
+    slug,
+    descricao,
+    logoUrl,
+    fotoCapaUrl,
+  }) {
+    const resultado = await query(
+      `INSERT INTO petshops (
+        nome, endereco, telefone, whatsapp, email_contato,
+        latitude, longitude, localizacao, ativo, status_parceria, slug, descricao, logo_url, foto_capa_url, data_atualizacao
+      )
+      VALUES (
+        $1, $2, $3, $3, $4,
+        $5::numeric, $6::numeric,
+        CASE
+          WHEN $5::numeric IS NOT NULL AND $6::numeric IS NOT NULL
+          THEN ST_SetSRID(ST_MakePoint($6::double precision, $5::double precision), 4326)::geography
+          ELSE NULL
+        END,
+        false, 'pendente', $7, $8, $9, $10, NOW()
+      )
+      RETURNING *`,
+      [nome, endereco, telefone, emailContato, latitude, longitude, slug, descricao || null, logoUrl, fotoCapaUrl]
+    );
+    return resultado.rows[0];
+  },
+
+  async atualizarDeSolicitacaoAprovada(petshopId, dados) {
+    const {
+      nome,
+      endereco,
+      telefone,
+      email,
+      latitude,
+      longitude,
+      descricao,
+      logoUrl,
+      fotoCapaUrl,
+      slug,
+    } = dados;
+    const resultado = await query(
+      `UPDATE petshops
+       SET nome = $2,
+           endereco = $3,
+           telefone = $4,
+           whatsapp = $5,
+           email_contato = $6,
+           latitude = $7::numeric,
+           longitude = $8::numeric,
+           localizacao = CASE
+             WHEN $7::numeric IS NOT NULL AND $8::numeric IS NOT NULL
+             THEN ST_SetSRID(ST_MakePoint($8::double precision, $7::double precision), 4326)::geography
+             ELSE localizacao
+           END,
+           descricao = COALESCE($9, descricao),
+           logo_url = COALESCE($10, logo_url),
+           foto_capa_url = COALESCE($11, foto_capa_url),
+           ativo = true,
+           ponto_de_apoio = true,
+           status_parceria = 'ativo',
+           slug = COALESCE(slug, $12),
+           data_atualizacao = NOW()
+       WHERE id = $1
+       RETURNING *`,
+      [
+        petshopId,
+        nome,
+        endereco,
+        telefone,
+        telefone,
+        email,
+        latitude,
+        longitude,
+        descricao || null,
+        logoUrl || null,
+        fotoCapaUrl || null,
+        slug,
+      ]
+    );
+    return resultado.rows[0];
+  },
+
+  async criarAtivoPorSolicitacaoAprovada(dados) {
+    const {
+      nome,
+      endereco,
+      telefone,
+      email,
+      latitude,
+      longitude,
+      descricao,
+      logoUrl,
+      fotoCapaUrl,
+      slug,
+    } = dados;
+    const resultado = await query(
+      `INSERT INTO petshops (
+        nome, endereco, telefone, whatsapp, email_contato,
+        latitude, longitude, localizacao, ativo, ponto_de_apoio,
+        descricao, logo_url, foto_capa_url, status_parceria, slug, data_atualizacao
+      )
+      VALUES (
+        $1, $2, $3, $4, $5,
+        $6::numeric, $7::numeric,
+        CASE
+          WHEN $6::numeric IS NOT NULL AND $7::numeric IS NOT NULL
+          THEN ST_SetSRID(ST_MakePoint($7::double precision, $6::double precision), 4326)::geography
+          ELSE NULL
+        END,
+        true, true,
+        $8, $9, $10, 'ativo', $11, NOW()
+      )
+      RETURNING *`,
+      [
+        nome,
+        endereco,
+        telefone,
+        telefone,
+        email,
+        latitude,
+        longitude,
+        descricao || null,
+        logoUrl || null,
+        fotoCapaUrl || null,
+        slug,
+      ]
+    );
+    return resultado.rows[0];
+  },
+
+  async marcarParceriaRejeitada(petshopId) {
+    await query(
+      `UPDATE petshops
+       SET status_parceria = 'rejeitado', ativo = false, data_atualizacao = NOW()
+       WHERE id = $1`,
+      [petshopId]
+    );
+  },
+
+  async marcarParceriaEmAnalise(petshopId) {
+    await query(
+      `UPDATE petshops
+       SET status_parceria = 'em_analise', data_atualizacao = NOW()
+       WHERE id = $1`,
+      [petshopId]
+    );
   },
 };
 

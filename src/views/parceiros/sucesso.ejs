@@ -1,16 +1,23 @@
 <% locals.titulo = 'Solicitação enviada' %>
+<% locals.extraHead = '<link rel="stylesheet" href="/css/partner-ui.css">' %>
 <%- include('../partials/header') %>
 
-<main class="flex-1 container mx-auto max-w-2xl px-4 py-12">
-  <div class="card text-center">
+<main class="flex-1 container mx-auto max-w-3xl px-4 py-12 partner-page">
+  <div class="card text-center partner-form-card">
     <div class="w-16 h-16 rounded-full bg-emerald-100 mx-auto flex items-center justify-center mb-4">
       <i class="fa-solid fa-check text-2xl text-emerald-600"></i>
     </div>
-    <h1 class="text-2xl font-bold text-gray-900 mb-2">Solicitação enviada com sucesso</h1>
-    <p class="text-gray-600 mb-6">
-      Recebemos seu cadastro de parceria. O status inicial é <strong>PENDENTE</strong> e o time AIRPET fará a validação.
+    <h1 class="text-2xl font-bold text-gray-900 mb-2">Solicitacao enviada com sucesso</h1>
+    <p class="text-gray-600 mb-5">
+      Recebemos seu cadastro. O status inicial e <strong>PENDENTE</strong> e o time AIRPET fara a validacao da sua loja.
     </p>
-    <a href="/" class="btn-primary w-full text-center">Voltar para o início</a>
+    <div class="grid gap-2 sm:grid-cols-2">
+      <a href="/petshop-panel/auth/login" class="btn-primary text-center">Entrar no painel parceiro</a>
+      <a href="/" class="btn-ghost text-center">Voltar para o inicio</a>
+    </div>
+    <p class="text-xs text-gray-500 mt-4">
+      Dica: ja acesse o painel para completar perfil, servicos e primeira publicacao.
+    </p>
   </div>
 </main>
 

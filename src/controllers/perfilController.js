@@ -3,7 +3,7 @@ const Pet = require('../models/Pet');
 const FotoPerfilPet = require('../models/FotoPerfilPet');
 const path = require('path');
 const fs = require('fs');
-const { query } = require('../config/database');
+const Raca = require('../models/Raca');
 const logger = require('../utils/logger');
 
 const perfilController = {
@@ -130,22 +130,8 @@ const perfilController = {
   async buscarRacas(req, res) {
     try {
       const { tipo, q } = req.query;
-      let sql = 'SELECT id, nome, tipo FROM racas WHERE 1=1';
-      const params = [];
-
-      if (tipo) {
-        params.push(tipo);
-        sql += ` AND tipo = $${params.length}`;
-      }
-      if (q) {
-        params.push('%' + q + '%');
-        sql += ` AND LOWER(nome) LIKE LOWER($${params.length})`;
-      }
-
-      sql += ' ORDER BY popular DESC, nome ASC LIMIT 50';
-
-      const resultado = await query(sql, params);
-      res.json(resultado.rows);
+      const rows = await Raca.buscar({ tipo, q, limite: 50 });
+      res.json(rows);
     } catch (erro) {
       logger.error('PERFIL_CTRL', 'Erro ao buscar raças', erro);
       res.status(500).json([]);

@@ -341,8 +341,7 @@ const authController = {
       }
 
       const senhaHash = await bcrypt.hash(senha, 12);
-      const { query } = require('../config/database');
-      await query('UPDATE usuarios SET senha_hash = $1, data_atualizacao = NOW() WHERE id = $2', [senhaHash, dados.userId]);
+      await Usuario.atualizarSenhaHash(dados.userId, senhaHash);
 
       resetTokens.delete(token);
 

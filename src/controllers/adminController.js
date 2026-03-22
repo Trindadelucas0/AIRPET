@@ -45,6 +45,7 @@ const Localizacao = require('../models/Localizacao');
 const PetshopPartnerRequest = require('../models/PetshopPartnerRequest');
 const PetshopPost = require('../models/PetshopPost');
 const PetshopAccount = require('../models/PetshopAccount');
+const ManualBoost = require('../models/ManualBoost');
 const notificacaoService = require('../services/notificacaoService');
 const adminAnalyticsService = require('../services/adminAnalyticsService');
 const petshopModerationService = require('../services/petshopModerationService');
@@ -209,53 +210,7 @@ async function listarUsuarios(req, res) {
     if (status === 'bloqueado') filtros.bloqueado = true;
     else if (status === 'ativo') filtros.bloqueado = false;
 
-    // Petshops parceiros (responsáveis) vinculados a petshop_accounts.
-    const wherePetshops = ['pa.usuario_id IS NOT NULL', "pa.status = 'ativo'"];
-    const valuesPetshops = [];
-    let idxPet = 1;
-    if (filtros.estado) {
-      wherePetshops.push(`u.estado = $${idxPet}`);
-      valuesPetshops.push(filtros.estado);
-      idxPet++;
-    }
-    if (filtros.cidade) {
-      wherePetshops.push(`u.cidade ILIKE $${idxPet}`);
-      valuesPetshops.push('%' + filtros.cidade + '%');
-      idxPet++;
-    }
-    if (typeof filtros.bloqueado === 'boolean') {
-      wherePetshops.push(`u.bloqueado = $${idxPet}`);
-      valuesPetshops.push(filtros.bloqueado);
-      idxPet++;
-    }
-
-    const petshopParceirosQuery = query(
-      `SELECT
-          u.id,
-          u.nome,
-          u.email,
-          u.foto_perfil,
-          u.cor_perfil,
-          u.telefone,
-          u.cidade,
-          u.estado,
-          u.bairro,
-          u.role,
-          u.bloqueado,
-          u.data_criacao,
-          p.id AS petshop_id,
-          p.nome AS petshop_nome,
-          p.endereco AS petshop_endereco,
-          p.telefone AS petshop_telefone,
-          p.ativo AS petshop_ativo,
-          pa.status AS petshop_account_status
-        FROM petshop_accounts pa
-        JOIN usuarios u ON u.id = pa.usuario_id
-        JOIN petshops p ON p.id = pa.petshop_id
-        WHERE ${wherePetshops.join(' AND ')}
-        ORDER BY u.data_criacao DESC`,
-      valuesPetshops
-    ).then(function (r) { return (r && r.rows) ? r.rows : []; });
+    const petshopParceirosQuery = PetshopAccount.listarParceirosResponsaveisAtivos(filtros);
 
     const [usuarios, estados, totalUsuarios, petshopParceiros] = await Promise.all([
       Object.keys(filtros).length ? Usuario.listarComFiltros(filtros) : Usuario.listarTodos(),
@@ -1091,15 +1046,7 @@ async function excluirUsuario(req, res) {
       return res.redirect(adminPath + '/usuarios');
     }
 
-    await query('UPDATE tag_batches SET criado_por = NULL WHERE criado_por = $1', [id]);
-    await query('UPDATE nfc_tags SET user_id = NULL WHERE user_id = $1', [id]);
-    await query('UPDATE conversas SET dono_id = NULL WHERE dono_id = $1', [id]);
-    await query('UPDATE conversas SET tutor_id = NULL WHERE tutor_id = $1', [id]);
-    await query('UPDATE conversas SET iniciador_id = NULL WHERE iniciador_id = $1', [id]);
-    await query('UPDATE mensagens_chat SET moderado_por = NULL WHERE moderado_por = $1', [id]);
-    await query('UPDATE agenda_petshop SET usuario_id = NULL WHERE usuario_id = $1', [id]);
-    await query('UPDATE pontos_mapa SET criado_por = NULL WHERE criado_por = $1', [id]);
-    await query('UPDATE diario_pet SET usuario_id = NULL WHERE usuario_id = $1', [id]);
+    await Usuario.anularReferenciasAntesExcluir(id);
 
     await Usuario.deletar(id);
     req.session.flash = { tipo: 'sucesso', mensagem: 'Cadastro excluído permanentemente.' };
@@ -1223,32 +1170,11 @@ async function enviarNotificacaoRegiao(req, res) {
 
 async function listarBoosts(req, res) {
   try {
-    const { query: dbQuery } = require('../config/database');
-    const boostsAtivos = await dbQuery(
-      `SELECT mb.id,
-              mb.target_type,
-              mb.target_id,
-              mb.boost_value,
-              mb.reason,
-              mb.starts_at,
-              mb.ends_at,
-              mb.created_at,
-              pet.nome AS pet_nome,
-              pet.foto AS pet_foto,
-              dono.id AS dono_id,
-              dono.nome AS dono_nome,
-              dono.foto_perfil AS dono_foto
-       FROM manual_boosts mb
-       LEFT JOIN pets pet ON mb.target_type = 'pet' AND pet.id = mb.target_id
-       LEFT JOIN usuarios dono ON dono.id = pet.usuario_id
-       WHERE mb.target_type = 'pet'
-       ORDER BY mb.created_at DESC
-       LIMIT 200`
-    );
+    const boostsAtivos = await ManualBoost.listarAtivosPorPet(200);
 
     return res.render('admin/boosts', {
       titulo: 'Boosts - AIRPET',
-      boosts: boostsAtivos.rows,
+      boosts: boostsAtivos,
     });
   } catch (erro) {
     logger.error('AdminController', 'Erro ao listar boosts', erro);
@@ -1262,16 +1188,9 @@ async function buscarUsuariosParaBoost(req, res) {
     const termo = (req.query.q || '').trim().toLowerCase();
     if (termo.length < 2) return res.json({ sucesso: true, usuarios: [] });
 
-    const resultado = await query(
-      `SELECT id, nome, foto_perfil, cidade, estado
-       FROM usuarios
-       WHERE LOWER(nome) LIKE $1
-       ORDER BY nome
-       LIMIT 20`,
-      [`%${termo}%`]
-    );
+    const usuarios = await Usuario.buscarPorNomeParcialParaAdmin(termo, 20);
 
-    return res.json({ sucesso: true, usuarios: resultado.rows });
+    return res.json({ sucesso: true, usuarios });
   } catch (erro) {
     logger.error('AdminController', 'Erro ao buscar usuários para boost', erro);
     return res.status(500).json({ sucesso: false, usuarios: [] });
@@ -1334,13 +1253,14 @@ async function criarBoost(req, res) {
     const possibleAdminId = Number.parseInt(req.session?.usuario?.id, 10);
     const createdBy = Number.isInteger(possibleAdminId) && possibleAdminId > 0 ? possibleAdminId : null;
 
-    await query(
-      `INSERT INTO manual_boosts
-         (target_type, target_id, boost_value, reason, starts_at, ends_at, created_by_admin)
-       VALUES
-         ($1, $2, $3, $4, NOW(), NOW() + ($5 || ' hours')::interval, $6)`,
-      [tipo, idAlvo, valor, motivo || null, horas, createdBy]
-    );
+    await ManualBoost.criar({
+      target_type: tipo,
+      target_id: idAlvo,
+      boost_value: valor,
+      reason: motivo || null,
+      duracao_horas: horas,
+      created_by_admin: createdBy,
+    });
 
     req.session.flash = { tipo: 'sucesso', mensagem: 'Boost criado com sucesso.' };
     return res.redirect(adminPath + '/boosts');
@@ -1355,12 +1275,7 @@ async function cancelarBoost(req, res) {
   try {
     const { id } = req.params;
     const adminPath = getAdminPath();
-    await query(
-      `UPDATE manual_boosts
-       SET ends_at = NOW()
-       WHERE id = $1`,
-      [id]
-    );
+    await ManualBoost.encerrarAgora(id);
     req.session.flash = { tipo: 'sucesso', mensagem: 'Boost cancelado.' };
     return res.redirect(adminPath + '/boosts');
   } catch (erro) {

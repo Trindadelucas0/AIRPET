@@ -29,6 +29,12 @@
     font-family: 'DM Sans', sans-serif;
   }
 
+  /* Garante que o hamburguer mobile nunca apareca na landing */
+  body.home-page #mobileMenuBtn,
+  body.home-page #mobileMenu {
+    display: none !important;
+  }
+
   .display-font { font-family: 'Bebas Neue', sans-serif; letter-spacing: 0.02em; }
 
   /* ── NOISE OVERLAY ── */
@@ -628,6 +634,130 @@
   }
   .lost-btn:hover { background: rgba(239,68,68,0.18); color: #fca5a5; text-decoration: none; }
 
+  /* ── PARTNER FUNNEL ── */
+  .partner-funnel-section {
+    background: var(--ink-2);
+    padding: 100px 24px;
+    border-top: 1px solid var(--ink-3);
+    border-bottom: 1px solid var(--ink-3);
+  }
+
+  .partner-funnel-wrap {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 18px;
+  }
+
+  .partner-funnel-main,
+  .partner-funnel-side {
+    border: 1px solid var(--ink-3);
+    border-radius: 20px;
+    background: var(--ink);
+    padding: 28px;
+  }
+
+  .partner-funnel-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(42px, 5vw, 64px);
+    line-height: 1;
+    color: var(--text);
+    margin: 0 0 12px;
+  }
+
+  .partner-funnel-sub {
+    color: var(--text-dim);
+    font-size: 15px;
+    line-height: 1.7;
+    margin: 0 0 22px;
+    max-width: 640px;
+  }
+
+  .partner-points {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+
+  .partner-point {
+    border: 1px solid var(--ink-3);
+    border-radius: 14px;
+    padding: 12px;
+    color: var(--text-dim);
+    font-size: 13px;
+  }
+
+  .partner-point i {
+    color: var(--accent);
+    margin-right: 7px;
+  }
+
+  .partner-proof {
+    border: 1px dashed rgba(242,96,32,0.35);
+    background: rgba(242,96,32,0.08);
+    border-radius: 14px;
+    padding: 12px;
+    font-size: 13px;
+    color: var(--text);
+    margin-bottom: 18px;
+  }
+
+  .partner-flow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 22px;
+  }
+
+  .partner-step {
+    border: 1px solid var(--ink-3);
+    background: var(--ink-2);
+    border-radius: 999px;
+    padding: 7px 11px;
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+
+  .partner-cta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .partner-side-title {
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--text);
+    margin-bottom: 12px;
+  }
+
+  .partner-side-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: 10px;
+  }
+
+  .partner-side-list li {
+    border: 1px solid var(--ink-3);
+    border-radius: 12px;
+    padding: 11px;
+    color: var(--text-dim);
+    font-size: 13px;
+  }
+
+  .partner-side-list strong {
+    color: var(--text);
+  }
+
+  @media (max-width: 900px) {
+    .partner-funnel-wrap { grid-template-columns: 1fr; }
+    .partner-points { grid-template-columns: 1fr; }
+  }
+
   /* ── CTA ── */
   .cta-section {
     background: var(--ink-2);
@@ -698,6 +828,69 @@
   .anim-2 { animation: fade-up 0.6s 0.25s both; }
   .anim-3 { animation: fade-up 0.6s 0.4s both; }
   .anim-4 { animation: fade-up 0.6s 0.55s both; }
+
+  /* ── INSTALL CTA ── */
+  .install-section {
+    background: var(--ink);
+    padding: 56px 24px 100px;
+  }
+
+  .install-inner {
+    max-width: 760px;
+    margin: 0 auto;
+    background: var(--ink-2);
+    border: 1px solid var(--ink-3);
+    border-radius: 20px;
+    padding: 28px;
+  }
+
+  .install-title {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--text);
+    margin: 0 0 8px;
+  }
+
+  .install-sub {
+    font-size: 14px;
+    color: var(--text-dim);
+    line-height: 1.6;
+    margin: 0 0 18px;
+  }
+
+  .install-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .install-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 18px;
+    border-radius: 12px;
+    border: 1px solid var(--ink-3);
+    background: transparent;
+    color: var(--text);
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .install-btn:hover {
+    background: var(--ink-3);
+    transform: translateY(-1px);
+  }
+
+  .install-status {
+    margin-top: 14px;
+    font-size: 13px;
+    color: var(--subtle);
+    min-height: 20px;
+  }
 </style>
 
 <script>document.body.classList.add('home-page');</script>
@@ -935,6 +1128,56 @@
 </section>
 <% } %>
 
+<!-- ═══════════════ PARTNER FUNNEL ═══════════════ -->
+<section class="partner-funnel-section">
+  <div class="partner-funnel-wrap reveal">
+    <div class="partner-funnel-main">
+      <div class="section-label">Para parceiros</div>
+      <h2 class="partner-funnel-title">TRANSFORME SEU PETSHOP EM VITRINE DIGITAL</h2>
+      <p class="partner-funnel-sub">
+        No AIRPET, seu petshop ganha visibilidade, recebe agendamentos e publica promocoes para uma comunidade que ja ama pets.
+      </p>
+
+      <div class="partner-points">
+        <div class="partner-point"><i class="fa-solid fa-bullhorn"></i>Divulgue servicos e ofertas no feed da comunidade.</div>
+        <div class="partner-point"><i class="fa-solid fa-calendar-check"></i>Organize atendimento com agenda e status de pedidos.</div>
+        <div class="partner-point"><i class="fa-solid fa-ranking-star"></i>Aumente descoberta local com perfil profissional.</div>
+        <div class="partner-point"><i class="fa-solid fa-users"></i>Converta audiencia em clientes recorrentes.</div>
+      </div>
+
+      <div class="partner-proof">
+        <strong>Fluxo simples:</strong> cadastro rapido, validacao do time AIRPET e painel pronto para operar e vender.
+      </div>
+
+      <div class="partner-flow">
+        <span class="partner-step">1. Cadastro parceiro</span>
+        <span class="partner-step">2. Analise da equipe</span>
+        <span class="partner-step">3. Painel liberado</span>
+      </div>
+
+      <div class="partner-cta-row">
+        <a href="/parceiros/cadastro" class="btn-primary-dark">
+          <i class="fa-solid fa-store"></i>
+          Quero ser parceiro
+        </a>
+        <a href="/petshop-panel/auth/login" class="btn-ghost-dark">
+          <i class="fa-solid fa-right-to-bracket"></i>
+          Entrar no painel parceiro
+        </a>
+      </div>
+    </div>
+
+    <aside class="partner-funnel-side">
+      <h3 class="partner-side-title">Ideal para</h3>
+      <ul class="partner-side-list">
+        <li><strong>Petshops locais:</strong> aumentar movimento com promocoes no feed.</li>
+        <li><strong>Clinicas e banho/tosa:</strong> organizar agenda e reduzir desencontro.</li>
+        <li><strong>Equipe comercial:</strong> acompanhar servicos, posts e resposta do publico.</li>
+      </ul>
+    </aside>
+  </div>
+</section>
+
 
 <!-- ═══════════════ CTA FINAL ═══════════════ -->
 <section class="cta-section">
@@ -957,6 +1200,27 @@
         Login parceiro
       </a>
     </div>
+  </div>
+</section>
+
+<!-- ═══════════════ INSTALL MOBILE ═══════════════ -->
+<section class="install-section">
+  <div class="install-inner reveal">
+    <h3 class="install-title">Instale no seu celular</h3>
+    <p class="install-sub">
+      Escolha seu sistema e adicione o AIRPET na tela inicial para abrir mais rapido, como app.
+    </p>
+    <div class="install-actions">
+      <button type="button" class="install-btn" data-install-platform="android">
+        <i class="fa-brands fa-android"></i>
+        Instalar no Android
+      </button>
+      <button type="button" class="install-btn" data-install-platform="ios">
+        <i class="fa-brands fa-apple"></i>
+        Instalar no iOS
+      </button>
+    </div>
+    <p class="install-status" data-install-status aria-live="polite"></p>
   </div>
 </section>
 

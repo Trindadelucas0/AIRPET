@@ -11,7 +11,7 @@
  *                    moderado_em, data_criacao
  */
 
-const { query } = require('../config/database');
+const { query, pool } = require('../config/database');
 
 const MensagemChat = {
 
@@ -133,8 +133,9 @@ const MensagemChat = {
    * @param {string} conversaId - UUID da conversa
    * @returns {Promise<number>} Número de mensagens removidas
    */
-  async deletarPorConversa(conversaId) {
-    const resultado = await query(
+  async deletarPorConversa(conversaId, client = null) {
+    const executor = client || pool;
+    const resultado = await executor.query(
       `DELETE FROM mensagens_chat
        WHERE conversa_id = $1`,
       [conversaId]

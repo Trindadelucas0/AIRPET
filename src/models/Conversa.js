@@ -11,7 +11,7 @@
  *                    tutor_id, status, data_criacao
  */
 
-const { query } = require('../config/database');
+const { query, pool } = require('../config/database');
 
 const Conversa = {
 
@@ -73,8 +73,9 @@ const Conversa = {
    * @param {string} petPerdidoId - UUID do alerta de pet perdido
    * @returns {Promise<Array>} Conversas do alerta
    */
-  async buscarPorPetPerdido(petPerdidoId) {
-    const resultado = await query(
+  async buscarPorPetPerdido(petPerdidoId, client = null) {
+    const executor = client || pool;
+    const resultado = await executor.query(
       `SELECT c.*,
               ini.nome AS iniciador_nome,
               tut.nome AS tutor_nome
@@ -90,11 +91,10 @@ const Conversa = {
   },
 
   /**
-   * Encerra uma conversa (quando o pet é encontrado ou o problema é resolvido).
-   * Muda o status para 'encerrada'.
+   * Lista conversas em que o usuario participa (iniciador ou tutor).
    *
-   * @param {string} id - UUID da conversa
-   * @returns {Promise<object>} Conversa atualizada
+   * @param {string} usuarioId - ID do usuario
+   * @returns {Promise<Array>}
    */
   async buscarPorUsuario(usuarioId) {
     const resultado = await query(
@@ -112,8 +112,15 @@ const Conversa = {
     return resultado.rows;
   },
 
-  async encerrar(id) {
-    const resultado = await query(
+  /**
+   * Encerra uma conversa (quando o pet e encontrado ou o problema e resolvido).
+   *
+   * @param {string} id - UUID da conversa
+   * @returns {Promise<object>} Conversa atualizada
+   */
+  async encerrar(id, client = null) {
+    const executor = client || pool;
+    const resultado = await executor.query(
       `UPDATE conversas
        SET status = 'encerrada',
            data_atualizacao = NOW()

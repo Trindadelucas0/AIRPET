@@ -38,7 +38,7 @@ const Localizacao = require('../models/Localizacao');
 const Notificacao = require('../models/Notificacao');
 const PetPerdido = require('../models/PetPerdido');
 const petshopRecoveryIntegrationService = require('./petshopRecoveryIntegrationService');
-const { query } = require('../config/database');
+const Usuario = require('../models/Usuario');
 const logger = require('../utils/logger');
 
 const nfcService = {
@@ -164,11 +164,7 @@ const nfcService = {
           dadosPet = await Pet.buscarPorId(tag.pet_id);
 
           if (dadosPet) {
-            const donoResult = await query(
-              'SELECT id, nome, telefone, email FROM usuarios WHERE id = $1',
-              [dadosPet.usuario_id]
-            );
-            dadosDono = donoResult.rows[0] || null;
+            dadosDono = await Usuario.buscarContatoBasicoPorId(dadosPet.usuario_id);
           }
         }
 
@@ -219,15 +215,7 @@ const nfcService = {
         }
 
         if (tag.pet_id) {
-          const ultimaLocalizacaoResult = await query(
-            `SELECT cidade, latitude, longitude, data
-             FROM localizacoes
-             WHERE pet_id = $1
-             ORDER BY data DESC
-             LIMIT 1`,
-            [tag.pet_id]
-          );
-          ultimaLocalizacao = ultimaLocalizacaoResult.rows[0] || null;
+          ultimaLocalizacao = await Localizacao.buscarUltimaPorPetId(tag.pet_id);
         }
 
         if (!petshopMaisProximo && alertaAtivo && alertaAtivo.latitude && alertaAtivo.longitude) {

@@ -63,6 +63,14 @@ const Vacina = {
     return resultado.rows;
   },
 
+  async buscarPorIdComUsuarioDono(id) {
+    const resultado = await query(
+      `SELECT v.*, p.usuario_id FROM vacinas v JOIN pets p ON p.id = v.pet_id WHERE v.id = $1`,
+      [id]
+    );
+    return resultado.rows[0] || null;
+  },
+
   /**
    * Atualiza os dados de uma vacina registrada.
    *

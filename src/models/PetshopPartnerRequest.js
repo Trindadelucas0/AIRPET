@@ -1,8 +1,9 @@
-const { query } = require('../config/database');
+const { query, pool } = require('../config/database');
 
 const PetshopPartnerRequest = {
-  async criar(dados) {
-    const result = await query(
+  async criar(dados, client = null) {
+    const executor = client || pool;
+    const result = await executor.query(
       `INSERT INTO petshop_partner_requests (
         petshop_id,
         status, empresa_nome, empresa_documento, responsavel_nome, responsavel_cargo,
@@ -81,8 +82,30 @@ const PetshopPartnerRequest = {
     return result.rows[0] || null;
   },
 
-  async atualizarStatus(id, status, observacoes_admin = null, motivo_rejeicao = null, adminEmail = null) {
+  async contarRecentesPorEmailOuTelefone(email, telefone) {
     const result = await query(
+      `SELECT COUNT(*)::int AS total
+       FROM petshop_partner_requests
+       WHERE data_criacao >= NOW() - INTERVAL '30 minutes'
+         AND (email = $1 OR telefone = $2)`,
+      [email || '', telefone || '']
+    );
+    return (result.rows[0] && result.rows[0].total) || 0;
+  },
+
+  async vincularPetshopSeNulo(requestId, petshopId, client = null) {
+    const executor = client || pool;
+    await executor.query(
+      `UPDATE petshop_partner_requests
+       SET petshop_id = COALESCE(petshop_id, $2)
+       WHERE id = $1`,
+      [requestId, petshopId]
+    );
+  },
+
+  async atualizarStatus(id, status, observacoes_admin = null, motivo_rejeicao = null, adminEmail = null, client = null) {
+    const executor = client || pool;
+    const result = await executor.query(
       `UPDATE petshop_partner_requests
        SET status = $2,
            observacoes_admin = COALESCE($3, observacoes_admin),

@@ -1,6 +1,9 @@
 <% var isLogado = typeof usuario !== 'undefined' && usuario; %>
 <% var notifCount = typeof notificacoesNaoLidas !== 'undefined' ? notificacoesNaoLidas : 0; %>
 <% var currentPath = typeof req !== 'undefined' ? req.path : ''; %>
+<% var currentOriginalUrl = typeof req !== 'undefined' ? (req.originalUrl || '') : ''; %>
+<% var pageTitle = typeof titulo !== 'undefined' ? String(titulo).toLowerCase() : ''; %>
+<% var isHomePage = currentPath === '/' || currentOriginalUrl === '/' || pageTitle === 'inicio'; %>
 
 <!-- Top Nav — estilo Instagram: nome no topo centralizado no mobile -->
 <nav class="sticky top-0 z-50 shadow-sm" id="navbar">
@@ -95,7 +98,7 @@
       </div>
 
       <!-- Mobile hamburger (for non-logged in) -->
-      <% if (!isLogado) { %>
+      <% if (!isLogado && !isHomePage) { %>
       <button type="button" id="mobileMenuBtn"
               class="md:hidden p-2 rounded-xl text-gray-500 hover:bg-gray-100 transition-colors">
         <i class="fa-solid fa-bars text-lg" id="menuIcon"></i>
@@ -105,7 +108,7 @@
   </div>
 
   <!-- Mobile Menu (non-logged) -->
-  <% if (!isLogado) { %>
+  <% if (!isLogado && !isHomePage) { %>
   <div id="mobileMenu" class="hidden md:hidden border-t border-gray-100 bg-white/95 backdrop-blur-lg">
     <div class="px-4 py-4 space-y-2">
       <a href="/auth/login" class="flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 transition-colors">

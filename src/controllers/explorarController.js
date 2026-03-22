@@ -17,7 +17,8 @@ const PetshopPostLike = require('../models/PetshopPostLike');
 const PetshopPostComment = require('../models/PetshopPostComment');
 const recomendacaoService = require('../services/recomendacaoService');
 const logger = require('../utils/logger');
-const { query } = require('../config/database');
+const PostIdempotencyKey = require('../models/PostIdempotencyKey');
+const PostInteractionRaw = require('../models/PostInteractionRaw');
 const PostMention = require('../models/PostMention');
 const CommentMention = require('../models/CommentMention');
 const PostTag = require('../models/PostTag');
@@ -71,17 +72,8 @@ function parsePetshopPublicationKey(raw) {
 
 async function tryGetIdempotentResponse(uid, idempotencyKey, requestHash) {
   if (!idempotencyKey) return null;
-  await query(`DELETE FROM post_idempotency_keys WHERE expires_at < NOW()`);
-  const row = await query(
-    `SELECT response_body, status_code, request_hash
-       FROM post_idempotency_keys
-      WHERE user_id = $1
-        AND idempotency_key = $2
-        AND expires_at > NOW()
-      LIMIT 1`,
-    [uid, idempotencyKey]
-  );
-  const existing = row.rows[0];
+  await PostIdempotencyKey.limparExpiradas();
+  const existing = await PostIdempotencyKey.buscarValida(uid, idempotencyKey);
   if (!existing) return null;
   if (existing.request_hash && requestHash && existing.request_hash !== requestHash) {
     return { status: 409, payload: { sucesso: false, mensagem: 'Idempotency-Key reutilizada com payload diferente.' } };
@@ -91,16 +83,7 @@ async function tryGetIdempotentResponse(uid, idempotencyKey, requestHash) {
 
 async function saveIdempotentResponse(uid, idempotencyKey, requestHash, statusCode, payload) {
   if (!idempotencyKey) return;
-  await query(
-    `INSERT INTO post_idempotency_keys (user_id, idempotency_key, request_hash, response_body, status_code, expires_at)
-     VALUES ($1, $2, $3, $4::jsonb, $5, NOW() + interval '60 seconds')
-     ON CONFLICT (user_id, idempotency_key) DO UPDATE
-     SET request_hash = EXCLUDED.request_hash,
-         response_body = EXCLUDED.response_body,
-         status_code = EXCLUDED.status_code,
-         expires_at = EXCLUDED.expires_at`,
-    [uid, idempotencyKey, requestHash || null, JSON.stringify(payload || {}), statusCode || 200]
-  );
+  await PostIdempotencyKey.salvarOuAtualizar(uid, idempotencyKey, requestHash, statusCode, payload);
 }
 
 async function autoDeleteSeNecessario(usuarioId) {
@@ -643,9 +626,8 @@ const explorarController = {
     try {
       const uid = req.session.usuario.id;
       const { id } = req.params;
-      const { query: dbQuery } = require('../config/database');
-      const check = await dbQuery('SELECT * FROM comentarios WHERE id = $1', [id]);
-      if (!check.rows[0] || check.rows[0].usuario_id !== uid) {
+      const check = await Comentario.buscarPorId(id);
+      if (!check || check.usuario_id !== uid) {
         return res.status(403).json({ sucesso: false, mensagem: 'Sem permissão.' });
       }
       await Comentario.deletar(id);
@@ -849,32 +831,17 @@ const explorarController = {
     try {
       const uid = req.session?.usuario?.id;
       const { q, seguindo } = req.query;
-      const { query: dbQuery } = require('../config/database');
       const somenteSeguindo = seguindo === '1' && uid;
 
       if (somenteSeguindo) {
-        // Menções estilo Instagram: só quem eu sigo (digitar @ abre a lista)
         const termo = (q || '').trim().toLowerCase();
-        const params = [uid];
-        let sql = `SELECT u.id, u.nome, u.cor_perfil, u.foto_perfil
-          FROM seguidores s
-          JOIN usuarios u ON u.id = s.seguido_id
-          WHERE s.seguidor_id = $1`;
-        if (termo.length >= 1) {
-          params.push('%' + termo + '%');
-          sql += ` AND LOWER(u.nome) LIKE $2`;
-        }
-        sql += ` ORDER BY u.nome LIMIT 15`;
-        const resultado = await dbQuery(sql, params);
-        return res.json(resultado.rows);
+        const rows = await Seguidor.listarSeguidosParaMencao(uid, termo.length >= 1 ? termo : null, 15);
+        return res.json(rows);
       }
 
       if (!q || q.length < 2) return res.json([]);
-      const resultado = await dbQuery(
-        `SELECT id, nome, cor_perfil, foto_perfil FROM usuarios WHERE LOWER(nome) LIKE $1 ORDER BY nome LIMIT 10`,
-        ['%' + q.toLowerCase() + '%']
-      );
-      res.json(resultado.rows);
+      const rows = await Usuario.buscarBasicoPorNomeLike(`%${q.toLowerCase()}%`, 10);
+      res.json(rows);
     } catch (err) {
       logger.error('EXPLORAR', 'Erro ao buscar usuários', err);
       res.json([]);
@@ -886,21 +853,8 @@ const explorarController = {
       const q = String(req.query.q || '').replace(/^@/, '').trim().toLowerCase();
       const uid = req.session?.usuario?.id;
       if (!q || q.length < 1) return res.json({ sucesso: true, usuarios: [] });
-      const params = ['%' + q + '%'];
-      let whereExtra = '';
-      if (uid) {
-        params.push(uid);
-        whereExtra = ` OR u.id IN (SELECT seguido_id FROM seguidores WHERE seguidor_id = $2) `;
-      }
-      const r = await query(
-        `SELECT u.id, u.nome, u.foto_perfil, u.cor_perfil
-           FROM usuarios u
-          WHERE LOWER(u.nome) LIKE $1 ${whereExtra}
-          ORDER BY u.nome
-          LIMIT 10`,
-        params
-      );
-      res.json({ sucesso: true, usuarios: r.rows });
+      const usuarios = await Usuario.buscarParaMencaoAutocomplete(q, uid, 10);
+      res.json({ sucesso: true, usuarios });
     } catch (err) {
       logger.error('EXPLORAR', 'Erro busca usuários v2', err);
       res.status(500).json({ sucesso: false, usuarios: [] });
@@ -1298,13 +1252,13 @@ const explorarController = {
         return res.status(400).json({ sucesso: false, mensagem: 'postId inválido.' });
       }
 
-      await query(
-        `INSERT INTO post_interactions_raw
-           (user_id, post_id, event_type, watch_ms, city, metadata)
-         VALUES
-           ($1, $2, 'view', $3, $4, $5::jsonb)`,
-        [uid, postId, watchMs, city || null, JSON.stringify({ source })]
-      );
+      await PostInteractionRaw.registrarVisualizacao({
+        userId: uid,
+        postId,
+        watchMs,
+        city,
+        metadata: { source },
+      });
 
       return res.json({ sucesso: true });
     } catch (err) {
@@ -1321,19 +1275,12 @@ const explorarController = {
       let resultadosUsuarios = [];
 
       if (q.length >= 2) {
-        const { query: dbQuery } = require('../config/database');
         const [petsR, usersR] = await Promise.all([
           recomendacaoService.buscarPets(q, uid, 20),
-          dbQuery(
-            `SELECT u.id, u.nome, u.cor_perfil, u.foto_perfil, u.bio, u.cidade, u.bairro,
-                    (SELECT COUNT(*)::int FROM seguidores WHERE seguido_id = u.id) AS total_seguidores,
-                    (SELECT COUNT(*)::int FROM seguidores WHERE seguidor_id = $2 AND seguido_id = u.id) > 0 AS seguindo
-             FROM usuarios u WHERE LOWER(u.nome) LIKE $1 ORDER BY u.nome LIMIT 20`,
-            ['%' + q.toLowerCase() + '%', uid]
-          ),
+          Usuario.buscarParaPaginaBuscaExplorar(`%${q.toLowerCase()}%`, uid, 20),
         ]);
         resultadosPets = petsR;
-        resultadosUsuarios = usersR.rows;
+        resultadosUsuarios = usersR;
       }
 
       const [recomendacoes, petsRecomendados] = await Promise.all([

@@ -1,6 +1,7 @@
 <% locals.titulo = 'Login do Parceiro' %>
 <%
   locals.extraHead = `
+  <link rel="stylesheet" href="/css/partner-ui.css">
   <style>
     .partner-login-shell { max-width: 960px; }
     .partner-login-wrap {
@@ -57,12 +58,17 @@
     </div>
     <div class="partner-login-card">
       <h2 class="text-2xl font-extrabold mb-2" style="color:var(--text);">Entrar no Painel</h2>
-      <p class="text-sm mb-6" style="color:var(--text-dim);">Acesse com o e-mail aprovado na parceria.</p>
+      <p class="text-sm mb-6" style="color:var(--text-dim);">Acesse com o e-mail aprovado na parceria para gerir operacao e marketing da loja.</p>
       <form action="/petshop-panel/auth/login" method="POST" class="space-y-4 partner-login-form">
         <input class="input w-full" type="email" name="email" placeholder="E-mail" required />
         <input class="input w-full" type="password" name="senha" placeholder="Senha" required />
         <button class="btn-primary">Entrar</button>
       </form>
+      <div class="mt-5 text-sm flex flex-wrap gap-3">
+        <a href="/parceiros/cadastro" class="text-primary-600 hover:text-primary-700">Ainda nao sou parceiro</a>
+        <span style="color:var(--text-dim);">|</span>
+        <a href="/" class="text-primary-600 hover:text-primary-700">Voltar para inicio</a>
+      </div>
     </div>
   </section>
 </main>
