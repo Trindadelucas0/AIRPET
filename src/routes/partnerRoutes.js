@@ -5,6 +5,7 @@ const publicPartnerController = require('../controllers/publicPartnerController'
 const { uploadPetshopMediaMiddleware } = require('../middlewares/uploadPetshopMediaMiddleware');
 const { rateLimitPartnerSignupMiddleware } = require('../middlewares/rateLimitPartnerSignupMiddleware');
 const { geoValidationMiddleware } = require('../middlewares/geoValidationMiddleware');
+const { validarParceiroCadastro, validarResultado } = require('../middlewares/writeRouteValidators');
 
 router.get('/cadastro', publicPartnerController.mostrarFormulario);
 router.post(
@@ -13,6 +14,8 @@ router.post(
     { name: 'logo', maxCount: 1 },
     { name: 'fotos', maxCount: 6 },
   ]),
+  ...validarParceiroCadastro,
+  validarResultado,
   geoValidationMiddleware,
   rateLimitPartnerSignupMiddleware,
   publicPartnerController.enviarSolicitacao

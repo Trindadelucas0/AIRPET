@@ -73,6 +73,19 @@ const PontoMapa = {
     return resultado.rows;
   },
 
+  /**
+   * Conta pontos de interesse ativos (mapa público).
+   * Usado na landing para estatísticas.
+   *
+   * @returns {Promise<number>}
+   */
+  async contarAtivos() {
+    const resultado = await query(
+      `SELECT COUNT(*)::int AS total FROM pontos_mapa WHERE ativo = true`
+    );
+    return resultado.rows[0].total;
+  },
+
   async listarTodos() {
     const resultado = await query(
       `SELECT * FROM pontos_mapa ORDER BY data_criacao DESC`

@@ -5,6 +5,12 @@ const path = require('path');
 const crypto = require('crypto');
 
 const nfcController = require('../controllers/nfcController');
+const {
+  validarNfcLocalizacaoPublica,
+  validarNfcEncontrei,
+  validarNfcEnviarFoto,
+  validarResultado,
+} = require('../middlewares/writeRouteValidators');
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, path.join(__dirname, '..', 'public', 'images', 'pets')),
@@ -20,7 +26,7 @@ const upload = multer({
 });
 
 router.get('/:tag_code', nfcController.processarScan);
-router.post('/:tag_code/localizacao', nfcController.registrarLocalizacaoPublica);
+router.post('/:tag_code/localizacao', ...validarNfcLocalizacaoPublica, validarResultado, nfcController.registrarLocalizacaoPublica);
 router.get('/:tag_code/encontrei', nfcController.mostrarEncontrei);
 router.post('/:tag_code/encontrei', function (req, res, next) {
   upload.single('foto')(req, res, function (err) {
@@ -35,7 +41,7 @@ router.post('/:tag_code/encontrei', function (req, res, next) {
     }
     next();
   });
-}, nfcController.processarEncontrei);
+}, ...validarNfcEncontrei, validarResultado, nfcController.processarEncontrei);
 router.get('/:tag_code/enviar-foto', nfcController.mostrarEnviarFoto);
 router.post('/:tag_code/enviar-foto', function (req, res, next) {
   upload.single('foto')(req, res, function (err) {
@@ -50,6 +56,6 @@ router.post('/:tag_code/enviar-foto', function (req, res, next) {
     }
     next();
   });
-}, nfcController.processarEnviarFoto);
+}, ...validarNfcEnviarFoto, validarResultado, nfcController.processarEnviarFoto);
 
 module.exports = router;

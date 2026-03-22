@@ -146,6 +146,26 @@ const PetPerdido = {
   },
 
   /**
+   * Alertas aprovados recentes para a home pública (cards + contagem).
+   *
+   * @param {number} [limite=3]
+   * @returns {Promise<Array>}
+   */
+  async listarRecentesAprovadosParaHome(limite = 3) {
+    const lim = Math.min(Math.max(parseInt(limite, 10) || 3, 1), 20);
+    const resultado = await query(
+      `SELECT pp.*, p.nome AS pet_nome, p.foto AS pet_foto, p.raca AS pet_raca
+       FROM pets_perdidos pp
+       JOIN pets p ON p.id = pp.pet_id
+       WHERE pp.status = 'aprovado'
+       ORDER BY pp.data DESC
+       LIMIT $1`,
+      [lim]
+    );
+    return resultado.rows;
+  },
+
+  /**
    * Lista todos os alertas (qualquer status) com dados enriquecidos.
    * Usado no painel administrativo para gestão completa.
    *

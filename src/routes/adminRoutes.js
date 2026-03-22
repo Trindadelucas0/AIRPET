@@ -8,6 +8,19 @@ const adminController = require('../controllers/adminController');
 const pontoMapaController = require('../controllers/pontoMapaController');
 const { apenasAdmin } = require('../middlewares/adminMiddleware');
 const { limiterLogin } = require('../middlewares/rateLimiter');
+const { camposPermitidosSe, predicadoAdminConfigKey } = require('../middlewares/validator');
+const {
+  validarAdminLogin,
+  validarAdminBoost,
+  validarAdminRejeitarPetshop,
+  validarAdminEscalar,
+  validarAdminRole,
+  validarAdminAparencia,
+  validarAdminNotificacaoRegiao,
+  validarPontoMapa,
+  validarBodyVazioJson,
+  validarResultado,
+} = require('../middlewares/writeRouteValidators');
 
 const pwaDir = path.join(__dirname, '..', 'public', 'images', 'pwa');
 const storagePwa = multer.diskStorage({
@@ -45,7 +58,7 @@ router.get('/login', (req, res) => {
   res.render('admin/login', { titulo: 'Admin Login', flash });
 });
 
-router.post('/login', limiterLogin, async (req, res) => {
+router.post('/login', limiterLogin, ...validarAdminLogin, validarResultado, async (req, res) => {
   try {
     const { email, senha } = req.body || {};
     const adminEmail = process.env.ADMIN_EMAIL;
@@ -94,49 +107,56 @@ router.get('/analytics', apenasAdmin, adminController.mostrarAnalyticsAvancado);
 router.get('/boosts', apenasAdmin, adminController.listarBoosts);
 router.get('/boosts/buscar-usuarios', apenasAdmin, adminController.buscarUsuariosParaBoost);
 router.get('/boosts/buscar-pets', apenasAdmin, adminController.buscarPetsParaBoost);
-router.post('/boosts', apenasAdmin, adminController.criarBoost);
-router.post('/boosts/:id/cancelar', apenasAdmin, adminController.cancelarBoost);
+router.post('/boosts', apenasAdmin, ...validarAdminBoost, validarResultado, adminController.criarBoost);
+router.post('/boosts/:id/cancelar', apenasAdmin, ...validarBodyVazioJson, validarResultado, adminController.cancelarBoost);
 
 router.get('/usuarios', apenasAdmin, adminController.listarUsuarios);
 router.get('/pets', apenasAdmin, adminController.listarPets);
 router.get('/petshops', apenasAdmin, adminController.listarPetshops);
 router.get('/petshops/solicitacoes', apenasAdmin, adminController.listarSolicitacoesPetshop);
-router.post('/petshops/:id/aprovar', apenasAdmin, adminController.aprovarSolicitacaoPetshop);
-router.post('/petshops/:id/rejeitar', apenasAdmin, adminController.rejeitarSolicitacaoPetshop);
-router.post('/petshops/:id/em-analise', apenasAdmin, adminController.colocarSolicitacaoPetshopEmAnalise);
-router.post('/petshops/:id/suporte', apenasAdmin, adminController.contatarSuportePetshop);
-router.post('/petshops/promocoes/:id/aprovar', apenasAdmin, adminController.aprovarPromocaoPetshop);
-router.post('/petshops/promocoes/:id/rejeitar', apenasAdmin, adminController.rejeitarPromocaoPetshop);
-router.post('/petshops/:id/excluir', apenasAdmin, adminController.excluirPetshop);
+router.post('/petshops/:id/aprovar', apenasAdmin, ...validarBodyVazioJson, validarResultado, adminController.aprovarSolicitacaoPetshop);
+router.post('/petshops/:id/rejeitar', apenasAdmin, ...validarAdminRejeitarPetshop, validarResultado, adminController.rejeitarSolicitacaoPetshop);
+router.post('/petshops/:id/em-analise', apenasAdmin, ...validarBodyVazioJson, validarResultado, adminController.colocarSolicitacaoPetshopEmAnalise);
+router.post('/petshops/:id/suporte', apenasAdmin, ...validarBodyVazioJson, validarResultado, adminController.contatarSuportePetshop);
+router.post('/petshops/promocoes/:id/aprovar', apenasAdmin, ...validarBodyVazioJson, validarResultado, adminController.aprovarPromocaoPetshop);
+router.post('/petshops/promocoes/:id/rejeitar', apenasAdmin, ...validarAdminRejeitarPetshop, validarResultado, adminController.rejeitarPromocaoPetshop);
+router.post('/petshops/:id/excluir', apenasAdmin, ...validarBodyVazioJson, validarResultado, adminController.excluirPetshop);
 
 router.get('/pets-perdidos', apenasAdmin, adminController.listarPerdidos);
-router.post('/pets-perdidos/:id/aprovar', apenasAdmin, adminController.aprovarPerdido);
-router.post('/pets-perdidos/:id/rejeitar', apenasAdmin, adminController.rejeitarPerdido);
-router.post('/pets-perdidos/:id/escalar', apenasAdmin, adminController.escalarAlerta);
+router.post('/pets-perdidos/:id/aprovar', apenasAdmin, ...validarBodyVazioJson, validarResultado, adminController.aprovarPerdido);
+router.post('/pets-perdidos/:id/rejeitar', apenasAdmin, ...validarAdminRejeitarPetshop, validarResultado, adminController.rejeitarPerdido);
+router.post('/pets-perdidos/:id/escalar', apenasAdmin, ...validarAdminEscalar, validarResultado, adminController.escalarAlerta);
 
 router.get('/moderacao', apenasAdmin, adminController.mostrarModeracao);
-router.post('/moderacao/:id/aprovar', apenasAdmin, adminController.aprovarMensagem);
-router.post('/moderacao/:id/rejeitar', apenasAdmin, adminController.rejeitarMensagem);
+router.post('/moderacao/:id/aprovar', apenasAdmin, ...validarBodyVazioJson, validarResultado, adminController.aprovarMensagem);
+router.post('/moderacao/:id/rejeitar', apenasAdmin, ...validarAdminRejeitarPetshop, validarResultado, adminController.rejeitarMensagem);
 
-router.post('/usuarios/:id/role', apenasAdmin, adminController.atualizarRoleUsuario);
-router.post('/usuarios/:id/bloquear', apenasAdmin, adminController.toggleBloqueioUsuario);
-router.post('/usuarios/:id/excluir', apenasAdmin, adminController.excluirUsuario);
+router.post('/usuarios/:id/role', apenasAdmin, ...validarAdminRole, validarResultado, adminController.atualizarRoleUsuario);
+router.post('/usuarios/:id/bloquear', apenasAdmin, ...validarBodyVazioJson, validarResultado, adminController.toggleBloqueioUsuario);
+router.post('/usuarios/:id/excluir', apenasAdmin, ...validarBodyVazioJson, validarResultado, adminController.excluirUsuario);
 
 router.get('/configuracoes', apenasAdmin, adminController.mostrarConfiguracoes);
-router.post('/configuracoes', apenasAdmin, adminController.salvarConfiguracoes);
+router.post('/configuracoes', apenasAdmin, camposPermitidosSe(predicadoAdminConfigKey), adminController.salvarConfiguracoes);
 
 router.get('/aparencia', apenasAdmin, adminController.mostrarAparencia);
-router.post('/aparencia', apenasAdmin, uploadPwa.fields([{ name: 'icon_192', maxCount: 1 }, { name: 'icon_512', maxCount: 1 }]), adminController.salvarAparencia);
+router.post(
+  '/aparencia',
+  apenasAdmin,
+  uploadPwa.fields([{ name: 'icon_192', maxCount: 1 }, { name: 'icon_512', maxCount: 1 }]),
+  ...validarAdminAparencia,
+  validarResultado,
+  adminController.salvarAparencia
+);
 
 router.get('/notificacoes/enviar/preview', apenasAdmin, adminController.previewEnviarNotificacao);
 router.get('/notificacoes/enviar', apenasAdmin, adminController.mostrarEnviarNotificacao);
-router.post('/notificacoes/enviar', apenasAdmin, adminController.enviarNotificacaoRegiao);
+router.post('/notificacoes/enviar', apenasAdmin, ...validarAdminNotificacaoRegiao, validarResultado, adminController.enviarNotificacaoRegiao);
 
 router.get('/gerenciar-mapa', apenasAdmin, adminController.mostrarGerenciarMapa);
 router.get('/mapa', apenasAdmin, adminController.mostrarMapa);
-router.post('/pontos-mapa', apenasAdmin, pontoMapaController.criar);
-router.put('/pontos-mapa/:id', apenasAdmin, pontoMapaController.atualizar);
-router.post('/pontos-mapa/:id/toggle', apenasAdmin, pontoMapaController.ativarDesativar);
+router.post('/pontos-mapa', apenasAdmin, ...validarPontoMapa, validarResultado, pontoMapaController.criar);
+router.put('/pontos-mapa/:id', apenasAdmin, ...validarPontoMapa, validarResultado, pontoMapaController.atualizar);
+router.post('/pontos-mapa/:id/toggle', apenasAdmin, ...validarBodyVazioJson, validarResultado, pontoMapaController.ativarDesativar);
 router.delete('/pontos-mapa/:id', apenasAdmin, pontoMapaController.deletar);
 
 module.exports = router;

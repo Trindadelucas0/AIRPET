@@ -5,7 +5,8 @@ const path = require('path');
 const crypto = require('crypto');
 
 const petController = require('../controllers/petController');
-const { validarPet, validarResultado } = require('../middlewares/validator');
+const { validarPet, validarResultado, camposPermitidos, CAMPOS_PET_FORM } = require('../middlewares/validator');
+const { validarVincularTag } = require('../middlewares/writeRouteValidators');
 
 // Configuração do multer para upload de fotos de pets
 const storage = multer.diskStorage({
@@ -28,11 +29,11 @@ router.get('/', petController.listar);
 router.get('/cadastro', petController.mostrarCadastro);
 
 // Criar pet com upload de foto e validação
-router.post('/cadastro', upload.single('foto'), validarPet, validarResultado, petController.criar);
+router.post('/cadastro', upload.single('foto'), camposPermitidos(CAMPOS_PET_FORM), validarPet, validarResultado, petController.criar);
 
 // Vincular tag NFC ao pet
 router.get('/:id/vincular-tag', petController.mostrarVincularTag);
-router.post('/:id/vincular-tag', petController.vincularTag);
+router.post('/:id/vincular-tag', ...validarVincularTag, validarResultado, petController.vincularTag);
 
 // Perfil do pet
 router.get('/:id', petController.mostrarPerfil);
@@ -55,10 +56,10 @@ function handleUploadErro(req, res, next) {
 // Atualizar pet (POST de /editar ou PUT via method-override)
 router.post('/:id/editar', function (req, res, next) {
   upload.single('foto')(req, res, handleUploadErro(req, res, next));
-}, validarPet, validarResultado, petController.atualizar);
+}, camposPermitidos(CAMPOS_PET_FORM), validarPet, validarResultado, petController.atualizar);
 router.put('/:id', function (req, res, next) {
   upload.single('foto')(req, res, handleUploadErro(req, res, next));
-}, validarPet, validarResultado, petController.atualizar);
+}, camposPermitidos(CAMPOS_PET_FORM), validarPet, validarResultado, petController.atualizar);
 
 // Página de saúde do pet
 router.get('/:id/saude', petController.mostrarSaude);

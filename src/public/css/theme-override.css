@@ -141,7 +141,8 @@ a.text-primary-600,
   background: #fff;
 }
 
-.composer-textarea {
+/* Só o composer do explorar (composer-card); o feed usa .composer e estilos próprios */
+.composer-card .composer-textarea {
   line-height: 1.45;
   min-height: 2rem;
   max-height: 11rem;

@@ -56,6 +56,11 @@ const explorarRoutes = require('./explorarRoutes');
 const partnerRoutes = require('./partnerRoutes');
 const petshopPanelRoutes = require('./petshopPanelRoutes');
 
+const Pet = require('../models/Pet');
+const Usuario = require('../models/Usuario');
+const PontoMapa = require('../models/PontoMapa');
+const PetPerdido = require('../models/PetPerdido');
+
 router.use(limiterGeral);
 
 router.get('/', async (req, res) => {
@@ -67,23 +72,18 @@ router.get('/', async (req, res) => {
   let petsPerdidosRecentes = [];
 
   try {
-    const { query } = require('../config/database');
-    const [petsR, usersR, shopsR, perdidosR] = await Promise.all([
-      query('SELECT COUNT(*) AS total FROM pets'),
-      query('SELECT COUNT(*) AS total FROM usuarios'),
-      query('SELECT COUNT(*) AS total FROM pontos_mapa WHERE ativo = true'),
-      query(`SELECT pp.*, p.nome AS pet_nome, p.foto AS pet_foto, p.raca AS pet_raca
-             FROM pets_perdidos pp
-             JOIN pets p ON p.id = pp.pet_id
-             WHERE pp.status = 'aprovado'
-             ORDER BY pp.data DESC LIMIT 3`),
+    const [petsTotal, usuariosTotal, pontosMapaAtivos, perdidosRecentes] = await Promise.all([
+      Pet.contarTotal(),
+      Usuario.contarTotal(),
+      PontoMapa.contarAtivos(),
+      PetPerdido.listarRecentesAprovadosParaHome(3),
     ]);
     stats = {
-      pets: parseInt(petsR.rows[0].total),
-      usuarios: parseInt(usersR.rows[0].total),
-      petshops: parseInt(shopsR.rows[0].total),
+      pets: petsTotal,
+      usuarios: usuariosTotal,
+      petshops: pontosMapaAtivos,
     };
-    petsPerdidosRecentes = perdidosR.rows;
+    petsPerdidosRecentes = perdidosRecentes;
   } catch (e) {}
 
   res.render('home', { titulo: 'Inicio', stats, petsPerdidosRecentes });
@@ -119,13 +119,22 @@ router.get('/feed', estaAutenticado, require('../controllers/explorarController'
 
 // Perfil do usuario
 const perfilController = require('../controllers/perfilController');
-const { validarPerfil, validarResultado } = require('../middlewares/validator');
+const { validarPerfil, validarResultado, camposPermitidos, CAMPOS_PERFIL } = require('../middlewares/validator');
+const { validarPerfilGaleriaPost, validarPerfilGaleriaBody } = require('../middlewares/writeRouteValidators');
 router.get('/perfil', estaAutenticado, perfilController.mostrarPerfil);
-router.put('/perfil', estaAutenticado, uploadPerfilCapa.fields([{ name: 'foto_perfil', maxCount: 1 }, { name: 'foto_capa', maxCount: 1 }]), validarPerfil, validarResultado, perfilController.atualizar);
+router.put('/perfil', estaAutenticado, uploadPerfilCapa.fields([{ name: 'foto_perfil', maxCount: 1 }, { name: 'foto_capa', maxCount: 1 }]), camposPermitidos(CAMPOS_PERFIL), validarPerfil, validarResultado, perfilController.atualizar);
 
 router.get('/perfil/galeria', estaAutenticado, perfilController.listarGaleria);
 const { uploadPerfilGaleria } = require('../utils/upload');
-router.post('/perfil/galeria', estaAutenticado, uploadPerfilGaleria.single('foto'), perfilController.adicionarFotoGaleria);
+router.post(
+  '/perfil/galeria',
+  estaAutenticado,
+  uploadPerfilGaleria.single('foto'),
+  ...validarPerfilGaleriaPost,
+  ...validarPerfilGaleriaBody,
+  validarResultado,
+  perfilController.adicionarFotoGaleria
+);
 router.delete('/perfil/galeria/:id', estaAutenticado, perfilController.removerFotoGaleria);
 
 // API publica de racas (usada pelo autocomplete no cadastro de pet)

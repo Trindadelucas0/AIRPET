@@ -15,8 +15,10 @@
     "db:migrate": "node scripts/run-pgm.cjs up",
     "db:migrate:down": "node scripts/run-pgm.cjs down",
     "db:migrate:create": "node scripts/run-pgm.cjs create",
+    "db:health": "node scripts/db-health.cjs",
     "test": "jest",
-    "test:integration": "jest --runInBand"
+    "test:integration": "jest --runInBand",
+    "lint": "eslint \"src/controllers\" \"src/services\" \"src/routes\""
   },
   "keywords": [
     "pet",
@@ -48,11 +50,12 @@
   },
   "devDependencies": {
     "autoprefixer": "^10.4.27",
+    "eslint": "^9.39.4",
     "jest": "^29.7.0",
     "node-pg-migrate": "^8.0.4",
     "nodemon": "^3.1.14",
-    "supertest": "^7.0.0",
     "postcss": "^8.5.8",
+    "supertest": "^7.0.0",
     "tailwindcss": "^3.4.17"
   }
 }

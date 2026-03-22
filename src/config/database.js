@@ -2,10 +2,11 @@
  * database.js — Configuracao de conexao com PostgreSQL
  *
  * Cria um pool de conexoes reutilizavel usando o modulo 'pg'.
- * Todas as credenciais vem do .env (nunca hardcoded).
+ * Todas as credenciais veem do .env (nunca hardcoded).
  * O pool gerencia automaticamente conexoes abertas/fechadas.
  */
 
+const { performance } = require('node:perf_hooks');
 const { Pool } = require('pg');
 const logger = require('../utils/logger');
 
@@ -24,15 +25,46 @@ pool.on('error', (err) => {
   logger.error('DB', 'Erro inesperado no pool de conexoes', err);
 });
 
+const SLOW_QUERY_MS = parseInt(process.env.DB_SLOW_QUERY_MS || '1000', 10);
+const SLOW_SQL_PREVIEW_LEN = parseInt(process.env.DB_SLOW_SQL_PREVIEW_LEN || '200', 10);
+
+function truncateSqlPreview(text) {
+  if (!text || typeof text !== 'string') return '';
+  const t = text.replace(/\s+/g, ' ').trim();
+  return t.length <= SLOW_SQL_PREVIEW_LEN ? t : `${t.slice(0, SLOW_SQL_PREVIEW_LEN)}…`;
+}
+
 /**
  * Executa uma query parametrizada no banco.
  * Sempre use $1, $2... para evitar SQL injection.
+ * Registra aviso se a duracao ultrapassar DB_SLOW_QUERY_MS (default 1000).
  *
  * @param {string} text - Query SQL com placeholders ($1, $2...)
  * @param {Array} params - Valores dos placeholders
  * @returns {Promise<object>} Resultado da query
  */
-const query = (text, params) => pool.query(text, params);
+async function query(text, params) {
+  const t0 = performance.now();
+  try {
+    const result = await pool.query(text, params);
+    const ms = performance.now() - t0;
+    if (ms >= SLOW_QUERY_MS) {
+      logger.warn(
+        'DB',
+        `Query lenta ${ms.toFixed(0)}ms (limiar ${SLOW_QUERY_MS}ms) — ${truncateSqlPreview(text)}`
+      );
+    }
+    return result;
+  } catch (err) {
+    const ms = performance.now() - t0;
+    logger.error(
+      'DB',
+      `Query falhou apos ${ms.toFixed(0)}ms — ${truncateSqlPreview(text)}`,
+      err
+    );
+    throw err;
+  }
+}
 
 /**
  * Obtem uma conexao individual do pool.
@@ -40,6 +72,17 @@ const query = (text, params) => pool.query(text, params);
  * IMPORTANTE: sempre chame client.release() ao terminar.
  */
 const getClient = () => pool.connect();
+
+/**
+ * Metricas atuais do pool (uso em /health/db ou diagnostico).
+ */
+function getPoolStats() {
+  return {
+    totalCount: pool.totalCount,
+    idleCount: pool.idleCount,
+    waitingCount: pool.waitingCount,
+  };
+}
 
 /**
  * Executa callback dentro de uma transacao (BEGIN / COMMIT / ROLLBACK).
@@ -61,4 +104,4 @@ async function withTransaction(fn) {
   }
 }
 
-module.exports = { pool, query, getClient, withTransaction };
+module.exports = { pool, query, getClient, getPoolStats, withTransaction };

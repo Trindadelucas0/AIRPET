@@ -7,6 +7,17 @@ const crypto = require('crypto');
 
 const explorarController = require('../controllers/explorarController');
 const { estaAutenticadoAPI } = require('../middlewares/authMiddleware');
+const {
+  validarExplorarPostV1,
+  validarExplorarPostV2,
+  validarExplorarComentar,
+  validarExplorarComentarV2,
+  validarExplorarResponderTag,
+  validarExplorarVinculoPetshop,
+  validarExplorarView,
+  validarBodyVazioJson,
+  validarResultado,
+} = require('../middlewares/writeRouteValidators');
 
 const postsDir = path.join(__dirname, '..', 'public', 'images', 'posts');
 if (!fs.existsSync(postsDir)) {
@@ -78,7 +89,7 @@ router.post('/post', estaAutenticadoAPI, postRateLimit, function (req, res, next
     }
     next();
   });
-}, explorarController.criarPost);
+}, ...validarExplorarPostV1, validarResultado, explorarController.criarPost);
 
 router.post('/api/v2/posts', estaAutenticadoAPI, postRateLimit, function (req, res, next) {
   upload.array('media', 4)(req, res, function (err) {
@@ -90,36 +101,36 @@ router.post('/api/v2/posts', estaAutenticadoAPI, postRateLimit, function (req, r
     }
     next();
   });
-}, explorarController.criarPostV2);
+}, ...validarExplorarPostV2, validarResultado, explorarController.criarPostV2);
 router.get('/api/v2/feed', estaAutenticadoAPI, explorarController.feedV2);
-router.post('/api/v2/posts/:id/comments', estaAutenticadoAPI, postRateLimit, explorarController.comentarV2);
+router.post('/api/v2/posts/:id/comments', estaAutenticadoAPI, postRateLimit, ...validarExplorarComentarV2, validarResultado, explorarController.comentarV2);
 router.get('/api/v2/users/search', estaAutenticadoAPI, explorarController.buscarUsuariosV2);
-router.post('/api/v2/posts/:id/tags/respond', estaAutenticadoAPI, explorarController.responderTagPost);
+router.post('/api/v2/posts/:id/tags/respond', estaAutenticadoAPI, ...validarExplorarResponderTag, validarResultado, explorarController.responderTagPost);
 router.get('/api/v2/me/tagged-posts', estaAutenticadoAPI, explorarController.minhasMarcacoes);
 router.get('/api/v2/me/tagged-posts/pending', estaAutenticadoAPI, explorarController.minhasMarcacoesPendentes);
-router.post('/post/:id/repost', estaAutenticadoAPI, explorarController.repostar);
+router.post('/post/:id/repost', estaAutenticadoAPI, ...validarExplorarComentar, validarResultado, explorarController.repostar);
 
-router.post('/post/:id/curtir', estaAutenticadoAPI, explorarController.curtir);
+router.post('/post/:id/curtir', estaAutenticadoAPI, ...validarBodyVazioJson, validarResultado, explorarController.curtir);
 router.delete('/post/:id/curtir', estaAutenticadoAPI, explorarController.descurtir);
 
 router.get('/post/:id/comentarios', explorarController.comentarios);
 router.get('/post/:id/pets-proximos', explorarController.petsProximosPost);
-router.post('/post/:id/comentar', estaAutenticadoAPI, explorarController.comentar);
-router.post('/api/interactions/view', estaAutenticadoAPI, explorarController.registrarVisualizacao);
+router.post('/post/:id/comentar', estaAutenticadoAPI, ...validarExplorarComentar, validarResultado, explorarController.comentar);
+router.post('/api/interactions/view', estaAutenticadoAPI, ...validarExplorarView, validarResultado, explorarController.registrarVisualizacao);
 router.delete('/comentario/:id', estaAutenticadoAPI, explorarController.deletarComentario);
 
 // Interações sociais em publicações do petshop (cards no explorar)
-router.post('/petshops-post/:id/curtir', estaAutenticadoAPI, explorarController.curtirPetshopPublicacao);
+router.post('/petshops-post/:id/curtir', estaAutenticadoAPI, ...validarBodyVazioJson, validarResultado, explorarController.curtirPetshopPublicacao);
 router.delete('/petshops-post/:id/curtir', estaAutenticadoAPI, explorarController.descurtirPetshopPublicacao);
 router.get('/petshops-post/:id/comentarios', explorarController.comentariosPetshopPublicacao);
-router.post('/petshops-post/:id/comentar', estaAutenticadoAPI, explorarController.comentarPetshopPublicacao);
+router.post('/petshops-post/:id/comentar', estaAutenticadoAPI, ...validarExplorarComentar, validarResultado, explorarController.comentarPetshopPublicacao);
 
-router.post('/post/:id/fixar', estaAutenticadoAPI, explorarController.fixar);
+router.post('/post/:id/fixar', estaAutenticadoAPI, ...validarBodyVazioJson, validarResultado, explorarController.fixar);
 router.delete('/post/:id/fixar', estaAutenticadoAPI, explorarController.desafixar);
 
 router.delete('/post/:id', estaAutenticadoAPI, explorarController.deletarPost);
 
-router.post('/seguir/:id', estaAutenticadoAPI, explorarController.seguir);
+router.post('/seguir/:id', estaAutenticadoAPI, ...validarBodyVazioJson, validarResultado, explorarController.seguir);
 router.delete('/seguir/:id', estaAutenticadoAPI, explorarController.deixarDeSeguir);
 
 router.get('/perfil/:id', explorarController.perfilPublico);
@@ -133,7 +144,7 @@ router.get('/pet/:id', explorarController.perfilPet);
 router.get('/api/usuarios', explorarController.buscarUsuarios);
 router.get('/api/pets', explorarController.buscarPets);
 
-router.post('/pet/:id/seguir', estaAutenticadoAPI, explorarController.seguirPet);
+router.post('/pet/:id/seguir', estaAutenticadoAPI, ...validarBodyVazioJson, validarResultado, explorarController.seguirPet);
 router.delete('/pet/:id/seguir', estaAutenticadoAPI, explorarController.deixarDeSeguirPet);
 router.delete('/pet/:id/petshops/:petshopId', estaAutenticadoAPI, explorarController.desvincularPetshop);
 router.post('/pet/:id/capa', estaAutenticadoAPI, function (req, res, next) {
@@ -146,7 +157,7 @@ router.post('/pet/:id/capa', estaAutenticadoAPI, function (req, res, next) {
     }
     next();
   });
-}, explorarController.atualizarCapaPet);
+}, ...validarBodyVazioJson, validarResultado, explorarController.atualizarCapaPet);
 router.delete('/pet/:id/seguidor/:usuarioId', estaAutenticadoAPI, explorarController.removerSeguidorPet);
 
 router.get('/busca', explorarController.paginaBusca);

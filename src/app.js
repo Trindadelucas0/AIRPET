@@ -14,6 +14,7 @@ const sessionMiddleware = require('./config/session');
 const routes = require('./routes');
 const logger = require('./utils/logger');
 const ConfigSistema = require('./models/ConfigSistema');
+const { query: dbHealthQuery, getPoolStats } = require('./config/database');
 
 function createApplication() {
   const app = express();
@@ -101,6 +102,24 @@ function createApplication() {
     }
 
     next();
+  });
+
+  app.get('/health/db', async (req, res) => {
+    const secret = process.env.HEALTH_DB_SECRET;
+    if (!secret || String(req.query.secret || '') !== secret) {
+      return res.status(404).end();
+    }
+    try {
+      await dbHealthQuery('SELECT 1 AS ok');
+      const poolStats = getPoolStats();
+      return res.json({
+        ok: true,
+        pool: poolStats,
+      });
+    } catch (err) {
+      logger.error('HEALTH', 'Falha em /health/db', err);
+      return res.status(503).json({ ok: false, erro: 'database_unavailable' });
+    }
   });
 
   app.get('/manifest.json', async (req, res) => {

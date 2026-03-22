@@ -22,7 +22,6 @@ describe('Integracao HTTP', () => {
     await new Promise((resolve) => {
       io.close(() => resolve());
     });
-    await pool.end();
   });
 
   it('GET / responde HTML', async () => {
