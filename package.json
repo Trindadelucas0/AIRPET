@@ -8,6 +8,7 @@
     "dev": "nodemon server.js",
     "prestart": "npm run css:build",
     "predev": "npm run css:build",
+    "postinstall": "npm run css:build",
     "start:prod": "npm run css:build && node server.js",
     "css:build": "node node_modules/tailwindcss/lib/cli.js -i ./src/public/css/input.css -o ./src/public/css/output.css --minify",
     "css:watch": "node node_modules/tailwindcss/lib/cli.js -i ./src/public/css/input.css -o ./src/public/css/output.css --watch",
@@ -44,6 +45,7 @@
     "pg": "^8.20.0",
     "resend": "^4.8.0",
     "socket.io": "^4.8.3",
+    "tailwindcss": "^3.4.17",
     "web-push": "^3.6.7"
   },
   "devDependencies": {
@@ -51,7 +53,6 @@
     "eslint": "^9.39.4",
     "node-pg-migrate": "^8.0.4",
     "nodemon": "^3.1.14",
-    "postcss": "^8.5.8",
-    "tailwindcss": "^3.4.17"
+    "postcss": "^8.5.8"
   }
 }
