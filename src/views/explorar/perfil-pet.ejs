@@ -15,11 +15,6 @@
   @keyframes floatHeart { 0% { opacity: 1; transform: translateY(0) scale(1); } 100% { opacity: 0; transform: translateY(-80px) scale(1.6); } }
   .repost-quote { border-left: 3px solid #e5e7eb; }
   .caption-expanded .line-clamp-3 { -webkit-line-clamp: unset !important; }
-  #postDetailModal #postDetailOverlayEl { opacity: 0; transition: opacity 0.2s ease; }
-  #postDetailModal.is-open #postDetailOverlayEl { opacity: 1 !important; }
-  #postDetailModal #postDetailPanelEl { opacity: 0; transform: scale(0.96); transition: opacity 0.22s ease, transform 0.22s ease; }
-  #postDetailModal.is-open #postDetailPanelEl { opacity: 1 !important; transform: scale(1) !important; }
-  #postDetailModal .mention { color: var(--accent); font-weight: 600; }
   .pet-hero {
     position: relative;
     overflow: hidden;
@@ -374,7 +369,7 @@
   </div>
 
   <!-- Modal comentários -->
-  <div id="commentsModal" class="airpet-modal hidden z-[60]">
+  <div id="commentsModal" class="airpet-modal airpet-modal--comments hidden">
     <div class="airpet-modal__backdrop" id="commentsOverlay"></div>
     <div class="airpet-modal__sheet bg-white animate-slideUp" role="dialog" aria-modal="true" aria-labelledby="commentsModalPetTitle">
       <div class="airpet-modal__header border-b border-gray-100">

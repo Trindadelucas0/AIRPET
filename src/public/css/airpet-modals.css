@@ -183,6 +183,11 @@
   cursor: default;
 }
 
+/* Comentários: acima do conteúdo da página, abaixo do detalhe do post */
+.airpet-modal--comments {
+  z-index: 205;
+}
+
 /* Detalhe do post: painel (z acima do comment modal no explorar) */
 .airpet-modal--post-detail {
   z-index: 210;
@@ -272,5 +277,44 @@
   flex-shrink: 0;
   border-top: 1px solid var(--border, #e5e7eb);
   background: var(--ink-2, #fff);
-  padding-bottom: max(0.5rem, env(safe-area-inset-bottom, 0px));
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));
+}
+
+/* Abertura / fecho do detalhe (partilhado: feed, explorar, perfis) */
+#postDetailModal #postDetailOverlayEl {
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+#postDetailModal.is-open #postDetailOverlayEl {
+  opacity: 1 !important;
+}
+
+#postDetailModal #postDetailPanelEl {
+  opacity: 0;
+  transform: scale(0.96);
+  transition: opacity 0.22s ease, transform 0.22s ease;
+}
+
+#postDetailModal.is-open #postDetailPanelEl {
+  opacity: 1 !important;
+  transform: scale(1) !important;
+}
+
+#postDetailModal .mention {
+  color: var(--accent, #328dff);
+  font-weight: 600;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #postDetailModal #postDetailOverlayEl,
+  #postDetailModal #postDetailPanelEl {
+    transition: none;
+  }
+
+  #postDetailModal.is-open #postDetailOverlayEl,
+  #postDetailModal.is-open #postDetailPanelEl {
+    opacity: 1 !important;
+    transform: none !important;
+  }
 }
