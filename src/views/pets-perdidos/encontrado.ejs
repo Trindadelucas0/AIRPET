@@ -1,83 +1,47 @@
 <% locals.titulo = pet.nome + ' foi encontrado!' %>
 <% locals.extraHead = `
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
-  :root{--ink:#0d0d0f;--ink-2:#13131a;--ink-3:#1c1c26;--border:rgba(255,255,255,0.07);--border-hover:rgba(255,255,255,0.13);--text:#e4e4f0;--text-dim:#7a7a96;--text-muted:#3d3d52;--accent:#f26020;--green:#22c55e;--blue:#60a5fa;}
-  body{background:var(--ink)!important;color:var(--text)!important;font-family:'DM Sans',sans-serif;}
-  .enc-wrap{max-width:540px;margin:0 auto;padding:24px 20px 80px;}
-  .page-topbar{position:sticky;top:56px;z-index:40;background:rgba(13,13,15,0.88);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:12px 0;}
-  .topbar-inner{max-width:540px;margin:0 auto;padding:0 20px;display:flex;align-items:center;gap:12px;}
-  .back-link{color:var(--text-dim);font-size:13px;text-decoration:none;display:flex;align-items:center;gap:6px;transition:color 0.15s;}
-  .back-link:hover{color:var(--accent);text-decoration:none;}
-  /* Progress */
-  .step-progress{display:flex;align-items:center;gap:0;margin-bottom:6px;}
-  .step-dot{width:10px;height:10px;border-radius:50%;transition:all 0.3s;}
-  .step-dot.active{background:var(--green);transform:scale(1.3);}
-  .step-dot.done{background:var(--green);}
-  .step-dot.pending{background:var(--text-muted);}
-  .step-bar{flex:1;height:2px;transition:background 0.3s;}
-  .step-bar.done{background:var(--green);}
-  .step-bar.pending{background:var(--text-muted);}
-  .step-labels{display:flex;justify-content:space-between;font-size:11px;font-weight:700;margin-bottom:20px;}
-  /* Hero */
-  .enc-hero{background:rgba(34,197,94,0.06);border:1px solid rgba(34,197,94,0.2);border-radius:18px;padding:24px;text-align:center;margin-bottom:16px;}
-  .enc-avatar{width:80px;height:80px;border-radius:50%;object-fit:cover;border:3px solid rgba(34,197,94,0.5);margin:0 auto 12px;display:block;}
-  .enc-avatar-init{width:80px;height:80px;border-radius:50%;background:rgba(34,197,94,0.1);display:flex;align-items:center;justify-content:center;font-size:30px;margin:0 auto 12px;border:3px solid rgba(34,197,94,0.3);}
-  .enc-title{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:#fff;margin-bottom:6px;}
-  .enc-sub{font-size:14px;color:var(--text-dim);}
-  /* Steps */
-  .enc-step{display:none;}
-  .enc-step.active{display:block;}
-  /* Options */
-  .como-option{display:flex;align-items:center;gap:12px;padding:14px 16px;border:2px solid var(--border);border-radius:12px;cursor:pointer;transition:all 0.15s;margin-bottom:8px;}
-  .como-option:hover{border-color:var(--border-hover);}
-  .como-option.active{border-color:var(--green);background:rgba(34,197,94,0.06);}
-  .como-opt-icon{width:40px;height:40px;border-radius:11px;background:rgba(34,197,94,0.1);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px;color:var(--green);}
-  .como-opt-name{font-size:14px;font-weight:700;color:#fff;}
-  .como-opt-sub{font-size:11px;color:var(--text-dim);}
-  /* Section */
-  .section-card{background:var(--ink-2);border:1px solid var(--border);border-radius:18px;padding:22px;margin-bottom:14px;}
-  .section-title{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--text-dim);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:16px;}
-  .ds-input{width:100%;background:var(--ink-3);border:1px solid var(--border);border-radius:10px;padding:11px 14px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;outline:none;transition:border-color 0.2s,box-shadow 0.2s;}
-  .ds-input::placeholder{color:var(--text-muted);}
-  .ds-input:focus{border-color:rgba(34,197,94,0.5);box-shadow:0 0 0 3px rgba(34,197,94,0.06);}
-  .ds-label{display:block;font-size:11px;font-weight:700;color:var(--text-dim);letter-spacing:0.07em;text-transform:uppercase;margin-bottom:6px;}
-  .field-group{margin-bottom:14px;}
-  #mapaEncontrado{height:240px;border-radius:12px;overflow:hidden;filter:brightness(0.85) saturate(0.7);}
-  .search-results{background:var(--ink-3);border:1px solid var(--border);border-radius:10px;max-height:180px;overflow-y:auto;}
-  .search-result-item{padding:10px 14px;font-size:13px;cursor:pointer;color:var(--text);transition:background 0.1s;}
-  .search-result-item:hover{background:var(--ink-4);}
-  .btn-next{width:100%;padding:13px;background:var(--green);color:#fff;border:none;border-radius:12px;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:700;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:8px;}
-  .btn-next:hover{background:#16a34a;transform:translateY(-1px);}
-  .btn-back-step{width:100%;padding:11px;background:transparent;color:var(--text-dim);border:1px solid var(--border);border-radius:12px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.15s;margin-top:8px;}
-  .btn-back-step:hover{border-color:var(--border-hover);color:var(--text);}
+  .enc-page .enc-step{display:none;}
+  .enc-page .enc-step.active{display:block;}
+  .enc-page .step-progress{display:flex;align-items:center;gap:0;margin-bottom:6px;}
+  .enc-page .step-dot{width:10px;height:10px;border-radius:50%;transition:all 0.3s;}
+  .enc-page .step-dot.active{background:var(--green);transform:scale(1.3);}
+  .enc-page .step-dot.done{background:var(--green);}
+  .enc-page .step-dot.pending{background:var(--text-muted);}
+  .enc-page .step-bar{flex:1;height:2px;transition:background 0.3s;}
+  .enc-page .step-bar.done{background:var(--green);}
+  .enc-page .step-bar.pending{background:var(--text-muted);}
+  .enc-page #mapaEncontrado{height:240px;border-radius:12px;overflow:hidden;}
+  .enc-page .enc-search-results{background:var(--ink-2);border:1px solid var(--border);border-radius:10px;max-height:180px;overflow-y:auto;}
+  .enc-page .enc-search-result-item{padding:10px 14px;font-size:13px;cursor:pointer;color:var(--text);transition:background 0.1s;}
+  .enc-page .enc-search-result-item:hover{background:var(--ink-3);}
 </style>
 ` %>
 <%- include('../partials/header') %>
 <%- include('../partials/flash') %>
 
-<div class="page-topbar">
-  <div class="topbar-inner">
-    <a href="/pets/<%= pet.id %>" class="back-link"><i class="fa-solid fa-arrow-left"></i> <%= pet.nome %></a>
+<div class="air-sticky-topbar enc-page">
+  <div class="max-w-lg mx-auto px-5 py-3 flex items-center gap-3">
+    <a href="/pets/<%= pet.id %>" class="text-sm text-gray-500 hover:text-primary-600 flex items-center gap-2 no-underline">
+      <i class="fa-solid fa-arrow-left"></i> <%= pet.nome %>
+    </a>
   </div>
 </div>
 
-<main class="flex-1">
-  <div class="enc-wrap">
+<main class="flex-1 enc-page">
+  <div class="max-w-lg mx-auto px-5 pt-6 pb-24">
 
-    <!-- Hero -->
-    <div class="enc-hero">
+    <div class="rounded-2xl border border-emerald-200/80 bg-emerald-50/60 px-5 py-6 text-center mb-5">
       <% if (pet.foto) { %>
-        <img src="<%= pet.foto %>" class="enc-avatar" alt="<%= pet.nome %>">
+        <img src="<%= pet.foto %>" class="w-20 h-20 rounded-full object-cover border-[3px] border-emerald-400/60 mx-auto mb-3 shadow-sm" alt="<%= pet.nome %>">
       <% } else { %>
-        <div class="enc-avatar-init">🐾</div>
+        <div class="w-20 h-20 rounded-full bg-emerald-100 border-[3px] border-emerald-300/50 mx-auto mb-3 flex items-center justify-center text-3xl">🐾</div>
       <% } %>
-      <div class="enc-title">Boas notícias! 🎉</div>
-      <div class="enc-sub">Você encontrou <strong style="color:var(--text)"><%= pet.nome %></strong>? Conte-nos os detalhes.</div>
+      <h1 class="font-display text-xl font-extrabold text-gray-900 mb-1">Boas notícias! 🎉</h1>
+      <p class="text-sm text-gray-600">Você encontrou <strong class="text-gray-900"><%= pet.nome %></strong>? Conte-nos os detalhes.</p>
     </div>
 
-    <!-- Progress -->
     <div class="step-progress" id="progressBar">
       <div class="step-dot active" id="dot1"></div>
       <div class="step-bar pending" id="bar1"></div>
@@ -85,10 +49,10 @@
       <div class="step-bar pending" id="bar2"></div>
       <div class="step-dot pending" id="dot3"></div>
     </div>
-    <div class="step-labels">
-      <span id="label1" style="color:var(--green)">Detalhes</span>
-      <span id="label2" style="color:var(--text-muted)">Localização</span>
-      <span id="label3" style="color:var(--text-muted)">Confirmar</span>
+    <div class="flex justify-between text-[11px] font-bold mb-5">
+      <span id="label1" class="text-emerald-600 label-step">Detalhes</span>
+      <span id="label2" class="text-gray-400 label-step">Localização</span>
+      <span id="label3" class="text-gray-400 label-step">Confirmar</span>
     </div>
 
     <form action="/perdidos/<%= pet.id %>/encontrado" method="POST" id="formEncontrado">
@@ -97,126 +61,123 @@
       <input type="hidden" name="local_descricao" id="encLocalDesc">
       <input type="hidden" name="como_encontrado" id="encComo">
 
-      <!-- Step 1 -->
       <div class="enc-step active" id="stepComo">
-        <div class="section-card">
-          <div class="section-title">Como foi encontrado?</div>
-          <div class="como-option" onclick="selecionarComo(this,'resgatado')">
-            <div class="como-opt-icon"><i class="fa-solid fa-hands-holding-heart"></i></div>
-            <div><div class="como-opt-name">Resgatei pessoalmente</div><div class="como-opt-sub">Eu fui buscar</div></div>
+        <div class="air-section-card mb-4">
+          <div class="font-display text-xs font-bold text-gray-500 uppercase tracking-wide mb-4">Como foi encontrado?</div>
+          <div class="como-option flex items-center gap-3 p-3.5 mb-2 rounded-xl border-2 border-gray-200 cursor-pointer transition-all hover:border-gray-300" data-val="resgatado" role="button" tabindex="0">
+            <div class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0 text-base"><i class="fa-solid fa-hands-holding-heart"></i></div>
+            <div><div class="text-sm font-bold text-gray-900">Resgatei pessoalmente</div><div class="text-[11px] text-gray-500">Eu fui buscar</div></div>
           </div>
-          <div class="como-option" onclick="selecionarComo(this,'terceiro')">
-            <div class="como-opt-icon"><i class="fa-solid fa-person-walking"></i></div>
-            <div><div class="como-opt-name">Terceiro encontrou</div><div class="como-opt-sub">Alguém me devolveu</div></div>
+          <div class="como-option flex items-center gap-3 p-3.5 mb-2 rounded-xl border-2 border-gray-200 cursor-pointer transition-all hover:border-gray-300" data-val="terceiro" role="button" tabindex="0">
+            <div class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0 text-base"><i class="fa-solid fa-person-walking"></i></div>
+            <div><div class="text-sm font-bold text-gray-900">Terceiro encontrou</div><div class="text-[11px] text-gray-500">Alguém me devolveu</div></div>
           </div>
-          <div class="como-option" onclick="selecionarComo(this,'voltou')">
-            <div class="como-opt-icon"><i class="fa-solid fa-house"></i></div>
-            <div><div class="como-opt-name">Voltou por conta própria</div><div class="como-opt-sub">Apareceu sozinho</div></div>
+          <div class="como-option flex items-center gap-3 p-3.5 mb-2 rounded-xl border-2 border-gray-200 cursor-pointer transition-all hover:border-gray-300" data-val="voltou" role="button" tabindex="0">
+            <div class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0 text-base"><i class="fa-solid fa-house"></i></div>
+            <div><div class="text-sm font-bold text-gray-900">Voltou por conta própria</div><div class="text-[11px] text-gray-500">Apareceu sozinho</div></div>
           </div>
         </div>
-        <div class="section-card">
-          <div class="section-title">Observações</div>
-          <textarea name="descricao_encontrado" class="ds-input" rows="3" style="resize:none;" placeholder="Como estava? Algum detalhe importante?"></textarea>
+        <div class="air-section-card mb-4">
+          <div class="font-display text-xs font-bold text-gray-500 uppercase tracking-wide mb-3">Observações</div>
+          <textarea name="descricao_encontrado" class="w-full rounded-xl border border-gray-200 bg-white px-3.5 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-primary-500/20 focus:border-primary-400 outline-none" rows="3" style="resize:none;" placeholder="Como estava? Algum detalhe importante?"></textarea>
         </div>
-        <button type="button" class="btn-next" onclick="irParaStep2()"><i class="fa-solid fa-arrow-right"></i> Próximo</button>
+        <button type="button" class="w-full py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-sm" onclick="irParaStep2()"><i class="fa-solid fa-arrow-right"></i> Próximo</button>
       </div>
 
-      <!-- Step 2: Localização -->
       <div class="enc-step" id="stepLocal">
-        <div class="section-card">
-          <div class="section-title">Onde foi encontrado?</div>
-          <div class="field-group">
-            <label class="ds-label">Buscar endereço</label>
-            <input type="text" id="encBuscaEndereco" class="ds-input" placeholder="Bairro, rua...">
-            <div id="encSearchResults" class="search-results hidden" style="margin-top:4px;"></div>
+        <div class="air-section-card mb-4">
+          <div class="font-display text-xs font-bold text-gray-500 uppercase tracking-wide mb-4">Onde foi encontrado?</div>
+          <div class="mb-3">
+            <label class="block text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-1.5">Buscar endereço</label>
+            <input type="text" id="encBuscaEndereco" class="w-full rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-sm" placeholder="Bairro, rua...">
+            <div id="encSearchResults" class="enc-search-results hidden mt-1"></div>
           </div>
-          <div id="encMapaWrap" style="margin-top:8px;">
+          <div id="encMapaWrap" class="mt-2">
             <div id="mapaEncontrado"></div>
-            <p style="font-size:11px;color:var(--text-dim);margin-top:6px;"><i class="fa-solid fa-hand-pointer mr-1"></i>Toque no mapa para marcar o local</p>
+            <p class="text-[11px] text-gray-500 mt-1.5"><i class="fa-solid fa-hand-pointer mr-1"></i>Toque no mapa para marcar o local</p>
           </div>
-          <div id="encLocalSel" class="hidden" style="margin-top:10px;padding:10px 14px;background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);border-radius:10px;font-size:13px;color:var(--green);">
+          <div id="encLocalSel" class="hidden mt-2.5 px-3.5 py-2.5 rounded-xl text-sm text-emerald-700 bg-emerald-50 border border-emerald-200">
             <i class="fa-solid fa-check-circle mr-1"></i><span id="encLocalSelText"></span>
           </div>
         </div>
-        <button type="button" class="btn-next" onclick="irParaStep3()"><i class="fa-solid fa-arrow-right"></i> Próximo</button>
-        <button type="button" class="btn-back-step" onclick="irParaStep1()"><i class="fa-solid fa-arrow-left mr-1"></i> Voltar</button>
+        <button type="button" class="w-full py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm flex items-center justify-center gap-2" onclick="irParaStep3()"><i class="fa-solid fa-arrow-right"></i> Próximo</button>
+        <button type="button" class="btn-ghost w-full mt-2 py-2.5 text-sm font-semibold" onclick="irParaStep1()"><i class="fa-solid fa-arrow-left mr-1"></i> Voltar</button>
       </div>
 
-      <!-- Step 3: Confirmar -->
       <div class="enc-step" id="stepConfirmar">
-        <div class="section-card" style="text-align:center;padding:32px 22px;">
-          <div style="font-size:52px;margin-bottom:16px;">🎊</div>
-          <div style="font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:#fff;margin-bottom:8px;">Tudo pronto!</div>
-          <p style="font-size:14px;color:var(--text-dim);line-height:1.6;margin-bottom:20px;">Confirme para registrar que <strong style="color:var(--text)"><%= pet.nome %></strong> foi encontrado e remover o alerta.</p>
-          <button type="submit" class="btn-next">
+        <div class="air-section-card text-center py-8 px-5">
+          <div class="text-5xl mb-4">🎊</div>
+          <div class="font-display text-xl font-extrabold text-gray-900 mb-2">Tudo pronto!</div>
+          <p class="text-sm text-gray-600 leading-relaxed mb-6">Confirme para registrar que <strong class="text-gray-900"><%= pet.nome %></strong> foi encontrado e remover o alerta.</p>
+          <button type="submit" class="w-full py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm flex items-center justify-center gap-2">
             <i class="fa-solid fa-check"></i> Confirmar — <%= pet.nome %> está seguro!
           </button>
-          <button type="button" class="btn-back-step" onclick="irParaStep2()"><i class="fa-solid fa-arrow-left mr-1"></i> Voltar</button>
+          <button type="button" class="btn-ghost w-full mt-2 py-2.5 text-sm font-semibold" onclick="irParaStep2()"><i class="fa-solid fa-arrow-left mr-1"></i> Voltar</button>
         </div>
       </div>
     </form>
-
   </div>
 </main>
 
 <% locals.extraScripts = `
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var encMapa = null, encMarker = null;
-var currentStep = 1;
-
-function selecionarComo(el, val) {
-  document.querySelectorAll('.como-option').forEach(function(e){e.classList.remove('active');});
-  el.classList.add('active');
-  document.getElementById('encComo').value = val;
-}
-
-function atualizarProgress(step) {
-  ['dot1','dot2','dot3'].forEach(function(id,i){ var el=document.getElementById(id); el.className='step-dot '+(i+1<step?'done':i+1===step?'active':'pending'); });
-  ['bar1','bar2'].forEach(function(id,i){ document.getElementById(id).className='step-bar '+(i+1<step?'done':'pending'); });
-  ['label1','label2','label3'].forEach(function(id,i){ document.getElementById(id).style.color=i+1===step?'var(--green)':'var(--text-muted)'; });
-}
-
-function irParaStep1(){ document.getElementById('stepComo').classList.add('active'); document.getElementById('stepLocal').classList.remove('active'); document.getElementById('stepConfirmar').classList.remove('active'); atualizarProgress(1); }
-function irParaStep2(){ document.getElementById('stepComo').classList.remove('active'); document.getElementById('stepLocal').classList.add('active'); document.getElementById('stepConfirmar').classList.remove('active'); atualizarProgress(2); iniciarMapa(); }
-function irParaStep3(){ document.getElementById('stepLocal').classList.remove('active'); document.getElementById('stepConfirmar').classList.add('active'); atualizarProgress(3); }
-
-function iniciarMapa() {
-  if (encMapa) { encMapa.invalidateSize(); return; }
-  encMapa = L.map('mapaEncontrado').setView([-15.78,-47.93],13);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OSM'}).addTo(encMapa);
-  encMapa.on('click',function(e){
-    var ll=e.latlng;
-    if(encMarker) encMarker.setLatLng(ll); else encMarker=L.marker(ll).addTo(encMapa);
-    setEncLocal(ll.lat.toFixed(6),ll.lng.toFixed(6),'Marcado no mapa');
+(function(){
+  var encMapa=null, encMarker=null;
+  function selecionarComo(el,val){
+    document.querySelectorAll('.como-option').forEach(function(e){e.classList.remove('border-emerald-500','bg-emerald-50');});
+    el.classList.add('border-emerald-500','bg-emerald-50');
+    document.getElementById('encComo').value=val;
+  }
+  document.querySelectorAll('.como-option').forEach(function(opt){
+    opt.addEventListener('click',function(){selecionarComo(opt,opt.getAttribute('data-val'));});
+    opt.addEventListener('keydown',function(ev){if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();selecionarComo(opt,opt.getAttribute('data-val'));}});
   });
-}
-
-function setEncLocal(lat,lng,desc){
-  document.getElementById('encLat').value=lat; document.getElementById('encLng').value=lng; document.getElementById('encLocalDesc').value=desc;
-  var el=document.getElementById('encLocalSel'); el.classList.remove('hidden'); document.getElementById('encLocalSelText').textContent=desc;
-}
-
-var buscaTimer;
-document.getElementById('encBuscaEndereco').addEventListener('input',function(){
-  clearTimeout(buscaTimer); var q=this.value.trim(); if(q.length<3){document.getElementById('encSearchResults').classList.add('hidden');return;}
-  buscaTimer=setTimeout(function(){
-    fetch('https://nominatim.openstreetmap.org/search?q='+encodeURIComponent(q)+'&format=json&limit=4&accept-language=pt-BR')
-      .then(function(r){return r.json();}).then(function(data){
-        var el=document.getElementById('encSearchResults');
-        if(!data.length){el.classList.add('hidden');return;}
-        el.innerHTML=data.map(function(d){'return <div class="search-result-item" onclick="selecionarEncLocal('+d.lat+','+d.lon+',\\''+d.display_name.replace(/'/g,'')+'\\')">'+d.display_name+'</div>';}).join('');
-        el.classList.remove('hidden');
-      });
-  },400);
-});
-
-function selecionarEncLocal(lat,lng,desc){
-  document.getElementById('encSearchResults').classList.add('hidden');
-  document.getElementById('encBuscaEndereco').value=desc.split(',')[0];
-  setEncLocal(lat,lng,desc.split(',').slice(0,2).join(','));
-  if(encMapa){encMapa.setView([lat,lng],15);if(encMarker)encMarker.setLatLng([lat,lng]);else encMarker=L.marker([lat,lng]).addTo(encMapa);}
-}
+  function atualizarProgress(step){
+    ['dot1','dot2','dot3'].forEach(function(id,i){var el=document.getElementById(id);el.className='step-dot '+(i+1<step?'done':i+1===step?'active':'pending');});
+    ['bar1','bar2'].forEach(function(id,i){document.getElementById(id).className='step-bar '+(i+1<step?'done':'pending');});
+    ['label1','label2','label3'].forEach(function(id,i){var e=document.getElementById(id);if(!e)return;e.classList.toggle('text-emerald-600',i+1===step);e.classList.toggle('text-gray-400',i+1!==step);});
+  }
+  window.irParaStep1=function(){document.getElementById('stepComo').classList.add('active');document.getElementById('stepLocal').classList.remove('active');document.getElementById('stepConfirmar').classList.remove('active');atualizarProgress(1);};
+  window.irParaStep2=function(){document.getElementById('stepComo').classList.remove('active');document.getElementById('stepLocal').classList.add('active');document.getElementById('stepConfirmar').classList.remove('active');atualizarProgress(2);iniciarMapa();};
+  window.irParaStep3=function(){document.getElementById('stepLocal').classList.remove('active');document.getElementById('stepConfirmar').classList.add('active');atualizarProgress(3);};
+  function iniciarMapa(){
+    if(encMapa){encMapa.invalidateSize();return;}
+    encMapa=L.map('mapaEncontrado').setView([-15.78,-47.93],13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OSM'}).addTo(encMapa);
+    encMapa.on('click',function(e){var ll=e.latlng;if(encMarker)encMarker.setLatLng(ll);else encMarker=L.marker(ll).addTo(encMapa);setEncLocal(ll.lat.toFixed(6),ll.lng.toFixed(6),'Marcado no mapa');});
+  }
+  function setEncLocal(lat,lng,desc){
+    document.getElementById('encLat').value=lat;document.getElementById('encLng').value=lng;document.getElementById('encLocalDesc').value=desc;
+    var el=document.getElementById('encLocalSel');el.classList.remove('hidden');document.getElementById('encLocalSelText').textContent=desc;
+  }
+  window.selecionarEncLocal=function(lat,lng,desc){
+    document.getElementById('encSearchResults').classList.add('hidden');
+    document.getElementById('encBuscaEndereco').value=String(desc).split(',')[0];
+    setEncLocal(lat,lng,String(desc).split(',').slice(0,2).join(','));
+    if(encMapa){encMapa.setView([lat,lng],15);if(encMarker)encMarker.setLatLng([lat,lng]);else encMarker=L.marker([lat,lng]).addTo(encMapa);}
+  };
+  var buscaTimer;
+  document.getElementById('encBuscaEndereco').addEventListener('input',function(){
+    clearTimeout(buscaTimer);var q=this.value.trim();var elR=document.getElementById('encSearchResults');
+    if(q.length<3){elR.classList.add('hidden');elR.innerHTML='';return;}
+    buscaTimer=setTimeout(function(){
+      fetch('https://nominatim.openstreetmap.org/search?q='+encodeURIComponent(q)+'&format=json&limit=4&accept-language=pt-BR')
+        .then(function(r){return r.json();}).then(function(data){
+          if(!data.length){elR.classList.add('hidden');elR.innerHTML='';return;}
+          elR.innerHTML='';
+          data.forEach(function(d){
+            var div=document.createElement('div');
+            div.className='enc-search-result-item';
+            div.textContent=d.display_name||'';
+            div.addEventListener('click',function(){selecionarEncLocal(parseFloat(d.lat),parseFloat(d.lon),d.display_name);});
+            elR.appendChild(div);
+          });
+          elR.classList.remove('hidden');
+        });
+    },400);
+  });
+})();
 </script>
 ` %>
 

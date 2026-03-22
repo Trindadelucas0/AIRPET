@@ -60,8 +60,11 @@ const Pet = require('../models/Pet');
 const Usuario = require('../models/Usuario');
 const PontoMapa = require('../models/PontoMapa');
 const PetPerdido = require('../models/PetPerdido');
+const petPerdidoController = require('../controllers/petPerdidoController');
 
 router.use(limiterGeral);
+
+router.get('/alerta/:alertaId', petPerdidoController.mostrarAlertaPublico);
 
 router.get('/', async (req, res) => {
   if (req.session && req.session.usuario) {

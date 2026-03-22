@@ -15,6 +15,11 @@
   @keyframes floatHeart { 0% { opacity: 1; transform: translateY(0) scale(1); } 100% { opacity: 0; transform: translateY(-80px) scale(1.6); } }
   .repost-quote { border-left: 3px solid #e5e7eb; }
   .caption-expanded .line-clamp-3 { -webkit-line-clamp: unset !important; }
+  #postDetailModal #postDetailOverlayEl { opacity: 0; transition: opacity 0.2s ease; }
+  #postDetailModal.is-open #postDetailOverlayEl { opacity: 1 !important; }
+  #postDetailModal #postDetailPanelEl { opacity: 0; transform: scale(0.96); transition: opacity 0.22s ease, transform 0.22s ease; }
+  #postDetailModal.is-open #postDetailPanelEl { opacity: 1 !important; transform: scale(1) !important; }
+  #postDetailModal .mention { color: var(--accent); font-weight: 600; }
   .pet-hero {
     position: relative;
     overflow: hidden;
@@ -255,8 +260,28 @@
       <% } %>
 
       <% posts.forEach(function(post, idx) { %>
+        <% var exibirFotoMetaPet = (post.foto && String(post.foto).trim()) ? post.foto : (post.orig_foto ? post.orig_foto : ''); %>
+        <% var textoMetaPet = post.texto || post.legenda || ''; %>
+        <% var metaExplorarPet = {
+          kind: 'organic',
+          postId: post.id,
+          foto: exibirFotoMetaPet || '',
+          texto: textoMetaPet,
+          criado_em: post.criado_em || '',
+          autor_nome: post.autor_nome || '',
+          usuario_id: post.usuario_id,
+          foto_perfil: post.foto_perfil || '',
+          cor_perfil: post.cor_perfil || '#ec5a1c',
+          pet_id: pet.id,
+          pet_nome: pet.nome,
+          pet_foto: pet.foto || '',
+          fixada: !!post.fixada,
+          comments: true
+        }; %>
         <article class="bg-white rounded-2xl shadow-[0_8px_22px_rgba(17,24,39,.06)] border border-orange-100/70 mb-4 overflow-hidden post-enter"
+                 id="post-<%= post.id %>"
                  data-post-id="<%= post.id %>" data-author-id="<%= post.usuario_id %>"
+                 data-explorar-meta="<%= encodeURIComponent(JSON.stringify(metaExplorarPet)) %>"
                  style="animation-delay: <%= (idx * 50) + 200 %>ms">
           <% if (post.fixada) { %>
             <div class="flex items-center gap-2 px-4 pt-3 pb-0 text-xs text-amber-500 font-semibold">
@@ -368,6 +393,8 @@
       </form>
     </div>
   </div>
+
+<%- include('../partials/post-detail-modal') %>
 </main>
 
 <script>
@@ -385,19 +412,6 @@
   }
   function renderMencoesPet(texto) {
     return escapeHtmlPet(texto).replace(/@(\S+)/g, '<span class="mention" data-user="$1">@$1</span>');
-  }
-
-  var mainPetPosts = document.querySelector('main');
-  if (mainPetPosts && typeof window.openPostImageLightbox === 'function') {
-    mainPetPosts.addEventListener('click', function (e) {
-      var im = e.target.closest('img.post-photo, img.post-embed-img');
-      if (!im || !mainPetPosts.contains(im)) return;
-      var s = im.currentSrc || im.src;
-      if (!s) return;
-      e.preventDefault();
-      e.stopPropagation();
-      window.openPostImageLightbox(s, im.getAttribute('alt') || '');
-    });
   }
 
   function tempoRelativo(dateStr) {
@@ -748,4 +762,5 @@
   document.getElementById('listaSegOverlay').addEventListener('click', function () { listaSegModal.classList.add('hidden'); });
 })();
 </script>
+<script src="/js/airpet-post-detail-organic.js"></script>
 <%- include('../partials/footer') %>

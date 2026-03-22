@@ -1,0 +1,51 @@
+<% locals.titulo = titulo %>
+<%- include('../partials/header') %>
+<%- include('../partials/flash') %>
+
+<main class="flex-1 min-h-[60vh]">
+  <div class="max-w-lg mx-auto px-5 py-10">
+    <% if (ativo) { %>
+      <div class="rounded-2xl border border-red-200 bg-red-50/80 px-5 py-4 text-center mb-6">
+        <p class="text-sm font-bold text-red-700 uppercase tracking-wide"><i class="fa-solid fa-triangle-exclamation mr-1"></i> Pet perdido</p>
+        <p class="text-xs text-red-600/90 mt-1">Se você viu este animal, ajude a avisar a comunidade.</p>
+      </div>
+      <div class="air-section-card text-center">
+        <% if (alerta.pet_foto) { %>
+          <img src="<%= alerta.pet_foto %>" alt="<%= alerta.pet_nome %>" class="w-28 h-28 rounded-2xl object-cover mx-auto mb-4 shadow-md border border-gray-100">
+        <% } else { %>
+          <div class="w-28 h-28 rounded-2xl bg-orange-50 flex items-center justify-center text-4xl mx-auto mb-4 border border-orange-100">🐾</div>
+        <% } %>
+        <h1 class="font-display text-2xl font-extrabold text-gray-900 mb-1"><%= alerta.pet_nome || 'Pet' %></h1>
+        <% if (alerta.pet_raca) { %><p class="text-sm text-gray-500 mb-2"><%= alerta.pet_raca %><% if (alerta.pet_tipo) { %> · <%= alerta.pet_tipo %><% } %></p><% } %>
+        <% if (alerta.cidade) { %><p class="text-sm text-gray-600 mb-3"><i class="fa-solid fa-location-dot text-primary-500 mr-1"></i>Região: <%= alerta.cidade %></p><% } %>
+        <% if (alerta.descricao) { %>
+          <div class="text-left mt-4 pt-4 border-t border-gray-100">
+            <p class="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Informações</p>
+            <p class="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed"><%= alerta.descricao %></p>
+          </div>
+        <% } %>
+        <% if (alerta.recompensa) { %>
+          <p class="mt-4 text-amber-700 font-bold text-sm"><i class="fa-solid fa-gift mr-1"></i> Recompensa: <%= alerta.recompensa %></p>
+        <% } %>
+      </div>
+      <p class="text-center text-xs text-gray-400 mt-8 leading-relaxed">
+        Cadastre-se no AIRPET para ajudar na rede e receber alertas na sua região.
+      </p>
+      <div class="flex flex-col sm:flex-row gap-3 justify-center mt-4">
+        <a href="/auth/registro" class="btn-primary-inline text-center py-3 px-6 text-sm">Criar conta</a>
+        <a href="/auth/login" class="btn-ghost text-center py-3 px-6 text-sm">Entrar</a>
+      </div>
+    <% } else { %>
+      <div class="air-section-card text-center py-12">
+        <div class="text-5xl mb-4">✅</div>
+        <h1 class="font-display text-xl font-extrabold text-gray-900 mb-2">Boa notícia</h1>
+        <p class="text-sm text-gray-600 leading-relaxed">
+          Este alerta não está mais ativo. <strong class="text-gray-800"><%= alerta.pet_nome || 'O pet' %></strong> pode já ter sido reencontrado ou o alerta foi encerrado.
+        </p>
+        <a href="/" class="inline-flex mt-8 btn-primary-inline py-3 px-8 text-sm">Ir ao início</a>
+      </div>
+    <% } %>
+  </div>
+</main>
+
+<%- include('../partials/footer') %>

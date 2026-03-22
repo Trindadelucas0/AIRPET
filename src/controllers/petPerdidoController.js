@@ -344,6 +344,53 @@ async function mostrarConfirmacao(req, res) {
   }
 }
 
+const UUID_ALERTA_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+/**
+ * Página pública do alerta (compartilhável). Só exibe dados sensíveis mínimos.
+ * Conteúdo “ativo” apenas com alerta aprovado e pet ainda perdido.
+ */
+async function mostrarAlertaPublico(req, res) {
+  try {
+    const { alertaId } = req.params;
+    if (!UUID_ALERTA_RE.test(String(alertaId || ''))) {
+      return res.status(404).render('partials/erro', {
+        titulo: 'Alerta não encontrado',
+        mensagem: 'Este link não é válido.',
+        codigo: 404,
+      });
+    }
+
+    const alerta = await PetPerdido.buscarPorId(alertaId);
+    if (!alerta) {
+      return res.status(404).render('partials/erro', {
+        titulo: 'Alerta não encontrado',
+        mensagem: 'Não encontramos este alerta.',
+        codigo: 404,
+      });
+    }
+
+    const pet = await Pet.buscarPorId(alerta.pet_id);
+    const ativo = alerta.status === 'aprovado' && pet && pet.status === 'perdido';
+
+    return res.render('pets-perdidos/alerta-publico', {
+      titulo: ativo
+        ? `${alerta.pet_nome || 'Pet'} está perdido — AIRPET`
+        : `Alerta encerrado — AIRPET`,
+      alerta,
+      pet,
+      ativo,
+    });
+  } catch (erro) {
+    logger.error('PetPerdidoController', 'Erro na página pública do alerta', erro);
+    return res.status(500).render('partials/erro', {
+      titulo: 'Erro',
+      mensagem: 'Não foi possível carregar o alerta.',
+      codigo: 500,
+    });
+  }
+}
+
 module.exports = {
   mostrarFormulario,
   reportar,
@@ -351,4 +398,5 @@ module.exports = {
   mostrarFormularioEncontrado,
   marcarEncontrado,
   mostrarConfirmacao,
+  mostrarAlertaPublico,
 };

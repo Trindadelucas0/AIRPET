@@ -775,6 +775,17 @@
     return d.getDate() + ' ' + meses[d.getMonth()];
   }
 
+  function formatarDataHoraCompleta(dateStr) {
+    if (!dateStr) return '';
+    var d = new Date(dateStr);
+    if (Number.isNaN(d.getTime())) return '';
+    try {
+      return d.toLocaleString('pt-BR', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    } catch (_) {
+      return '';
+    }
+  }
+
   function atualizarTempos() {
     var els = document.querySelectorAll('.tempo-relativo');
     for (var i = 0; i < els.length; i++) {
@@ -872,12 +883,16 @@
 
   function abrirPostDetailModal() {
     if (!postDetailModal) return;
+    var wasHidden = postDetailModal.classList.contains('hidden');
     postDetailModal.classList.remove('hidden');
     postDetailModal.setAttribute('aria-hidden', 'false');
     syncBodyScrollLock();
     requestAnimationFrame(function () {
       requestAnimationFrame(function () { postDetailModal.classList.add('is-open'); });
     });
+    if (wasHidden && typeof window.AIRPET_modalHistory_afterPostDetailOpen === 'function') {
+      window.AIRPET_modalHistory_afterPostDetailOpen();
+    }
     var xf = document.getElementById('closePostDetail');
     if (xf) xf.focus();
   }
@@ -921,14 +936,20 @@
 
     var imgEl = document.getElementById('postDetailImg');
     var fbEl = document.getElementById('postDetailImgFallback');
-    if (meta.foto && imgEl && fbEl) {
+    var mediaCol = document.getElementById('postDetailMediaCol');
+    var hasFoto = !!(meta.foto && String(meta.foto).trim());
+    if (mediaCol) {
+      if (hasFoto) mediaCol.classList.remove('hidden');
+      else mediaCol.classList.add('hidden');
+    }
+    if (hasFoto && imgEl && fbEl) {
       imgEl.src = meta.foto;
       imgEl.classList.remove('hidden');
       fbEl.classList.add('hidden');
     } else if (imgEl && fbEl) {
       imgEl.classList.add('hidden');
       imgEl.removeAttribute('src');
-      fbEl.classList.remove('hidden');
+      fbEl.classList.add('hidden');
     }
 
     var row = document.getElementById('postDetailAuthorRow');
@@ -963,7 +984,31 @@
 
     var dStr = meta.criado_em || meta.created_em || '';
     var dateEl = document.getElementById('postDetailDate');
+    var dateAbsEl = document.getElementById('postDetailDateAbsolute');
     if (dateEl) dateEl.textContent = dStr ? tempoRelativo(dStr) : '';
+    if (dateAbsEl) {
+      dateAbsEl.textContent = dStr ? formatarDataHoraCompleta(dStr) : '';
+      if (!dStr) dateAbsEl.classList.add('hidden');
+      else dateAbsEl.classList.remove('hidden');
+    }
+
+    var shareRow = document.getElementById('postDetailShareRow');
+    var shareBtn = document.getElementById('postDetailBtnCompartilhar');
+    if (shareRow && shareBtn) {
+      var shareId = null;
+      var shareAutor = meta.autor_nome || meta.pet_nome || 'AIRPET';
+      if (meta.kind === 'organic' && meta.postId != null && meta.postId !== '') shareId = meta.postId;
+      else if (meta.kind === 'sponsored' && meta.postId != null && !Number.isNaN(Number(meta.postId))) shareId = meta.postId;
+      if (shareId != null && String(shareId).trim() !== '') {
+        shareRow.classList.remove('hidden');
+        shareBtn.setAttribute('data-post-id', String(shareId));
+        shareBtn.setAttribute('data-autor', shareAutor);
+      } else {
+        shareRow.classList.add('hidden');
+        shareBtn.removeAttribute('data-post-id');
+        shareBtn.removeAttribute('data-autor');
+      }
+    }
 
     var extra = document.getElementById('postDetailExtra');
     if (extra) {
@@ -1052,11 +1097,18 @@
   }
 
   var postDetailOverlayEl = document.getElementById('postDetailOverlayEl');
-  if (postDetailOverlayEl) postDetailOverlayEl.addEventListener('click', fecharPostDetailModal);
+  function requestClosePostDetail() {
+    if (typeof window.AIRPET_modalHistory_closePostDetail === 'function') {
+      window.AIRPET_modalHistory_closePostDetail();
+    } else {
+      fecharPostDetailModal();
+    }
+  }
+  if (postDetailOverlayEl) postDetailOverlayEl.addEventListener('click', requestClosePostDetail);
   var closePostDetailBtn = document.getElementById('closePostDetail');
-  if (closePostDetailBtn) closePostDetailBtn.addEventListener('click', fecharPostDetailModal);
+  if (closePostDetailBtn) closePostDetailBtn.addEventListener('click', requestClosePostDetail);
   var closePostDetailBack = document.getElementById('closePostDetailBack');
-  if (closePostDetailBack) closePostDetailBack.addEventListener('click', fecharPostDetailModal);
+  if (closePostDetailBack) closePostDetailBack.addEventListener('click', requestClosePostDetail);
 
   (function setupPostDetailOwnerMenu() {
     var btn = document.getElementById('btnPostDetailOwnerMenu');
@@ -1845,6 +1897,7 @@
       }
       totalPostsLocal = Math.max(0, totalPostsLocal - 1);
       toast('Publicação excluída.');
+      requestClosePostDetail();
     })
     .catch(function () { toast('Erro de conexão. Tente novamente.', 'erro'); });
   }
@@ -1855,6 +1908,17 @@
     var texto = 'Veja o post de ' + autor + ' no AIRPET! 🐾 ' + url;
     window.open('https://wa.me/?text=' + encodeURIComponent(texto), '_blank');
   }
+
+  (function bindPostDetailCompartilhar() {
+    var btn = document.getElementById('postDetailBtnCompartilhar');
+    if (!btn || btn.dataset.airpetShareBound) return;
+    btn.dataset.airpetShareBound = '1';
+    btn.addEventListener('click', function () {
+      var id = this.getAttribute('data-post-id');
+      var aut = this.getAttribute('data-autor') || '';
+      if (id) compartilhar(id, aut);
+    });
+  })();
 
   /* ──────────── Three-dot Menu ──────────── */
   function fecharMenus() {

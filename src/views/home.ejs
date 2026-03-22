@@ -1117,8 +1117,8 @@
         <div class="lost-info">
           <div class="lost-name"><%= pet.pet_nome %></div>
           <% if (pet.pet_raca) { %><div class="lost-raca"><%= pet.pet_raca %></div><% } %>
-          <a href="/auth/registro" class="lost-btn">
-            <i class="fa-solid fa-hands-holding-heart"></i> Quero Ajudar
+          <a href="/alerta/<%= pet.id %>" class="lost-btn">
+            <i class="fa-solid fa-hands-holding-heart"></i> Ver alerta
           </a>
         </div>
       </div>

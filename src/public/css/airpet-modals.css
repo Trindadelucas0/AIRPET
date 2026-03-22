@@ -6,7 +6,7 @@
 .airpet-modal {
   position: fixed;
   inset: 0;
-  z-index: 60;
+  z-index: 200;
   display: none;
   flex-direction: column;
   align-items: stretch;
@@ -185,7 +185,7 @@
 
 /* Detalhe do post: painel (z acima do comment modal no explorar) */
 .airpet-modal--post-detail {
-  z-index: 61;
+  z-index: 210;
 }
 
 .airpet-modal--post-detail .airpet-modal__sheet--detail {

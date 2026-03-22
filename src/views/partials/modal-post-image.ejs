@@ -6,12 +6,13 @@
   <div class="post-image-lightbox__inner">
     <img id="postImageLightboxImg" src="" alt="" class="post-image-lightbox__img" />
   </div>
+  <p class="post-image-lightbox__hint" aria-hidden="true">Toque na foto, fora dela ou em ✕ para fechar</p>
 </div>
 <style>
   .post-image-lightbox {
     position: fixed;
     inset: 0;
-    z-index: 10050;
+    z-index: 230;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -64,12 +65,30 @@
   }
   .post-image-lightbox__img {
     max-width: 100%;
-    max-height: min(88vh, 900px);
+    max-height: min(72vh, 900px);
     width: auto;
     height: auto;
     object-fit: contain;
     border-radius: 12px;
     box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45);
     pointer-events: auto;
+    cursor: pointer;
+  }
+  .post-image-lightbox__hint {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: max(12px, env(safe-area-inset-bottom));
+    z-index: 2;
+    margin: 0;
+    padding: 8px 14px;
+    border-radius: 9999px;
+    background: rgba(0, 0, 0, 0.55);
+    color: rgba(255, 255, 255, 0.92);
+    font-size: 12px;
+    font-weight: 600;
+    max-width: calc(100% - 32px);
+    text-align: center;
+    pointer-events: none;
   }
 </style>

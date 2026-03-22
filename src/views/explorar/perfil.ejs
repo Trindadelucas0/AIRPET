@@ -41,6 +41,12 @@
 
   .action-btn { transition: all .15s ease; }
   .action-btn:active { transform: scale(.92); }
+
+  #postDetailModal #postDetailOverlayEl { opacity: 0; transition: opacity 0.2s ease; }
+  #postDetailModal.is-open #postDetailOverlayEl { opacity: 1 !important; }
+  #postDetailModal #postDetailPanelEl { opacity: 0; transform: scale(0.96); transition: opacity 0.22s ease, transform 0.22s ease; }
+  #postDetailModal.is-open #postDetailPanelEl { opacity: 1 !important; transform: scale(1) !important; }
+  #postDetailModal .mention { color: var(--accent); font-weight: 600; }
 </style>
 ` %>
 <%- include('../partials/header') %>
@@ -354,9 +360,29 @@
       <% } %>
 
       <% posts.forEach(function(post, idx) { %>
+        <% var exibirFotoMeta = (post.foto && String(post.foto).trim()) ? post.foto : (((post.tipo === 'repost' || post.repost_id) && post.orig_foto) ? post.orig_foto : ''); %>
+        <% var textoMeta = post.texto || post.legenda || ''; %>
+        <% var metaExplorarPerfil = {
+          kind: 'organic',
+          postId: post.id,
+          foto: exibirFotoMeta || '',
+          texto: textoMeta,
+          criado_em: post.criado_em || '',
+          autor_nome: post.autor_nome || '',
+          usuario_id: post.usuario_id,
+          foto_perfil: post.foto_perfil || '',
+          cor_perfil: post.cor_perfil || '#ec5a1c',
+          pet_id: post.pet_id || null,
+          pet_nome: post.pet_nome || '',
+          pet_foto: post.pet_foto || '',
+          fixada: !!post.fixada,
+          comments: true
+        }; %>
         <article class="bg-white rounded-2xl shadow-sm border border-gray-100/80 mb-4 overflow-hidden post-enter"
+                 id="post-<%= post.id %>"
                  data-post-id="<%= post.id %>"
                  data-author-id="<%= post.usuario_id %>"
+                 data-explorar-meta="<%= encodeURIComponent(JSON.stringify(metaExplorarPerfil)) %>"
                  style="animation-delay: <%= (idx * 50) + 200 %>ms">
 
           <!-- Repost badge -->
@@ -614,13 +640,13 @@
     </div>
   </div>
 
-<%- include('../partials/modal-post-image') %>
+<%- include('../partials/post-detail-modal') %>
 
 </main>
 
 <%- include('../partials/footer') %>
 
-<script src="/js/post-image-lightbox.js"></script>
+<script src="/js/airpet-post-detail-organic.js"></script>
 <script>
 (function () {
   'use strict';
@@ -664,19 +690,6 @@
   }
   atualizarTempos();
   setInterval(atualizarTempos, 30000);
-
-  var mainPosts = document.querySelector('main');
-  if (mainPosts && typeof window.openPostImageLightbox === 'function') {
-    mainPosts.addEventListener('click', function (e) {
-      var im = e.target.closest('img.post-photo, img.post-embed-img');
-      if (!im || !mainPosts.contains(im)) return;
-      var s = im.currentSrc || im.src;
-      if (!s) return;
-      e.preventDefault();
-      e.stopPropagation();
-      window.openPostImageLightbox(s, im.getAttribute('alt') || '');
-    });
-  }
 
   /* ── Caption expand ── */
   document.querySelectorAll('.caption-area').forEach(function (area) {
