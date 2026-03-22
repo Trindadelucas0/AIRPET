@@ -27,6 +27,7 @@ const Pet = require('../models/Pet');
 const TagScan = require('../models/TagScan');
 const Conversa = require('../models/Conversa');
 const MensagemChat = require('../models/MensagemChat');
+const { withTransaction } = require('../config/database');
 const logger = require('../utils/logger');
 
 /**
@@ -113,17 +114,17 @@ async function reportar(req, res) {
       return res.redirect(`/pets/${pet_id}`);
     }
 
-    await PetPerdido.criar({
-      pet_id: parseInt(pet_id, 10),
-      descricao: descricao || 'Sem descrição fornecida.',
-      latitude: latitude ? parseFloat(latitude) : null,
-      longitude: longitude ? parseFloat(longitude) : null,
-      cidade: null,
-      recompensa: recompensa || null,
+    await withTransaction(async (client) => {
+      await PetPerdido.criar({
+        pet_id: parseInt(pet_id, 10),
+        descricao: descricao || 'Sem descrição fornecida.',
+        latitude: latitude ? parseFloat(latitude) : null,
+        longitude: longitude ? parseFloat(longitude) : null,
+        cidade: null,
+        recompensa: recompensa || null,
+      }, client);
+      await Pet.atualizarStatus(pet_id, 'perdido', client);
     });
-
-    /* Atualiza o status do pet na tabela pets para 'perdido' */
-    await Pet.atualizarStatus(pet_id, 'perdido');
 
     logger.info('PetPerdidoController', `Pet reportado como perdido: ${pet.nome} (ID: ${pet_id})`);
 
@@ -272,18 +273,15 @@ async function marcarEncontrado(req, res) {
       return res.redirect(`/pets/${pet_id}`);
     }
 
-    await PetPerdido.resolver(alerta.id);
-    await Pet.atualizarStatus(pet_id, 'seguro');
-
-    try {
-      const conversas = await Conversa.buscarPorPetPerdido(alerta.id);
+    await withTransaction(async (client) => {
+      await PetPerdido.resolver(alerta.id, client);
+      await Pet.atualizarStatus(pet_id, 'seguro', client);
+      const conversas = await Conversa.buscarPorPetPerdido(alerta.id, client);
       for (const conversa of conversas) {
-        await MensagemChat.deletarPorConversa(conversa.id);
-        await Conversa.encerrar(conversa.id);
+        await MensagemChat.deletarPorConversa(conversa.id, client);
+        await Conversa.encerrar(conversa.id, client);
       }
-    } catch (erroLimpeza) {
-      logger.error('PetPerdidoController', 'Erro ao limpar conversas (não crítico)', erroLimpeza);
-    }
+    });
 
     const dataPerdido = new Date(alerta.data);
     const agora = new Date();

@@ -96,19 +96,7 @@ const mapaService = {
      * Ícone: 'store' (lojinha no mapa)
      */
     if (categoriasAtivas.includes('petshops')) {
-      promessas.push(
-        query(
-          `SELECT id, nome, latitude, longitude, 'petshop' AS categoria,
-                  'store' AS icone, 'petshop' AS tipo_original
-           FROM petshops
-           WHERE ativo = true
-             AND ST_Within(
-                   localizacao::geometry,
-                   ST_MakeEnvelope($2, $1, $4, $3, 4326)
-                 )`,
-          [swLat, swLng, neLat, neLng]
-        ).then(res => res.rows)
-      );
+      promessas.push(Petshop.listarPinsParaMapaBBox(swLat, swLng, neLat, neLng));
     }
 
     /**

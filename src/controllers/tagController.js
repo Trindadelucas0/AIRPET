@@ -33,6 +33,7 @@ const NfcTag = require('../models/NfcTag');
 const TagBatch = require('../models/TagBatch');
 const Pet = require('../models/Pet');
 const Usuario = require('../models/Usuario');
+const { withTransaction } = require('../config/database');
 const { gerarTagCode, gerarActivationCode } = require('../utils/helpers');
 const logger = require('../utils/logger');
 const emailService = require('../services/emailService');
@@ -206,12 +207,18 @@ async function ativar(req, res) {
     }
 
     if (!activation_code || tag.activation_code !== activation_code.trim().toUpperCase()) {
-      const tagAtualizada = await NfcTag.incrementarTentativas(tag.id);
+      const tagAtualizada = await withTransaction(async (client) => {
+        const atual = await NfcTag.incrementarTentativas(tag.id, client);
+        const tentativas = atual.tentativas_ativacao || 0;
+        if (tentativas >= MAX_TENTATIVAS) {
+          await NfcTag.bloquearTemporariamente(tag.id, BLOQUEIO_MINUTOS, client);
+        }
+        return atual;
+      });
       const tentativas = tagAtualizada.tentativas_ativacao || 0;
       const restantes = MAX_TENTATIVAS - tentativas;
 
       if (tentativas >= MAX_TENTATIVAS) {
-        await NfcTag.bloquearTemporariamente(tag.id, BLOQUEIO_MINUTOS);
         logger.warn('TagController', `Tag ${tag_code} bloqueada por ${BLOQUEIO_MINUTOS}min após ${tentativas} tentativas`);
         req.session.flash = { tipo: 'erro', mensagem: `Muitas tentativas incorretas. Tag bloqueada por ${BLOQUEIO_MINUTOS} minutos.` };
       } else {
@@ -220,8 +227,10 @@ async function ativar(req, res) {
       return res.redirect(`/tags/${tag_code}/ativar`);
     }
 
-    await NfcTag.resetarTentativas(tag.id);
-    await NfcTag.reservar(tag.id, usuarioId);
+    await withTransaction(async (client) => {
+      await NfcTag.resetarTentativas(tag.id, client);
+      await NfcTag.reservar(tag.id, usuarioId, client);
+    });
 
     logger.info('TagController', `Tag ativada: ${tag_code} pelo usuário ${usuarioId}`);
 

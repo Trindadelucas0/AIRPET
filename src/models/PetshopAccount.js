@@ -12,8 +12,9 @@ const PetshopAccount = {
     return result.rows[0];
   },
 
-  async buscarPorPetshopId(petshopId) {
-    const result = await query(
+  async buscarPorPetshopId(petshopId, client = null) {
+    const executor = client || pool;
+    const result = await executor.query(
       `SELECT * FROM petshop_accounts WHERE petshop_id = $1 LIMIT 1`,
       [petshopId]
     );
@@ -29,8 +30,9 @@ const PetshopAccount = {
     return result.rows[0];
   },
 
-  async buscarPorEmail(email) {
-    const result = await query(`SELECT * FROM petshop_accounts WHERE email = $1`, [email]);
+  async buscarPorEmail(email, client = null) {
+    const executor = client || pool;
+    const result = await executor.query(`SELECT * FROM petshop_accounts WHERE email = $1`, [email]);
     return result.rows[0];
   },
 

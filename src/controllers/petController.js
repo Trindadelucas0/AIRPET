@@ -28,6 +28,7 @@ const RegistroSaude = require('../models/RegistroSaude');
 const TagScan = require('../models/TagScan');
 const NfcTag = require('../models/NfcTag');
 const Localizacao = require('../models/Localizacao');
+const { withTransaction } = require('../config/database');
 const logger = require('../utils/logger');
 
 const petController = {
@@ -519,12 +520,18 @@ const petController = {
       }
 
       if (!codigo_ativacao || tag.activation_code !== codigo_ativacao.trim().toUpperCase()) {
-        const tagAtualizada = await NfcTag.incrementarTentativas(tag.id);
+        const tagAtualizada = await withTransaction(async (client) => {
+          const atual = await NfcTag.incrementarTentativas(tag.id, client);
+          const tentativas = atual.tentativas_ativacao || 0;
+          if (tentativas >= MAX_TENTATIVAS) {
+            await NfcTag.bloquearTemporariamente(tag.id, BLOQUEIO_MINUTOS, client);
+          }
+          return atual;
+        });
         const tentativas = tagAtualizada.tentativas_ativacao || 0;
         const restantes = MAX_TENTATIVAS - tentativas;
 
         if (tentativas >= MAX_TENTATIVAS) {
-          await NfcTag.bloquearTemporariamente(tag.id, BLOQUEIO_MINUTOS);
           logger.warn('PET_CTRL', `Tag ${tag_code} bloqueada por ${BLOQUEIO_MINUTOS}min após ${tentativas} tentativas`);
           req.session.flash = { tipo: 'erro', mensagem: `Muitas tentativas incorretas. Tag bloqueada por ${BLOQUEIO_MINUTOS} minutos.` };
         } else {
@@ -533,9 +540,11 @@ const petController = {
         return res.redirect(`/pets/${id}/vincular-tag`);
       }
 
-      await NfcTag.resetarTentativas(tag.id);
-      await NfcTag.reservar(tag.id, usuarioId);
-      await NfcTag.ativar(tag.id, id);
+      await withTransaction(async (client) => {
+        await NfcTag.resetarTentativas(tag.id, client);
+        await NfcTag.reservar(tag.id, usuarioId, client);
+        await NfcTag.ativar(tag.id, id, client);
+      });
 
       logger.info('PET_CTRL', `Tag ${tag_code} vinculada ao pet ${pet.nome} (ID: ${id}) pelo usuário ${usuarioId}`);
 

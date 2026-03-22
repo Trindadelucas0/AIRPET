@@ -2,6 +2,10 @@ const rateLimit = require('express-rate-limit');
 
 const JANELA_MS = 15 * 60 * 1000;
 
+function envSemRateLimit() {
+  return process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test';
+}
+
 function handlerRateLimit(mensagemJson, mensagemFlash) {
   return (req, res) => {
     if (req.accepts('html')) {
@@ -25,7 +29,7 @@ const limiterGeral = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   skip: (req) => {
-    if (process.env.NODE_ENV === 'development') return true;
+    if (envSemRateLimit()) return true;
     if (req.path.match(/\.(css|js|png|jpg|jpeg|gif|svg|ico|woff2?|ttf|map|webp)$/)) return true;
     return false;
   },
@@ -40,7 +44,7 @@ const limiterAuth = rateLimit({
   ),
   standardHeaders: true,
   legacyHeaders: false,
-  skip: (req) => process.env.NODE_ENV === 'development',
+  skip: () => envSemRateLimit(),
 });
 
 const limiterAtivacao = rateLimit({
@@ -52,7 +56,7 @@ const limiterAtivacao = rateLimit({
   ),
   standardHeaders: true,
   legacyHeaders: false,
-  skip: (req) => process.env.NODE_ENV === 'development',
+  skip: () => envSemRateLimit(),
 });
 
 module.exports = {

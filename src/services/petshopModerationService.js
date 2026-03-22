@@ -1,4 +1,5 @@
 const bcrypt = require('bcrypt');
+const { withTransaction } = require('../config/database');
 const Petshop = require('../models/Petshop');
 const PetshopAccount = require('../models/PetshopAccount');
 const PetshopPartnerRequest = require('../models/PetshopPartnerRequest');
@@ -16,10 +17,10 @@ function toSlug(nome) {
     .slice(0, 170);
 }
 
-async function garantirSlugUnico(base) {
+async function garantirSlugUnico(base, client = null) {
   let slug = base || 'petshop';
   let i = 1;
-  while (await Petshop.existeSlug(slug)) {
+  while (await Petshop.existeSlug(slug, client)) {
     i += 1;
     slug = `${base}-${i}`;
   }
@@ -51,53 +52,65 @@ const petshopModerationService = {
       slug,
     };
 
-    const petshopRow = petshopExistente
-      ? await Petshop.atualizarDeSolicitacaoAprovada(petshopExistente.id, dadosComuns)
-      : await Petshop.criarAtivoPorSolicitacaoAprovada(dadosComuns);
+    const senhaInicial = Math.random().toString(36).slice(2, 10) + 'A1!';
+    const hashNovaConta = await bcrypt.hash(senhaInicial, 10);
 
-    const petshopId = petshopRow.id;
-    let account = await PetshopAccount.buscarPorPetshopId(petshopId);
-    if (!account) {
-      const senhaInicial = Math.random().toString(36).slice(2, 10) + 'A1!';
-      const hash = await bcrypt.hash(senhaInicial, 10);
-      account = await PetshopAccount.criar({
-        petshop_id: petshopId,
-        email: request.email,
-        password_hash: hash,
-        status: 'ativo',
-      });
-    } else {
-      await PetshopAccount.atualizarStatusPorPetshopId(petshopId, 'ativo');
-      account = await PetshopAccount.buscarPorPetshopId(petshopId);
-    }
+    const petshopRow = await withTransaction(async (client) => {
+      const row = petshopExistente
+        ? await Petshop.atualizarDeSolicitacaoAprovada(petshopExistente.id, dadosComuns, client)
+        : await Petshop.criarAtivoPorSolicitacaoAprovada(dadosComuns, client);
+      const petshopId = row.id;
 
-    if (account && !account.usuario_id) {
-      const emailLogin = account.email;
-      let usuario = await Usuario.buscarPorEmail(emailLogin);
-      if (!usuario) {
-        usuario = await Usuario.criar({
-          nome: request.responsavel_nome || request.empresa_nome || 'Parceiro',
-          email: emailLogin,
-          senha_hash: account.password_hash,
-          telefone: request.telefone || null,
-          role: 'tutor',
-        });
+      let account = await PetshopAccount.buscarPorPetshopId(petshopId, client);
+      if (!account) {
+        account = await PetshopAccount.criar({
+          petshop_id: petshopId,
+          email: request.email,
+          password_hash: hashNovaConta,
+          status: 'ativo',
+        }, client);
+      } else {
+        await PetshopAccount.atualizarStatusPorPetshopId(petshopId, 'ativo', client);
+        account = await PetshopAccount.buscarPorPetshopId(petshopId, client);
       }
-      await PetshopAccount.atualizarUsuarioId(account.id, usuario.id);
-    }
 
-    await PetshopProfile.upsert(petshopId, {
-      descricao_curta: request.descricao || '',
-      descricao_longa: request.descricao || '',
-      instagram_url: request.redes_sociais && request.redes_sociais.instagram,
-      facebook_url: request.redes_sociais && request.redes_sociais.facebook,
-      website_url: request.redes_sociais && request.redes_sociais.website,
-      whatsapp_publico: request.telefone,
+      if (account && !account.usuario_id) {
+        const emailLogin = account.email;
+        let usuario = await Usuario.buscarPorEmail(emailLogin, client);
+        if (!usuario) {
+          usuario = await Usuario.criar({
+            nome: request.responsavel_nome || request.empresa_nome || 'Parceiro',
+            email: emailLogin,
+            senha_hash: account.password_hash,
+            telefone: request.telefone || null,
+            role: 'tutor',
+          }, client);
+        }
+        await PetshopAccount.atualizarUsuarioId(account.id, usuario.id, client);
+      }
+
+      await PetshopProfile.upsert(petshopId, {
+        descricao_curta: request.descricao || '',
+        descricao_longa: request.descricao || '',
+        instagram_url: request.redes_sociais && request.redes_sociais.instagram,
+        facebook_url: request.redes_sociais && request.redes_sociais.facebook,
+        website_url: request.redes_sociais && request.redes_sociais.website,
+        whatsapp_publico: request.telefone,
+      }, client);
+
+      await PetshopPartnerRequest.vincularPetshopSeNulo(requestId, petshopId, client);
+      await PetshopPartnerRequest.atualizarStatus(
+        requestId,
+        'aprovado',
+        'Solicitação aprovada.',
+        null,
+        adminEmail,
+        client
+      );
+      return row;
     });
 
-    await PetshopPartnerRequest.vincularPetshopSeNulo(requestId, petshopId);
-    await PetshopPartnerRequest.atualizarStatus(requestId, 'aprovado', 'Solicitação aprovada.', null, adminEmail);
-
+    const account = await PetshopAccount.buscarPorPetshopId(petshopRow.id);
     const contatoEmail = request.email || (account && account.email);
     if (contatoEmail) {
       try {
@@ -106,7 +119,7 @@ const petshopModerationService = {
           empresaNome: request.empresa_nome,
         });
       } catch (emailErro) {
-        // Não falha a aprovação por erro de e-mail
+        /* não falha a aprovação por erro de e-mail */
       }
     }
 
@@ -115,17 +128,30 @@ const petshopModerationService = {
 
   async rejeitarSolicitacao(requestId, motivo, adminEmail) {
     const request = await PetshopPartnerRequest.buscarPorId(requestId);
+
+    let atualizado;
     if (request && request.petshop_id) {
-      await Petshop.marcarParceriaRejeitada(request.petshop_id);
-      await PetshopAccount.atualizarStatusPorPetshopId(request.petshop_id, 'rejeitado');
+      atualizado = await withTransaction(async (client) => {
+        await Petshop.marcarParceriaRejeitada(request.petshop_id, client);
+        await PetshopAccount.atualizarStatusPorPetshopId(request.petshop_id, 'rejeitado', client);
+        return PetshopPartnerRequest.atualizarStatus(
+          requestId,
+          'rejeitado',
+          'Solicitação rejeitada pela administração.',
+          motivo || 'Não informado.',
+          adminEmail,
+          client
+        );
+      });
+    } else {
+      atualizado = await PetshopPartnerRequest.atualizarStatus(
+        requestId,
+        'rejeitado',
+        'Solicitação rejeitada pela administração.',
+        motivo || 'Não informado.',
+        adminEmail
+      );
     }
-    const atualizado = await PetshopPartnerRequest.atualizarStatus(
-      requestId,
-      'rejeitado',
-      'Solicitação rejeitada pela administração.',
-      motivo || 'Não informado.',
-      adminEmail
-    );
 
     if (request && request.email) {
       try {
@@ -135,7 +161,7 @@ const petshopModerationService = {
           motivo: motivo || 'Não informado.',
         });
       } catch (emailErro) {
-        // Não falha o fluxo por erro de e-mail
+        /* não falha o fluxo por erro de e-mail */
       }
     }
 
@@ -144,10 +170,22 @@ const petshopModerationService = {
 
   async colocarEmAnalise(requestId, observacao, adminEmail) {
     const request = await PetshopPartnerRequest.buscarPorId(requestId);
+
     if (request && request.petshop_id) {
-      await Petshop.marcarParceriaEmAnalise(request.petshop_id);
-      await PetshopAccount.atualizarStatusPorPetshopId(request.petshop_id, 'em_analise');
+      return withTransaction(async (client) => {
+        await Petshop.marcarParceriaEmAnalise(request.petshop_id, client);
+        await PetshopAccount.atualizarStatusPorPetshopId(request.petshop_id, 'em_analise', client);
+        return PetshopPartnerRequest.atualizarStatus(
+          requestId,
+          'em_analise',
+          observacao || null,
+          null,
+          adminEmail,
+          client
+        );
+      });
     }
+
     return PetshopPartnerRequest.atualizarStatus(requestId, 'em_analise', observacao || null, null, adminEmail);
   },
 };

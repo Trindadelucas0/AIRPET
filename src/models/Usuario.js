@@ -48,8 +48,9 @@ const Usuario = {
    * @param {string} email - E-mail a ser pesquisado
    * @returns {Promise<object|undefined>} O usuário encontrado ou undefined
    */
-  async buscarPorEmail(email) {
-    const resultado = await query(
+  async buscarPorEmail(email, client = null) {
+    const executor = client || pool;
+    const resultado = await executor.query(
       `SELECT * FROM usuarios WHERE email = $1`,
       [email]
     );

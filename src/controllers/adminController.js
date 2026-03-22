@@ -52,7 +52,6 @@ const petshopModerationService = require('../services/petshopModerationService')
 const petshopPublishingService = require('../services/petshopPublishingService');
 const petshopRecoveryIntegrationService = require('../services/petshopRecoveryIntegrationService');
 const logger = require('../utils/logger');
-const { query } = require('../config/database');
 
 const getAdminPath = () => process.env.ADMIN_PATH || '/admin';
 

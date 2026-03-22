@@ -226,9 +226,7 @@ const nfcController = {
   async mostrarEnviarFoto(req, res) {
     try {
       const { tag_code } = req.params;
-      const { query } = require('../config/database');
-      const tagResult = await query('SELECT * FROM nfc_tags WHERE tag_code = $1 AND status = $2', [tag_code, 'active']);
-      const tag = tagResult.rows[0];
+      const tag = await NfcTag.buscarAtivaPorCodigo(tag_code);
       if (!tag || !tag.pet_id) {
         if (req.session) req.session.flash = { tipo: 'erro', mensagem: 'Tag inválida ou inativa. Tente escanear novamente.' };
         return res.redirect('/tag/' + encodeURIComponent(tag_code));

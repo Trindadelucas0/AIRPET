@@ -11,7 +11,7 @@
  *                    localizacao (geography), ativo, data_criacao
  */
 
-const { query } = require('../config/database');
+const { query, pool } = require('../config/database');
 
 const Petshop = {
 
@@ -304,8 +304,9 @@ const Petshop = {
     descricao,
     logoUrl,
     fotoCapaUrl,
-  }) {
-    const resultado = await query(
+  }, client = null) {
+    const executor = client || pool;
+    const resultado = await executor.query(
       `INSERT INTO petshops (
         nome, endereco, telefone, whatsapp, email_contato,
         latitude, longitude, localizacao, ativo, status_parceria, slug, descricao, logo_url, foto_capa_url, data_atualizacao
@@ -326,7 +327,7 @@ const Petshop = {
     return resultado.rows[0];
   },
 
-  async atualizarDeSolicitacaoAprovada(petshopId, dados) {
+  async atualizarDeSolicitacaoAprovada(petshopId, dados, client = null) {
     const {
       nome,
       endereco,
@@ -339,7 +340,8 @@ const Petshop = {
       fotoCapaUrl,
       slug,
     } = dados;
-    const resultado = await query(
+    const executor = client || pool;
+    const resultado = await executor.query(
       `UPDATE petshops
        SET nome = $2,
            endereco = $3,
@@ -381,7 +383,7 @@ const Petshop = {
     return resultado.rows[0];
   },
 
-  async criarAtivoPorSolicitacaoAprovada(dados) {
+  async criarAtivoPorSolicitacaoAprovada(dados, client = null) {
     const {
       nome,
       endereco,
@@ -394,7 +396,8 @@ const Petshop = {
       fotoCapaUrl,
       slug,
     } = dados;
-    const resultado = await query(
+    const executor = client || pool;
+    const resultado = await executor.query(
       `INSERT INTO petshops (
         nome, endereco, telefone, whatsapp, email_contato,
         latitude, longitude, localizacao, ativo, ponto_de_apoio,
@@ -429,8 +432,9 @@ const Petshop = {
     return resultado.rows[0];
   },
 
-  async marcarParceriaRejeitada(petshopId) {
-    await query(
+  async marcarParceriaRejeitada(petshopId, client = null) {
+    const executor = client || pool;
+    await executor.query(
       `UPDATE petshops
        SET status_parceria = 'rejeitado', ativo = false, data_atualizacao = NOW()
        WHERE id = $1`,
@@ -438,8 +442,9 @@ const Petshop = {
     );
   },
 
-  async marcarParceriaEmAnalise(petshopId) {
-    await query(
+  async marcarParceriaEmAnalise(petshopId, client = null) {
+    const executor = client || pool;
+    await executor.query(
       `UPDATE petshops
        SET status_parceria = 'em_analise', data_atualizacao = NOW()
        WHERE id = $1`,

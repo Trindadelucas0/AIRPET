@@ -2,6 +2,7 @@ const PetshopPartnerRequest = require('../models/PetshopPartnerRequest');
 const Petshop = require('../models/Petshop');
 const PetshopAccount = require('../models/PetshopAccount');
 const bcrypt = require('bcrypt');
+const { withTransaction } = require('../config/database');
 
 function gerarSlug(nome) {
   return String(nome || '')
@@ -49,58 +50,61 @@ const petshopOnboardingService = {
     if (senha.length < 6) throw new Error('A senha deve ter pelo menos 6 caracteres.');
     if (senha !== confirmarSenha) throw new Error('A confirmação de senha não confere.');
 
-    const contaExistente = await PetshopAccount.buscarPorEmail(emailLogin);
-    if (contaExistente) throw new Error('Já existe uma conta com este e-mail de acesso.');
-
-    const baseSlug = gerarSlug(reqBody.empresa_nome) || 'petshop';
-    let slugFinal = baseSlug;
-    let tentativa = 1;
-    while (await Petshop.existeSlug(slugFinal)) {
-      tentativa += 1;
-      slugFinal = `${baseSlug}-${tentativa}`;
-    }
-
     const senhaHash = await bcrypt.hash(senha, 10);
-    const petshop = await Petshop.criarRascunhoCadastroPublico({
-      nome: reqBody.empresa_nome,
-      endereco,
-      telefone: reqBody.telefone,
-      emailContato: reqBody.email || null,
-      latitude,
-      longitude,
-      slug: slugFinal,
-      descricao: reqBody.descricao || null,
-      logoUrl,
-      fotoCapaUrl: fotos[0] || null,
-    });
 
-    await PetshopAccount.criar({
-      petshop_id: petshop.id,
-      email: emailLogin,
-      password_hash: senhaHash,
-      status: 'pendente_aprovacao',
-    });
+    return withTransaction(async (client) => {
+      const contaExistente = await PetshopAccount.buscarPorEmail(emailLogin, client);
+      if (contaExistente) throw new Error('Já existe uma conta com este e-mail de acesso.');
 
-    return PetshopPartnerRequest.criar({
-      petshop_id: petshop.id,
-      ...reqBody,
-      endereco,
-      bairro: bairro || null,
-      cidade: cidade || null,
-      estado: estado || null,
-      cep: cep || null,
-      latitude,
-      longitude,
-      slug_sugerido: gerarSlug(reqBody.empresa_nome),
-      logo_url: logoUrl,
-      fotos_urls: fotos,
-      redes_sociais: {
-        instagram: reqBody.instagram || null,
-        facebook: reqBody.facebook || null,
-        website: reqBody.website || null,
-      },
-      servicos: reqBody.servicos ? String(reqBody.servicos).split(',').map(s => s.trim()).filter(Boolean) : [],
-      horario_funcionamento: { descricao: reqBody.horario_funcionamento || null },
+      const baseSlug = gerarSlug(reqBody.empresa_nome) || 'petshop';
+      let slugFinal = baseSlug;
+      let tentativa = 1;
+      while (await Petshop.existeSlug(slugFinal, client)) {
+        tentativa += 1;
+        slugFinal = `${baseSlug}-${tentativa}`;
+      }
+
+      const petshop = await Petshop.criarRascunhoCadastroPublico({
+        nome: reqBody.empresa_nome,
+        endereco,
+        telefone: reqBody.telefone,
+        emailContato: reqBody.email || null,
+        latitude,
+        longitude,
+        slug: slugFinal,
+        descricao: reqBody.descricao || null,
+        logoUrl,
+        fotoCapaUrl: fotos[0] || null,
+      }, client);
+
+      await PetshopAccount.criar({
+        petshop_id: petshop.id,
+        email: emailLogin,
+        password_hash: senhaHash,
+        status: 'pendente_aprovacao',
+      }, client);
+
+      return PetshopPartnerRequest.criar({
+        petshop_id: petshop.id,
+        ...reqBody,
+        endereco,
+        bairro: bairro || null,
+        cidade: cidade || null,
+        estado: estado || null,
+        cep: cep || null,
+        latitude,
+        longitude,
+        slug_sugerido: gerarSlug(reqBody.empresa_nome),
+        logo_url: logoUrl,
+        fotos_urls: fotos,
+        redes_sociais: {
+          instagram: reqBody.instagram || null,
+          facebook: reqBody.facebook || null,
+          website: reqBody.website || null,
+        },
+        servicos: reqBody.servicos ? String(reqBody.servicos).split(',').map(s => s.trim()).filter(Boolean) : [],
+        horario_funcionamento: { descricao: reqBody.horario_funcionamento || null },
+      }, client);
     });
   },
 };
