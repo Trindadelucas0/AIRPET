@@ -14,7 +14,7 @@
  *  - NOTIFICATIONCLICK: abre a URL da notificacao ao clicar
  */
 
-const CACHE_VERSION = 'airpet-v5';
+const CACHE_VERSION = 'airpet-v6';
 
 const SHELL_ASSETS = [
   '/',
@@ -87,9 +87,27 @@ self.addEventListener('fetch', function (event) {
     return;
   }
 
-  // Assets estaticos: Cache-First
+  // CSS: Network-First — cache-first deixava tipografia/estilos presos após deploy (PWA parecia "não atualizar").
+  if (url.pathname.startsWith('/css/')) {
+    event.respondWith(
+      caches.open(CACHE_VERSION).then(function (cache) {
+        return fetch(req)
+          .then(function (response) {
+            if (response && response.status === 200) {
+              cache.put(req, response.clone());
+            }
+            return response;
+          })
+          .catch(function () {
+            return cache.match(req);
+          });
+      })
+    );
+    return;
+  }
+
+  // Demais assets estaticos: Cache-First (rapido; mudancas raras)
   if (
-    url.pathname.startsWith('/css/') ||
     url.pathname.startsWith('/js/') ||
     url.pathname.startsWith('/images/') ||
     url.pathname === '/manifest.json' ||
