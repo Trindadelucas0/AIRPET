@@ -70,6 +70,16 @@ const validarRegistro = [
     .isLength({ min: 6 })
     .withMessage('A senha deve ter pelo menos 6 caracteres.'),
 
+  body('confirmarSenha')
+    .notEmpty()
+    .withMessage('Confirme a senha.')
+    .custom((value, { req }) => value === req.body.senha)
+    .withMessage('As senhas nao coincidem.'),
+
+  body('termos')
+    .equals('1')
+    .withMessage('Voce deve aceitar os Termos de Uso e a Politica de Privacidade.'),
+
   body('telefone')
     .optional({ checkFalsy: true })
     .trim()
@@ -114,7 +124,7 @@ const validarRegistro = [
 ];
 
 const CAMPOS_REGISTRO = [
-  'nome', 'email', 'senha', 'telefone', 'cep', 'endereco', 'bairro', 'cidade', 'estado', 'bio',
+  'nome', 'email', 'senha', 'confirmarSenha', 'termos', 'telefone', 'cep', 'endereco', 'bairro', 'cidade', 'estado', 'bio',
 ];
 
 const validarLogin = [
