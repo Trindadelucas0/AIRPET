@@ -1,6 +1,6 @@
 <% locals.titulo = 'Editar ' + pet.nome %>
 <% locals.extraHead = `
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Rubik+Doodle+Shadow&family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{--ink:#0d0d0f;--ink-2:#13131a;--ink-3:#1c1c26;--ink-4:#242432;--border:rgba(255,255,255,0.07);--border-hover:rgba(255,255,255,0.13);--text:#e4e4f0;--text-dim:#7a7a96;--text-muted:#3d3d52;--accent:#f26020;--accent-light:#ff7a3d;--accent-glow:rgba(242,96,32,0.12);--green:#22c55e;--red:#ef4444;}
   body{background:var(--ink)!important;color:var(--text)!important;font-family:'DM Sans',sans-serif;}
@@ -9,9 +9,9 @@
   .page-topbar-inner{max-width:560px;margin:0 auto;padding:0 20px;display:flex;align-items:center;gap:12px;}
   .back-link{color:var(--text-dim);font-size:13px;text-decoration:none;display:flex;align-items:center;gap:6px;transition:color 0.15s;}
   .back-link:hover{color:var(--accent);text-decoration:none;}
-  .page-title{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:#fff;}
+  .page-title{font-family:var(--font-display);font-size:18px;font-weight:800;color:#fff;}
   .section-card{background:var(--ink-2);border:1px solid var(--border);border-radius:18px;padding:22px;margin-bottom:14px;}
-  .section-card-title{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--text-dim);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:16px;display:flex;align-items:center;gap:8px;}
+  .section-card-title{font-family:var(--font-display);font-size:13px;font-weight:700;color:var(--text-dim);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:16px;display:flex;align-items:center;gap:8px;}
   .section-card-title-icon{width:26px;height:26px;border-radius:7px;background:var(--accent-glow);border:1px solid rgba(242,96,32,0.15);display:flex;align-items:center;justify-content:center;color:var(--accent);font-size:11px;}
   .ds-label{display:block;font-size:11px;font-weight:700;color:var(--text-dim);letter-spacing:0.07em;text-transform:uppercase;margin-bottom:6px;}
   .ds-input{width:100%;background:var(--ink-3);border:1px solid var(--border);border-radius:10px;padding:11px 14px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;outline:none;transition:border-color 0.2s,box-shadow 0.2s;}

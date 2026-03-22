@@ -39,20 +39,37 @@
   }
 
   // --- Photo upload ---
+  var chatPhotoUploadBusy = false;
   if (photoInput) {
     photoInput.addEventListener('change', function () {
       if (!this.files || !this.files[0]) return;
+      if (chatPhotoUploadBusy) return;
+      chatPhotoUploadBusy = true;
+      photoInput.disabled = true;
 
       var formData = new FormData();
       formData.append('foto', this.files[0]);
       formData.append('conversa_id', roomId);
 
-      fetch('/chat/upload-foto', {
-        method: 'POST',
-        body: formData,
-        credentials: 'same-origin'
-      })
-        .then(function (res) { return res.json(); })
+      var c = typeof globalThis !== 'undefined' && globalThis.AIRPET_REQ_COORDINATOR ? globalThis.AIRPET_REQ_COORDINATOR : null;
+      var uploadFn = function (signal) {
+        return fetch('/chat/upload-foto', {
+          method: 'POST',
+          body: formData,
+          credentials: 'same-origin',
+          signal: signal || undefined
+        }).then(function (res) { return res.json(); });
+      };
+      var pr = c && c.enqueue
+        ? c.enqueue({
+          key: 'chatUpload:' + roomId,
+          group: 'chatUpload',
+          priority: c.PRIORITY ? c.PRIORITY.MEDIUM : 'MEDIUM',
+          fetchFn: uploadFn
+        })
+        : uploadFn();
+
+      Promise.resolve(pr)
         .then(function (data) {
           if (data.url) {
             socket.emit('enviar_mensagem', {
@@ -71,9 +88,12 @@
         })
         .catch(function (err) {
           console.error('Erro ao enviar foto:', err);
+        })
+        .finally(function () {
+          chatPhotoUploadBusy = false;
+          photoInput.disabled = false;
+          photoInput.value = '';
         });
-
-      photoInput.value = '';
     });
   }
 

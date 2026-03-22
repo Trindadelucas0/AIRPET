@@ -3,8 +3,6 @@
 <%- include('partials/flash') %>
 
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,700;1,9..40,400&display=swap');
-
   :root {
     --ink: #fff7ed;
     --ink-2: #ffffff;
@@ -35,7 +33,7 @@
     display: none !important;
   }
 
-  .display-font { font-family: 'Bebas Neue', sans-serif; letter-spacing: 0.02em; }
+  .display-font { font-family: var(--font-display); letter-spacing: 0.02em; }
 
   /* ── NOISE OVERLAY ── */
   body.home-page::before {
@@ -129,7 +127,7 @@
   }
 
   .hero-title {
-    font-family: 'Bebas Neue', sans-serif;
+    font-family: var(--font-display);
     font-size: clamp(72px, 8vw, 108px);
     line-height: 0.95;
     letter-spacing: 0.01em;
@@ -362,7 +360,7 @@
   }
 
   .stat-number {
-    font-family: 'Bebas Neue', sans-serif;
+    font-family: var(--font-display);
     font-size: 48px;
     line-height: 1;
     color: var(--text);
@@ -404,7 +402,7 @@
   }
 
   .section-title {
-    font-family: 'Bebas Neue', sans-serif;
+    font-family: var(--font-display);
     font-size: clamp(44px, 5vw, 72px);
     color: var(--text);
     line-height: 1;
@@ -443,7 +441,7 @@
 
   .step-card::before {
     content: attr(data-num);
-    font-family: 'Bebas Neue', sans-serif;
+    font-family: var(--font-display);
     font-size: 120px;
     color: rgba(255,255,255,0.025);
     position: absolute;
@@ -659,7 +657,7 @@
   }
 
   .partner-funnel-title {
-    font-family: 'Bebas Neue', sans-serif;
+    font-family: var(--font-display);
     font-size: clamp(42px, 5vw, 64px);
     line-height: 1;
     color: var(--text);
@@ -794,7 +792,7 @@
   }
 
   .cta-title {
-    font-family: 'Bebas Neue', sans-serif;
+    font-family: var(--font-display);
     font-size: clamp(52px, 6vw, 80px);
     color: var(--text);
     line-height: 1;

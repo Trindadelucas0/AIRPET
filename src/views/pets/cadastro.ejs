@@ -1,6 +1,6 @@
 <% locals.titulo = 'Cadastrar Pet' %>
 <% locals.extraHead = `
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Rubik+Doodle+Shadow&family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
     --ink:#0d0d0f;--ink-2:#13131a;--ink-3:#1c1c26;--ink-4:#242432;
@@ -28,7 +28,7 @@
     display:flex; align-items:center; gap:6px; transition:color 0.15s;
   }
   .wizard-topbar-back:hover { color:var(--accent); text-decoration:none; }
-  .wizard-topbar h1 { font-family:'Syne',sans-serif; font-size:17px; font-weight:800; color:#fff; }
+  .wizard-topbar h1 { font-family:var(--font-display); font-size:17px; font-weight:800; color:#fff; }
 
   /* ── PROGRESS ── */
   .progress-section { margin-bottom:28px; }
@@ -54,7 +54,7 @@
     font-size:26px; color:var(--accent);
   }
   .step-title {
-    font-family:'Syne',sans-serif;
+    font-family:var(--font-display);
     font-size:22px; font-weight:800; color:#fff;
     text-align:center; margin-bottom:6px;
   }

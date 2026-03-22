@@ -1,14 +1,13 @@
 <%
   locals.extraHead = `
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Rubik+Doodle+Shadow&family=Syne:wght@400;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap" rel="stylesheet">
     <style>
       :root {
         /* Mantemos apenas o que não conflita com os tokens do design system global */
         --radius-card: var(--radius);
         --radius-btn: var(--radius-sm);
-        --font-display: 'Syne', sans-serif;
-        --font-body: 'DM Sans', sans-serif;
+        --font-body: "DM Sans", sans-serif;
       }
 
       /* ── TOP HEADER BAR ── */
@@ -1081,7 +1080,7 @@
   <div class="airpet-modal__backdrop" id="commentModalBackdrop"></div>
   <div class="airpet-modal__sheet" style="background:var(--ink-2);border-color:var(--border);" role="dialog" aria-modal="true" aria-labelledby="feedCommentModalTitle">
     <div class="airpet-modal__header" style="border-color:var(--border);">
-      <h3 id="feedCommentModalTitle" class="airpet-modal__title" style="font-family:'Syne',sans-serif;">Comentários</h3>
+      <h3 id="feedCommentModalTitle" class="airpet-modal__title" style="font-family:var(--font-display);">Comentários</h3>
       <button id="closeCommentModal" type="button" class="airpet-modal__header-btn" aria-label="Fechar">
         <i class="fa-solid fa-xmark text-lg"></i>
       </button>
@@ -1129,6 +1128,26 @@
   var commentList = document.getElementById('commentList');
   var commentInputModal = document.getElementById('commentInputModal');
   var btnEnviarComentarioModal = document.getElementById('btnEnviarComentarioModal');
+
+  function feedCoordinator() {
+    return window.AIRPET_REQ_COORDINATOR;
+  }
+  function feedFetchCoordinator(job, fallbackFetchPromise) {
+    var c = feedCoordinator();
+    if (c && typeof c.enqueue === 'function') return c.enqueue(job);
+    return fallbackFetchPromise;
+  }
+  function feedSkeletonBlock(count) {
+    var n = count || 2;
+    var card = '<div class="airpet-skeleton-post"><div class="airpet-skeleton-post__head"><div class="airpet-skeleton-circle"></div><div class="airpet-skeleton-lines"><div class="airpet-skeleton-line airpet-skeleton-line--med"></div><div class="airpet-skeleton-line airpet-skeleton-line--short"></div></div></div><div class="airpet-skeleton-post__media"></div></div>';
+    var i;
+    var html = '<div class="airpet-skeleton-feed" data-airpet-skel="1">';
+    for (i = 0; i < n; i++) html += card;
+    html += '</div>';
+    return html;
+  }
+  var repostFeedInFlight = false;
+  var isPublishingPost = false;
 
   // ── Relative time ──
   function tempoRelativo(ts) {
@@ -1246,10 +1265,27 @@
   function carregarComentariosPostDetail(postId) {
     var list = document.getElementById('postDetailCommentList');
     if (!list) return;
+    try {
+      if (feedCoordinator() && feedCoordinator().cancelGroup) feedCoordinator().cancelGroup('feedPostDetailComments');
+    } catch (_) {}
     list.innerHTML = '<div class="text-center py-6 text-sm text-gray-400">Carregando…</div>';
-    fetch('/explorar/post/' + postId + '/comentarios', { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
-      .then(function (r) { return r.json(); })
-      .then(function (data) {
+    var pr = feedFetchCoordinator(
+      {
+        key: 'comentariosDetail:' + postId,
+        group: 'feedPostDetailComments',
+        priority: feedCoordinator() ? feedCoordinator().PRIORITY.HIGH : 'HIGH',
+        fetchFn: function (signal) {
+          return fetch('/explorar/post/' + postId + '/comentarios', {
+            headers: { 'Accept': 'application/json' },
+            credentials: 'same-origin',
+            signal: signal
+          }).then(function (r) { return r.json(); });
+        }
+      },
+      fetch('/explorar/post/' + postId + '/comentarios', { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
+        .then(function (r) { return r.json(); })
+    );
+    pr.then(function (data) {
         if (!data || !data.sucesso || !data.comentarios || !data.comentarios.length) {
           list.innerHTML = '<div class="text-center py-8 text-sm text-gray-400">Nenhum comentário ainda.</div>';
           return;
@@ -1455,33 +1491,64 @@
   }
 
   // ── Like ──
-  function curtirPost(postId, btn) {
-    if (!meuId) { window.location = '/auth/login'; return; }
-    var curtiu = btn.getAttribute('data-curtiu') === '1';
-    var newState = !curtiu;
-    btn.setAttribute('data-curtiu', newState ? '1' : '0');
-    btn.classList.toggle('liked', newState);
+  function aplicarEstadoCurtidaBtn(btn, curtiu, total) {
+    btn.setAttribute('data-curtiu', curtiu ? '1' : '0');
+    btn.classList.toggle('liked', curtiu);
     var icon = btn.querySelector('i');
-    if (icon) { icon.className = newState ? 'fa-solid fa-heart' : 'fa-regular fa-heart'; }
+    if (icon) { icon.className = curtiu ? 'fa-solid fa-heart' : 'fa-regular fa-heart'; }
     var countEl = btn.querySelector('.count-curtidas');
     if (countEl) {
-      var n = parseInt(countEl.textContent) || 0;
-      countEl.textContent = newState ? n + 1 : Math.max(0, n - 1) || '';
+      countEl.textContent = (total != null && Number(total) > 0) ? String(total) : '';
     }
-    if (newState) {
-      btn.classList.add('animate-heartPop');
-      setTimeout(function() { btn.classList.remove('animate-heartPop'); }, 400);
-      var heart = document.createElement('span');
-      heart.className = 'float-heart'; heart.textContent = '♥';
-      heart.style.cssText = 'left:50%;top:50%;transform:translate(-50%,-50%)';
-      btn.appendChild(heart);
-      setTimeout(function() { heart.remove(); }, 700);
-    }
-    fetch('/explorar/post/' + postId + '/curtir', {
-      method: newState ? 'POST' : 'DELETE',
-      headers: { 'Accept': 'application/json' },
-      credentials: 'same-origin'
-    });
+  }
+
+  function curtirPost(postId, btn) {
+    if (!meuId) { window.location = '/auth/login'; return; }
+    if (btn.getAttribute('data-airpet-like-pending') === '1') return;
+    var curtiu = btn.getAttribute('data-curtiu') === '1';
+    var method = curtiu ? 'DELETE' : 'POST';
+    btn.setAttribute('data-airpet-like-pending', '1');
+    btn.classList.add('airpet-btn-loading');
+    var c = feedCoordinator();
+    var pr = c && typeof c.enqueue === 'function'
+      ? c.enqueue({
+        key: 'curtir:' + postId,
+        group: 'feed',
+        priority: c.PRIORITY.MEDIUM,
+        fetchFn: function (signal) {
+          return fetch('/explorar/post/' + postId + '/curtir', {
+            method: method,
+            headers: { 'Accept': 'application/json' },
+            credentials: 'same-origin',
+            signal: signal
+          }).then(function (r) { return r.json(); });
+        }
+      })
+      : fetch('/explorar/post/' + postId + '/curtir', {
+        method: method,
+        headers: { 'Accept': 'application/json' },
+        credentials: 'same-origin'
+      }).then(function (r) { return r.json(); });
+
+    pr.then(function (d) {
+      if (d && d.sucesso) {
+        aplicarEstadoCurtidaBtn(btn, !!d.curtiu, d.total);
+        if (d.curtiu) {
+          btn.classList.add('animate-heartPop');
+          setTimeout(function () { btn.classList.remove('animate-heartPop'); }, 400);
+          var heart = document.createElement('span');
+          heart.className = 'float-heart';
+          heart.textContent = '♥';
+          heart.style.cssText = 'left:50%;top:50%;transform:translate(-50%,-50%)';
+          btn.appendChild(heart);
+          setTimeout(function () { heart.remove(); }, 700);
+        }
+      }
+    }).catch(function () {})
+      .finally(function () {
+        btn.removeAttribute('data-airpet-like-pending');
+        btn.classList.remove('airpet-btn-loading');
+      });
   }
 
   // ── Comments ──
@@ -1497,20 +1564,36 @@
     if (window.AIRPET_modalUi && typeof window.AIRPET_modalUi.refreshBodyScroll === 'function') {
       window.AIRPET_modalUi.refreshBodyScroll();
     }
-    commentList.innerHTML = '<p style="color:var(--text-dim);font-size:14px;">Carregando comentários...</p>';
-    fetch('/explorar/post/' + postId + '/comentarios', {
-      headers: { 'Accept': 'application/json' },
-      credentials: 'same-origin'
-    })
-      .then(function(r) { return r.json(); })
-      .then(function(data) {
+    try {
+      if (feedCoordinator() && feedCoordinator().cancelGroup) feedCoordinator().cancelGroup('feedComments');
+    } catch (_) {}
+    commentList.innerHTML = '<p style="color:var(--text-dim);font-size:14px;">Carregando comentários…</p>';
+    var c = feedCoordinator();
+    var pr = c && typeof c.enqueue === 'function'
+      ? c.enqueue({
+        key: 'comentariosModal:' + postId,
+        group: 'feedComments',
+        priority: c.PRIORITY.HIGH,
+        fetchFn: function (signal) {
+          return fetch('/explorar/post/' + postId + '/comentarios', {
+            headers: { 'Accept': 'application/json' },
+            credentials: 'same-origin',
+            signal: signal
+          }).then(function (r) { return r.json(); });
+        }
+      })
+      : fetch('/explorar/post/' + postId + '/comentarios', {
+        headers: { 'Accept': 'application/json' },
+        credentials: 'same-origin'
+      }).then(function (r) { return r.json(); });
+    pr.then(function (data) {
         if (!data || !data.sucesso) {
           commentList.innerHTML = '<p style="color:#ef4444;font-size:14px;">Não foi possível carregar os comentários.</p>';
           return;
         }
         renderComentariosModal(data.comentarios || []);
       })
-      .catch(function() {
+      .catch(function () {
         commentList.innerHTML = '<p style="color:#ef4444;font-size:14px;">Erro ao carregar comentários.</p>';
       });
   }
@@ -1555,16 +1638,48 @@
     commentList.innerHTML = html;
   }
 
-  function enviarComentario(postId, texto, inputEl) {
+  function enviarComentario(postId, texto, inputEl, actionBtn) {
     var payload = { texto: texto };
     if (feedCommentReplyParentId) payload.parent_id = parseInt(feedCommentReplyParentId, 10);
-    fetch('/explorar/post/' + postId + '/comentar', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-      credentials: 'same-origin',
-      body: JSON.stringify(payload)
-    }).then(function(r) { return r.json(); }).then(function(d) {
-      if (d.sucesso) {
+    var sendBtn = actionBtn;
+    if (!sendBtn && inputEl) {
+      var row = inputEl.closest('.post-comment-row');
+      if (row) sendBtn = row.querySelector('.btn-enviar-inline');
+    }
+    var body = JSON.stringify(payload);
+    var run = function () {
+      var c = feedCoordinator();
+      if (c && typeof c.enqueue === 'function') {
+        return c.enqueue({
+          key: 'comentar:' + postId,
+          group: 'feedComentar',
+          priority: c.PRIORITY.HIGH,
+          fetchFn: function (signal) {
+            return fetch('/explorar/post/' + postId + '/comentar', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+              credentials: 'same-origin',
+              body: body,
+              signal: signal
+            }).then(function (r) { return r.json(); });
+          }
+        });
+      }
+      return fetch('/explorar/post/' + postId + '/comentar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        credentials: 'same-origin',
+        body: body
+      }).then(function (r) { return r.json(); });
+    };
+    var p = window.AIRPET_LOADING && sendBtn
+      ? window.AIRPET_LOADING.runLocked({
+        button: sendBtn,
+        busyText: '<span class="airpet-inline-dots">Enviando</span>'
+      }, run)
+      : run();
+    p.then(function (d) {
+      if (d && d.sucesso) {
         inputEl.value = '';
         clearFeedCommentReplyTarget();
         var card = document.getElementById('post-' + postId);
@@ -1582,19 +1697,39 @@
           carregarComentariosPostDetail(postId);
         }
       }
-    });
+    }).catch(function () {});
   }
 
   // ── Repost ──
   function abrirRepostModal(postId) {
     if (!meuId) { window.location = '/auth/login'; return; }
-    if (confirm('Repostar esta publicação?')) {
-      fetch('/explorar/post/' + postId + '/repost', {
+    if (repostFeedInFlight) return;
+    if (!confirm('Repostar esta publicação?')) return;
+    repostFeedInFlight = true;
+    var c = feedCoordinator();
+    var body = JSON.stringify({ texto: 'Repost' });
+    var pr = c && typeof c.enqueue === 'function'
+      ? c.enqueue({
+        key: 'repost:' + postId,
+        group: 'feed',
+        priority: c.PRIORITY.MEDIUM,
+        fetchFn: function (signal) {
+          return fetch('/explorar/post/' + postId + '/repost', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+            credentials: 'same-origin',
+            body: body,
+            signal: signal
+          }).then(function (r) { return r.json(); });
+        }
+      })
+      : fetch('/explorar/post/' + postId + '/repost', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
         credentials: 'same-origin',
-        body: JSON.stringify({ texto: 'Repost' })
-      }).then(function(r) { return r.json(); }).then(function(d) {
+        body: body
+      }).then(function (r) { return r.json(); });
+    pr.then(function (d) {
         if (d.sucesso) {
           var card = document.getElementById('post-' + postId);
           if (card) {
@@ -1606,8 +1741,9 @@
             }
           }
         }
-      });
-    }
+      })
+      .catch(function () {})
+      .finally(function () { repostFeedInFlight = false; });
   }
 
   // ── Share ──
@@ -1636,28 +1772,67 @@
 
   // ── Pin / Delete ──
   function fixarPost(postId, isFixed) {
-    fetch('/explorar/post/' + postId + '/fixar', {
-      method: isFixed ? 'DELETE' : 'POST',
-      headers: { 'Accept': 'application/json' },
-      credentials: 'same-origin'
-    }).then(function() { location.reload(); });
+    var method = isFixed ? 'DELETE' : 'POST';
+    var c = feedCoordinator();
+    var pr = c && typeof c.enqueue === 'function'
+      ? c.enqueue({
+        key: 'fixar:' + postId,
+        group: 'feed',
+        priority: c.PRIORITY.MEDIUM,
+        fetchFn: function (signal) {
+          return fetch('/explorar/post/' + postId + '/fixar', {
+            method: method,
+            headers: { 'Accept': 'application/json' },
+            credentials: 'same-origin',
+            signal: signal
+          });
+        }
+      })
+      : fetch('/explorar/post/' + postId + '/fixar', {
+        method: method,
+        headers: { 'Accept': 'application/json' },
+        credentials: 'same-origin'
+      });
+    pr.then(function () {
+        if (window.AIRPET_LOADING && typeof window.AIRPET_LOADING.showRoute === 'function') {
+          window.AIRPET_LOADING.showRoute();
+        }
+        location.reload();
+      })
+      .catch(function () {});
   }
 
   function deletarPost(postId) {
     if (!confirm('Excluir publicação?')) return;
-    fetch('/explorar/post/' + postId, { method: 'DELETE', headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
-      .then(function(r) { return r.json(); })
-      .then(function(d) {
+    var c = feedCoordinator();
+    var pr = c && typeof c.enqueue === 'function'
+      ? c.enqueue({
+        key: 'deletePost:' + postId,
+        group: 'feed',
+        priority: c.PRIORITY.MEDIUM,
+        fetchFn: function (signal) {
+          return fetch('/explorar/post/' + postId, {
+            method: 'DELETE',
+            headers: { 'Accept': 'application/json' },
+            credentials: 'same-origin',
+            signal: signal
+          }).then(function (r) { return r.json(); });
+        }
+      })
+      : fetch('/explorar/post/' + postId, { method: 'DELETE', headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
+        .then(function (r) { return r.json(); });
+    pr.then(function (d) {
         if (d.sucesso) {
           var el = document.getElementById('post-' + postId);
           if (el) {
             el.style.transition = 'opacity 0.3s, transform 0.3s';
             el.style.opacity = '0'; el.style.transform = 'translateY(-8px)';
-            setTimeout(function() { el.remove(); }, 300);
+            setTimeout(function () { el.remove(); }, 300);
           }
           requestClosePostDetailFeed();
         }
-      });
+      })
+      .catch(function () {});
   }
 
   // ── Ver mais ──
@@ -1727,10 +1902,10 @@
 
   if (btnPublicar) {
     btnPublicar.addEventListener('click', function() {
+      if (isPublishingPost) return;
       var texto = textarea.value.trim();
       if (!texto && !fotoBlob) return;
-      btnPublicar.disabled = true;
-      btnPublicar.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Publicando...';
+      isPublishingPost = true;
 
       var petIdEl = document.getElementById('novoPetId');
       var petId = petIdEl ? petIdEl.value : '';
@@ -1740,13 +1915,18 @@
       if (petId) fd.append('pet_id', petId);
       if (fotoBlob) fd.append('foto', fotoBlob);
 
-      fetch('/explorar/post', { method: 'POST', body: fd, credentials: 'same-origin' })
-        .then(function(r) { return r.json(); })
-        .then(function(d) {
+      var busyLabel = '<i class="fa-solid fa-paw fa-bounce" aria-hidden="true"></i> <span class="airpet-inline-dots">Publicando</span>';
+      var work = function () {
+        return fetch('/explorar/post', { method: 'POST', body: fd, credentials: 'same-origin' })
+          .then(function (r) { return r.json(); });
+      };
+      var p = window.AIRPET_LOADING
+        ? window.AIRPET_LOADING.runLocked({ button: btnPublicar, busyText: busyLabel }, work)
+        : work();
+      p.then(function (d) {
           if (d.sucesso && d.post) {
             textarea.value = ''; charCount.textContent = '0/500';
             previewWrap.classList.add('hidden'); previewImg.src = ''; fotoBlob = null;
-            btnPublicar.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Publicar';
             btnPublicar.disabled = true;
             var html = renderPostHTML(d.post);
             var temp = document.createElement('div'); temp.innerHTML = html;
@@ -1754,11 +1934,11 @@
             feedContainer.insertBefore(newCard, feedContainer.firstChild);
             initVerMais();
           } else {
-            alert(d.mensagem || 'Erro ao publicar.');
-            btnPublicar.disabled = false;
-            btnPublicar.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Publicar';
+            alert((d && d.mensagem) || 'Erro ao publicar.');
           }
-        });
+        })
+        .catch(function () { alert('Erro ao publicar.'); })
+        .finally(function () { isPublishingPost = false; });
     });
   }
 
@@ -1856,7 +2036,7 @@
       var input = row ? row.querySelector('.input-comentario-inline') : null;
       if (!input) return;
       var txt = input.value.trim();
-      if (txt) enviarComentario(btn.dataset.postId || input.dataset.postId, txt, input);
+      if (txt) enviarComentario(btn.dataset.postId || input.dataset.postId, txt, input, btn);
       return;
     }
     var artOpen = e.target.closest('article[data-explorar-meta]');
@@ -1878,7 +2058,11 @@
     if (e.key === 'Enter' && e.target.classList.contains('input-comentario-inline')) {
       e.preventDefault();
       var txt = e.target.value.trim();
-      if (txt) enviarComentario(e.target.dataset.postId, txt, e.target);
+      if (txt) {
+        var rowK = e.target.closest('.post-comment-row');
+        var sendK = rowK ? rowK.querySelector('.btn-enviar-inline') : null;
+        enviarComentario(e.target.dataset.postId, txt, e.target, sendK);
+      }
     }
   });
 
@@ -1901,12 +2085,12 @@
       e.preventDefault();
       if (!commentPostId) return;
       var txt = commentInputModal.value.trim();
-      if (txt) enviarComentario(commentPostId, txt, commentInputModal);
+      if (txt) enviarComentario(commentPostId, txt, commentInputModal, btnEnviarComentarioModal);
     });
     btnEnviarComentarioModal.addEventListener('click', function() {
       if (!commentPostId) return;
       var txt = commentInputModal.value.trim();
-      if (txt) enviarComentario(commentPostId, txt, commentInputModal);
+      if (txt) enviarComentario(commentPostId, txt, commentInputModal, btnEnviarComentarioModal);
     });
   }
 
@@ -1995,12 +2179,12 @@
       e.preventDefault();
       var pid = postDetailCommentInputEl.getAttribute('data-post-id');
       var t = postDetailCommentInputEl.value.trim();
-      if (pid && t) enviarComentario(pid, t, postDetailCommentInputEl);
+      if (pid && t) enviarComentario(pid, t, postDetailCommentInputEl, postDetailBtnEnviarEl);
     });
     postDetailBtnEnviarEl.addEventListener('click', function () {
       var pid = postDetailCommentInputEl.getAttribute('data-post-id');
       var t = postDetailCommentInputEl.value.trim();
-      if (pid && t) enviarComentario(pid, t, postDetailCommentInputEl);
+      if (pid && t) enviarComentario(pid, t, postDetailCommentInputEl, postDetailBtnEnviarEl);
     });
   }
 
@@ -2011,11 +2195,27 @@
       if (!b) return;
       var cid = b.getAttribute('data-comment-id');
       if (!cid || !confirm('Excluir comentário?')) return;
-      fetch('/explorar/comentario/' + cid, { method: 'DELETE', headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
-        .then(function (r) { return r.json(); })
-        .then(function (d) {
+      var c = feedCoordinator();
+      var pr = c && typeof c.enqueue === 'function'
+        ? c.enqueue({
+          key: 'delComment:' + cid,
+          group: 'feedPostDetailComments',
+          priority: c.PRIORITY.MEDIUM,
+          fetchFn: function (signal) {
+            return fetch('/explorar/comentario/' + cid, {
+              method: 'DELETE',
+              headers: { 'Accept': 'application/json' },
+              credentials: 'same-origin',
+              signal: signal
+            }).then(function (r) { return r.json(); });
+          }
+        })
+        : fetch('/explorar/comentario/' + cid, { method: 'DELETE', headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
+          .then(function (r) { return r.json(); });
+      pr.then(function (d) {
           if (d.sucesso && postDetailCommentPostId) carregarComentariosPostDetail(postDetailCommentPostId);
-        });
+        })
+        .catch(function () {});
     });
   }
 
@@ -2023,30 +2223,70 @@
   document.querySelectorAll('.btn-seguir-sidebar').forEach(function(btn) {
     btn.addEventListener('click', function() {
       var el = this;
-      fetch('/explorar/seguir/' + el.dataset.userId, { method: 'POST', headers: { 'Content-Type': 'application/json' } })
-        .then(function(r) { return r.json(); })
-        .then(function(d) {
+      if (el.getAttribute('data-airpet-follow-pending') === '1') return;
+      el.setAttribute('data-airpet-follow-pending', '1');
+      var uid = el.dataset.userId;
+      var c = feedCoordinator();
+      var pr = c && typeof c.enqueue === 'function'
+        ? c.enqueue({
+          key: 'seguirUserSidebar:' + uid,
+          group: 'feedSidebar',
+          priority: c.PRIORITY.MEDIUM,
+          fetchFn: function (signal) {
+            return fetch('/explorar/seguir/' + uid, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              credentials: 'same-origin',
+              signal: signal
+            }).then(function (r) { return r.json(); });
+          }
+        })
+        : fetch('/explorar/seguir/' + uid, { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin' })
+          .then(function (r) { return r.json(); });
+      pr.then(function (d) {
           if (d.sucesso) {
             el.textContent = 'Seguindo';
             el.style.background = 'var(--accent)'; el.style.borderColor = 'var(--accent)'; el.style.color = '#fff';
             el.disabled = true;
           }
-        });
+        })
+        .catch(function () {})
+        .finally(function () { el.removeAttribute('data-airpet-follow-pending'); });
     });
   });
 
   document.querySelectorAll('.btn-seguir-pet-sidebar').forEach(function(btn) {
     btn.addEventListener('click', function() {
       var el = this;
-      fetch('/explorar/pet/' + el.dataset.petId + '/seguir', { method: 'POST', headers: { 'Content-Type': 'application/json' } })
-        .then(function(r) { return r.json(); })
-        .then(function(d) {
+      if (el.getAttribute('data-airpet-follow-pending') === '1') return;
+      el.setAttribute('data-airpet-follow-pending', '1');
+      var pid = el.dataset.petId;
+      var c = feedCoordinator();
+      var pr = c && typeof c.enqueue === 'function'
+        ? c.enqueue({
+          key: 'seguirPetSidebar:' + pid,
+          group: 'feedSidebar',
+          priority: c.PRIORITY.MEDIUM,
+          fetchFn: function (signal) {
+            return fetch('/explorar/pet/' + pid + '/seguir', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              credentials: 'same-origin',
+              signal: signal
+            }).then(function (r) { return r.json(); });
+          }
+        })
+        : fetch('/explorar/pet/' + pid + '/seguir', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin' })
+          .then(function (r) { return r.json(); });
+      pr.then(function (d) {
           if (d.sucesso) {
             el.textContent = 'Seguindo';
             el.style.background = 'var(--accent)'; el.style.borderColor = 'var(--accent)'; el.style.color = '#fff';
             el.disabled = true;
           }
-        });
+        })
+        .catch(function () {})
+        .finally(function () { el.removeAttribute('data-airpet-follow-pending'); });
     });
   });
 
@@ -2054,29 +2294,70 @@
   var loadMoreBtn = document.getElementById('loadMoreBtn');
   if (loadMoreBtn) {
     loadMoreBtn.addEventListener('click', function() {
-      var page = parseInt(this.getAttribute('data-page') || '2', 10);
-      this.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>Carregando...';
-      this.disabled = true;
-      fetch('/feed?page=' + page, { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
-        .then(function(r) { return r.json(); })
-        .then(function(d) {
-          if (d.posts && d.posts.length > 0) {
-            d.posts.forEach(function(p) {
-              var html = renderPostHTML(p);
-              var temp = document.createElement('div'); temp.innerHTML = html;
-              feedContainer.insertBefore(temp.firstChild, loadMoreBtn);
-            });
-            if (d.temMais) {
-              loadMoreBtn.setAttribute('data-page', page + 1);
-              loadMoreBtn.innerHTML = '<i class="fa-solid fa-arrows-rotate mr-2"></i>Carregar mais publicações';
-              loadMoreBtn.disabled = false;
-            } else {
-              loadMoreBtn.remove();
-            }
+      var self = this;
+      var page = parseInt(self.getAttribute('data-page') || '2', 10);
+      self.innerHTML = '<i class="fa-solid fa-paw fa-bounce mr-2" aria-hidden="true"></i><span class="airpet-inline-dots">Carregando</span>';
+      self.disabled = true;
+      var wrap = document.createElement('div');
+      wrap.innerHTML = feedSkeletonBlock(2);
+      var skelEl = wrap.firstChild;
+      feedContainer.insertBefore(skelEl, self);
+
+      function removeSkel() {
+        if (skelEl && skelEl.parentNode) skelEl.remove();
+      }
+
+      function applyFeedPage(d) {
+        removeSkel();
+        if (d && d.posts && d.posts.length > 0) {
+          d.posts.forEach(function (p) {
+            var html = renderPostHTML(p);
+            var temp = document.createElement('div'); temp.innerHTML = html;
+            feedContainer.insertBefore(temp.firstChild, self);
+          });
+          if (d.temMais) {
+            self.setAttribute('data-page', page + 1);
+            self.innerHTML = '<i class="fa-solid fa-arrows-rotate mr-2"></i>Carregar mais publicações';
+            self.disabled = false;
           } else {
-            loadMoreBtn.remove();
+            self.remove();
           }
-          initVerMais();
+        } else {
+          self.remove();
+        }
+        initVerMais();
+      }
+
+      if (typeof swrFetchGet === 'function') {
+        var c2 = feedCoordinator();
+        swrFetchGet({
+          key: 'feed:page:' + page,
+          url: '/feed?page=' + page,
+          staleTimeMs: 45000,
+          cacheTimeMs: 600000,
+          group: 'feedPagination',
+          priority: c2 && c2.PRIORITY ? c2.PRIORITY.MEDIUM : 'MEDIUM',
+          credentials: 'same-origin'
+        })
+          .then(function (res) {
+            var d = res && Object.prototype.hasOwnProperty.call(res, 'data') ? res.data : res;
+            applyFeedPage(d || {});
+          })
+          .catch(function () {
+            removeSkel();
+            self.innerHTML = '<i class="fa-solid fa-arrows-rotate mr-2"></i>Carregar mais publicações';
+            self.disabled = false;
+          });
+        return;
+      }
+
+      fetch('/feed?page=' + page, { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
+        .then(function (r) { return r.json(); })
+        .then(function (d) { applyFeedPage(d); })
+        .catch(function () {
+          removeSkel();
+          self.innerHTML = '<i class="fa-solid fa-arrows-rotate mr-2"></i>Carregar mais publicações';
+          self.disabled = false;
         });
     });
   }

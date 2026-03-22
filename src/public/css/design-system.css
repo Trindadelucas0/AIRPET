@@ -21,6 +21,18 @@
   --radius: 20px;
   --radius-sm: 14px;
   --radius-xs: 10px;
+  --font-brand: "Rubik Doodle Shadow", cursive;
+  --font-display: "Rubik Doodle Shadow", "Syne", sans-serif;
+}
+
+.font-brand {
+  font-family: var(--font-brand);
+  letter-spacing: 0.02em;
+}
+
+.font-display {
+  font-family: var(--font-display);
+  letter-spacing: 0.02em;
 }
 
 * {

@@ -28,9 +28,10 @@
       </h1>
       <p class="text-sm text-gray-500 mb-4">Encontre pets e tutores na sua região</p>
 
-      <form action="/explorar/busca" method="GET" class="relative">
+      <form id="buscaExplorarForm" action="/explorar/busca" method="GET" class="relative">
         <input type="text" name="q" value="<%= q %>" placeholder="Nome do pet ou pessoa..."
                class="busca-input w-full pl-12 pr-12 py-4 text-sm bg-white border border-gray-200 rounded-2xl outline-none transition-all"
+               autocomplete="off"
                autofocus>
         <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
         <% if (q) { %>
@@ -236,15 +237,52 @@
 
 <script>
 (function() {
+  var form = document.getElementById('buscaExplorarForm');
+  var qInput = form ? form.querySelector('input[name="q"]') : null;
+  if (form && qInput && window.AIRPET_LOADING && typeof window.AIRPET_LOADING.debounce === 'function') {
+    var debouncedSubmit = window.AIRPET_LOADING.debounce(function () {
+      var v = qInput.value.trim();
+      if (v.length >= 2 || v.length === 0) form.submit();
+    }, 380);
+    qInput.addEventListener('input', function () {
+      var v = qInput.value.trim();
+      if (v.length === 0) debouncedSubmit();
+      else if (v.length >= 2) debouncedSubmit();
+    });
+    form.addEventListener('submit', function (e) {
+      var v = qInput.value.trim();
+      if (v.length === 1) e.preventDefault();
+    });
+  }
+
+  function coord() { return window.AIRPET_REQ_COORDINATOR; }
+
   document.querySelectorAll('.follow-btn').forEach(function(btn) {
     btn.addEventListener('click', function() {
-      var userId = this.getAttribute('data-user-id');
-      var seguindo = this.getAttribute('data-seguindo') === 'true';
       var el = this;
+      if (el.getAttribute('data-airpet-follow-pending') === '1') return;
+      el.setAttribute('data-airpet-follow-pending', '1');
+      var userId = el.getAttribute('data-user-id');
+      var seguindo = el.getAttribute('data-seguindo') === 'true';
       var method = seguindo ? 'DELETE' : 'POST';
-      fetch('/explorar/seguir/' + userId, { method: method, headers: { 'Content-Type': 'application/json' } })
-        .then(function(r) { return r.json(); })
-        .then(function(d) {
+      var c = coord();
+      var pr = c && typeof c.enqueue === 'function'
+        ? c.enqueue({
+          key: 'buscaSeguir:' + userId + ':' + method,
+          group: 'buscaFollow',
+          priority: c.PRIORITY.MEDIUM,
+          fetchFn: function (signal) {
+            return fetch('/explorar/seguir/' + userId, {
+              method: method,
+              headers: { 'Content-Type': 'application/json' },
+              credentials: 'same-origin',
+              signal: signal
+            }).then(function (r) { return r.json(); });
+          }
+        })
+        : fetch('/explorar/seguir/' + userId, { method: method, headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin' })
+          .then(function (r) { return r.json(); });
+      pr.then(function (d) {
           if (d.sucesso) {
             el.setAttribute('data-seguindo', d.seguindo ? 'true' : 'false');
             if (d.seguindo) {
@@ -257,19 +295,38 @@
               el.classList.add('border-primary-500', 'text-primary-500', 'bg-white', 'hover:bg-primary-50', 'hover:text-primary-600');
             }
           }
-        });
+        })
+        .catch(function () {})
+        .finally(function () { el.removeAttribute('data-airpet-follow-pending'); });
     });
   });
 
   document.querySelectorAll('.follow-pet-btn').forEach(function(btn) {
     btn.addEventListener('click', function() {
-      var petId = this.getAttribute('data-pet-id');
-      var seguindo = this.getAttribute('data-seguindo') === 'true';
       var el = this;
+      if (el.getAttribute('data-airpet-follow-pending') === '1') return;
+      el.setAttribute('data-airpet-follow-pending', '1');
+      var petId = el.getAttribute('data-pet-id');
+      var seguindo = el.getAttribute('data-seguindo') === 'true';
       var method = seguindo ? 'DELETE' : 'POST';
-      fetch('/explorar/pet/' + petId + '/seguir', { method: method, headers: { 'Content-Type': 'application/json' } })
-        .then(function(r) { return r.json(); })
-        .then(function(d) {
+      var c = coord();
+      var pr = c && typeof c.enqueue === 'function'
+        ? c.enqueue({
+          key: 'buscaSeguirPet:' + petId + ':' + method,
+          group: 'buscaFollow',
+          priority: c.PRIORITY.MEDIUM,
+          fetchFn: function (signal) {
+            return fetch('/explorar/pet/' + petId + '/seguir', {
+              method: method,
+              headers: { 'Content-Type': 'application/json' },
+              credentials: 'same-origin',
+              signal: signal
+            }).then(function (r) { return r.json(); });
+          }
+        })
+        : fetch('/explorar/pet/' + petId + '/seguir', { method: method, headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin' })
+          .then(function (r) { return r.json(); });
+      pr.then(function (d) {
           if (d.sucesso) {
             el.setAttribute('data-seguindo', d.seguindo ? 'true' : 'false');
             if (d.seguindo) {
@@ -280,7 +337,9 @@
               el.classList.remove('seguindo');
             }
           }
-        });
+        })
+        .catch(function () {})
+        .finally(function () { el.removeAttribute('data-airpet-follow-pending'); });
     });
   });
 })();

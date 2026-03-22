@@ -1,0 +1,254 @@
+/* Overlay de navegação + skeletons + busy states (identidade pet) */
+
+.airpet-route-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 99990;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--ink-1, #13131a) 88%, #000);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: opacity 0.2s ease;
+}
+
+.airpet-route-overlay--hide {
+  display: none !important;
+}
+
+.airpet-route-overlay__panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.25rem;
+  padding: 2rem 1.5rem;
+  max-width: 320px;
+  text-align: center;
+}
+
+.airpet-route-overlay__brand {
+  font-family: var(--font-display, "Rubik Doodle Shadow", "Syne", sans-serif);
+  font-weight: 800;
+  font-size: 1.35rem;
+  letter-spacing: 0.02em;
+  color: var(--text, #f8fafc);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.airpet-route-overlay__brand .airpet-brand-paw {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.airpet-paw-trail {
+  display: flex;
+  gap: 0.65rem;
+  align-items: flex-end;
+  height: 2rem;
+}
+
+.airpet-paw-trail span {
+  display: block;
+  width: 0.85rem;
+  height: 0.85rem;
+  border-radius: 40% 55% 45% 50%;
+  background: linear-gradient(145deg, var(--color-primary, #f26020), color-mix(in srgb, var(--color-primary, #f26020) 65%, #fff));
+  opacity: 0.35;
+  transform-origin: center bottom;
+  animation: airpetPawHop 0.9s ease-in-out infinite;
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--color-primary, #f26020) 35%, transparent);
+}
+
+.airpet-paw-trail span:nth-child(2) { animation-delay: 0.12s; }
+.airpet-paw-trail span:nth-child(3) { animation-delay: 0.24s; }
+.airpet-paw-trail span:nth-child(4) { animation-delay: 0.36s; }
+
+@keyframes airpetPawHop {
+  0%, 100% { transform: translateY(0) scale(1); opacity: 0.35; }
+  40% { transform: translateY(-10px) scale(1.08); opacity: 1; }
+  55% { transform: translateY(0) scale(1); opacity: 0.75; }
+}
+
+.airpet-bone-wrap {
+  position: relative;
+  width: 3.5rem;
+  height: 1.25rem;
+  margin: 0.25rem 0;
+}
+
+.airpet-bone {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 3.25rem;
+  height: 0.55rem;
+  margin-top: -0.275rem;
+  background: linear-gradient(180deg, #fff5eb, #fde4d0);
+  border-radius: 999px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.85),
+    0 2px 10px rgba(0, 0, 0, 0.2);
+  animation: airpetBoneSlide 1.2s ease-in-out infinite;
+}
+
+.airpet-bone::before,
+.airpet-bone::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 0.75rem;
+  height: 0.75rem;
+  margin-top: -0.375rem;
+  background: inherit;
+  border-radius: 50%;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+.airpet-bone::before { left: -0.2rem; }
+.airpet-bone::after { right: -0.2rem; }
+
+@keyframes airpetBoneSlide {
+  0%, 100% { transform: translateX(0); opacity: 1; }
+  50% { transform: translateX(12px); opacity: 0.88; }
+}
+
+.airpet-progress-indeterminate {
+  width: min(280px, 80vw);
+  height: 6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--text-dim, #94a3b8) 18%, transparent);
+  overflow: hidden;
+  position: relative;
+}
+
+.airpet-progress-indeterminate::after {
+  content: '';
+  position: absolute;
+  left: -40%;
+  top: 0;
+  width: 40%;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent, var(--color-primary, #f26020), var(--color-primary-hover, #ff7a3d), transparent);
+  animation: airpetProgSweep 1.1s ease-in-out infinite;
+}
+
+@keyframes airpetProgSweep {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(350%); }
+}
+
+.airpet-route-microcopy {
+  font-family: "DM Sans", sans-serif;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text-dim, #cbd5e1);
+  margin: 0;
+  min-height: 1.35em;
+  line-height: 1.4;
+}
+
+.airpet-route-microcopy::after {
+  content: ' 🐾';
+  opacity: 0.85;
+}
+
+.airpet-inline-dots::after {
+  content: '…';
+  animation: airpetDots 1.2s steps(4, end) infinite;
+}
+
+@keyframes airpetDots {
+  0%, 20% { content: '.'; }
+  40% { content: '..'; }
+  60%, 100% { content: '…'; }
+}
+
+/* Skeleton cards (feed / listas) */
+.airpet-skeleton-feed {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.airpet-skeleton-post {
+  background: var(--ink-2, #1a1a22);
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.08));
+  border-radius: 16px;
+  padding: 16px;
+  overflow: hidden;
+}
+
+.airpet-skeleton-post__head {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.airpet-skeleton-circle {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: linear-gradient(90deg, var(--ink-3, #252530) 0%, var(--ink-4, #2f2f3c) 50%, var(--ink-3, #252530) 100%);
+  background-size: 200% 100%;
+  animation: airpetShimmer 1.2s ease-in-out infinite;
+}
+
+.airpet-skeleton-lines {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.airpet-skeleton-line {
+  height: 10px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, var(--ink-3, #252530) 0%, var(--ink-4, #2f2f3c) 50%, var(--ink-3, #252530) 100%);
+  background-size: 200% 100%;
+  animation: airpetShimmer 1.2s ease-in-out infinite;
+}
+
+.airpet-skeleton-line--short { width: 55%; }
+.airpet-skeleton-line--med { width: 80%; }
+
+.airpet-skeleton-post__media {
+  height: 180px;
+  border-radius: 12px;
+  margin-top: 8px;
+  background: linear-gradient(90deg, var(--ink-3, #252530) 0%, var(--ink-4, #2f2f3c) 50%, var(--ink-3, #252530) 100%);
+  background-size: 200% 100%;
+  animation: airpetShimmer 1.2s ease-in-out infinite;
+}
+
+@keyframes airpetShimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.airpet-btn-loading {
+  pointer-events: none;
+  opacity: 0.92;
+}
+
+body.airpet-route-loading {
+  overflow: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .airpet-paw-trail span,
+  .airpet-bone,
+  .airpet-progress-indeterminate::after,
+  .airpet-skeleton-circle,
+  .airpet-skeleton-line,
+  .airpet-skeleton-post__media {
+    animation: none !important;
+  }
+  .airpet-paw-trail span { opacity: 0.9; }
+  .airpet-inline-dots::after { animation: none; content: '…'; }
+}

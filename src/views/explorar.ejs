@@ -18,7 +18,7 @@
       .driver-popover-description { color:#6b7280 !important; }
       .driver-popover-next-btn { background:linear-gradient(135deg,#ec5a1c,#dd4212) !important; border:none !important; border-radius:10px !important; font-weight:600 !important; }
       .driver-popover-prev-btn { border-radius:10px !important; font-weight:600 !important; }
-      /* Tipografia Explorar: corpo legível (DM Sans), título com personalidade (Syne) */
+      /* Tipografia Explorar: corpo legível (DM Sans), título com Rubik Doodle Shadow + Syne */
       .explorar-page {
         font-family: 'DM Sans', ui-sans-serif, system-ui, -apple-system, sans-serif;
         font-feature-settings: "kern" 1, "liga" 1;
@@ -26,8 +26,8 @@
         -moz-osx-font-smoothing: grayscale;
       }
       .explorar-hero-title {
-        font-family: 'Syne', 'DM Sans', sans-serif;
-        letter-spacing: -0.03em;
+        font-family: var(--font-display), "DM Sans", sans-serif;
+        letter-spacing: 0.02em;
         line-height: 1.15;
       }
       .explorar-card-name {
@@ -56,7 +56,7 @@
       @media (min-width: 768px) {
         .explorar-card .explorar-badge { font-size: 0.75rem; letter-spacing: 0.06em; }
       }
-      .explorar-modal-title { font-family: 'Syne', 'DM Sans', sans-serif; letter-spacing: -0.02em; }
+      .explorar-modal-title { font-family: var(--font-display), "DM Sans", sans-serif; letter-spacing: 0.02em; }
       .explorar-modal-body { font-size: 0.9375rem; line-height: 1.65; letter-spacing: 0.01em; }
       /* Explorar layout */
       .explorar-hero { background: linear-gradient(180deg, rgba(236,90,28,.06) 0%, transparent 100%); }
@@ -2055,19 +2055,37 @@
   }
 
   /* ──────────── Infinite Scroll ──────────── */
+  function explorarSkeletonBlock(count) {
+    var n = count || 2;
+    var card = '<div class="airpet-skeleton-post"><div class="airpet-skeleton-post__head"><div class="airpet-skeleton-circle"></div><div class="airpet-skeleton-lines"><div class="airpet-skeleton-line airpet-skeleton-line--med"></div><div class="airpet-skeleton-line airpet-skeleton-line--short"></div></div></div><div class="airpet-skeleton-post__media"></div></div>';
+    var i;
+    var html = '<div class="airpet-skeleton-feed col-span-full" data-airpet-explore-skel="1">';
+    for (i = 0; i < n; i++) html += card;
+    html += '</div>';
+    return html;
+  }
+
   function carregarMaisPosts() {
     if (isLoading || !hasMore) return;
     isLoading = true;
     currentPage++;
+    var loadingPage = currentPage;
 
-    fetch('/explorar?page=' + currentPage, {
-      headers: { 'Accept': 'application/json' },
-      credentials: 'same-origin'
-    })
-    .then(function (r) { return r.json(); })
-    .then(function (data) {
+    var skWrap = document.createElement('div');
+    skWrap.innerHTML = explorarSkeletonBlock(2);
+    var skEl = skWrap.firstChild;
+    if (scrollSentinel && scrollSentinel.parentNode) {
+      scrollSentinel.parentNode.insertBefore(skEl, scrollSentinel);
+    }
+
+    function removeExploreSkel() {
+      if (skEl && skEl.parentNode) skEl.remove();
+    }
+
+    function applyExplorePage(data) {
       isLoading = false;
-      if (!data.sucesso || !data.posts || !data.posts.length) {
+      removeExploreSkel();
+      if (!data || !data.sucesso || !data.posts || !data.posts.length) {
         hasMore = false;
         if (scrollSentinel) scrollSentinel.innerHTML = '<p class="text-xs text-gray-300 text-center">Você chegou ao fim 🐾</p>';
         return;
@@ -2088,8 +2106,40 @@
       if (!hasMore && scrollSentinel) {
         scrollSentinel.innerHTML = '<p class="text-xs text-gray-300 text-center">Você chegou ao fim 🐾</p>';
       }
+    }
+
+    if (typeof swrFetchGet === 'function') {
+      var cEx = window.AIRPET_REQ_COORDINATOR;
+      swrFetchGet({
+        key: 'explorar:page:' + loadingPage,
+        url: '/explorar?page=' + loadingPage,
+        staleTimeMs: 30000,
+        cacheTimeMs: 480000,
+        group: 'explorarPagination',
+        priority: cEx && cEx.PRIORITY ? cEx.PRIORITY.MEDIUM : 'MEDIUM',
+        credentials: 'same-origin'
+      })
+        .then(function (res) {
+          var data = res && Object.prototype.hasOwnProperty.call(res, 'data') ? res.data : res;
+          applyExplorePage(data || {});
+        })
+        .catch(function () {
+          isLoading = false;
+          removeExploreSkel();
+        });
+      return;
+    }
+
+    fetch('/explorar?page=' + loadingPage, {
+      headers: { 'Accept': 'application/json' },
+      credentials: 'same-origin'
     })
-    .catch(function () { isLoading = false; });
+      .then(function (r) { return r.json(); })
+      .then(function (data) { applyExplorePage(data); })
+      .catch(function () {
+        isLoading = false;
+        removeExploreSkel();
+      });
   }
 
   if ('IntersectionObserver' in window) {

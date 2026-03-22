@@ -10,3 +10,8 @@ src/public/images/chat/*
 .DS_Store
 Thumbs.db
 testes/
+
+# Testes (pasta e saídas)
+tests/
+coverage/
+.nyc_output/

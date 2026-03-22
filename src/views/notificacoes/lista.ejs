@@ -443,23 +443,30 @@
         }).then(function (r) { return safeParseResponse(r); });
       };
 
-      var p;
-      if (coordinator && coordinator.enqueue) {
-        p = coordinator.enqueue({
-          key: key,
-          priority: coordinator.PRIORITY ? coordinator.PRIORITY.HIGH : 'HIGH',
-          group: 'notifActions',
-          fetchFn: fetchFn
-        });
-      } else {
-        p = fetch('/notificacoes/marcar-todas-lidas', {
+      var work = function () {
+        if (coordinator && coordinator.enqueue) {
+          return coordinator.enqueue({
+            key: key,
+            priority: coordinator.PRIORITY ? coordinator.PRIORITY.HIGH : 'HIGH',
+            group: 'notifActions',
+            fetchFn: fetchFn
+          });
+        }
+        return fetch('/notificacoes/marcar-todas-lidas', {
           method: 'POST',
           headers: { 'Accept': 'application/json' },
           credentials: 'same-origin'
         }).then(function (r) { return safeParseResponse(r); });
-      }
+      };
 
-      Promise.resolve(p).then(function (data) {
+      var chain = window.AIRPET_LOADING && typeof window.AIRPET_LOADING.runLocked === 'function'
+        ? window.AIRPET_LOADING.runLocked({
+          button: btnMarcarTodas,
+          busyText: '<span class="airpet-inline-dots">Marcando</span>'
+        }, work)
+        : work();
+
+      chain.then(function (data) {
         if (data && data.sucesso) {
           document.querySelectorAll('.dot-unread').forEach(function (dot) { dot.remove(); });
           document.querySelectorAll('[data-notif-id] a').forEach(function (link) {

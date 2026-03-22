@@ -60,14 +60,25 @@
     if (btnSalvarFoto) {
       btnSalvarFoto.addEventListener('click', function () {
         if (!fotoBlob) return;
-        btnSalvarFoto.disabled = true;
-        btnSalvarFoto.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>Salvando...';
         var fd = new FormData();
         fd.append('foto_perfil', new File([fotoBlob], 'foto.jpg', { type: 'image/jpeg' }));
         fd.append('return_to', '/perfil');
-        fetch('/perfil?_method=PUT', { method: 'POST', body: fd, headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
-          .then(function (r) { return r.json(); })
-          .then(function (d) {
+        var work = function () {
+          return fetch('/perfil?_method=PUT', { method: 'POST', body: fd, headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
+            .then(function (r) { return r.json(); });
+        };
+        var chain;
+        if (window.AIRPET_LOADING && typeof window.AIRPET_LOADING.runLocked === 'function') {
+          chain = window.AIRPET_LOADING.runLocked({
+            button: btnSalvarFoto,
+            busyText: '<span class="airpet-inline-dots">Salvando</span>'
+          }, work);
+        } else {
+          btnSalvarFoto.disabled = true;
+          btnSalvarFoto.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>Salvando...';
+          chain = work();
+        }
+        Promise.resolve(chain).then(function (d) {
             if (d.sucesso) {
               fotoAcoes.classList.add('hidden');
               fotoBlob = null;
@@ -129,14 +140,25 @@
     if (btnSalvarCapa) {
       btnSalvarCapa.addEventListener('click', function () {
         if (!capaBlob) return;
-        btnSalvarCapa.disabled = true;
-        btnSalvarCapa.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>Salvando...';
         var fd = new FormData();
         fd.append('foto_capa', new File([capaBlob], 'capa.jpg', { type: 'image/jpeg' }));
         fd.append('return_to', '/perfil');
-        fetch('/perfil?_method=PUT', { method: 'POST', body: fd, headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
-          .then(function (r) { return r.json(); })
-          .then(function (d) {
+        var workCapa = function () {
+          return fetch('/perfil?_method=PUT', { method: 'POST', body: fd, headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
+            .then(function (r) { return r.json(); });
+        };
+        var chainCapa;
+        if (window.AIRPET_LOADING && typeof window.AIRPET_LOADING.runLocked === 'function') {
+          chainCapa = window.AIRPET_LOADING.runLocked({
+            button: btnSalvarCapa,
+            busyText: '<span class="airpet-inline-dots">Salvando</span>'
+          }, workCapa);
+        } else {
+          btnSalvarCapa.disabled = true;
+          btnSalvarCapa.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>Salvando...';
+          chainCapa = workCapa();
+        }
+        Promise.resolve(chainCapa).then(function (d) {
             if (d.sucesso) {
               capaAcoes.classList.add('hidden');
               capaBlob = null;
