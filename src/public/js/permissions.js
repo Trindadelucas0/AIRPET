@@ -239,14 +239,7 @@
     });
   }
 
-  var deferredInstallPrompt = null;
-  window.addEventListener('beforeinstallprompt', function (e) {
-    e.preventDefault();
-    deferredInstallPrompt = e;
-  });
-
   window.addEventListener('appinstalled', function () {
-    deferredInstallPrompt = null;
     marcarVerificado();
   });
 
@@ -433,36 +426,6 @@
     /* Não marca como verificado — o modal aparecerá no próximo login */
   }
 
-  function mostrarFallbackInstalacao() {
-    var msg = 'Para instalar o AIRPET:\n\n';
-    if (isIOS) {
-      msg += 'Abra o menu Compartilhar do Safari e toque em "Adicionar a Tela de Início".';
-    } else if (isAndroid || isChrome) {
-      msg += 'Abra o menu do navegador e toque em "Instalar app" ou "Adicionar à tela inicial".';
-    } else {
-      msg += 'No seu navegador, procure por "Instalar app" na barra de endereço ou menu.';
-    }
-    alert(msg);
-  }
-
-  function criarConteudoInstalacaoWeb() {
-    return '' +
-      '<div class="airpet-perm-header">' +
-        '<div class="airpet-perm-header-icon"><i class="fa-solid fa-mobile-screen-button" style="font-size:28px;"></i></div>' +
-        '<h2 class="airpet-perm-title">Instale o AIRPET</h2>' +
-        '<p class="airpet-perm-subtitle">A melhor experiência acontece no app instalado. É rápido e gratuito.</p>' +
-      '</div>' +
-      '<div class="airpet-perm-list">' +
-        '<div class="airpet-install-card">' +
-          '<p class="airpet-install-text">Instale agora para ativar notificações e usar recursos completos.</p>' +
-        '</div>' +
-      '</div>' +
-      '<div class="airpet-perm-footer">' +
-        '<button id="airpet-install-btn-principal" class="airpet-main-action">Instalar app</button>' +
-        '<button id="airpet-install-btn-pular" class="airpet-secondary-action">Continuar na web</button>' +
-      '</div>';
-  }
-
   function criarConteudoPermissoesPwa() {
     var plataformaNotice = '';
     if (isIOS) {
@@ -484,30 +447,6 @@
         '<button id="airpet-perm-btn-principal" class="airpet-main-action">Permitir tudo</button>' +
         '<button id="airpet-perm-btn-pular" class="airpet-secondary-action">Agora não</button>' +
       '</div>';
-  }
-
-  function abrirFluxoInstalacaoWeb() {
-    var elements = criarModalBase();
-    elements.modal.innerHTML = criarConteudoInstalacaoWeb();
-
-    document.getElementById('airpet-install-btn-principal').addEventListener('click', function () {
-      if (deferredInstallPrompt) {
-        deferredInstallPrompt.prompt();
-        deferredInstallPrompt.userChoice.finally(function () {
-          deferredInstallPrompt = null;
-        });
-      } else {
-        mostrarFallbackInstalacao();
-      }
-    });
-
-    document.getElementById('airpet-install-btn-pular').addEventListener('click', function () {
-      fecharModal(elements, {}, false);
-    });
-
-    elements.overlay.addEventListener('click', function (e) {
-      if (e.target === elements.overlay) fecharModal(elements, {}, false);
-    });
   }
 
   function abrirFluxoPermissoesPwa(estados) {
@@ -594,10 +533,6 @@
       }
 
       setTimeout(function () {
-        if (!isStandalone) {
-          abrirFluxoInstalacaoWeb();
-          return;
-        }
         abrirFluxoPermissoesPwa(estados);
       }, 600);
     });

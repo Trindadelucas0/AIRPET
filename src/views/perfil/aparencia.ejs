@@ -1,0 +1,55 @@
+<% locals.titulo = titulo || 'Cor de destaque' %>
+<% var corDestaque = perfil.cor_perfil || '#ec5a1c'; %>
+<%- include('../partials/header') %>
+<%- include('../partials/flash') %>
+
+<main class="flex-1 pb-24 md:pb-6">
+  <%- include('../partials/settings-route-loader') %>
+  <%- include('../partials/settings-subpage-header') %>
+
+  <div class="settings-layout">
+    <form id="formAparencia" class="js-perfil-form section-card anim-3" action="/perfil?_method=PUT" method="POST" autocomplete="off">
+      <input type="hidden" name="return_to" value="/perfil/aparencia">
+      <div class="section-card-header">
+        <div>
+          <div class="section-card-title">
+            <div class="section-card-title-icon"><i class="fa-solid fa-palette"></i></div>
+            Aparência
+          </div>
+          <p class="section-card-subtitle">A cor aparece no anel do avatar, botões e detalhes da interface.</p>
+        </div>
+      </div>
+      <div class="section-card-body">
+        <div class="aparencia-preview-row">
+          <div class="aparencia-ring-demo" id="aparenciaRingDemo" style="box-shadow:0 0 0 3px <%= corDestaque %>55;"></div>
+          <p class="aparencia-preview-copy">Pré-visualização do destaque no perfil. Escolha uma cor abaixo e salve.</p>
+        </div>
+        <div class="field-group" style="margin-bottom:0">
+          <label class="field-label-soft">Cor de destaque</label>
+          <div class="aparencia-color-panel">
+            <div class="color-row" id="colorSwatches">
+              <% var cores = ['#f26020','#ef4444','#a855f7','#3b82f6','#22c55e','#eab308','#ec4899','#14b8a6']; %>
+              <% cores.forEach(function(c) { %>
+                <div class="color-swatch <%= perfil.cor_perfil === c ? 'active' : '' %>"
+                     style="background:<%= c %>;" data-cor="<%= c %>" title="<%= c %>"></div>
+              <% }); %>
+              <div class="color-custom-input">
+                <div class="color-preview" id="corPreview" style="background:<%= corDestaque %>;"></div>
+                <input type="color" id="inputCor" name="cor_perfil" value="<%= corDestaque %>"
+                       style="background:transparent;border:none;width:24px;height:24px;cursor:pointer;padding:0;outline:none;">
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="btn-row-actions">
+          <button type="submit" class="btn-primary">
+            <i class="fa-solid fa-floppy-disk"></i>Salvar aparência
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+</main>
+
+<script src="/js/perfil-settings-pages.js"></script>
+<%- include('../partials/footer') %>

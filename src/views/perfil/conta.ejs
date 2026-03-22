@@ -1,0 +1,48 @@
+<% locals.titulo = titulo || 'Dados e bio' %>
+<%- include('../partials/header') %>
+<%- include('../partials/flash') %>
+
+<main class="flex-1 pb-24 md:pb-6">
+  <%- include('../partials/settings-route-loader') %>
+  <%- include('../partials/settings-subpage-header') %>
+
+  <div class="settings-layout">
+    <form id="formDadosPessoais" class="js-perfil-form section-card anim-3" action="/perfil?_method=PUT" method="POST" autocomplete="off">
+      <input type="hidden" name="return_to" value="/perfil/conta">
+      <div class="section-card-header">
+        <div>
+          <div class="section-card-title">
+            <div class="section-card-title-icon"><i class="fa-solid fa-user"></i></div>
+            Dados pessoais
+          </div>
+          <p class="section-card-subtitle">Nome e bio aparecem no seu perfil público para outros tutores.</p>
+        </div>
+      </div>
+      <div class="section-card-body settings-field-stack">
+        <div class="field-row">
+          <div class="field-group" style="margin-bottom:0">
+            <label class="field-label-soft" for="nome">Nome</label>
+            <input type="text" id="nome" name="nome" class="field-input" value="<%= perfil.nome || '' %>" maxlength="80" required>
+          </div>
+          <div class="field-group" style="margin-bottom:0">
+            <label class="field-label-soft" for="apelido">Apelido / username</label>
+            <input type="text" id="apelido" name="apelido" class="field-input" value="<%= perfil.apelido || '' %>" maxlength="40" placeholder="Opcional">
+          </div>
+        </div>
+        <div class="field-group" style="margin-bottom:0">
+          <label class="field-label-soft" for="bio">Bio</label>
+          <textarea id="bio" name="bio" class="field-input" rows="3" maxlength="160" placeholder="Conte um pouco sobre você e seus pets..."><%= perfil.bio || '' %></textarea>
+          <div class="field-hint"><span id="bioCount"><%= (perfil.bio || '').length %></span>/160</div>
+        </div>
+        <div class="btn-row-actions">
+          <button type="submit" class="btn-primary">
+            <i class="fa-solid fa-floppy-disk"></i>Salvar dados
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+</main>
+
+<script src="/js/perfil-settings-pages.js"></script>
+<%- include('../partials/footer') %>

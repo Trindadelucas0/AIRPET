@@ -1,0 +1,91 @@
+<% var _isLogado = typeof isLogado !== 'undefined' ? isLogado : (typeof usuario !== 'undefined' && usuario); %>
+<div id="postDetailModal" class="airpet-modal airpet-modal--post-detail hidden" aria-hidden="true">
+  <div class="airpet-modal__backdrop opacity-0 transition-opacity duration-200" id="postDetailOverlayEl"></div>
+  <div class="airpet-modal__sheet airpet-modal__sheet--detail post-detail-panel overflow-hidden opacity-0 scale-95 origin-bottom md:origin-center transition-all duration-200"
+       id="postDetailPanelEl" role="dialog" aria-modal="true" aria-labelledby="postDetailTitle">
+    <div class="md:hidden flex justify-center pt-2 pb-0.5 shrink-0 bg-[var(--ink-2,#fff)]" aria-hidden="true">
+      <span class="w-10 h-1 rounded-full bg-gray-300/90"></span>
+    </div>
+    <div class="airpet-modal__header border-b border-gray-100">
+      <button type="button" id="closePostDetailBack" class="airpet-modal__header-btn md:hidden" aria-label="Voltar">
+        <i class="fa-solid fa-arrow-left text-lg"></i>
+      </button>
+      <h3 id="postDetailTitle" class="airpet-modal__title explorar-modal-title">Publicação</h3>
+      <div class="flex items-center gap-0.5 shrink-0">
+        <div id="postDetailOwnerMenuWrap" class="hidden relative">
+          <button type="button" id="btnPostDetailOwnerMenu" class="airpet-modal__header-btn" aria-label="Mais opções" aria-expanded="false" aria-haspopup="true">
+            <i class="fa-solid fa-ellipsis text-lg"></i>
+          </button>
+          <div id="postDetailOwnerDropdown" class="hidden absolute right-0 top-full mt-1 w-44 bg-white rounded-xl shadow-lg ring-1 ring-black/10 py-1 z-[80]">
+            <button type="button" class="w-full px-3 py-2.5 text-left text-sm hover:bg-gray-50 flex items-center gap-2 btn-post-detail-fixar" data-post-id="" data-fixada="0">
+              <i class="fa-solid fa-thumbtack text-gray-400 w-4 text-center"></i><span>Fixar</span>
+            </button>
+            <button type="button" class="w-full px-3 py-2.5 text-left text-sm hover:bg-red-50 text-red-600 flex items-center gap-2 btn-post-detail-deletar" data-post-id="">
+              <i class="fa-solid fa-trash-can w-4 text-center"></i><span>Excluir</span>
+            </button>
+          </div>
+        </div>
+        <button type="button" id="closePostDetail" class="airpet-modal__header-btn" aria-label="Fechar">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+    </div>
+    <div class="airpet-post-detail__desktop flex-1 min-h-0 flex flex-col md:flex-row">
+      <div class="airpet-post-detail__media-col shrink-0">
+        <div class="post-detail-media-inner w-full max-w-md mx-auto min-h-[100px] rounded-xl overflow-hidden shadow-xl ring-1 ring-white/10 bg-gray-900/40 flex items-center justify-center p-1">
+          <img id="postDetailImg" src="" alt="" class="hidden w-full max-w-full h-auto object-contain max-h-[min(42vh,380px)] md:max-h-[min(78vh,780px)]">
+          <div id="postDetailImgFallback" class="hidden flex flex-col items-center justify-center text-gray-400 text-sm gap-2 py-12 px-4">
+            <i class="fa-solid fa-image text-3xl opacity-50"></i>
+            <span>Sem imagem</span>
+          </div>
+        </div>
+      </div>
+      <div class="airpet-post-detail__main-col flex-1 min-w-0 min-h-0 flex flex-col bg-white">
+        <div class="airpet-post-detail__scroll">
+          <div class="px-4 sm:px-5 pt-4 pb-3 shrink-0 border-b border-gray-100 bg-white">
+            <div id="postDetailAuthorRow" class="flex items-center gap-3"></div>
+            <p id="postDetailDate" class="explorar-card-meta text-gray-500 mt-2"></p>
+            <p id="postDetailExtra" class="text-[#ec5a1c] font-bold text-base mt-1.5 hidden tracking-tight"></p>
+            <div id="postDetailTextWrap" class="mt-3 hidden">
+              <p id="postDetailText" class="explorar-modal-body text-gray-800 whitespace-pre-wrap break-words"></p>
+            </div>
+          </div>
+          <div id="postDetailCommentsSection" class="bg-gray-50/40 md:bg-white border-t border-gray-100 md:border-t-0">
+            <h4 class="text-sm font-semibold text-gray-700 px-4 sm:px-5 pt-3 pb-2 border-b border-gray-100/80 bg-white/90 md:bg-transparent">Comentários</h4>
+            <div id="postDetailCommentList" class="px-4 sm:px-5 py-3 scrollbar-hide min-h-[80px]"></div>
+            <div id="postDetailPetsContainer" class="border-t border-gray-200/80 px-4 sm:px-5 py-2.5 hidden bg-white">
+              <h4 class="explorar-card-meta font-semibold text-gray-500 mb-2 flex items-center gap-1.5">
+                <i class="fa-solid fa-location-dot"></i> Pets na região
+              </h4>
+              <div id="postDetailPetsList" class="flex gap-3 overflow-x-auto pb-1 scrollbar-hide"></div>
+            </div>
+          </div>
+        </div>
+        <div class="airpet-post-detail__composer relative border-t border-gray-200/80 bg-white">
+          <div id="postDetailMentionDropdown" class="autocomplete-dropdown hidden"></div>
+          <div id="postDetailCommentComposer" class="flex items-center gap-2 px-4 sm:px-5 pt-3">
+            <% if (_isLogado && typeof usuario !== 'undefined' && usuario) { %>
+              <% var _detailCor = usuario.cor_perfil || '#ec5a1c'; %>
+              <% if (usuario.foto_perfil) { %>
+                <img src="<%= usuario.foto_perfil %>" alt="" class="w-8 h-8 rounded-full object-cover shrink-0" style="box-shadow: 0 0 0 2px <%= _detailCor %>">
+              <% } else { %>
+                <span class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0 bg-gray-400" style="box-shadow: 0 0 0 2px <%= _detailCor %>">
+                  <%= usuario.nome ? usuario.nome.charAt(0).toUpperCase() : 'U' %>
+                </span>
+              <% } %>
+            <% } %>
+            <input type="text" id="postDetailCommentInput" placeholder="Adicionar comentário…" maxlength="500"
+                   class="flex-1 text-sm bg-gray-50 rounded-full px-4 py-2.5 outline-none focus:bg-gray-100 focus:ring-2 focus:ring-primary-500/10 transition-all"
+                   data-post-id="" disabled>
+            <button type="button" id="postDetailBtnEnviar"
+                    class="w-9 h-9 rounded-full bg-gradient-to-r from-primary-500 to-primary-600 flex items-center justify-center text-white shrink-0 hover:shadow-lg hover:shadow-primary-500/25 transition-all disabled:opacity-40"
+                    disabled>
+              <i class="fa-solid fa-paper-plane text-xs"></i>
+            </button>
+          </div>
+          <p id="postDetailLoginHint" class="px-4 sm:px-5 pb-3 pt-1 text-xs text-gray-400 hidden"><a href="/auth/login" class="text-primary-600 font-semibold hover:underline">Entre</a> para comentar.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

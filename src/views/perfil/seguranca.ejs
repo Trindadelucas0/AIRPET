@@ -1,0 +1,37 @@
+<% locals.titulo = titulo || 'Segurança' %>
+<%- include('../partials/header') %>
+<%- include('../partials/flash') %>
+
+<main class="flex-1 pb-24 md:pb-6">
+  <%- include('../partials/settings-route-loader') %>
+  <%- include('../partials/settings-subpage-header') %>
+
+  <div class="settings-layout">
+    <div class="section-card anim-3">
+      <div class="section-card-header">
+        <div>
+          <div class="section-card-title">
+            <div class="section-card-title-icon"><i class="fa-solid fa-lock"></i></div>
+            Segurança
+          </div>
+          <p class="section-card-subtitle">Proteção da conta e acesso.</p>
+        </div>
+      </div>
+      <div class="section-card-body section-card-body--flush-bottom" style="padding-top:0;">
+        <a href="/auth/esqueci-senha" class="settings-link-row">
+          <span class="settings-row-icon muted"><i class="fa-solid fa-key"></i></span>
+          <span class="settings-row-body">
+            <span class="settings-row-title">Senha</span>
+            <span class="settings-row-sub">Redefinir ou alterar por e-mail</span>
+          </span>
+          <i class="fa-solid fa-chevron-right settings-row-chevron"></i>
+        </a>
+      </div>
+    </div>
+    <% if (perfil && perfil.email) { %>
+    <p class="settings-hub-intro" style="margin-top:8px;">Conta: <strong><%= perfil.email %></strong></p>
+    <% } %>
+  </div>
+</main>
+
+<%- include('../partials/footer') %>

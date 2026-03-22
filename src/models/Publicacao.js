@@ -169,6 +169,38 @@ const Publicacao = {
     return resultado.rows;
   },
 
+  /** Mesmo recorte geográfico que feedRegional, ordenado por engajamento (descoberta no Explorar). */
+  async feedRegionalPorEngajamento(usuarioId, limite = 20, offset = 0) {
+    const resultado = await query(
+      `SELECT ${SELECT_COLS} ${curtiuCol(usuarioId)} ${repostouCol(usuarioId)} ${FROM_JOINS}
+       JOIN usuarios eu ON eu.id = $1
+       WHERE p.usuario_id != $1
+         AND u.ultima_localizacao IS NOT NULL
+         AND eu.ultima_localizacao IS NOT NULL
+         AND ST_DWithin(u.ultima_localizacao, eu.ultima_localizacao, 50000)
+       ORDER BY
+         (COALESCE(ps.like_count, 0) + COALESCE(ps.comment_count, 0) * 2 + COALESCE(ps.repost_count, 0)) DESC,
+         p.criado_em DESC,
+         p.id DESC
+       LIMIT $2 OFFSET $3`,
+      [usuarioId, limite, offset]
+    );
+    return resultado.rows;
+  },
+
+  async feedGeralPorEngajamento(limite = 20, offset = 0, usuarioAtualId = null) {
+    const resultado = await query(
+      `SELECT ${SELECT_COLS} ${curtiuCol(usuarioAtualId)} ${repostouCol(usuarioAtualId)} ${FROM_JOINS}
+       ORDER BY
+         (COALESCE(ps.like_count, 0) + COALESCE(ps.comment_count, 0) * 2 + COALESCE(ps.repost_count, 0)) DESC,
+         p.criado_em DESC,
+         p.id DESC
+       LIMIT $1 OFFSET $2`,
+      [limite, offset]
+    );
+    return resultado.rows;
+  },
+
   async feedRegionalCidade(usuarioId, limite = 20, offset = 0) {
     const resultado = await query(
       `SELECT ${SELECT_COLS} ${curtiuCol(usuarioId)} ${repostouCol(usuarioId)} ${FROM_JOINS}

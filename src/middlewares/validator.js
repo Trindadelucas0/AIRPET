@@ -222,6 +222,12 @@ const validarPerfil = [
     .isLength({ max: 160 })
     .withMessage('A bio deve ter no maximo 160 caracteres.'),
 
+  body('apelido')
+    .optional({ checkFalsy: true })
+    .trim()
+    .isLength({ max: 40 })
+    .withMessage('O apelido deve ter no maximo 40 caracteres.'),
+
   body('endereco').optional({ checkFalsy: true }).trim().isLength({ max: 200 }),
   body('bairro').optional({ checkFalsy: true }).trim().isLength({ max: 120 }),
   body('cidade').optional({ checkFalsy: true }).trim().isLength({ max: 120 }),
@@ -233,8 +239,8 @@ const validarPerfil = [
 ];
 
 const CAMPOS_PERFIL = [
-  'nome', 'telefone', 'cep', 'bio', 'endereco', 'bairro', 'cidade', 'estado', 'cor_perfil',
-  'data_nascimento', 'contato_extra', 'receber_alertas_pet_perdido', '_method',
+  'nome', 'telefone', 'cep', 'bio', 'apelido', 'endereco', 'bairro', 'cidade', 'estado', 'cor_perfil',
+  'data_nascimento', 'contato_extra', 'receber_alertas_pet_perdido', '_method', 'return_to',
 ];
 
 function validarResultado(req, res, next) {

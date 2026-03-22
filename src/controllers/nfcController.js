@@ -276,7 +276,7 @@ const nfcController = {
         longitude: lng,
         origem: 'encontrador',
         cidade: cidade || null,
-        foto_url: (pet && pet.foto) ? pet.foto : null,
+        foto_url: null,
       });
 
       try {

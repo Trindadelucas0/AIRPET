@@ -704,6 +704,9 @@ const migrations = [
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='usuarios' AND column_name='foto_perfil') THEN
       ALTER TABLE usuarios ADD COLUMN foto_perfil TEXT;
     END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='usuarios' AND column_name='apelido') THEN
+      ALTER TABLE usuarios ADD COLUMN apelido VARCHAR(40);
+    END IF;
   END $$;`,
 
   // Colunas extras para publicacoes: texto, repost, tipo

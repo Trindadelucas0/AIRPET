@@ -1,0 +1,29 @@
+<% locals.titulo = typeof titulo !== 'undefined' ? titulo : 'Erro' %>
+<%- include('../partials/header') %>
+<%- include('../partials/flash') %>
+
+<main class="flex-1 pb-24 md:pb-6">
+  <%- include('../partials/settings-route-loader') %>
+  <div class="settings-layout anim-1" style="padding-top:32px;">
+    <div class="section-card">
+      <div class="section-card-header">
+        <div>
+          <div class="section-card-title">
+            <div class="section-card-title-icon" style="background:rgba(239,68,68,0.1);border-color:rgba(239,68,68,0.2);color:#f87171;"><i class="fa-solid fa-triangle-exclamation"></i></div>
+            Não foi possível continuar
+          </div>
+          <p class="section-card-subtitle"><%= typeof mensagem !== 'undefined' ? mensagem : 'Tente de novo em instantes.' %></p>
+        </div>
+      </div>
+      <div class="section-card-body">
+        <div class="btn-row-actions" style="margin-top:0;">
+          <a href="<%= typeof voltar !== 'undefined' ? voltar : '/perfil' %>" class="btn-primary" style="text-decoration:none;display:inline-flex;">
+            <i class="fa-solid fa-arrow-left"></i>Voltar às configurações
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<%- include('../partials/footer') %>

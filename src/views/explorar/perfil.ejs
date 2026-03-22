@@ -556,24 +556,24 @@
   </div>
 
   <!-- ═══ Comments Modal ═══ -->
-  <div id="commentsModal" class="fixed inset-0 z-[60] hidden">
-    <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" id="commentsOverlay"></div>
-    <div class="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl max-h-[75vh] flex flex-col animate-slideUp safe-bottom md:relative md:top-1/2 md:-translate-y-1/2 md:max-w-lg md:mx-auto md:rounded-2xl md:max-h-[70vh]">
-      <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-        <h3 class="font-bold text-gray-900">Comentários</h3>
-        <button type="button" id="closeComments" class="p-1 text-gray-400 hover:text-gray-600 transition-colors">
+  <div id="commentsModal" class="airpet-modal hidden z-[60]">
+    <div class="airpet-modal__backdrop" id="commentsOverlay"></div>
+    <div class="airpet-modal__sheet bg-white animate-slideUp" role="dialog" aria-modal="true" aria-labelledby="commentsModalTitle">
+      <div class="airpet-modal__header border-b border-gray-100">
+        <h3 id="commentsModalTitle" class="airpet-modal__title">Comentários</h3>
+        <button type="button" id="closeComments" class="airpet-modal__header-btn" aria-label="Fechar">
           <i class="fa-solid fa-xmark text-lg"></i>
         </button>
       </div>
-      <div id="commentsBody" class="flex-1 overflow-y-auto px-5 py-3 space-y-3 scrollbar-hide">
-        <div class="text-center py-6 text-gray-300">
+      <div id="commentsBody" class="airpet-modal__body px-0 min-h-[120px]">
+        <div class="flex flex-col items-center justify-center py-10 text-gray-300">
           <i class="fa-solid fa-spinner fa-spin text-xl"></i>
         </div>
       </div>
-      <form id="modalCommentForm" class="flex items-center gap-2 px-5 py-3 border-t border-gray-100">
+      <form id="modalCommentForm" class="airpet-modal__footer border-t border-gray-100 flex items-center gap-2 px-5 pt-3">
         <input type="text" id="modalCommentInput" placeholder="Escreva um comentário..." maxlength="300"
                class="flex-1 text-sm bg-gray-50 rounded-full px-4 py-2.5 border-0 outline-none focus:ring-2 focus:ring-primary-500/20 placeholder-gray-400">
-        <button type="submit" class="w-9 h-9 rounded-full bg-gradient-to-r from-primary-500 to-primary-600 text-white flex items-center justify-center hover:shadow-lg hover:shadow-primary-500/25 transition-all">
+        <button type="submit" class="w-9 h-9 rounded-full bg-gradient-to-r from-primary-500 to-primary-600 text-white flex items-center justify-center hover:shadow-lg hover:shadow-primary-500/25 transition-all shrink-0">
           <i class="fa-solid fa-paper-plane text-xs"></i>
         </button>
       </form>
@@ -991,42 +991,55 @@
   function openComments(postId) {
     activeCommentPostId = postId;
     commentsModal.classList.remove('hidden');
-    document.body.style.overflow = 'hidden';
-    commentsBody.innerHTML = '<div class="text-center py-6 text-gray-300"><i class="fa-solid fa-spinner fa-spin text-xl"></i></div>';
+    if (window.AIRPET_modalUi) window.AIRPET_modalUi.refreshBodyScroll();
+    commentsBody.innerHTML = '<div class="flex flex-col items-center justify-center py-10 text-gray-300"><i class="fa-solid fa-spinner fa-spin text-xl"></i></div>';
 
     fetch('/explorar/post/' + postId + '/comentarios', { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
       .then(function (r) { return r.json(); })
       .then(function (data) {
         if (!data.sucesso || !data.comentarios || !data.comentarios.length) {
-          commentsBody.innerHTML = '<div class="text-center py-8"><p class="text-sm text-gray-400">Nenhum comentário ainda.</p><p class="text-xs text-gray-300 mt-1">Seja o primeiro a comentar!</p></div>';
+          commentsBody.innerHTML = '<div class="text-center py-8 px-5"><p class="text-sm text-gray-400">Nenhum comentário ainda.</p><p class="text-xs text-gray-300 mt-1">Seja o primeiro a comentar!</p></div>';
           return;
         }
-        var html = '';
-        data.comentarios.forEach(function (c) {
-          var isMe = myUserId && c.usuario_id === myUserId;
-          html += '<div class="flex gap-2.5 group" data-comment-id="' + c.id + '">';
-          var cCor = c.cor_perfil || '#ec5a1c';
-          if (c.foto_perfil) {
-            html += '<a href="/explorar/perfil/' + c.usuario_id + '"><img src="' + c.foto_perfil + '" class="w-8 h-8 rounded-full object-cover flex-shrink-0" style="box-shadow:0 0 0 2px ' + cCor + '"></a>';
-          } else {
-            html += '<a href="/explorar/perfil/' + c.usuario_id + '"><span class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0 bg-gray-400" style="box-shadow:0 0 0 2px ' + cCor + '">' + (c.nome ? c.nome.charAt(0).toUpperCase() : 'U') + '</span></a>';
-          }
-          html += '<div class="flex-1 min-w-0">';
-          html += '<p class="text-sm"><a href="/explorar/perfil/' + c.usuario_id + '" class="font-bold text-gray-900 hover:text-primary-600 transition-colors mr-1">' + escapeHtml(c.nome) + '</a><span class="text-gray-700">' + renderMentions(c.texto) + '</span></p>';
-          html += '<div class="flex items-center gap-3 mt-1"><span class="text-[11px] text-gray-400">' + tempoRelativo(c.criado_em) + '</span>';
-          if (isMe) html += '<button type="button" class="btn-del-comment text-[11px] text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all" data-id="' + c.id + '"><i class="fa-solid fa-trash-can"></i></button>';
-          html += '</div></div></div>';
-        });
-        commentsBody.innerHTML = html;
+        if (window.AIRPET_commentRender && window.AIRPET_commentRender.renderList) {
+          commentsBody.innerHTML = window.AIRPET_commentRender.renderList(data.comentarios, {
+            meuId: myUserId,
+            escapeHtml: escapeHtml,
+            renderMencoes: renderMentions,
+            tempoRelativo: tempoRelativo,
+            useDataTimeAttr: false,
+            forceDeleteButton: true,
+            deleteDataAttr: 'data-id'
+          });
+        } else {
+          var htmlfb = '';
+          data.comentarios.forEach(function (c) {
+            var isMe = myUserId && c.usuario_id === myUserId;
+            htmlfb += '<div class="flex gap-2.5 group px-5" data-comment-id="' + c.id + '">';
+            var cCor = c.cor_perfil || '#ec5a1c';
+            if (c.foto_perfil) {
+              htmlfb += '<a href="/explorar/perfil/' + c.usuario_id + '"><img src="' + c.foto_perfil + '" class="w-8 h-8 rounded-full object-cover flex-shrink-0" style="box-shadow:0 0 0 2px ' + cCor + '"></a>';
+            } else {
+              htmlfb += '<a href="/explorar/perfil/' + c.usuario_id + '"><span class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0 bg-gray-400" style="box-shadow:0 0 0 2px ' + cCor + '">' + (c.nome ? c.nome.charAt(0).toUpperCase() : 'U') + '</span></a>';
+            }
+            htmlfb += '<div class="flex-1 min-w-0"><p class="text-sm"><a href="/explorar/perfil/' + c.usuario_id + '" class="font-bold text-gray-900 hover:text-primary-600 transition-colors mr-1">' + escapeHtml(c.nome) + '</a><span class="text-gray-700">' + renderMentions(c.texto) + '</span></p>';
+            htmlfb += '<div class="flex items-center gap-3 mt-1"><span class="text-[11px] text-gray-400">' + tempoRelativo(c.criado_em) + '</span>';
+            if (isMe) htmlfb += '<button type="button" class="btn-del-comment text-[11px] text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all" data-id="' + c.id + '"><i class="fa-solid fa-trash-can"></i></button>';
+            htmlfb += '</div></div></div>';
+          });
+          commentsBody.innerHTML = htmlfb;
+        }
         commentsBody.scrollTop = commentsBody.scrollHeight;
       });
   }
 
   function closeComments() {
     commentsModal.classList.add('hidden');
-    document.body.style.overflow = '';
     activeCommentPostId = null;
+    if (window.AIRPET_modalUi) window.AIRPET_modalUi.refreshBodyScroll();
   }
+
+  window.AIRPET_fecharCommentsModalPerfil = closeComments;
 
   document.addEventListener('click', function (e) {
     var btn = e.target.closest('.btn-open-comments');
@@ -1070,12 +1083,11 @@
     }
   });
 
-  /* ── Keyboard shortcuts ── */
+  /* ── Keyboard shortcuts (Escape global em airpet-modal-lock.js) ── */
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape') {
-      closeComments();
       repostModal.classList.add('hidden');
-      document.body.style.overflow = '';
+      if (window.AIRPET_modalUi) window.AIRPET_modalUi.refreshBodyScroll();
     }
   });
 

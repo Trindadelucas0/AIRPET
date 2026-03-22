@@ -64,8 +64,9 @@ const Localizacao = {
   },
 
   /**
-   * Busca localizações do pet que tenham foto (fotos enviadas por quem encontrou).
-   * Para exibir na seção "Fotos recebidas" do perfil do pet.
+   * Busca localizações com foto para a seção "Fotos recebidas" (upload via link da tag:
+   * encontrei / enviar-foto). Ignora registros em que foto_url é só cópia da foto de perfil
+   * do pet (ex.: scan NFC com GPS que gravava pets.foto em localizacoes).
    *
    * @param {string|number} petId - ID do pet
    * @param {number} limite - Quantidade máxima (padrão: 20)
@@ -73,10 +74,17 @@ const Localizacao = {
    */
   async buscarComFotosPorPet(petId, limite = 20) {
     const resultado = await query(
-      `SELECT id, pet_id, latitude, longitude, cidade, foto_url, data
-       FROM localizacoes
-       WHERE pet_id = $1 AND foto_url IS NOT NULL AND TRIM(foto_url) <> ''
-       ORDER BY data DESC
+      `SELECT l.id, l.pet_id, l.latitude, l.longitude, l.cidade, l.foto_url, l.data
+       FROM localizacoes l
+       JOIN pets p ON p.id = l.pet_id
+       WHERE l.pet_id = $1
+         AND l.foto_url IS NOT NULL AND TRIM(l.foto_url) <> ''
+         AND (
+           p.foto IS NULL
+           OR TRIM(p.foto) = ''
+           OR TRIM(l.foto_url) <> TRIM(p.foto)
+         )
+       ORDER BY l.data DESC
        LIMIT $2`,
       [petId, limite]
     );

@@ -5,6 +5,7 @@
 <% var pageTitle = typeof titulo !== 'undefined' ? String(titulo).toLowerCase() : ''; %>
 <% var isHomePage = currentPath === '/' || currentOriginalUrl === '/' || pageTitle === 'inicio'; %>
 <% var isMeuPerfilPublico = isLogado && usuario && currentPath === '/explorar/perfil/' + usuario.id; %>
+<% var isPerfilSettings = currentPath === '/perfil' || (currentPath && String(currentPath).indexOf('/perfil/') === 0); %>
 
 <!-- Top Nav — estilo Instagram: nome no topo centralizado no mobile -->
 <nav class="sticky top-0 z-50 shadow-sm" id="navbar">
@@ -161,7 +162,7 @@
       </span>
       <span class="bottom-tab-label">Perfil</span>
     </a>
-    <a href="/perfil" class="bottom-tab bottom-tab-cell <%= currentPath === '/perfil' ? 'bottom-tab--active' : '' %>" title="Configurações">
+    <a href="/perfil" class="bottom-tab bottom-tab-cell <%= isPerfilSettings ? 'bottom-tab--active' : '' %>" title="Configurações">
       <span class="bottom-tab-iconwrap"><i class="fa-solid fa-gear text-[1.125rem] leading-none"></i></span>
       <span class="bottom-tab-label">Config</span>
     </a>

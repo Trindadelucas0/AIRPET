@@ -349,17 +349,22 @@
   </div>
 
   <!-- Modal comentários -->
-  <div id="commentsModal" class="fixed inset-0 z-[60] hidden">
-    <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" id="commentsOverlay"></div>
-    <div class="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl max-h-[75vh] flex flex-col safe-bottom md:relative md:top-1/2 md:-translate-y-1/2 md:max-w-lg md:mx-auto md:rounded-2xl md:max-h-[70vh] shadow-[0_20px_50px_rgba(17,24,39,.2)] border border-orange-100">
-      <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-        <h3 class="font-bold text-gray-900">Comentários</h3>
-        <button type="button" id="closeComments" class="p-1 text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+  <div id="commentsModal" class="airpet-modal hidden z-[60]">
+    <div class="airpet-modal__backdrop" id="commentsOverlay"></div>
+    <div class="airpet-modal__sheet bg-white animate-slideUp" role="dialog" aria-modal="true" aria-labelledby="commentsModalPetTitle">
+      <div class="airpet-modal__header border-b border-gray-100">
+        <h3 id="commentsModalPetTitle" class="airpet-modal__title">Comentários</h3>
+        <button type="button" id="closeComments" class="airpet-modal__header-btn" aria-label="Fechar">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
       </div>
-      <div id="commentsBody" class="flex-1 overflow-y-auto px-5 py-3 space-y-3"></div>
-      <form id="modalCommentForm" class="flex items-center gap-2 px-5 py-3 border-t border-gray-100">
-        <input type="text" id="modalCommentInput" placeholder="Escreva um comentário..." maxlength="300" class="flex-1 text-sm bg-gray-50 rounded-full px-4 py-2.5 border-0 outline-none focus:ring-2 focus:ring-primary-500/20">
-        <button type="submit" class="w-9 h-9 rounded-full bg-gradient-to-r from-primary-500 to-primary-600 text-white flex items-center justify-center"><i class="fa-solid fa-paper-plane text-xs"></i></button>
+      <div id="commentsBody" class="airpet-modal__body px-0 min-h-[120px]"></div>
+      <form id="modalCommentForm" class="airpet-modal__footer border-t border-gray-100 flex items-center gap-2 px-5 pt-3">
+        <input type="text" id="modalCommentInput" placeholder="Escreva um comentário..." maxlength="300"
+               class="flex-1 text-sm bg-gray-50 rounded-full px-4 py-2.5 border-0 outline-none focus:ring-2 focus:ring-primary-500/20">
+        <button type="submit" class="w-9 h-9 rounded-full bg-gradient-to-r from-primary-500 to-primary-600 text-white flex items-center justify-center shrink-0">
+          <i class="fa-solid fa-paper-plane text-xs"></i>
+        </button>
       </form>
     </div>
   </div>
@@ -369,7 +374,18 @@
 (function () {
   var petId = '<%= pet.id %>';
   var eMeuPet = <%= typeof eMeuPet !== 'undefined' && eMeuPet ? 'true' : 'false' %>;
+  var myUserId = <%= typeof usuario !== 'undefined' && usuario ? usuario.id : 'null' %>;
   var toastWrap = null;
+
+  function escapeHtmlPet(str) {
+    if (!str) return '';
+    var div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+  function renderMencoesPet(texto) {
+    return escapeHtmlPet(texto).replace(/@(\S+)/g, '<span class="mention" data-user="$1">@$1</span>');
+  }
 
   var mainPetPosts = document.querySelector('main');
   if (mainPetPosts && typeof window.openPostImageLightbox === 'function') {
@@ -590,20 +606,35 @@
   function openComments(postId) {
     currentPostId = postId;
     commentsModal.classList.remove('hidden');
-    commentsBody.innerHTML = '<div class="text-center py-6 text-gray-300"><i class="fa-solid fa-spinner fa-spin text-xl"></i></div>';
+    if (window.AIRPET_modalUi) window.AIRPET_modalUi.refreshBodyScroll();
+    commentsBody.innerHTML = '<div class="flex flex-col items-center justify-center py-10 text-gray-300"><i class="fa-solid fa-spinner fa-spin text-xl"></i></div>';
     fetch('/explorar/post/' + postId + '/comentarios', { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
       .then(function (r) { return r.json(); })
       .then(function (data) {
-        if (data.comentarios && data.comentarios.length) {
-          commentsBody.innerHTML = data.comentarios.map(function (c) {
-            return '<div class="flex gap-3"><div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0" style="background:#ec5a1c">' + (c.autor_nome ? c.autor_nome.charAt(0) : '') + '</div><div><p class="text-sm font-semibold text-gray-900">' + (c.autor_nome || '') + '</p><p class="text-sm text-gray-700">' + (c.texto || '').replace(/</g, '&lt;') + '</p></div></div>';
-          }).join('');
-        } else {
-          commentsBody.innerHTML = '<p class="text-sm text-gray-400 text-center py-4">Nenhum comentário ainda.</p>';
+        var list = (data && data.comentarios) ? data.comentarios : [];
+        if (!list.length) {
+          commentsBody.innerHTML = '<div class="text-center py-8 px-5"><p class="text-sm text-gray-400">Nenhum comentário ainda.</p></div>';
+          return;
+        }
+        if (window.AIRPET_commentRender && window.AIRPET_commentRender.renderList) {
+          commentsBody.innerHTML = window.AIRPET_commentRender.renderList(list, {
+            meuId: myUserId,
+            escapeHtml: escapeHtmlPet,
+            renderMencoes: renderMencoesPet,
+            tempoRelativo: tempoRelativo,
+            useDataTimeAttr: false,
+            forceDeleteButton: true,
+            deleteDataAttr: 'data-id'
+          });
         }
       });
   }
-  function closeComments() { commentsModal.classList.add('hidden'); currentPostId = null; }
+  function closeComments() {
+    commentsModal.classList.add('hidden');
+    currentPostId = null;
+    if (window.AIRPET_modalUi) window.AIRPET_modalUi.refreshBodyScroll();
+  }
+  window.AIRPET_fecharCommentsModalPerfil = closeComments;
   document.querySelectorAll('.btn-open-comments').forEach(function (btn) {
     btn.addEventListener('click', function () { openComments(btn.dataset.postId); });
   });
@@ -622,6 +653,17 @@
     })
     .then(function (r) { return r.json(); })
     .then(function (data) { if (data.sucesso) openComments(currentPostId); });
+  });
+
+  document.addEventListener('click', function (e) {
+    var btn = e.target.closest('.btn-del-comment');
+    if (!btn || !commentsBody.contains(btn)) return;
+    var cid = btn.getAttribute('data-id');
+    if (!cid || !currentPostId) return;
+    if (!confirm('Excluir comentário?')) return;
+    fetch('/explorar/comentario/' + cid, { method: 'DELETE', headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
+      .then(function (r) { return r.json(); })
+      .then(function (d) { if (d.sucesso) openComments(currentPostId); });
   });
 
   document.querySelectorAll('.btn-repost').forEach(function (btn) {

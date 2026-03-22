@@ -121,10 +121,15 @@ router.get('/feed', estaAutenticado, require('../controllers/explorarController'
 const perfilController = require('../controllers/perfilController');
 const { validarPerfil, validarResultado, camposPermitidos, CAMPOS_PERFIL } = require('../middlewares/validator');
 const { validarPerfilGaleriaPost, validarPerfilGaleriaBody } = require('../middlewares/writeRouteValidators');
-router.get('/perfil', estaAutenticado, perfilController.mostrarPerfil);
+router.get('/perfil', estaAutenticado, perfilController.mostrarPerfilHub);
+router.get('/perfil/conta', estaAutenticado, perfilController.mostrarConta);
+router.get('/perfil/aparencia', estaAutenticado, perfilController.mostrarAparencia);
+router.get('/perfil/localizacao', estaAutenticado, perfilController.mostrarLocalizacao);
+router.get('/perfil/seguranca', estaAutenticado, perfilController.mostrarSeguranca);
+router.get('/perfil/galeria', estaAutenticado, perfilController.mostrarGaleriaPagina);
 router.put('/perfil', estaAutenticado, uploadPerfilCapa.fields([{ name: 'foto_perfil', maxCount: 1 }, { name: 'foto_capa', maxCount: 1 }]), camposPermitidos(CAMPOS_PERFIL), validarPerfil, validarResultado, perfilController.atualizar);
 
-router.get('/perfil/galeria', estaAutenticado, perfilController.listarGaleria);
+router.get('/api/perfil/galeria', estaAutenticado, perfilController.listarGaleria);
 const { uploadPerfilGaleria } = require('../utils/upload');
 router.post(
   '/perfil/galeria',

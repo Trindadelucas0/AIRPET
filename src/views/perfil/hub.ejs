@@ -1,0 +1,205 @@
+<% locals.titulo = 'Configurações' %>
+<%- include('../partials/header') %>
+<%- include('../partials/flash') %>
+
+<main class="flex-1 pb-24 md:pb-6">
+
+  <div id="settingsHubNavLoader" class="settings-route-loader settings-route-loader--hide" aria-hidden="true">
+    <div class="settings-route-loader-inner">
+      <i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i>
+      <span>Carregando…</span>
+    </div>
+  </div>
+
+  <div class="page-header">
+    <div class="page-header-inner">
+      <div class="page-header-icon"><i class="fa-solid fa-gear"></i></div>
+      <h1>Configurações</h1>
+    </div>
+  </div>
+
+  <div class="settings-layout">
+
+    <div class="profile-hero anim-1">
+      <% var corDestaque = perfil.cor_perfil || '#ec5a1c'; %>
+
+      <div class="profile-hero-banner" id="bannerPreviewWrap" style="<%= perfil.foto_capa ? 'padding:0' : '' %>">
+        <% if (perfil.foto_capa) { %>
+          <img src="<%= perfil.foto_capa %>" class="profile-hero-banner-img" id="bannerImg" alt="">
+          <div class="profile-hero-banner-overlay"></div>
+        <% } else { %>
+          <svg style="position:absolute;inset:0;width:100%;height:100%;opacity:0.04" viewBox="0 0 100 100" preserveAspectRatio="none">
+            <defs><pattern id="hubGrid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="white" stroke-width="0.5"/></pattern></defs>
+            <rect width="100%" height="100%" fill="url(#hubGrid)"/>
+          </svg>
+          <div style="position:absolute;top:20px;left:50%;transform:translateX(-50%);font-size:28px;opacity:0.1;">🐾</div>
+        <% } %>
+        <button type="button" class="profile-hero-banner-edit" id="btnAbrirCapa">
+          <i class="fa-solid fa-image"></i>
+          <% if (perfil.foto_capa) { %>Trocar capa<% } else { %>Adicionar capa<% } %>
+        </button>
+      </div>
+
+      <div class="profile-hero-body">
+        <div class="profile-hero-avatar-row">
+          <div class="profile-avatar-wrap" id="btnAbrirFotoPerfilWrap">
+            <% if (perfil.foto_perfil) { %>
+              <img src="<%= perfil.foto_perfil %>" id="previewFotoPerfil" class="profile-avatar" style="box-shadow:0 0 0 3px <%= corDestaque %>40;" alt="">
+            <% } else { %>
+              <div class="profile-avatar-initial" id="previewFotoPerfil" style="box-shadow:0 0 0 3px <%= corDestaque %>40;"><%= perfil.nome ? perfil.nome.charAt(0).toUpperCase() : 'U' %></div>
+            <% } %>
+            <button type="button" class="profile-avatar-edit-btn" id="btnAbrirFotoPerfil" title="Trocar foto">
+              <i class="fa-solid fa-camera"></i>
+            </button>
+          </div>
+          <div id="fotoPerfilAcoes" class="hidden" style="display:flex;gap:8px;align-items:center;">
+            <button type="button" id="btnSalvarFotoPerfil" class="btn-primary" style="padding:8px 16px;font-size:13px;">
+              <i class="fa-solid fa-check"></i>Salvar
+            </button>
+            <button type="button" id="btnCancelarFotoPerfil" class="btn-ghost" style="padding:8px 14px;font-size:13px;">Cancelar</button>
+          </div>
+        </div>
+
+        <div class="profile-hero-name"><%= perfil.nome %></div>
+        <div class="profile-hero-email"><%= perfil.email %></div>
+        <% if (perfil.cidade) { %>
+          <div class="profile-hero-location">
+            <i class="fa-solid fa-location-dot" style="margin-right:4px;color:var(--accent);font-size:11px;"></i>
+            <%= perfil.bairro ? perfil.bairro + ', ' : '' %><%= perfil.cidade %><%= perfil.estado ? ' — ' + perfil.estado : '' %>
+          </div>
+        <% } %>
+        <a href="/explorar/perfil/<%= perfil.id %>" class="profile-view-link">
+          <i class="fa-solid fa-arrow-up-right-from-square" style="font-size:11px;"></i>
+          Ver perfil público
+        </a>
+      </div>
+
+      <input type="file" id="foto_perfil" accept="image/*" class="hidden">
+      <input type="file" id="foto_capa" accept="image/*" class="hidden">
+    </div>
+
+    <div id="capaAcoes" class="hidden anim-1" style="background:var(--ink-2);border:1px solid var(--border);border-radius:var(--radius);padding:14px 20px;display:flex;gap:10px;align-items:center;margin-bottom:14px;">
+      <button type="button" id="btnSalvarCapa" class="btn-primary" style="font-size:13px;padding:9px 18px;">
+        <i class="fa-solid fa-check"></i>Salvar capa
+      </button>
+      <button type="button" id="btnCancelarCapa" class="btn-ghost" style="font-size:13px;padding:9px 14px;">Cancelar</button>
+    </div>
+
+    <div class="settings-hub anim-2">
+      <p class="settings-hub-intro">Toque em uma opção para abrir a seção. Cada área carrega só o necessário.</p>
+
+      <div class="settings-group-card">
+        <h2 class="settings-group-label">Conta</h2>
+        <a href="/perfil/conta" class="settings-row settings-internal-nav">
+          <span class="settings-row-icon"><i class="fa-solid fa-user"></i></span>
+          <span class="settings-row-body">
+            <span class="settings-row-title">Dados e bio</span>
+            <span class="settings-row-sub">Nome, apelido e apresentação</span>
+          </span>
+          <i class="fa-solid fa-chevron-right settings-row-chevron"></i>
+        </a>
+        <a href="/perfil/localizacao" class="settings-row settings-internal-nav">
+          <span class="settings-row-icon muted"><i class="fa-solid fa-location-dot"></i></span>
+          <span class="settings-row-body">
+            <span class="settings-row-title">Endereço e região</span>
+            <span class="settings-row-sub">CEP, cidade e mapa do feed</span>
+          </span>
+          <i class="fa-solid fa-chevron-right settings-row-chevron"></i>
+        </a>
+        <a href="/perfil/seguranca" class="settings-row settings-internal-nav">
+          <span class="settings-row-icon muted"><i class="fa-solid fa-lock"></i></span>
+          <span class="settings-row-body">
+            <span class="settings-row-title">Segurança</span>
+            <span class="settings-row-sub">Senha e acesso à conta</span>
+          </span>
+          <i class="fa-solid fa-chevron-right settings-row-chevron"></i>
+        </a>
+        <a href="/perfil/galeria" class="settings-row settings-internal-nav">
+          <span class="settings-row-icon muted"><i class="fa-solid fa-images"></i></span>
+          <span class="settings-row-body">
+            <span class="settings-row-title">Galeria dos pets</span>
+            <span class="settings-row-sub">Fotos por pet</span>
+          </span>
+          <i class="fa-solid fa-chevron-right settings-row-chevron"></i>
+        </a>
+      </div>
+
+      <div class="settings-group-card">
+        <h2 class="settings-group-label">Privacidade</h2>
+        <a href="/privacidade" class="settings-row">
+          <span class="settings-row-icon muted"><i class="fa-solid fa-shield-halved"></i></span>
+          <span class="settings-row-body">
+            <span class="settings-row-title">Política de privacidade</span>
+            <span class="settings-row-sub">Como tratamos seus dados</span>
+          </span>
+          <i class="fa-solid fa-chevron-right settings-row-chevron"></i>
+        </a>
+      </div>
+
+      <div class="settings-group-card">
+        <h2 class="settings-group-label">Notificações</h2>
+        <a href="/notificacoes" class="settings-row">
+          <span class="settings-row-icon muted"><i class="fa-solid fa-bell"></i></span>
+          <span class="settings-row-body">
+            <span class="settings-row-title">Central de notificações</span>
+            <span class="settings-row-sub">Ver alertas e atividades</span>
+          </span>
+          <i class="fa-solid fa-chevron-right settings-row-chevron"></i>
+        </a>
+      </div>
+
+      <div class="settings-group-card">
+        <h2 class="settings-group-label">Aparência</h2>
+        <a href="/perfil/aparencia" class="settings-row settings-internal-nav">
+          <span class="settings-row-icon"><i class="fa-solid fa-palette"></i></span>
+          <span class="settings-row-body">
+            <span class="settings-row-title">Cor de destaque</span>
+            <span class="settings-row-sub">Anel no avatar e detalhes da interface</span>
+          </span>
+          <i class="fa-solid fa-chevron-right settings-row-chevron"></i>
+        </a>
+      </div>
+
+      <div class="settings-group-card">
+        <h2 class="settings-group-label">Ajuda</h2>
+        <a href="/termos" class="settings-row">
+          <span class="settings-row-icon muted"><i class="fa-solid fa-file-contract"></i></span>
+          <span class="settings-row-body">
+            <span class="settings-row-title">Termos de uso</span>
+            <span class="settings-row-sub">Regras da plataforma</span>
+          </span>
+          <i class="fa-solid fa-chevron-right settings-row-chevron"></i>
+        </a>
+        <a href="/explorar" class="settings-row">
+          <span class="settings-row-icon muted"><i class="fa-solid fa-circle-question"></i></span>
+          <span class="settings-row-body">
+            <span class="settings-row-title">Explorar o AIRPET</span>
+            <span class="settings-row-sub">Descubra pets e tutores</span>
+          </span>
+          <i class="fa-solid fa-chevron-right settings-row-chevron"></i>
+        </a>
+      </div>
+    </div>
+
+    <div class="session-card anim-6">
+      <div class="session-card-header">
+        <h2 class="session-card-title">Sessão</h2>
+        <p class="session-card-sub">Encerre o acesso neste dispositivo quando usar um computador ou celular compartilhado.</p>
+      </div>
+      <a href="/auth/logout" class="session-logout-row">
+        <span class="settings-row-icon danger-icon"><i class="fa-solid fa-right-from-bracket"></i></span>
+        <span class="settings-row-body">
+          <span class="settings-row-title">Sair da conta</span>
+          <span class="settings-row-sub">Você precisará entrar de novo para acessar o AIRPET</span>
+        </span>
+        <i class="fa-solid fa-chevron-right settings-row-chevron"></i>
+      </a>
+      <p class="session-footnote">A exclusão permanente de conta não está disponível por aqui. Em caso de dúvida, consulte a política de privacidade ou o suporte.</p>
+    </div>
+
+  </div>
+</main>
+
+<script src="/js/settings-nav.js"></script>
+<script src="/js/perfil-hub.js"></script>
+<%- include('../partials/footer') %>

@@ -139,6 +139,7 @@ const authController = {
         role: resultado.usuario.role,
         cor_perfil: resultado.usuario.cor_perfil || '#ec5a1c',
         foto_perfil: resultado.usuario.foto_perfil || null,
+        apelido: resultado.usuario.apelido || null,
       };
 
       req.session.verificarPermissoes = true;
@@ -215,6 +216,7 @@ const authController = {
         role: resultado.usuario.role,
         cor_perfil: resultado.usuario.cor_perfil || '#ec5a1c',
         foto_perfil: resultado.usuario.foto_perfil || null,
+        apelido: resultado.usuario.apelido || null,
       };
 
       // Se o usuário tem conta de parceiro com mesmo e-mail e está ativo, preenche petshopAccount para alternância

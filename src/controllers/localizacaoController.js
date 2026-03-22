@@ -76,13 +76,13 @@ async function registrar(req, res) {
       });
     }
 
-    /* Registra a localização no banco de dados (com foto do pet para o mapa) */
+    /* Marcador no mapa usa pet_foto via JOIN onde necessário; não duplicar em localizacoes */
     const localizacao = await Localizacao.registrar({
       pet_id,
       latitude: lat,
       longitude: lng,
       origem: origem || 'manual',
-      foto_url: (pet && pet.foto) ? pet.foto : null,
+      foto_url: null,
       cidade: cidade || null,
       ip: req.ip || req.connection?.remoteAddress || null,
     });

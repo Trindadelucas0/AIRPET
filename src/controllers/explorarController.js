@@ -237,6 +237,96 @@ function mesclarPostsComPetshopPublicacoes(posts, petshopPublicacoes, pagina = 1
   return out.slice(0, Math.max(posts.length, out.length));
 }
 
+function mulberry32Explorar(seed) {
+  let a = seed >>> 0;
+  return function next() {
+    a += 0x6d2b79f5;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/** Intercala recentes (cronológico) e populares (engajamento), ~60/40, sem duplicar id. */
+function explorarIntercalarRecentesPopulares(recentes, populares, limite) {
+  const seen = new Set();
+  const out = [];
+  let i = 0;
+  let j = 0;
+  let streakRecent = 0;
+  while (out.length < limite && (i < recentes.length || j < populares.length)) {
+    if (streakRecent < 2 && i < recentes.length) {
+      const p = recentes[i++];
+      if (!seen.has(p.id)) {
+        seen.add(p.id);
+        out.push(p);
+      }
+      streakRecent += 1;
+      continue;
+    }
+    if (j < populares.length) {
+      const p = populares[j++];
+      if (!seen.has(p.id)) {
+        seen.add(p.id);
+        out.push(p);
+      }
+      streakRecent = 0;
+      continue;
+    }
+    streakRecent = 0;
+    while (i < recentes.length && out.length < limite) {
+      const p = recentes[i++];
+      if (!seen.has(p.id)) {
+        seen.add(p.id);
+        out.push(p);
+      }
+    }
+    break;
+  }
+  return out;
+}
+
+function explorarMixOrdenacao(posts, seed) {
+  if (!Array.isArray(posts) || posts.length < 2) return posts;
+  const rng = mulberry32Explorar(seed >>> 0);
+  const arr = posts.slice();
+  for (let k = arr.length - 1; k > 0; k -= 1) {
+    const r = Math.floor(rng() * (k + 1));
+    const tmp = arr[k];
+    arr[k] = arr[r];
+    arr[r] = tmp;
+  }
+  return arr;
+}
+
+const EXPLORAR_SPAN_ALL = ['1x1', '1x2', '2x1', '2x2'];
+
+function aplicarSpansExplorarMosaico(posts, seed) {
+  if (!Array.isArray(posts) || !posts.length) return;
+  const rng = mulberry32Explorar((seed ^ 0x243f6a88) >>> 0);
+  let lastSpan = null;
+  posts.forEach((p) => {
+    const popular = !p.is_sponsored && !p.is_petshop_publication
+      && Number(p.total_curtidas || 0) >= 12;
+    let choices;
+    if (p.is_sponsored || p.is_petshop_publication) {
+      choices = rng() < 0.12 ? ['2x2', '1x1', '2x1'] : ['1x1', '2x1', '1x2'];
+    } else if (popular && rng() < 0.28) {
+      choices = ['2x2', '1x1', '2x1', '1x2'];
+    } else {
+      choices = ['1x1', '1x2', '2x1', '2x2'];
+    }
+    let pick = choices[Math.floor(rng() * choices.length)];
+    if (pick === lastSpan) {
+      const alt = EXPLORAR_SPAN_ALL.filter((s) => s !== lastSpan);
+      pick = alt[Math.floor(rng() * alt.length)];
+    }
+    lastSpan = pick;
+    p.explorar_tile_span = pick;
+  });
+}
+
 const FotoPerfilPet = require('../models/FotoPerfilPet');
 
 const explorarController = {
@@ -297,28 +387,65 @@ const explorarController = {
   async feed(req, res) {
     try {
       const uid = req.session.usuario.id;
-      const page = parseInt(req.query.page) || 1;
+      const page = parseInt(req.query.page, 10) || 1;
       const limite = 20;
       const offset = (page - 1) * limite;
+      const poolMix = 28;
 
-      let postsOrganicos = await Publicacao.feedRegional(uid, limite, offset);
+      let layoutSeed = ((uid * 1103515245 + page * 12345) ^ 0xa5a5a5a5) >>> 0;
+      let postsOrganicos;
+      let temMaisOrganico;
 
-      if (postsOrganicos.length < 5) {
-        const cidadePosts = await Publicacao.feedRegionalCidade(uid, limite - postsOrganicos.length, 0);
-        const idsJaTem = new Set(postsOrganicos.map(p => p.id));
-        for (const p of cidadePosts) {
-          if (!idsJaTem.has(p.id)) postsOrganicos.push(p);
+      if (page === 1) {
+        layoutSeed = (Math.floor(Math.random() * 0x7fffffff) | 0) >>> 0;
+        const [regLimite, recentesPool, popularesPool] = await Promise.all([
+          Publicacao.feedRegional(uid, limite, 0),
+          Publicacao.feedRegional(uid, poolMix, 0),
+          Publicacao.feedRegionalPorEngajamento(uid, poolMix, 0),
+        ]);
+        temMaisOrganico = regLimite.length === limite;
+
+        let rec = recentesPool.slice();
+        if (rec.length < 5) {
+          const cidadePosts = await Publicacao.feedRegionalCidade(uid, poolMix - rec.length, 0);
+          const idsJaTem = new Set(rec.map((p) => p.id));
+          for (const p of cidadePosts) {
+            if (!idsJaTem.has(p.id)) rec.push(p);
+          }
         }
-      }
 
-      if (postsOrganicos.length === 0) {
-        postsOrganicos = await Publicacao.feedGeral(limite, offset, uid);
+        if (rec.length === 0) {
+          const gRecent = await Publicacao.feedGeral(poolMix, 0, uid);
+          const gPop = await Publicacao.feedGeralPorEngajamento(poolMix, 0, uid);
+          postsOrganicos = explorarIntercalarRecentesPopulares(gRecent, gPop, limite);
+          postsOrganicos = explorarMixOrdenacao(postsOrganicos, layoutSeed);
+          const gMore = await Publicacao.feedGeral(limite + 1, 0, uid);
+          temMaisOrganico = gMore.length > limite;
+        } else {
+          postsOrganicos = explorarIntercalarRecentesPopulares(rec, popularesPool, limite);
+          postsOrganicos = explorarMixOrdenacao(postsOrganicos, layoutSeed);
+        }
+      } else {
+        postsOrganicos = await Publicacao.feedRegional(uid, limite, offset);
+        temMaisOrganico = postsOrganicos.length === limite;
+
+        if (postsOrganicos.length < 5) {
+          const cidadePosts = await Publicacao.feedRegionalCidade(uid, limite - postsOrganicos.length, offset);
+          const idsJaTem = new Set(postsOrganicos.map((p) => p.id));
+          for (const p of cidadePosts) {
+            if (!idsJaTem.has(p.id)) postsOrganicos.push(p);
+          }
+        }
+
+        if (postsOrganicos.length === 0) {
+          postsOrganicos = await Publicacao.feedGeral(limite, offset, uid);
+          temMaisOrganico = postsOrganicos.length === limite;
+        }
       }
 
       const patrocinados = await Publicacao.buscarPatrocinadosPetAtivos(uid, 8);
       let posts = mesclarPostsComPatrocinados(postsOrganicos, patrocinados, page);
 
-      // Injeta cards de publicações de petshops (parceiros) no feed.
       if (page === 1) {
         const usuario = await Usuario.buscarPorId(uid);
         const lat = usuario && usuario.ultima_lat;
@@ -339,6 +466,7 @@ const explorarController = {
       }
 
       posts = filtrarPostsExplorarComMidia(posts);
+      aplicarSpansExplorarMosaico(posts, layoutSeed);
 
       const [pets, totalPosts, totalFixadas, recomendacoes, petsRecomendados] = await Promise.all([
         Pet.buscarPorUsuario(uid),
@@ -350,7 +478,15 @@ const explorarController = {
       const petshopDestaques = page === 1 ? (await Petshop.listarAtivos()).slice(0, 6) : [];
 
       if (req.headers.accept && req.headers.accept.includes('application/json')) {
-        return res.json({ sucesso: true, posts, totalPosts, totalFixadas });
+        return res.json({
+          sucesso: true,
+          posts,
+          totalPosts,
+          totalFixadas,
+          layoutSeed,
+          temMais: temMaisOrganico,
+          page,
+        });
       }
 
       res.render('explorar', {
@@ -360,7 +496,8 @@ const explorarController = {
         pets,
         totalPosts,
         totalFixadas,
-        temMais: postsOrganicos.length === limite,
+        temMais: temMaisOrganico,
+        layoutSeed,
         recomendacoes,
         petsRecomendados,
         petshopDestaques,

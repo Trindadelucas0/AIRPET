@@ -20,7 +20,6 @@
  */
 
 const Usuario = require('../models/Usuario');
-const Pet = require('../models/Pet');
 const logger = require('../utils/logger');
 
 /**
@@ -51,13 +50,10 @@ async function mostrarPerfil(req, res) {
       return res.redirect('/auth/logout');
     }
 
-    const pets = await Pet.buscarPorUsuario(usuarioId);
-
-    /* Renderiza a página de perfil (view perfil.ejs espera perfil e pets) */
-    return res.render('perfil', {
-      titulo: 'Meu Perfil - AIRPET',
+    return res.render('perfil/hub', {
+      titulo: 'Configurações',
       perfil: usuario,
-      pets: pets || [],
+      extraHead: '<link rel="stylesheet" href="/css/perfil-settings.css">',
     });
   } catch (erro) {
     logger.error('UsuarioController', 'Erro ao exibir perfil', erro);

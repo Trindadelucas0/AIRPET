@@ -171,16 +171,15 @@ const nfcService = {
         /**
          * PASSO 4a: Registra a localização do pet.
          * Se o escaneamento inclui coordenadas GPS, salva como
-         * nova localização do pet (origem: 'nfc'), com foto do pet para o mapa.
+         * nova localização do pet (origem: 'nfc'). Foto no mapa vem do JOIN com pets.
          */
         if (tag.pet_id && dadosScan.latitude && dadosScan.longitude) {
-          const pet = await Pet.buscarPorId(tag.pet_id);
           await Localizacao.registrar({
             pet_id: tag.pet_id,
             latitude: dadosScan.latitude,
             longitude: dadosScan.longitude,
             origem: 'nfc',
-            foto_url: (pet && pet.foto) ? pet.foto : null,
+            foto_url: null,
             cidade: dadosScan.cidade || null,
           });
 

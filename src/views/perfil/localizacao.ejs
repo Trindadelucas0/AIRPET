@@ -1,0 +1,65 @@
+<% locals.titulo = titulo || 'Localização' %>
+<%- include('../partials/header') %>
+<%- include('../partials/flash') %>
+
+<main class="flex-1 pb-24 md:pb-6">
+  <%- include('../partials/settings-route-loader') %>
+  <%- include('../partials/settings-subpage-header') %>
+
+  <div class="settings-layout">
+    <form id="formLocalizacao" class="js-perfil-form section-card anim-4" action="/perfil?_method=PUT" method="POST" autocomplete="off">
+      <input type="hidden" name="return_to" value="/perfil/localizacao">
+      <div class="section-card-header">
+        <div>
+          <div class="section-card-title">
+            <div class="section-card-title-icon"><i class="fa-solid fa-location-dot"></i></div>
+            Localização
+          </div>
+          <p class="section-card-subtitle">Usamos sua região para sugestões próximas no feed e na busca, sem exibir o endereço completo publicamente.</p>
+        </div>
+      </div>
+      <div class="section-card-body settings-field-stack">
+        <div class="field-group" style="margin-bottom:0">
+          <label class="field-label-soft" for="cep">CEP</label>
+          <div class="cep-input-group">
+            <input type="text" id="cep" name="cep" class="field-input" value="<%= perfil.cep || '' %>" maxlength="9" placeholder="00000-000" autocomplete="postal-code">
+            <button type="button" id="btnBuscarCep" class="btn-ghost btn-cep" aria-label="Buscar CEP">
+              <i class="fa-solid fa-magnifying-glass"></i>
+            </button>
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field-group" style="margin-bottom:0;">
+            <label class="field-label-soft" for="endereco">Endereço</label>
+            <input type="text" id="endereco" name="endereco" class="field-input" value="<%= perfil.endereco || '' %>" maxlength="100">
+          </div>
+          <div class="field-group" style="margin-bottom:0;">
+            <label class="field-label-soft" for="bairro">Bairro</label>
+            <input type="text" id="bairro" name="bairro" class="field-input" value="<%= perfil.bairro || '' %>" maxlength="60">
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field-group" style="margin-bottom:0;">
+            <label class="field-label-soft" for="cidade">Cidade</label>
+            <input type="text" id="cidade" name="cidade" class="field-input" value="<%= perfil.cidade || '' %>" maxlength="80">
+          </div>
+          <div class="field-group" style="margin-bottom:0;">
+            <label class="field-label-soft" for="estado">Estado</label>
+            <input type="text" id="estado" name="estado" class="field-input" value="<%= perfil.estado || '' %>" maxlength="2" placeholder="UF">
+          </div>
+        </div>
+        <div class="btn-row-actions">
+          <button type="submit" class="btn-primary">
+            <i class="fa-solid fa-floppy-disk"></i>Salvar localização
+          </button>
+          <button type="button" id="btnGeolocalizacao" class="btn-ghost">
+            <i class="fa-solid fa-crosshairs"></i>Usar localização atual
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+</main>
+
+<script src="/js/perfil-settings-pages.js"></script>
+<%- include('../partials/footer') %>

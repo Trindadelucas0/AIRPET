@@ -1,0 +1,12 @@
+<div id="settingsRouteLoader" class="settings-route-loader" aria-live="polite" role="status">
+  <div class="settings-route-loader-inner">
+    <i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i>
+    <span>Carregando…</span>
+  </div>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  var el = document.getElementById('settingsRouteLoader');
+  if (el) el.classList.add('settings-route-loader--hide');
+});
+</script>
