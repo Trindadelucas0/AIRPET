@@ -1,6 +1,14 @@
 (function () {
   'use strict';
 
+  function settingsDeferred(workFn, message) {
+    var L = window.AIRPET_LOADING;
+    if (L && typeof L.withDeferredOverlay === 'function') {
+      return L.withDeferredOverlay(workFn, { message: message || 'Ainda a processar…' });
+    }
+    return Promise.resolve().then(workFn);
+  }
+
   function formSubmitGuard() {
     document.querySelectorAll('form.js-perfil-form').forEach(function (form) {
       form.addEventListener('submit', function () {
@@ -148,9 +156,11 @@
       root.querySelectorAll('.btn-remover-foto-galeria').forEach(function (btn) {
         btn.addEventListener('click', function () {
           if (!confirm('Remover esta foto?')) return;
-          fetch('/perfil/galeria/' + this.getAttribute('data-id'), { method: 'DELETE', credentials: 'same-origin' })
-            .then(function (r) { return r.json(); })
-            .then(function (d) { if (d.sucesso) carregarGaleria(); });
+          settingsDeferred(function () {
+            return fetch('/perfil/galeria/' + this.getAttribute('data-id'), { method: 'DELETE', credentials: 'same-origin' })
+              .then(function (r) { return r.json(); })
+              .then(function (d) { if (d.sucesso) carregarGaleria(); });
+          }.bind(this), 'A remover foto…');
         });
       });
     }
@@ -185,14 +195,16 @@
         loading.setAttribute('aria-hidden', 'false');
       }
       container.classList.add('hidden');
-      fetch(apiList, { credentials: 'same-origin' })
-        .then(function (r) { return r.json(); })
-        .then(function (d) { renderGaleria(d.galeria || []); })
-        .catch(function () {
-          if (loading) loading.classList.add('hidden');
-          container.classList.remove('hidden');
-          container.innerHTML = '<p class="galeria-error-msg">Não foi possível carregar a galeria. Toque em atualizar ou tente de novo.</p>';
-        });
+      settingsDeferred(function () {
+        return fetch(apiList, { credentials: 'same-origin' })
+          .then(function (r) { return r.json(); })
+          .then(function (d) { renderGaleria(d.galeria || []); })
+          .catch(function () {
+            if (loading) loading.classList.add('hidden');
+            container.classList.remove('hidden');
+            container.innerHTML = '<p class="galeria-error-msg">Não foi possível carregar a galeria. Toque em atualizar ou tente de novo.</p>';
+          });
+      }, 'A carregar galeria…');
     }
 
     btnAdd.addEventListener('click', function () { fileInput.click(); });
@@ -209,10 +221,12 @@
           var fd = new FormData();
           fd.append('pet_id', petId);
           fd.append('foto', new File([blob], 'foto.jpg', { type: 'image/jpeg' }));
-          fetch('/perfil/galeria', { method: 'POST', body: fd, credentials: 'same-origin' })
-            .then(function (r) { return r.json(); })
-            .then(function (d) { if (d.sucesso) carregarGaleria(); else alert(d.mensagem || 'Erro.'); })
-            .catch(function () { alert('Erro ao enviar.'); });
+          settingsDeferred(function () {
+            return fetch('/perfil/galeria', { method: 'POST', body: fd, credentials: 'same-origin' })
+              .then(function (r) { return r.json(); })
+              .then(function (d) { if (d.sucesso) carregarGaleria(); else alert(d.mensagem || 'Erro.'); })
+              .catch(function () { alert('Erro ao enviar.'); });
+          }, 'A enviar foto…');
         }
         if (typeof openCropModal === 'function') {
           openCropModal({

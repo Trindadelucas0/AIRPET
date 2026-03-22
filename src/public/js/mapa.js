@@ -1,6 +1,14 @@
 (function () {
   'use strict';
 
+  function mapaDeferred(workFn, message) {
+    var L = window.AIRPET_LOADING;
+    if (L && typeof L.withDeferredOverlay === 'function') {
+      return L.withDeferredOverlay(workFn, { message: message || 'Ainda a processar…' });
+    }
+    return Promise.resolve().then(workFn);
+  }
+
   var mapEl = document.getElementById('mapaFull');
   if (!mapEl) return;
 
@@ -399,45 +407,48 @@
       this.disabled = true;
       if (btnMostrarNoMapaText) btnMostrarNoMapaText.textContent = 'Buscando...';
       var btn = this;
-      fetch('https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(query) + '&limit=1&countrycodes=br', {
-        headers: { 'Accept': 'application/json', 'Accept-Language': 'pt-BR', 'User-Agent': 'AIRPET/1.0 (mapa localizar)' }
-      })
-        .then(function (r) { return r.json(); })
-        .then(function (data) {
-          btn.disabled = false;
-          if (btnMostrarNoMapaText) btnMostrarNoMapaText.textContent = 'Mostrar no mapa';
-          if (!data || !data.length) {
+      mapaDeferred(function () {
+        return fetch('https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(query) + '&limit=1&countrycodes=br', {
+          headers: { 'Accept': 'application/json', 'Accept-Language': 'pt-BR', 'User-Agent': 'AIRPET/1.0 (mapa localizar)' }
+        })
+          .then(function (r) { return r.json(); })
+          .then(function (data) {
+            if (!data || !data.length) {
+              if (mapaLocalizarMsg) {
+                mapaLocalizarMsg.textContent = 'Endereco nao encontrado. Tente outro bairro ou apenas cidade e estado.';
+                mapaLocalizarMsg.classList.remove('hidden');
+              }
+              return;
+            }
+            var lat = parseFloat(data[0].lat);
+            var lon = parseFloat(data[0].lon);
+            var displayName = data[0].display_name || query;
+            if (locMarker && map.hasLayer(locMarker)) {
+              map.removeLayer(locMarker);
+            }
+            locMarker = L.marker([lat, lon], {
+              icon: L.divIcon({
+                className: 'custom-pin-localizar',
+                html: '<div style="background:#ec5a1c;width:36px;height:36px;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center"><i class="fa-solid fa-location-dot" style="color:#fff;font-size:14px"></i></div>',
+                iconSize: [36, 36],
+                iconAnchor: [18, 18],
+                popupAnchor: [0, -18]
+              })
+            }).addTo(map);
+            locMarker.bindPopup('<div style="min-width:180px"><strong>Local buscado</strong><br><small style="color:#666">' + displayName.replace(/</g, '&lt;').substring(0, 120) + '</small></div>');
+            map.setView([lat, lon], 14);
+          })
+          .catch(function () {
             if (mapaLocalizarMsg) {
-              mapaLocalizarMsg.textContent = 'Endereco nao encontrado. Tente outro bairro ou apenas cidade e estado.';
+              mapaLocalizarMsg.textContent = 'Erro ao buscar endereco. Tente novamente.';
               mapaLocalizarMsg.classList.remove('hidden');
             }
-            return;
-          }
-          var lat = parseFloat(data[0].lat);
-          var lon = parseFloat(data[0].lon);
-          var displayName = data[0].display_name || query;
-          if (locMarker && map.hasLayer(locMarker)) {
-            map.removeLayer(locMarker);
-          }
-          locMarker = L.marker([lat, lon], {
-            icon: L.divIcon({
-              className: 'custom-pin-localizar',
-              html: '<div style="background:#ec5a1c;width:36px;height:36px;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center"><i class="fa-solid fa-location-dot" style="color:#fff;font-size:14px"></i></div>',
-              iconSize: [36, 36],
-              iconAnchor: [18, 18],
-              popupAnchor: [0, -18]
-            })
-          }).addTo(map);
-          locMarker.bindPopup('<div style="min-width:180px"><strong>Local buscado</strong><br><small style="color:#666">' + displayName.replace(/</g, '&lt;').substring(0, 120) + '</small></div>');
-          map.setView([lat, lon], 14);
-        })
-        .catch(function () {
+            throw new Error('nominatim');
+          });
+      }, 'A localizar no mapa…')
+        .finally(function () {
           btn.disabled = false;
           if (btnMostrarNoMapaText) btnMostrarNoMapaText.textContent = 'Mostrar no mapa';
-          if (mapaLocalizarMsg) {
-            mapaLocalizarMsg.textContent = 'Erro ao buscar endereco. Tente novamente.';
-            mapaLocalizarMsg.classList.remove('hidden');
-          }
         });
     });
   }

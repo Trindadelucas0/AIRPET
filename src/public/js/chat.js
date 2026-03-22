@@ -69,8 +69,8 @@
         })
         : uploadFn();
 
-      Promise.resolve(pr)
-        .then(function (data) {
+      var uploadChain = function () {
+        return Promise.resolve(pr).then(function (data) {
           if (data.url) {
             socket.emit('enviar_mensagem', {
               conversa_id: roomId,
@@ -85,15 +85,19 @@
               pendente: true
             });
           }
-        })
-        .catch(function (err) {
-          console.error('Erro ao enviar foto:', err);
-        })
-        .finally(function () {
-          chatPhotoUploadBusy = false;
-          photoInput.disabled = false;
-          photoInput.value = '';
         });
+      };
+      var L = typeof globalThis !== 'undefined' ? globalThis.AIRPET_LOADING : null;
+      var wrapped = L && typeof L.withDeferredOverlay === 'function'
+        ? L.withDeferredOverlay(uploadChain, { message: 'A enviar foto…' })
+        : uploadChain();
+      wrapped.catch(function (err) {
+        console.error('Erro ao enviar foto:', err);
+      }).finally(function () {
+        chatPhotoUploadBusy = false;
+        photoInput.disabled = false;
+        photoInput.value = '';
+      });
     });
   }
 

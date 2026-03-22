@@ -1146,6 +1146,13 @@
     html += '</div>';
     return html;
   }
+  function feedDeferred(workFn, message) {
+    var L = window.AIRPET_LOADING;
+    if (L && typeof L.withDeferredOverlay === 'function') {
+      return L.withDeferredOverlay(workFn, { message: message || 'Ainda a processar…' });
+    }
+    return Promise.resolve().then(workFn);
+  }
   var repostFeedInFlight = false;
   var isPublishingPost = false;
 
@@ -1285,7 +1292,8 @@
       fetch('/explorar/post/' + postId + '/comentarios', { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
         .then(function (r) { return r.json(); })
     );
-    pr.then(function (data) {
+    feedDeferred(function () {
+      return pr.then(function (data) {
         if (!data || !data.sucesso || !data.comentarios || !data.comentarios.length) {
           list.innerHTML = '<div class="text-center py-8 text-sm text-gray-400">Nenhum comentário ainda.</div>';
           return;
@@ -1300,10 +1308,10 @@
             allowReply: !!meuId
           });
         }
-      })
-      .catch(function () {
+      }).catch(function () {
         list.innerHTML = '<div class="text-center py-8 text-sm text-red-400">Erro ao carregar.</div>';
       });
+    }, 'A carregar comentários…');
   }
 
   function fecharPostDetailOwnerDropdown() {
@@ -1530,25 +1538,26 @@
         credentials: 'same-origin'
       }).then(function (r) { return r.json(); });
 
-    pr.then(function (d) {
-      if (d && d.sucesso) {
-        aplicarEstadoCurtidaBtn(btn, !!d.curtiu, d.total);
-        if (d.curtiu) {
-          btn.classList.add('animate-heartPop');
-          setTimeout(function () { btn.classList.remove('animate-heartPop'); }, 400);
-          var heart = document.createElement('span');
-          heart.className = 'float-heart';
-          heart.textContent = '♥';
-          heart.style.cssText = 'left:50%;top:50%;transform:translate(-50%,-50%)';
-          btn.appendChild(heart);
-          setTimeout(function () { heart.remove(); }, 700);
+    feedDeferred(function () {
+      return pr.then(function (d) {
+        if (d && d.sucesso) {
+          aplicarEstadoCurtidaBtn(btn, !!d.curtiu, d.total);
+          if (d.curtiu) {
+            btn.classList.add('animate-heartPop');
+            setTimeout(function () { btn.classList.remove('animate-heartPop'); }, 400);
+            var heart = document.createElement('span');
+            heart.className = 'float-heart';
+            heart.textContent = '♥';
+            heart.style.cssText = 'left:50%;top:50%;transform:translate(-50%,-50%)';
+            btn.appendChild(heart);
+            setTimeout(function () { heart.remove(); }, 700);
+          }
         }
-      }
-    }).catch(function () {})
-      .finally(function () {
-        btn.removeAttribute('data-airpet-like-pending');
-        btn.classList.remove('airpet-btn-loading');
-      });
+      }).catch(function () {});
+    }, 'A atualizar gostos…').finally(function () {
+      btn.removeAttribute('data-airpet-like-pending');
+      btn.classList.remove('airpet-btn-loading');
+    });
   }
 
   // ── Comments ──
@@ -1586,16 +1595,17 @@
         headers: { 'Accept': 'application/json' },
         credentials: 'same-origin'
       }).then(function (r) { return r.json(); });
-    pr.then(function (data) {
+    feedDeferred(function () {
+      return pr.then(function (data) {
         if (!data || !data.sucesso) {
           commentList.innerHTML = '<p style="color:#ef4444;font-size:14px;">Não foi possível carregar os comentários.</p>';
           return;
         }
         renderComentariosModal(data.comentarios || []);
-      })
-      .catch(function () {
+      }).catch(function () {
         commentList.innerHTML = '<p style="color:#ef4444;font-size:14px;">Erro ao carregar comentários.</p>';
       });
+    }, 'A carregar comentários…');
   }
 
   function fecharComentariosModal() {
@@ -1647,7 +1657,7 @@
       if (row) sendBtn = row.querySelector('.btn-enviar-inline');
     }
     var body = JSON.stringify(payload);
-    var run = function () {
+    var runInner = function () {
       var c = feedCoordinator();
       if (c && typeof c.enqueue === 'function') {
         return c.enqueue({
@@ -1671,6 +1681,9 @@
         credentials: 'same-origin',
         body: body
       }).then(function (r) { return r.json(); });
+    };
+    var run = function () {
+      return feedDeferred(runInner, 'A enviar comentário…');
     };
     var p = window.AIRPET_LOADING && sendBtn
       ? window.AIRPET_LOADING.runLocked({
@@ -1729,7 +1742,8 @@
         credentials: 'same-origin',
         body: body
       }).then(function (r) { return r.json(); });
-    pr.then(function (d) {
+    feedDeferred(function () {
+      return pr.then(function (d) {
         if (d.sucesso) {
           var card = document.getElementById('post-' + postId);
           if (card) {
@@ -1741,9 +1755,8 @@
             }
           }
         }
-      })
-      .catch(function () {})
-      .finally(function () { repostFeedInFlight = false; });
+      }).catch(function () {});
+    }, 'A republicar…').finally(function () { repostFeedInFlight = false; });
   }
 
   // ── Share ──
@@ -1793,13 +1806,14 @@
         headers: { 'Accept': 'application/json' },
         credentials: 'same-origin'
       });
-    pr.then(function () {
+    feedDeferred(function () {
+      return pr.then(function () {
         if (window.AIRPET_LOADING && typeof window.AIRPET_LOADING.showRoute === 'function') {
           window.AIRPET_LOADING.showRoute();
         }
         location.reload();
-      })
-      .catch(function () {});
+      });
+    }, 'A fixar publicação…').catch(function () {});
   }
 
   function deletarPost(postId) {
@@ -1821,7 +1835,8 @@
       })
       : fetch('/explorar/post/' + postId, { method: 'DELETE', headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
         .then(function (r) { return r.json(); });
-    pr.then(function (d) {
+    feedDeferred(function () {
+      return pr.then(function (d) {
         if (d.sucesso) {
           var el = document.getElementById('post-' + postId);
           if (el) {
@@ -1831,8 +1846,8 @@
           }
           requestClosePostDetailFeed();
         }
-      })
-      .catch(function () {});
+      });
+    }, 'A remover publicação…').catch(function () {});
   }
 
   // ── Ver mais ──
@@ -1917,8 +1932,10 @@
 
       var busyLabel = '<i class="fa-solid fa-paw fa-bounce" aria-hidden="true"></i> <span class="airpet-inline-dots">Publicando</span>';
       var work = function () {
-        return fetch('/explorar/post', { method: 'POST', body: fd, credentials: 'same-origin' })
-          .then(function (r) { return r.json(); });
+        return feedDeferred(function () {
+          return fetch('/explorar/post', { method: 'POST', body: fd, credentials: 'same-origin' })
+            .then(function (r) { return r.json(); });
+        }, 'A publicar…');
       };
       var p = window.AIRPET_LOADING
         ? window.AIRPET_LOADING.runLocked({ button: btnPublicar, busyText: busyLabel }, work)
@@ -2212,10 +2229,11 @@
         })
         : fetch('/explorar/comentario/' + cid, { method: 'DELETE', headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
           .then(function (r) { return r.json(); });
-      pr.then(function (d) {
+      feedDeferred(function () {
+        return pr.then(function (d) {
           if (d.sucesso && postDetailCommentPostId) carregarComentariosPostDetail(postDetailCommentPostId);
-        })
-        .catch(function () {});
+        });
+      }, 'A remover comentário…').catch(function () {});
     });
   }
 
@@ -2243,14 +2261,15 @@
         })
         : fetch('/explorar/seguir/' + uid, { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin' })
           .then(function (r) { return r.json(); });
-      pr.then(function (d) {
+      feedDeferred(function () {
+        return pr.then(function (d) {
           if (d.sucesso) {
             el.textContent = 'Seguindo';
             el.style.background = 'var(--accent)'; el.style.borderColor = 'var(--accent)'; el.style.color = '#fff';
             el.disabled = true;
           }
-        })
-        .catch(function () {})
+        });
+      }, 'A seguir…').catch(function () {})
         .finally(function () { el.removeAttribute('data-airpet-follow-pending'); });
     });
   });
@@ -2278,14 +2297,15 @@
         })
         : fetch('/explorar/pet/' + pid + '/seguir', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin' })
           .then(function (r) { return r.json(); });
-      pr.then(function (d) {
+      feedDeferred(function () {
+        return pr.then(function (d) {
           if (d.sucesso) {
             el.textContent = 'Seguindo';
             el.style.background = 'var(--accent)'; el.style.borderColor = 'var(--accent)'; el.style.color = '#fff';
             el.disabled = true;
           }
-        })
-        .catch(function () {})
+        });
+      }, 'A seguir pet…').catch(function () {})
         .finally(function () { el.removeAttribute('data-airpet-follow-pending'); });
     });
   });
@@ -2328,37 +2348,30 @@
         initVerMais();
       }
 
-      if (typeof swrFetchGet === 'function') {
-        var c2 = feedCoordinator();
-        swrFetchGet({
-          key: 'feed:page:' + page,
-          url: '/feed?page=' + page,
-          staleTimeMs: 45000,
-          cacheTimeMs: 600000,
-          group: 'feedPagination',
-          priority: c2 && c2.PRIORITY ? c2.PRIORITY.MEDIUM : 'MEDIUM',
-          credentials: 'same-origin'
-        })
-          .then(function (res) {
+      feedDeferred(function () {
+        if (typeof swrFetchGet === 'function') {
+          var c2 = feedCoordinator();
+          return swrFetchGet({
+            key: 'feed:page:' + page,
+            url: '/feed?page=' + page,
+            staleTimeMs: 45000,
+            cacheTimeMs: 600000,
+            group: 'feedPagination',
+            priority: c2 && c2.PRIORITY ? c2.PRIORITY.MEDIUM : 'MEDIUM',
+            credentials: 'same-origin'
+          }).then(function (res) {
             var d = res && Object.prototype.hasOwnProperty.call(res, 'data') ? res.data : res;
             applyFeedPage(d || {});
-          })
-          .catch(function () {
-            removeSkel();
-            self.innerHTML = '<i class="fa-solid fa-arrows-rotate mr-2"></i>Carregar mais publicações';
-            self.disabled = false;
           });
-        return;
-      }
-
-      fetch('/feed?page=' + page, { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
-        .then(function (r) { return r.json(); })
-        .then(function (d) { applyFeedPage(d); })
-        .catch(function () {
-          removeSkel();
-          self.innerHTML = '<i class="fa-solid fa-arrows-rotate mr-2"></i>Carregar mais publicações';
-          self.disabled = false;
-        });
+        }
+        return fetch('/feed?page=' + page, { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
+          .then(function (r) { return r.json(); })
+          .then(function (d) { applyFeedPage(d); });
+      }, 'A carregar publicações…').catch(function () {
+        removeSkel();
+        self.innerHTML = '<i class="fa-solid fa-arrows-rotate mr-2"></i>Carregar mais publicações';
+        self.disabled = false;
+      });
     });
   }
 

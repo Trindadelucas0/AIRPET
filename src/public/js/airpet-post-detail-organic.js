@@ -121,6 +121,18 @@
     return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 
+  function organicDetailDeferred(workFn, message) {
+    var L = window.AIRPET_LOADING;
+    if (L && typeof L.withDeferredOverlay === 'function') {
+      return L.withDeferredOverlay(workFn, { message: message || 'Ainda a processar…' });
+    }
+    return Promise.resolve().then(workFn);
+  }
+
+  function organicDetailCoordinator() {
+    return window.AIRPET_REQ_COORDINATOR || null;
+  }
+
   function renderMencoes(texto) {
     return escapeHtml(texto).replace(/@(\S+)/g, '<span class="mention" data-user="$1">@$1</span>');
   }
@@ -129,29 +141,31 @@
     var list = document.getElementById('postDetailCommentList');
     if (!list) return;
     list.innerHTML = '<div class="text-center py-6 text-sm text-gray-400">Carregando…</div>';
-    fetch('/explorar/post/' + postId + '/comentarios', { headers: { Accept: 'application/json' }, credentials: 'same-origin' })
-      .then(function (r) {
-        return r.json();
-      })
-      .then(function (data) {
-        if (!data || !data.sucesso || !data.comentarios || !data.comentarios.length) {
-          list.innerHTML = '<div class="text-center py-8 text-sm text-gray-400">Nenhum comentário ainda.</div>';
-          return;
-        }
-        if (window.AIRPET_commentRender && window.AIRPET_commentRender.renderList) {
-          list.innerHTML = window.AIRPET_commentRender.renderList(data.comentarios, {
-            meuId: meuId,
-            escapeHtml: escapeHtml,
-            renderMencoes: renderMencoes,
-            tempoRelativo: tempoRelativo,
-            useDataTimeAttr: true,
-            allowReply: meuId != null,
-          });
-        }
-      })
-      .catch(function () {
-        list.innerHTML = '<div class="text-center py-8 text-sm text-red-400">Erro ao carregar.</div>';
-      });
+    organicDetailDeferred(function () {
+      return fetch('/explorar/post/' + postId + '/comentarios', { headers: { Accept: 'application/json' }, credentials: 'same-origin' })
+        .then(function (r) {
+          return r.json();
+        })
+        .then(function (data) {
+          if (!data || !data.sucesso || !data.comentarios || !data.comentarios.length) {
+            list.innerHTML = '<div class="text-center py-8 text-sm text-gray-400">Nenhum comentário ainda.</div>';
+            return;
+          }
+          if (window.AIRPET_commentRender && window.AIRPET_commentRender.renderList) {
+            list.innerHTML = window.AIRPET_commentRender.renderList(data.comentarios, {
+              meuId: meuId,
+              escapeHtml: escapeHtml,
+              renderMencoes: renderMencoes,
+              tempoRelativo: tempoRelativo,
+              useDataTimeAttr: true,
+              allowReply: meuId != null,
+            });
+          }
+        })
+        .catch(function () {
+          list.innerHTML = '<div class="text-center py-8 text-sm text-red-400">Erro ao carregar.</div>';
+        });
+    }, 'A carregar comentários…');
   }
 
   function fecharPostDetailOwnerDropdown() {
@@ -201,58 +215,123 @@
   }
 
   function fixarPost(postId, isFixed) {
-    fetch('/explorar/post/' + postId + '/fixar', {
-      method: isFixed ? 'DELETE' : 'POST',
-      headers: { Accept: 'application/json' },
-      credentials: 'same-origin',
-    }).then(function () {
-      location.reload();
+    var method = isFixed ? 'DELETE' : 'POST';
+    var url = '/explorar/post/' + postId + '/fixar';
+    organicDetailDeferred(function () {
+      var c = organicDetailCoordinator();
+      if (c && typeof c.enqueue === 'function') {
+        return c.enqueue({
+          key: 'organicFixar:' + postId + ':' + (isFixed ? 'off' : 'on'),
+          group: 'organicPostDetail',
+          priority: c.PRIORITY ? c.PRIORITY.HIGH : 'HIGH',
+          fetchFn: function (signal) {
+            return fetch(url, {
+              method: method,
+              headers: { Accept: 'application/json' },
+              credentials: 'same-origin',
+              signal: signal,
+            }).then(function (r) {
+              return r.json();
+            });
+          },
+        });
+      }
+      return fetch(url, {
+        method: method,
+        headers: { Accept: 'application/json' },
+        credentials: 'same-origin',
+      }).then(function (r) {
+        return r.json();
+      });
+    }, isFixed ? 'A desafixar publicação…' : 'A fixar publicação…').then(function (d) {
+      if (d && d.sucesso) location.reload();
     });
   }
 
   function deletarPost(postId) {
     if (!confirm('Excluir publicação?')) return;
-    fetch('/explorar/post/' + postId, { method: 'DELETE', headers: { Accept: 'application/json' }, credentials: 'same-origin' })
-      .then(function (r) {
+    var url = '/explorar/post/' + postId;
+    organicDetailDeferred(function () {
+      var c = organicDetailCoordinator();
+      if (c && typeof c.enqueue === 'function') {
+        return c.enqueue({
+          key: 'organicDeletePost:' + postId,
+          group: 'organicPostDetail',
+          priority: c.PRIORITY ? c.PRIORITY.HIGH : 'HIGH',
+          fetchFn: function (signal) {
+            return fetch(url, { method: 'DELETE', headers: { Accept: 'application/json' }, credentials: 'same-origin', signal: signal }).then(function (r) {
+              return r.json();
+            });
+          },
+        });
+      }
+      return fetch(url, { method: 'DELETE', headers: { Accept: 'application/json' }, credentials: 'same-origin' }).then(function (r) {
         return r.json();
-      })
-      .then(function (d) {
-        if (d.sucesso) {
-          requestClosePostDetailOrganic();
-          var el = document.getElementById('post-' + postId) || document.querySelector('article[data-post-id="' + postId + '"]');
-          if (el) {
-            el.style.transition = 'opacity 0.3s, transform 0.3s';
-            el.style.opacity = '0';
-            el.style.transform = 'translateY(-8px)';
-            setTimeout(function () {
-              el.remove();
-            }, 300);
-          }
-        }
       });
+    }, 'A apagar publicação…').then(function (d) {
+      if (d && d.sucesso) {
+        requestClosePostDetailOrganic();
+        var el = document.getElementById('post-' + postId) || document.querySelector('article[data-post-id="' + postId + '"]');
+        if (el) {
+          el.style.transition = 'opacity 0.3s, transform 0.3s';
+          el.style.opacity = '0';
+          el.style.transform = 'translateY(-8px)';
+          setTimeout(function () {
+            el.remove();
+          }, 300);
+        }
+      }
+    });
   }
 
   function enviarComentarioOrganico(postId, texto, inputEl) {
     if (!texto) return;
     var payload = { texto: texto };
     if (organicReplyParentId) payload.parent_id = parseInt(organicReplyParentId, 10);
-    fetch('/explorar/post/' + postId + '/comentar', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      credentials: 'same-origin',
-      body: JSON.stringify(payload),
-    })
-      .then(function (r) {
+    var body = JSON.stringify(payload);
+    var url = '/explorar/post/' + postId + '/comentar';
+    var sendBtn = document.getElementById('postDetailBtnEnviar');
+    var runInner = function () {
+      var c = organicDetailCoordinator();
+      if (c && typeof c.enqueue === 'function') {
+        return c.enqueue({
+          key: 'organicComentar:' + postId,
+          group: 'organicPostDetail',
+          priority: c.PRIORITY ? c.PRIORITY.HIGH : 'HIGH',
+          fetchFn: function (signal) {
+            return fetch(url, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+              credentials: 'same-origin',
+              body: body,
+              signal: signal,
+            }).then(function (r) {
+              return r.json();
+            });
+          },
+        });
+      }
+      return fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        credentials: 'same-origin',
+        body: body,
+      }).then(function (r) {
         return r.json();
-      })
-      .then(function (d) {
-        if (!d.sucesso) return;
-        if (inputEl) inputEl.value = '';
-        clearOrganicReplyTarget();
-        if (postDetailCommentPostId === postId || postDetailCommentPostId === String(postId)) {
-          carregarComentariosPostDetail(postId);
-        }
       });
+    };
+    var run = function () {
+      return organicDetailDeferred(runInner, 'A enviar comentário…');
+    };
+    var p = window.AIRPET_LOADING && sendBtn ? window.AIRPET_LOADING.runLocked({ button: sendBtn, busyText: '<span class="airpet-inline-dots">Enviando</span>' }, run) : run();
+    p.then(function (d) {
+      if (!d || !d.sucesso) return;
+      if (inputEl) inputEl.value = '';
+      clearOrganicReplyTarget();
+      if (postDetailCommentPostId === postId || postDetailCommentPostId === String(postId)) {
+        carregarComentariosPostDetail(postId);
+      }
+    });
   }
 
   function openPostDetailFromArticle(article) {
@@ -479,17 +558,35 @@
         if (!b) return;
         var cid = b.getAttribute('data-comment-id');
         if (!cid || !confirm('Excluir comentário?')) return;
-        fetch('/explorar/comentario/' + cid, {
-          method: 'DELETE',
-          headers: { Accept: 'application/json' },
-          credentials: 'same-origin',
-        })
-          .then(function (r) {
+        organicDetailDeferred(function () {
+          var c = organicDetailCoordinator();
+          if (c && typeof c.enqueue === 'function') {
+            return c.enqueue({
+              key: 'organicDelComment:' + cid,
+              group: 'organicPostDetail',
+              priority: c.PRIORITY ? c.PRIORITY.HIGH : 'HIGH',
+              fetchFn: function (signal) {
+                return fetch('/explorar/comentario/' + cid, {
+                  method: 'DELETE',
+                  headers: { Accept: 'application/json' },
+                  credentials: 'same-origin',
+                  signal: signal,
+                }).then(function (r) {
+                  return r.json();
+                });
+              },
+            });
+          }
+          return fetch('/explorar/comentario/' + cid, {
+            method: 'DELETE',
+            headers: { Accept: 'application/json' },
+            credentials: 'same-origin',
+          }).then(function (r) {
             return r.json();
-          })
-          .then(function (d) {
-            if (d.sucesso && postDetailCommentPostId) carregarComentariosPostDetail(postDetailCommentPostId);
           });
+        }, 'A apagar comentário…').then(function (d) {
+          if (d && d.sucesso && postDetailCommentPostId) carregarComentariosPostDetail(postDetailCommentPostId);
+        });
       });
     }
 

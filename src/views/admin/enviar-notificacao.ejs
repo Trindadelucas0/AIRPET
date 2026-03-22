@@ -156,6 +156,15 @@
 <script>
 (function () {
   var adminPath = '<%= adminPath %>';
+
+  function adminNotifyDeferred(workFn, message) {
+    var L = window.AIRPET_LOADING;
+    if (L && typeof L.withDeferredOverlay === 'function') {
+      return L.withDeferredOverlay(workFn, { message: message || 'Ainda a processar…' });
+    }
+    return Promise.resolve().then(workFn);
+  }
+
   var cidadesData = <%- JSON.stringify(cidadesComContagem || []) %>;
   var bairrosData = <%- JSON.stringify(bairrosComContagem || []) %>;
 
@@ -400,13 +409,16 @@
       previewResultGeo.textContent = 'Consultando...';
       previewResultGeo.classList.remove('hidden');
       var params = new URLSearchParams({ modo: 'geografico', lat: lat, lng: lng, raio_km: raio });
-      fetch(adminPath + '/notificacoes/enviar/preview?' + params.toString(), { credentials: 'same-origin' })
-        .then(function (r) { return r.json(); })
-        .then(function (data) {
-          if (data.sucesso) previewResultGeo.textContent = data.total + ' usuário(s) com localização no raio.';
-          else previewResultGeo.textContent = data.mensagem || 'Erro ao consultar.';
-        })
-        .catch(function () { previewResultGeo.textContent = 'Erro de conexão.'; });
+      var previewUrlGeo = adminPath + '/notificacoes/enviar/preview?' + params.toString();
+      adminNotifyDeferred(function () {
+        return fetch(previewUrlGeo, { credentials: 'same-origin' })
+          .then(function (r) { return r.json(); })
+          .then(function (data) {
+            if (data.sucesso) previewResultGeo.textContent = data.total + ' usuário(s) com localização no raio.';
+            else previewResultGeo.textContent = data.mensagem || 'Erro ao consultar.';
+          })
+          .catch(function () { previewResultGeo.textContent = 'Erro de conexão.'; });
+      }, 'A consultar pré-visualização…');
     });
   }
 
@@ -421,18 +433,21 @@
     previewResult.classList.remove('hidden');
 
     var params = new URLSearchParams(obterFiltros());
-    fetch(adminPath + '/notificacoes/enviar/preview?' + params.toString(), { credentials: 'same-origin' })
-      .then(function (r) { return r.json(); })
-      .then(function (data) {
-        if (data.sucesso) {
-          previewResult.textContent = data.total + ' usuário(s) com perfil na região filtrada.';
-        } else {
-          previewResult.textContent = data.mensagem || 'Erro ao consultar.';
-        }
-      })
-      .catch(function () {
-        previewResult.textContent = 'Erro de conexão.';
-      });
+    var previewUrl = adminPath + '/notificacoes/enviar/preview?' + params.toString();
+    adminNotifyDeferred(function () {
+      return fetch(previewUrl, { credentials: 'same-origin' })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          if (data.sucesso) {
+            previewResult.textContent = data.total + ' usuário(s) com perfil na região filtrada.';
+          } else {
+            previewResult.textContent = data.mensagem || 'Erro ao consultar.';
+          }
+        })
+        .catch(function () {
+          previewResult.textContent = 'Erro de conexão.';
+        });
+    }, 'A consultar pré-visualização…');
   });
 
   form.addEventListener('submit', function (e) {

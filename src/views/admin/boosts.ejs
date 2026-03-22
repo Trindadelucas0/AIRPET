@@ -180,6 +180,14 @@
     var debounceRef = null;
     var usuarioSelecionado = null;
 
+    function adminBoostDeferred(workFn, message) {
+      var L = window.AIRPET_LOADING;
+      if (L && typeof L.withDeferredOverlay === 'function') {
+        return L.withDeferredOverlay(workFn, { message: message || 'Ainda a processar…' });
+      }
+      return Promise.resolve().then(workFn);
+    }
+
     function esc(texto) {
       return String(texto || '')
         .replace(/&/g, '&amp;')
@@ -313,7 +321,10 @@
       petsStep.classList.remove('hidden');
 
       try {
-        renderPets(await buscarPets(usuarioSelecionado.id));
+        var pets = await adminBoostDeferred(function () {
+          return buscarPets(usuarioSelecionado.id);
+        }, 'A carregar pets…');
+        renderPets(pets);
       } catch (_) {
         petsResultado.innerHTML = '<div class="col-span-full text-xs text-red-500">Erro ao carregar pets do tutor.</div>';
       }

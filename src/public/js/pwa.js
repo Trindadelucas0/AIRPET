@@ -85,12 +85,20 @@
   }
 
   function sendSubscriptionToServer(subscription) {
-    fetch('/notificacoes/push/subscribe', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'same-origin',
-      body: JSON.stringify({ subscription: subscription.toJSON() })
-    }).then(function (res) {
+    var body = JSON.stringify({ subscription: subscription.toJSON() });
+    var run = function () {
+      return fetch('/notificacoes/push/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: body
+      });
+    };
+    var L = window.AIRPET_LOADING;
+    var p = L && typeof L.withDeferredOverlay === 'function'
+      ? L.withDeferredOverlay(run, { message: 'A ativar notificações…' })
+      : run();
+    p.then(function (res) {
       if (res.ok) console.log('[PWA] Subscription enviada ao servidor');
     }).catch(function (err) {
       console.warn('[PWA] Erro ao enviar subscription:', err);

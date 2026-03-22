@@ -654,6 +654,17 @@
   var myUserId = document.body.dataset.usuarioId ? parseInt(document.body.dataset.usuarioId) : null;
   var repostTargetId = null;
 
+  function perfilUserDeferred(workFn, message) {
+    var L = window.AIRPET_LOADING;
+    if (L && typeof L.withDeferredOverlay === 'function') {
+      return L.withDeferredOverlay(workFn, { message: message || 'Ainda a processar…' });
+    }
+    return Promise.resolve().then(workFn);
+  }
+  function perfilUserCoordinator() {
+    return window.AIRPET_REQ_COORDINATOR || null;
+  }
+
   /* ── Utilities ── */
   function tempoRelativo(dateStr) {
     var d = new Date(dateStr);
@@ -728,36 +739,39 @@
       var method = following ? 'DELETE' : 'POST';
       btnFollow.style.pointerEvents = 'none';
 
-      fetch('/explorar/seguir/' + perfilId, {
-        method: method,
-        headers: { 'Accept': 'application/json' },
-        credentials: 'same-origin'
-      })
-      .then(function (r) { return r.json(); })
-      .then(function (data) {
-        if (data.sucesso) {
-          var nowFollowing = data.seguindo;
-          btnFollow.dataset.following = nowFollowing ? 'true' : 'false';
-          var icon = btnFollow.querySelector('i');
-          var label = btnFollow.querySelector('span');
+      perfilUserDeferred(function () {
+        return fetch('/explorar/seguir/' + perfilId, {
+          method: method,
+          headers: { 'Accept': 'application/json' },
+          credentials: 'same-origin'
+        })
+          .then(function (r) { return r.json(); })
+          .then(function (data) {
+            if (data.sucesso) {
+              var nowFollowing = data.seguindo;
+              btnFollow.dataset.following = nowFollowing ? 'true' : 'false';
+              var icon = btnFollow.querySelector('i');
+              var label = btnFollow.querySelector('span');
 
-          if (nowFollowing) {
-            btnFollow.className = 'follow-btn flex items-center gap-2 px-5 py-2 rounded-full text-sm font-bold bg-white border border-gray-300 text-gray-800 hover:border-red-300 hover:bg-red-50 hover:text-red-600';
-            icon.className = 'fa-solid fa-user-check text-xs';
-            label.textContent = 'Seguindo';
-          } else {
-            btnFollow.className = 'follow-btn flex items-center gap-2 px-5 py-2 rounded-full text-sm font-bold bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-lg shadow-primary-500/20 hover:shadow-xl hover:-translate-y-0.5';
-            icon.className = 'fa-solid fa-user-plus text-xs';
-            label.textContent = 'Seguir';
-          }
+              if (nowFollowing) {
+                btnFollow.className = 'follow-btn flex items-center gap-2 px-5 py-2 rounded-full text-sm font-bold bg-white border border-gray-300 text-gray-800 hover:border-red-300 hover:bg-red-50 hover:text-red-600';
+                icon.className = 'fa-solid fa-user-check text-xs';
+                label.textContent = 'Seguindo';
+              } else {
+                btnFollow.className = 'follow-btn flex items-center gap-2 px-5 py-2 rounded-full text-sm font-bold bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-lg shadow-primary-500/20 hover:shadow-xl hover:-translate-y-0.5';
+                icon.className = 'fa-solid fa-user-plus text-xs';
+                label.textContent = 'Seguir';
+              }
 
-          if (typeof data.totalSeguidores !== 'undefined') {
-            document.getElementById('seguidoresCount').textContent = data.totalSeguidores;
-          }
-        }
-        btnFollow.style.pointerEvents = '';
-      })
-      .catch(function () { btnFollow.style.pointerEvents = ''; });
+              if (typeof data.totalSeguidores !== 'undefined') {
+                document.getElementById('seguidoresCount').textContent = data.totalSeguidores;
+              }
+            }
+            return data;
+          });
+      }, following ? 'A deixar de seguir…' : 'A seguir…')
+        .finally(function () { btnFollow.style.pointerEvents = ''; })
+        .catch(function () { btnFollow.style.pointerEvents = ''; });
     });
   }
 
@@ -784,8 +798,10 @@
     listaSegTitulo.textContent = tipo === 'seguidores' ? 'Seguidores' : 'Seguindo';
     listaSegBody.innerHTML = '<div class="text-center py-8 text-gray-400"><i class="fa-solid fa-spinner fa-spin text-xl"></i></div>';
     listaSegModal.classList.remove('hidden');
-    fetch(url, { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
-      .then(function (r) { return r.json(); })
+    perfilUserDeferred(function () {
+      return fetch(url, { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
+        .then(function (r) { return r.json(); });
+    }, 'A carregar lista…')
       .then(function (data) {
         var lista = data.lista || [];
         if (lista.length === 0) {
@@ -822,18 +838,20 @@
     if (!liked) btn.classList.add('heart-pop');
     setTimeout(function () { btn.classList.remove('heart-pop'); }, 500);
 
-    fetch('/explorar/post/' + postId + '/curtir', {
-      method: method,
-      headers: { 'Accept': 'application/json' },
-      credentials: 'same-origin'
-    })
-    .then(function (r) { return r.json(); })
-    .then(function (data) {
-      if (data.sucesso && countEl) {
-        countEl.textContent = data.total || '';
-      }
-    })
-    .catch(function () {});
+    perfilUserDeferred(function () {
+      return fetch('/explorar/post/' + postId + '/curtir', {
+        method: method,
+        headers: { 'Accept': 'application/json' },
+        credentials: 'same-origin'
+      })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          if (data.sucesso && countEl) {
+            countEl.textContent = data.total || '';
+          }
+        });
+    }, liked ? 'A remover gosto…' : 'A registar gosto…')
+      .catch(function () {});
   }
 
   document.addEventListener('click', function (e) {
@@ -872,15 +890,21 @@
   document.addEventListener('click', function (e) {
     var btn = e.target.closest('.btn-fixar');
     if (btn) {
-      fetch('/explorar/post/' + btn.dataset.id + '/fixar', { method: 'POST', headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
-        .then(function (r) { return r.json(); })
-        .then(function (d) { if (d.sucesso) location.reload(); else alert(d.mensagem || 'Erro'); });
+      var pidF = btn.dataset.id;
+      perfilUserDeferred(function () {
+        return fetch('/explorar/post/' + pidF + '/fixar', { method: 'POST', headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
+          .then(function (r) { return r.json(); });
+      }, 'A fixar publicação…')
+        .then(function (d) { if (d && d.sucesso) location.reload(); else if (d) alert(d.mensagem || 'Erro'); });
     }
     var btn2 = e.target.closest('.btn-desafixar');
     if (btn2) {
-      fetch('/explorar/post/' + btn2.dataset.id + '/fixar', { method: 'DELETE', headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
-        .then(function (r) { return r.json(); })
-        .then(function (d) { if (d.sucesso) location.reload(); else alert(d.mensagem || 'Erro'); });
+      var pidU = btn2.dataset.id;
+      perfilUserDeferred(function () {
+        return fetch('/explorar/post/' + pidU + '/fixar', { method: 'DELETE', headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
+          .then(function (r) { return r.json(); });
+      }, 'A desafixar publicação…')
+        .then(function (d) { if (d && d.sucesso) location.reload(); else if (d) alert(d.mensagem || 'Erro'); });
     }
   });
 
@@ -888,11 +912,14 @@
   document.addEventListener('click', function (e) {
     var btn = e.target.closest('.btn-deletar-post');
     if (btn && confirm('Tem certeza que deseja excluir este post?')) {
-      fetch('/explorar/post/' + btn.dataset.id, { method: 'DELETE', headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
-        .then(function (r) { return r.json(); })
+      var delId = btn.dataset.id;
+      perfilUserDeferred(function () {
+        return fetch('/explorar/post/' + delId, { method: 'DELETE', headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
+          .then(function (r) { return r.json(); });
+      }, 'A apagar publicação…')
         .then(function (d) {
-          if (d.sucesso) {
-            var article = document.querySelector('article[data-post-id="' + btn.dataset.id + '"]');
+          if (d && d.sucesso) {
+            var article = document.querySelector('article[data-post-id="' + delId + '"]');
             if (article) {
               article.style.transition = 'all .3s ease';
               article.style.opacity = '0';
@@ -954,21 +981,44 @@
 
   submitRepost.addEventListener('click', function () {
     if (!repostTargetId || !repostTexto.value.trim()) return;
-    submitRepost.disabled = true;
-    submitRepost.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1.5"></i> Repostando...';
-
-    fetch('/explorar/post/' + repostTargetId + '/repostar', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-      credentials: 'same-origin',
-      body: JSON.stringify({ texto: repostTexto.value.trim() })
-    })
-    .then(function (r) { return r.json(); })
-    .then(function (data) {
-      if (data.sucesso) {
+    var rid = repostTargetId;
+    var body = JSON.stringify({ texto: repostTexto.value.trim() });
+    var busyRep = '<i class="fa-solid fa-spinner fa-spin mr-1.5"></i> <span class="airpet-inline-dots">Repostando</span>';
+    var workRep = function () {
+      return perfilUserDeferred(function () {
+        var c = perfilUserCoordinator();
+        if (c && typeof c.enqueue === 'function') {
+          return c.enqueue({
+            key: 'perfilUserRepost:' + rid,
+            group: 'perfilUserRepost',
+            priority: c.PRIORITY ? c.PRIORITY.MEDIUM : 'MEDIUM',
+            fetchFn: function (signal) {
+              return fetch('/explorar/post/' + rid + '/repostar', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                credentials: 'same-origin',
+                body: body,
+                signal: signal
+              }).then(function (r) { return r.json(); });
+            }
+          });
+        }
+        return fetch('/explorar/post/' + rid + '/repostar', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          credentials: 'same-origin',
+          body: body
+        }).then(function (r) { return r.json(); });
+      }, 'A republicar…');
+    };
+    var p = window.AIRPET_LOADING
+      ? window.AIRPET_LOADING.runLocked({ button: submitRepost, busyText: busyRep }, workRep)
+      : workRep();
+    p.then(function (data) {
+      if (data && data.sucesso) {
         repostModal.classList.add('hidden');
         document.body.style.overflow = '';
-        var article = document.querySelector('article[data-post-id="' + repostTargetId + '"]');
+        var article = document.querySelector('article[data-post-id="' + rid + '"]');
         if (article) {
           var repostBtn = article.querySelector('.btn-repost');
           if (repostBtn) {
@@ -980,17 +1030,10 @@
           }
         }
         repostTargetId = null;
-      } else {
+      } else if (data) {
         alert(data.mensagem || 'Erro ao repostar.');
       }
-      submitRepost.disabled = false;
-      submitRepost.innerHTML = '<i class="fa-solid fa-retweet mr-1.5"></i> Repostar';
-    })
-    .catch(function () {
-      alert('Erro de conexão.');
-      submitRepost.disabled = false;
-      submitRepost.innerHTML = '<i class="fa-solid fa-retweet mr-1.5"></i> Repostar';
-    });
+    }).catch(function () { alert('Erro de conexão.'); });
   });
 
   /* ── Comments Modal ── */
@@ -1021,8 +1064,10 @@
     if (window.AIRPET_modalUi) window.AIRPET_modalUi.refreshBodyScroll();
     commentsBody.innerHTML = '<div class="flex flex-col items-center justify-center py-10 text-gray-300"><i class="fa-solid fa-spinner fa-spin text-xl"></i></div>';
 
-    fetch('/explorar/post/' + postId + '/comentarios', { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
-      .then(function (r) { return r.json(); })
+    perfilUserDeferred(function () {
+      return fetch('/explorar/post/' + postId + '/comentarios', { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
+        .then(function (r) { return r.json(); });
+    }, 'A carregar comentários…')
       .then(function (data) {
         if (!data.sucesso || !data.comentarios || !data.comentarios.length) {
           commentsBody.innerHTML = '<div class="text-center py-8 px-5"><p class="text-sm text-gray-400">Nenhum comentário ainda.</p><p class="text-xs text-gray-300 mt-1">Seja o primeiro a comentar!</p></div>';
@@ -1096,15 +1141,42 @@
 
     var payload = { texto: texto };
     if (perfilReplyParentId) payload.parent_id = parseInt(perfilReplyParentId, 10);
-    fetch('/explorar/post/' + activeCommentPostId + '/comentar', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-      credentials: 'same-origin',
-      body: JSON.stringify(payload)
-    })
-    .then(function (r) { return r.json(); })
-    .then(function (data) {
-      if (data.sucesso) {
+    var body = JSON.stringify(payload);
+    var urlC = '/explorar/post/' + activeCommentPostId + '/comentar';
+    var submitBtnC = modalCommentForm.querySelector('button[type="submit"]');
+    var runInnerC = function () {
+      var c = perfilUserCoordinator();
+      if (c && typeof c.enqueue === 'function') {
+        return c.enqueue({
+          key: 'perfilUserComentar:' + activeCommentPostId,
+          group: 'perfilUserComentar',
+          priority: c.PRIORITY ? c.PRIORITY.HIGH : 'HIGH',
+          fetchFn: function (signal) {
+            return fetch(urlC, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+              credentials: 'same-origin',
+              body: body,
+              signal: signal
+            }).then(function (r) { return r.json(); });
+          }
+        });
+      }
+      return fetch(urlC, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        credentials: 'same-origin',
+        body: body
+      }).then(function (r) { return r.json(); });
+    };
+    var runC = function () {
+      return perfilUserDeferred(runInnerC, 'A enviar comentário…');
+    };
+    var pC = window.AIRPET_LOADING && submitBtnC
+      ? window.AIRPET_LOADING.runLocked({ button: submitBtnC, busyText: '<span class="airpet-inline-dots">Enviando</span>' }, runC)
+      : runC();
+    pC.then(function (data) {
+      if (data && data.sucesso) {
         clearPerfilReplyTarget();
         openComments(activeCommentPostId);
         var article = document.querySelector('article[data-post-id="' + activeCommentPostId + '"]');
@@ -1119,9 +1191,25 @@
   document.addEventListener('click', function (e) {
     var btn = e.target.closest('.btn-del-comment');
     if (btn) {
-      fetch('/explorar/comentario/' + btn.dataset.id, { method: 'DELETE', headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
-        .then(function (r) { return r.json(); })
-        .then(function (d) { if (d.sucesso && activeCommentPostId) openComments(activeCommentPostId); });
+      var cid = btn.dataset.id;
+      if (!cid) return;
+      perfilUserDeferred(function () {
+        var c = perfilUserCoordinator();
+        if (c && typeof c.enqueue === 'function') {
+          return c.enqueue({
+            key: 'perfilUserDelComment:' + cid,
+            group: 'perfilUserComentar',
+            priority: c.PRIORITY ? c.PRIORITY.HIGH : 'HIGH',
+            fetchFn: function (signal) {
+              return fetch('/explorar/comentario/' + cid, { method: 'DELETE', headers: { 'Accept': 'application/json' }, credentials: 'same-origin', signal: signal })
+                .then(function (r) { return r.json(); });
+            }
+          });
+        }
+        return fetch('/explorar/comentario/' + cid, { method: 'DELETE', headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
+          .then(function (r) { return r.json(); });
+      }, 'A apagar comentário…')
+        .then(function (d) { if (d && d.sucesso && activeCommentPostId) openComments(activeCommentPostId); });
     }
   });
 

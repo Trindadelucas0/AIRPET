@@ -710,6 +710,18 @@
   var viewedPosts = new Set();
   var explorarLayoutSeed = <%= typeof layoutSeed !== 'undefined' ? (Number(layoutSeed) || 0) : 0 %>;
 
+  function explorarDeferred(workFn, message) {
+    var L = window.AIRPET_LOADING;
+    if (L && typeof L.withDeferredOverlay === 'function') {
+      return L.withDeferredOverlay(workFn, { message: message || 'Ainda a processar…' });
+    }
+    return Promise.resolve().then(workFn);
+  }
+
+  function explorarCoordinator() {
+    return window.AIRPET_REQ_COORDINATOR || null;
+  }
+
   function syncExploreMosaicCellSize() {
     var el = document.getElementById('feedContainer');
     if (!el || !el.classList.contains('explore-mosaic-grid')) return;
@@ -1323,54 +1335,58 @@
     }
 
     if (typeof swrFetchGet === 'function') {
-      swrFetchGet({
-        key: key,
-        url: url,
-        priority: window.AIRPET_REQ_COORDINATOR && window.AIRPET_REQ_COORDINATOR.PRIORITY
-          ? window.AIRPET_REQ_COORDINATOR.PRIORITY.HIGH
-          : 'HIGH',
-        staleTimeMs: staleTimeMs,
-        cacheTimeMs: cacheTimeMs,
-        group: group,
-        onUpdate: function (data) {
+      explorarDeferred(function () {
+        return swrFetchGet({
+          key: key,
+          url: url,
+          priority: window.AIRPET_REQ_COORDINATOR && window.AIRPET_REQ_COORDINATOR.PRIORITY
+            ? window.AIRPET_REQ_COORDINATOR.PRIORITY.HIGH
+            : 'HIGH',
+          staleTimeMs: staleTimeMs,
+          cacheTimeMs: cacheTimeMs,
+          group: group,
+          onUpdate: function (data) {
+            if (commentPostId !== postId) return;
+            renderData(data);
+          }
+        }).then(function (res) {
           if (commentPostId !== postId) return;
-          renderData(data);
-        }
-      }).then(function (res) {
-        if (commentPostId !== postId) return;
-        renderData(res.data);
-      }).catch(function () {
-        if (commentPostId !== postId) return;
-        list.innerHTML = '<div class="text-center py-8"><p class="text-sm text-red-400">Erro ao carregar comentários.</p></div>';
-        maybeLoadPets();
-      });
+          renderData(res.data);
+        }).catch(function () {
+          if (commentPostId !== postId) return;
+          list.innerHTML = '<div class="text-center py-8"><p class="text-sm text-red-400">Erro ao carregar comentários.</p></div>';
+          maybeLoadPets();
+        });
+      }, 'A carregar comentários…');
       return;
     }
 
-    // fallback
-    fetch(url, {
-      headers: { 'Accept': 'application/json' },
-      credentials: 'same-origin'
-    })
-      .then(function (r) { return r.json(); })
-      .then(function (data) {
-        if (commentPostId !== postId) return;
-        renderData(data);
+    explorarDeferred(function () {
+      return fetch(url, {
+        headers: { 'Accept': 'application/json' },
+        credentials: 'same-origin'
       })
-      .catch(function () {
-        if (commentPostId !== postId) return;
-        list.innerHTML = '<div class="text-center py-8"><p class="text-sm text-red-400">Erro ao carregar comentários.</p></div>';
-        maybeLoadPets();
-      });
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          if (commentPostId !== postId) return;
+          renderData(data);
+        })
+        .catch(function () {
+          if (commentPostId !== postId) return;
+          list.innerHTML = '<div class="text-center py-8"><p class="text-sm text-red-400">Erro ao carregar comentários.</p></div>';
+          maybeLoadPets();
+        });
+    }, 'A carregar comentários…');
   }
 
   function carregarPetsProximos(postId, petsContainerOpt, petsListOpt) {
     var petsContainer = petsContainerOpt || document.getElementById('petsProximosContainer');
     var petsList = petsListOpt || document.getElementById('petsProximosList');
-    fetch('/explorar/post/' + postId + '/pets-proximos', {
-      headers: { 'Accept': 'application/json' },
-      credentials: 'same-origin'
-    })
+    explorarDeferred(function () {
+      return fetch('/explorar/post/' + postId + '/pets-proximos', {
+        headers: { 'Accept': 'application/json' },
+        credentials: 'same-origin'
+      })
     .then(function (r) { return r.json(); })
     .then(function (data) {
       var lista = data.lista || [];
@@ -1401,19 +1417,22 @@
           e.preventDefault();
           var petId = btn.getAttribute('data-pet-id');
           if (btn.getAttribute('data-seguindo') === 'true') return;
-          fetch('/explorar/pet/' + petId + '/seguir', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin' })
-            .then(function (r) { return r.json(); })
-            .then(function (d) {
-              if (d.sucesso) {
-                btn.setAttribute('data-seguindo', 'true');
-                btn.textContent = 'Seguindo';
-                btn.className = 'text-xs font-semibold px-2 py-1 rounded-full border border-gray-300 text-gray-500 cursor-default';
-              }
-            });
+          explorarDeferred(function () {
+            return fetch('/explorar/pet/' + petId + '/seguir', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin' })
+              .then(function (r) { return r.json(); })
+              .then(function (d) {
+                if (d.sucesso) {
+                  btn.setAttribute('data-seguindo', 'true');
+                  btn.textContent = 'Seguindo';
+                  btn.className = 'text-xs font-semibold px-2 py-1 rounded-full border border-gray-300 text-gray-500 cursor-default';
+                }
+              });
+          }, 'A seguir pet…');
         });
       });
     })
     .catch(function () { petsContainer.classList.add('hidden'); });
+    }, 'A carregar pets próximos…');
   }
 
   function renderComentario(c) {
@@ -1447,7 +1466,7 @@
     '</div>';
   }
 
-  function enviarComentario(postId, texto, inputEl) {
+  function enviarComentario(postId, texto, inputEl, actionBtn) {
     if (!texto) return;
     var isPetshop = String(postId || '').includes(':');
     var url = isPetshop
@@ -1456,20 +1475,60 @@
 
     var payload = { texto: texto };
     if (commentReplyParentId && !isPetshop) payload.parent_id = parseInt(commentReplyParentId, 10);
-    fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-      credentials: 'same-origin',
-      body: JSON.stringify(payload)
-    })
-    .then(function (r) { return r.json(); })
-    .then(function (data) {
-      if (!data.sucesso) { toast(data.mensagem || 'Erro ao comentar.', 'erro'); return; }
-      if (inputEl) inputEl.value = '';
-      clearCommentReplyTarget();
-      if (commentPostId === postId) carregarComentarios(postId);
-    })
-    .catch(function () { toast('Erro de conexão.', 'erro'); });
+    var body = JSON.stringify(payload);
+    var sendBtn = actionBtn;
+    if (!sendBtn && inputEl) {
+      var row = inputEl.closest('.post-comment-row');
+      if (row) sendBtn = row.querySelector('.btn-enviar-inline');
+    }
+    if (!sendBtn && inputEl) {
+      if (inputEl.id === 'commentInput') sendBtn = document.getElementById('btnEnviarComentario');
+      else if (inputEl.id === 'postDetailCommentInput') sendBtn = document.getElementById('postDetailBtnEnviar');
+    }
+
+    var runInner = function () {
+      var c = explorarCoordinator();
+      if (c && typeof c.enqueue === 'function') {
+        return c.enqueue({
+          key: 'explorarComentar:' + postId,
+          group: 'explorarComentar',
+          priority: c.PRIORITY ? c.PRIORITY.HIGH : 'HIGH',
+          fetchFn: function (signal) {
+            return fetch(url, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+              credentials: 'same-origin',
+              body: body,
+              signal: signal
+            }).then(function (r) { return r.json(); });
+          }
+        });
+      }
+      return fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        credentials: 'same-origin',
+        body: body
+      }).then(function (r) { return r.json(); });
+    };
+    var run = function () {
+      return explorarDeferred(runInner, 'A enviar comentário…');
+    };
+    var p = window.AIRPET_LOADING && sendBtn
+      ? window.AIRPET_LOADING.runLocked({
+        button: sendBtn,
+        busyText: '<span class="airpet-inline-dots">Enviando</span>'
+      }, run)
+      : run();
+    p.then(function (data) {
+      if (data && data.sucesso) {
+        if (inputEl) inputEl.value = '';
+        clearCommentReplyTarget();
+        if (commentPostId === postId) carregarComentarios(postId);
+      } else if (data && !data.sucesso) {
+        toast(data.mensagem || 'Erro ao comentar.', 'erro');
+      }
+    }).catch(function () { toast('Erro de conexão.', 'erro'); });
   }
 
   /* ──────────── Delete comment ──────────── */
@@ -1480,16 +1539,33 @@
       if (!btn) return;
       var cid = btn.getAttribute('data-comment-id');
       if (!confirm('Excluir comentário?')) return;
-      fetch('/explorar/comentario/' + cid, {
-        method: 'DELETE',
-        headers: { 'Accept': 'application/json' },
-        credentials: 'same-origin'
-      })
-      .then(function (r) { return r.json(); })
-      .then(function (data) {
-        if (data.sucesso && commentPostId) carregarComentarios(commentPostId);
-      })
-      .catch(function () {});
+      explorarDeferred(function () {
+        var c = explorarCoordinator();
+        if (c && typeof c.enqueue === 'function') {
+          return c.enqueue({
+            key: 'explorarDelComment:' + cid,
+            group: 'explorarComments',
+            priority: c.PRIORITY ? c.PRIORITY.HIGH : 'HIGH',
+            fetchFn: function (signal) {
+              return fetch('/explorar/comentario/' + cid, {
+                method: 'DELETE',
+                headers: { 'Accept': 'application/json' },
+                credentials: 'same-origin',
+                signal: signal
+              }).then(function (r) { return r.json(); });
+            }
+          });
+        }
+        return fetch('/explorar/comentario/' + cid, {
+          method: 'DELETE',
+          headers: { 'Accept': 'application/json' },
+          credentials: 'same-origin'
+        }).then(function (r) { return r.json(); });
+      }, 'A apagar comentário…')
+        .then(function (data) {
+          if (data && data.sucesso && commentPostId) carregarComentarios(commentPostId);
+        })
+        .catch(function () {});
     });
   }
   wireCommentDeletes(document.getElementById('commentList'));
@@ -1530,14 +1606,12 @@
     if (e.key === 'Enter') {
       e.preventDefault();
       var txt = this.value.trim();
-      if (txt) enviarComentario(this.getAttribute('data-post-id'), txt, this);
-      btnEnviarComentario.disabled = true;
+      if (txt) enviarComentario(this.getAttribute('data-post-id'), txt, this, btnEnviarComentario);
     }
   });
   btnEnviarComentario.addEventListener('click', function () {
     var txt = commentInput.value.trim();
-    if (txt) enviarComentario(commentInput.getAttribute('data-post-id'), txt, commentInput);
-    btnEnviarComentario.disabled = true;
+    if (txt) enviarComentario(commentInput.getAttribute('data-post-id'), txt, commentInput, btnEnviarComentario);
   });
 
   var postDetailCommentInput = document.getElementById('postDetailCommentInput');
@@ -1551,14 +1625,12 @@
       if (e.key === 'Enter') {
         e.preventDefault();
         var txt = this.value.trim();
-        if (txt) enviarComentario(this.getAttribute('data-post-id'), txt, this);
-        postDetailBtnEnviar.disabled = true;
+        if (txt) enviarComentario(this.getAttribute('data-post-id'), txt, this, postDetailBtnEnviar);
       }
     });
     postDetailBtnEnviar.addEventListener('click', function () {
       var txt = postDetailCommentInput.value.trim();
-      if (txt) enviarComentario(postDetailCommentInput.getAttribute('data-post-id'), txt, postDetailCommentInput);
-      postDetailBtnEnviar.disabled = true;
+      if (txt) enviarComentario(postDetailCommentInput.getAttribute('data-post-id'), txt, postDetailCommentInput, postDetailBtnEnviar);
     });
   }
 
@@ -1698,17 +1770,46 @@
     var postId = document.getElementById('repostPostId').value;
     var texto = document.getElementById('repostTexto').value.trim();
     if (!texto || !postId) return;
-    this.disabled = true;
-
-    fetch('/explorar/post/' + postId + '/repost', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-      credentials: 'same-origin',
-      body: JSON.stringify({ texto: texto })
-    })
-    .then(function (r) { return r.json(); })
-    .then(function (data) {
-      if (!data.sucesso) { toast(data.mensagem || 'Erro ao repostar.', 'erro'); return; }
+    var btnRep = this;
+    var body = JSON.stringify({ texto: texto });
+    var work = function () {
+      return explorarDeferred(function () {
+        var c = explorarCoordinator();
+        if (c && typeof c.enqueue === 'function') {
+          return c.enqueue({
+            key: 'explorarRepost:' + postId,
+            group: 'explorarRepost',
+            priority: c.PRIORITY ? c.PRIORITY.MEDIUM : 'MEDIUM',
+            fetchFn: function (signal) {
+              return fetch('/explorar/post/' + postId + '/repost', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                credentials: 'same-origin',
+                body: body,
+                signal: signal
+              }).then(function (r) { return r.json(); });
+            }
+          });
+        }
+        return fetch('/explorar/post/' + postId + '/repost', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          credentials: 'same-origin',
+          body: body
+        }).then(function (r) { return r.json(); });
+      }, 'A republicar…');
+    };
+    var p = window.AIRPET_LOADING
+      ? window.AIRPET_LOADING.runLocked({
+        button: btnRep,
+        busyText: '<span class="airpet-inline-dots">A republicar</span>'
+      }, work)
+      : work();
+    p.then(function (data) {
+      if (!data || !data.sucesso) {
+        toast((data && data.mensagem) || 'Erro ao repostar.', 'erro');
+        return;
+      }
       fecharModal('repostModal');
       toast('Repostado!');
       var card = document.querySelector('article[data-post-id="' + postId + '"]');
@@ -1731,8 +1832,7 @@
         var old = document.getElementById('post-' + data.removido);
         if (old) { old.classList.add('fade-out'); setTimeout(function () { if (old.parentNode) old.parentNode.removeChild(old); }, 400); }
       }
-    })
-    .catch(function () { toast('Erro de conexão.', 'erro'); });
+    }).catch(function () { toast('Erro de conexão.', 'erro'); });
   });
 
   /* ──────────── New Post ──────────── */
@@ -1917,60 +2017,63 @@
       return;
     }
     isSubmittingPost = true;
-    this.disabled = true;
-    this.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>Publicando…';
 
     var formData = new FormData();
     if (selectedFile) formData.append('foto', selectedFile);
     if (textoPayload) formData.append('texto', textoPayload);
     if (petVal) formData.append('pet_id', petVal);
 
-    fetch('/explorar/post', {
-      method: 'POST',
-      credentials: 'same-origin',
-      headers: { 'Idempotency-Key': generateIdempotencyKey() },
-      body: formData
-    })
-    .then(function (r) {
-      return r.text().then(function (text) {
-        try { return { ok: r.ok, data: JSON.parse(text) }; }
-        catch (_) { return { ok: false, data: { sucesso: false, mensagem: r.status === 401 ? 'Sessão expirada. Faça login de novo.' : 'Erro no servidor. Tente novamente.' } }; }
-      });
-    })
-    .then(function (result) {
-      var data = result.data;
-      isSubmittingPost = false;
-      btnPublicar.disabled = false;
-      btnPublicar.innerHTML = 'Publicar';
-      if (!result.ok || !data.sucesso) {
-        toast(data.mensagem || 'Erro ao publicar.', 'erro');
-        validarFormPost();
-        return;
-      }
-      recentPayloadHashes.set(hash, Date.now());
-      fecharModal('newPostModal');
-      toast('Publicado!');
-      totalPostsLocal = data.totalPosts != null ? data.totalPosts : (totalPostsLocal + 1);
-      if (data.post && postTemMidiaExplorarCliente(data.post)) {
-        var emptyState = feedContainer.querySelector('.explorar-empty-explore');
-        if (emptyState) emptyState.remove();
-        feedContainer.classList.add('explore-mosaic-grid');
-        feedContainer.insertAdjacentHTML('afterbegin', renderPostHTML(data.post));
-        syncExploreMosaicCellSize();
-        observarCardVisualizacao(feedContainer.firstElementChild);
-      }
-      if (data.removido) {
-        var old = document.getElementById('post-' + data.removido);
-        if (old) { old.classList.add('fade-out'); setTimeout(function () { if (old.parentNode) old.parentNode.removeChild(old); }, 400); }
-      }
-    })
-    .catch(function () {
-      isSubmittingPost = false;
-      toast('Erro de conexão. Verifique a internet e tente novamente.', 'erro');
-      btnPublicar.disabled = false;
-      btnPublicar.innerHTML = 'Publicar';
-      validarFormPost();
-    });
+    var busyLabel = '<i class="fa-solid fa-spinner fa-spin mr-2"></i><span class="airpet-inline-dots">Publicando</span>';
+    var work = function () {
+      return explorarDeferred(function () {
+        return fetch('/explorar/post', {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'Idempotency-Key': generateIdempotencyKey() },
+          body: formData
+        })
+          .then(function (r) {
+            return r.text().then(function (text) {
+              try { return { ok: r.ok, data: JSON.parse(text) }; }
+              catch (_) { return { ok: false, data: { sucesso: false, mensagem: r.status === 401 ? 'Sessão expirada. Faça login de novo.' : 'Erro no servidor. Tente novamente.' } }; }
+            });
+          })
+          .then(function (result) {
+            var data = result.data;
+            if (!result.ok || !data.sucesso) {
+              toast(data.mensagem || 'Erro ao publicar.', 'erro');
+              validarFormPost();
+              return result;
+            }
+            recentPayloadHashes.set(hash, Date.now());
+            fecharModal('newPostModal');
+            toast('Publicado!');
+            totalPostsLocal = data.totalPosts != null ? data.totalPosts : (totalPostsLocal + 1);
+            if (data.post && postTemMidiaExplorarCliente(data.post)) {
+              var emptyState = feedContainer.querySelector('.explorar-empty-explore');
+              if (emptyState) emptyState.remove();
+              feedContainer.classList.add('explore-mosaic-grid');
+              feedContainer.insertAdjacentHTML('afterbegin', renderPostHTML(data.post));
+              syncExploreMosaicCellSize();
+              observarCardVisualizacao(feedContainer.firstElementChild);
+            }
+            if (data.removido) {
+              var old = document.getElementById('post-' + data.removido);
+              if (old) { old.classList.add('fade-out'); setTimeout(function () { if (old.parentNode) old.parentNode.removeChild(old); }, 400); }
+            }
+            return result;
+          })
+          .catch(function () {
+            toast('Erro de conexão. Verifique a internet e tente novamente.', 'erro');
+            validarFormPost();
+            throw new Error('network');
+          });
+      }, 'A publicar…');
+    };
+    var p = window.AIRPET_LOADING
+      ? window.AIRPET_LOADING.runLocked({ button: btnPublicar, busyText: busyLabel }, work)
+      : work();
+    p.finally(function () { isSubmittingPost = false; });
   });
 
   var fabBtn = document.getElementById('fabNewPost');
@@ -1984,42 +2087,79 @@
 
   /* ──────────── Pin / Unpin ──────────── */
   function fixarPost(postId, estaFixada) {
-    fetch('/explorar/post/' + postId + '/fixar', {
-      method: estaFixada ? 'DELETE' : 'POST',
-      headers: { 'Accept': 'application/json' },
-      credentials: 'same-origin'
-    })
-    .then(function (r) { return r.json(); })
-    .then(function (data) {
-      if (!data.sucesso) { toast(data.mensagem || 'Erro.', 'erro'); return; }
-      toast(data.fixada ? 'Post fixado!' : 'Post desafixado!');
-      totalFixadasLocal += data.fixada ? 1 : -1;
-      setTimeout(function () { window.location.reload(); }, 600);
-    })
-    .catch(function () { toast('Erro de conexão.', 'erro'); });
+    explorarDeferred(function () {
+      var c = explorarCoordinator();
+      var method = estaFixada ? 'DELETE' : 'POST';
+      var url = '/explorar/post/' + postId + '/fixar';
+      if (c && typeof c.enqueue === 'function') {
+        return c.enqueue({
+          key: 'explorarFixar:' + postId + ':' + (estaFixada ? 'off' : 'on'),
+          group: 'explorarPostActions',
+          priority: c.PRIORITY ? c.PRIORITY.HIGH : 'HIGH',
+          fetchFn: function (signal) {
+            return fetch(url, {
+              method: method,
+              headers: { 'Accept': 'application/json' },
+              credentials: 'same-origin',
+              signal: signal
+            }).then(function (r) { return r.json(); });
+          }
+        });
+      }
+      return fetch(url, {
+        method: method,
+        headers: { 'Accept': 'application/json' },
+        credentials: 'same-origin'
+      }).then(function (r) { return r.json(); });
+    }, estaFixada ? 'A desafixar publicação…' : 'A fixar publicação…')
+      .then(function (data) {
+        if (!data || !data.sucesso) { toast((data && data.mensagem) || 'Erro.', 'erro'); return; }
+        toast(data.fixada ? 'Post fixado!' : 'Post desafixado!');
+        totalFixadasLocal += data.fixada ? 1 : -1;
+        setTimeout(function () { window.location.reload(); }, 600);
+      })
+      .catch(function () { toast('Erro de conexão.', 'erro'); });
   }
 
   /* ──────────── Delete Post ──────────── */
   function deletarPost(postId) {
     if (!confirm('Excluir esta publicação?')) return;
-    fetch('/explorar/post/' + postId, {
-      method: 'DELETE',
-      headers: { 'Accept': 'application/json' },
-      credentials: 'same-origin'
-    })
-    .then(function (r) { return r.json(); })
-    .then(function (data) {
-      if (!data.sucesso) { toast(data.mensagem || 'Não foi possível excluir agora. Tente novamente.', 'erro'); return; }
-      var card = document.getElementById('post-' + postId);
-      if (card) {
-        card.classList.add('fade-out');
-        setTimeout(function () { if (card.parentNode) card.parentNode.removeChild(card); }, 400);
+    explorarDeferred(function () {
+      var c = explorarCoordinator();
+      var url = '/explorar/post/' + postId;
+      if (c && typeof c.enqueue === 'function') {
+        return c.enqueue({
+          key: 'explorarDeletePost:' + postId,
+          group: 'explorarPostActions',
+          priority: c.PRIORITY ? c.PRIORITY.HIGH : 'HIGH',
+          fetchFn: function (signal) {
+            return fetch(url, {
+              method: 'DELETE',
+              headers: { 'Accept': 'application/json' },
+              credentials: 'same-origin',
+              signal: signal
+            }).then(function (r) { return r.json(); });
+          }
+        });
       }
-      totalPostsLocal = Math.max(0, totalPostsLocal - 1);
-      toast('Publicação excluída.');
-      requestClosePostDetail();
-    })
-    .catch(function () { toast('Erro de conexão. Tente novamente.', 'erro'); });
+      return fetch(url, {
+        method: 'DELETE',
+        headers: { 'Accept': 'application/json' },
+        credentials: 'same-origin'
+      }).then(function (r) { return r.json(); });
+    }, 'A apagar publicação…')
+      .then(function (data) {
+        if (!data || !data.sucesso) { toast((data && data.mensagem) || 'Não foi possível excluir agora. Tente novamente.', 'erro'); return; }
+        var card = document.getElementById('post-' + postId);
+        if (card) {
+          card.classList.add('fade-out');
+          setTimeout(function () { if (card.parentNode) card.parentNode.removeChild(card); }, 400);
+        }
+        totalPostsLocal = Math.max(0, totalPostsLocal - 1);
+        toast('Publicação excluída.');
+        requestClosePostDetail();
+      })
+      .catch(function () { toast('Erro de conexão. Tente novamente.', 'erro'); });
   }
 
   /* ──────────── Share ──────────── */
@@ -2110,36 +2250,40 @@
 
     if (typeof swrFetchGet === 'function') {
       var cEx = window.AIRPET_REQ_COORDINATOR;
-      swrFetchGet({
-        key: 'explorar:page:' + loadingPage,
-        url: '/explorar?page=' + loadingPage,
-        staleTimeMs: 30000,
-        cacheTimeMs: 480000,
-        group: 'explorarPagination',
-        priority: cEx && cEx.PRIORITY ? cEx.PRIORITY.MEDIUM : 'MEDIUM',
+      explorarDeferred(function () {
+        return swrFetchGet({
+          key: 'explorar:page:' + loadingPage,
+          url: '/explorar?page=' + loadingPage,
+          staleTimeMs: 30000,
+          cacheTimeMs: 480000,
+          group: 'explorarPagination',
+          priority: cEx && cEx.PRIORITY ? cEx.PRIORITY.MEDIUM : 'MEDIUM',
+          credentials: 'same-origin'
+        })
+          .then(function (res) {
+            var data = res && Object.prototype.hasOwnProperty.call(res, 'data') ? res.data : res;
+            applyExplorePage(data || {});
+          })
+          .catch(function () {
+            isLoading = false;
+            removeExploreSkel();
+          });
+      }, 'A carregar mais publicações…');
+      return;
+    }
+
+    explorarDeferred(function () {
+      return fetch('/explorar?page=' + loadingPage, {
+        headers: { 'Accept': 'application/json' },
         credentials: 'same-origin'
       })
-        .then(function (res) {
-          var data = res && Object.prototype.hasOwnProperty.call(res, 'data') ? res.data : res;
-          applyExplorePage(data || {});
-        })
+        .then(function (r) { return r.json(); })
+        .then(function (data) { applyExplorePage(data); })
         .catch(function () {
           isLoading = false;
           removeExploreSkel();
         });
-      return;
-    }
-
-    fetch('/explorar?page=' + loadingPage, {
-      headers: { 'Accept': 'application/json' },
-      credentials: 'same-origin'
-    })
-      .then(function (r) { return r.json(); })
-      .then(function (data) { applyExplorePage(data); })
-      .catch(function () {
-        isLoading = false;
-        removeExploreSkel();
-      });
+    }, 'A carregar mais publicações…');
   }
 
   if ('IntersectionObserver' in window) {
@@ -2366,32 +2510,36 @@
     btn.addEventListener('click', function() {
       var userId = this.getAttribute('data-user-id');
       var el = this;
-      fetch('/explorar/seguir/' + userId, { method: 'POST', headers: { 'Content-Type': 'application/json' } })
-        .then(function(r) { return r.json(); })
-        .then(function(d) {
-          if (d.sucesso) {
-            el.textContent = 'Seguindo';
-            el.classList.remove('border-primary-500', 'text-primary-500', 'bg-white', 'hover:bg-primary-50', 'hover:text-primary-600');
-            el.classList.add('bg-primary-500', 'text-white', 'hover:bg-primary-600');
-            el.disabled = true;
-          }
-        });
+      explorarDeferred(function () {
+        return fetch('/explorar/seguir/' + userId, { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin' })
+          .then(function(r) { return r.json(); })
+          .then(function(d) {
+            if (d.sucesso) {
+              el.textContent = 'Seguindo';
+              el.classList.remove('border-primary-500', 'text-primary-500', 'bg-white', 'hover:bg-primary-50', 'hover:text-primary-600');
+              el.classList.add('bg-primary-500', 'text-white', 'hover:bg-primary-600');
+              el.disabled = true;
+            }
+          });
+      }, 'A seguir utilizador…');
     });
   });
   document.querySelectorAll('.btn-seguir-pet-sidebar').forEach(function(btn) {
     btn.addEventListener('click', function() {
       var petId = this.getAttribute('data-pet-id');
       var el = this;
-      fetch('/explorar/pet/' + petId + '/seguir', { method: 'POST', headers: { 'Content-Type': 'application/json' } })
-        .then(function(r) { return r.json(); })
-        .then(function(d) {
-          if (d.sucesso) {
-            el.textContent = 'Seguindo';
-            el.classList.remove('border-primary-500', 'text-primary-500', 'hover:bg-primary-500', 'hover:text-white');
-            el.classList.add('bg-primary-500', 'text-white', 'border-primary-500');
-            el.disabled = true;
-          }
-        });
+      explorarDeferred(function () {
+        return fetch('/explorar/pet/' + petId + '/seguir', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin' })
+          .then(function(r) { return r.json(); })
+          .then(function(d) {
+            if (d.sucesso) {
+              el.textContent = 'Seguindo';
+              el.classList.remove('border-primary-500', 'text-primary-500', 'hover:bg-primary-500', 'hover:text-white');
+              el.classList.add('bg-primary-500', 'text-white', 'border-primary-500');
+              el.disabled = true;
+            }
+          });
+      }, 'A seguir pet…');
     });
   });
 

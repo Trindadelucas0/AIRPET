@@ -188,6 +188,14 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
 <script>
 (function () {
+  function adminMapaPontoDeferred(workFn, message) {
+    var L = window.AIRPET_LOADING;
+    if (L && typeof L.withDeferredOverlay === 'function') {
+      return L.withDeferredOverlay(workFn, { message: message || 'Ainda a processar…' });
+    }
+    return Promise.resolve().then(workFn);
+  }
+
   var map = L.map('adminMap', { zoomControl: true, tap: true }).setView([-15.78, -47.93], 5);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OSM', maxZoom: 19 }).addTo(map);
 
@@ -237,27 +245,30 @@
     if (!q) return;
     resultadosDiv.innerHTML = '<div class="px-4 py-3 text-sm text-gray-400"><i class="fa-solid fa-spinner fa-spin mr-2"></i>Buscando...</div>';
     resultadosDiv.classList.remove('hidden');
-    fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&q=' + encodeURIComponent(q) + '&limit=5&countrycodes=br&accept-language=pt-BR')
-      .then(function (r) { return r.json(); })
-      .then(function (res) {
-        resultadosDiv.innerHTML = '';
-        if (!res || !res.length) { resultadosDiv.innerHTML = '<div class="px-4 py-3 text-sm text-gray-400">Sem resultados</div>'; return; }
-        res.forEach(function (r) {
-          var item = document.createElement('div');
-          item.className = 'px-3 py-2.5 hover:bg-orange-50 cursor-pointer text-sm text-gray-700 transition-colors';
-          item.innerHTML = '<i class="fa-solid fa-location-dot text-primary-500 mr-2"></i>' + r.display_name;
-          item.onclick = function () {
-            var ll = L.latLng(parseFloat(r.lat), parseFloat(r.lon));
-            map.setView(ll, 17);
-            placeMarker(ll);
-            document.getElementById('pontoEndereco').value = r.display_name;
-            document.getElementById('enderecoStatus').textContent = '(busca)';
-            resultadosDiv.classList.add('hidden');
-            buscaInput.value = '';
-          };
-          resultadosDiv.appendChild(item);
-        });
-      }).catch(function () { resultadosDiv.innerHTML = '<div class="px-4 py-3 text-sm text-red-400">Erro</div>'; });
+    adminMapaPontoDeferred(function () {
+      return fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&q=' + encodeURIComponent(q) + '&limit=5&countrycodes=br&accept-language=pt-BR')
+        .then(function (r) { return r.json(); })
+        .then(function (res) {
+          resultadosDiv.innerHTML = '';
+          if (!res || !res.length) { resultadosDiv.innerHTML = '<div class="px-4 py-3 text-sm text-gray-400">Sem resultados</div>'; return; }
+          res.forEach(function (r) {
+            var item = document.createElement('div');
+            item.className = 'px-3 py-2.5 hover:bg-orange-50 cursor-pointer text-sm text-gray-700 transition-colors';
+            item.innerHTML = '<i class="fa-solid fa-location-dot text-primary-500 mr-2"></i>' + r.display_name;
+            item.onclick = function () {
+              var ll = L.latLng(parseFloat(r.lat), parseFloat(r.lon));
+              map.setView(ll, 17);
+              placeMarker(ll);
+              document.getElementById('pontoEndereco').value = r.display_name;
+              document.getElementById('enderecoStatus').textContent = '(busca)';
+              resultadosDiv.classList.add('hidden');
+              buscaInput.value = '';
+            };
+            resultadosDiv.appendChild(item);
+          });
+        })
+        .catch(function () { resultadosDiv.innerHTML = '<div class="px-4 py-3 text-sm text-red-400">Erro</div>'; });
+    }, 'A buscar endereço…');
   }
 
   document.getElementById('btnBuscar').addEventListener('click', buscarEndereco);

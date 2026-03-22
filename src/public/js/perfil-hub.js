@@ -64,8 +64,14 @@
         fd.append('foto_perfil', new File([fotoBlob], 'foto.jpg', { type: 'image/jpeg' }));
         fd.append('return_to', '/perfil');
         var work = function () {
-          return fetch('/perfil?_method=PUT', { method: 'POST', body: fd, headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
-            .then(function (r) { return r.json(); });
+          var inner = function () {
+            return fetch('/perfil?_method=PUT', { method: 'POST', body: fd, headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
+              .then(function (r) { return r.json(); });
+          };
+          if (window.AIRPET_LOADING && typeof window.AIRPET_LOADING.withDeferredOverlay === 'function') {
+            return window.AIRPET_LOADING.withDeferredOverlay(inner, { message: 'A guardar foto de perfil…' });
+          }
+          return inner();
         };
         var chain;
         if (window.AIRPET_LOADING && typeof window.AIRPET_LOADING.runLocked === 'function') {
@@ -144,8 +150,14 @@
         fd.append('foto_capa', new File([capaBlob], 'capa.jpg', { type: 'image/jpeg' }));
         fd.append('return_to', '/perfil');
         var workCapa = function () {
-          return fetch('/perfil?_method=PUT', { method: 'POST', body: fd, headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
-            .then(function (r) { return r.json(); });
+          var innerCapa = function () {
+            return fetch('/perfil?_method=PUT', { method: 'POST', body: fd, headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
+              .then(function (r) { return r.json(); });
+          };
+          if (window.AIRPET_LOADING && typeof window.AIRPET_LOADING.withDeferredOverlay === 'function') {
+            return window.AIRPET_LOADING.withDeferredOverlay(innerCapa, { message: 'A guardar capa…' });
+          }
+          return innerCapa();
         };
         var chainCapa;
         if (window.AIRPET_LOADING && typeof window.AIRPET_LOADING.runLocked === 'function') {

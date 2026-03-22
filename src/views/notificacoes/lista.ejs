@@ -359,24 +359,30 @@
       }).then(function (r) { return safeParseResponse(r); });
     }
 
-    Promise.resolve(p).then(function (data) {
-      // Se backend retornar sucesso=false, não mexe no UI.
-      if (data && typeof data.sucesso !== 'undefined' && data.sucesso === false) return;
+    var doMarcar = function () {
+      return Promise.resolve(p).then(function (data) {
+        if (data && typeof data.sucesso !== 'undefined' && data.sucesso === false) return;
 
-      var card = document.querySelector('[data-notif-id="' + id + '"]');
-      if (card) {
-        var link = card.querySelector('a');
-        if (link) {
-          link.classList.remove('bg-primary-50/40', 'border-primary-100/50');
-          link.classList.add('bg-white', 'border-gray-100/80');
+        var card = document.querySelector('[data-notif-id="' + id + '"]');
+        if (card) {
+          var link = card.querySelector('a');
+          if (link) {
+            link.classList.remove('bg-primary-50/40', 'border-primary-100/50');
+            link.classList.add('bg-white', 'border-gray-100/80');
+          }
+          var pEl = card.querySelector('p.font-medium');
+          if (pEl) pEl.classList.remove('font-medium');
+          var dot = card.querySelector('[data-dot="' + id + '"]');
+          if (dot) dot.remove();
         }
-        var p = card.querySelector('p.font-medium');
-        if (p) p.classList.remove('font-medium');
-        var dot = card.querySelector('[data-dot="' + id + '"]');
-        if (dot) dot.remove();
-      }
-      atualizarBadgeGlobal();
-    }).catch(function () {});
+        atualizarBadgeGlobal();
+      });
+    };
+    if (window.AIRPET_LOADING && typeof window.AIRPET_LOADING.withDeferredOverlay === 'function') {
+      window.AIRPET_LOADING.withDeferredOverlay(doMarcar, { message: 'A marcar como lida…' }).catch(function () {});
+    } else {
+      doMarcar().catch(function () {});
+    }
   };
 
   window.marcarLidaNav = function (id, event) {
@@ -415,10 +421,17 @@
       }).then(function (r) { return safeParseResponse(r); });
     }
 
-    Promise.resolve(p).then(function (data) {
-      if (data && typeof data.sucesso !== 'undefined' && data.sucesso === false) return;
-      atualizarBadgeGlobal();
-    }).catch(function () {});
+    var doMarcarNav = function () {
+      return Promise.resolve(p).then(function (data) {
+        if (data && typeof data.sucesso !== 'undefined' && data.sucesso === false) return;
+        atualizarBadgeGlobal();
+      });
+    };
+    if (window.AIRPET_LOADING && typeof window.AIRPET_LOADING.withDeferredOverlay === 'function') {
+      window.AIRPET_LOADING.withDeferredOverlay(doMarcarNav, { message: 'A marcar como lida…' }).catch(function () {});
+    } else {
+      doMarcarNav().catch(function () {});
+    }
   };
 
   var btnMarcarTodas = document.getElementById('btnMarcarTodasLidas');
@@ -443,7 +456,7 @@
         }).then(function (r) { return safeParseResponse(r); });
       };
 
-      var work = function () {
+      var workInner = function () {
         if (coordinator && coordinator.enqueue) {
           return coordinator.enqueue({
             key: key,
@@ -457,6 +470,12 @@
           headers: { 'Accept': 'application/json' },
           credentials: 'same-origin'
         }).then(function (r) { return safeParseResponse(r); });
+      };
+      var work = function () {
+        if (window.AIRPET_LOADING && typeof window.AIRPET_LOADING.withDeferredOverlay === 'function') {
+          return window.AIRPET_LOADING.withDeferredOverlay(workInner, { message: 'A marcar todas como lidas…' });
+        }
+        return workInner();
       };
 
       var chain = window.AIRPET_LOADING && typeof window.AIRPET_LOADING.runLocked === 'function'

@@ -403,6 +403,17 @@
   var myUserId = <%= typeof usuario !== 'undefined' && usuario ? usuario.id : 'null' %>;
   var toastWrap = null;
 
+  function petProfileDeferred(workFn, message) {
+    var L = window.AIRPET_LOADING;
+    if (L && typeof L.withDeferredOverlay === 'function') {
+      return L.withDeferredOverlay(workFn, { message: message || 'Ainda a processar…' });
+    }
+    return Promise.resolve().then(workFn);
+  }
+  function petProfileCoordinator() {
+    return window.AIRPET_REQ_COORDINATOR || null;
+  }
+
   function escapeHtmlPet(str) {
     if (!str) return '';
     var div = document.createElement('div');
@@ -445,19 +456,20 @@
       var following = btnFollowPet.dataset.following === 'true';
       var method = following ? 'DELETE' : 'POST';
       btnFollowPet.disabled = true;
-      fetch('/explorar/pet/' + petId + '/seguir', { method: method, headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
-        .then(function (r) { return r.json(); })
-        .then(function (data) {
-          if (data.sucesso) {
-            btnFollowPet.dataset.following = data.seguindo ? 'true' : 'false';
-            btnFollowPet.querySelector('span').textContent = data.seguindo ? 'Seguindo' : 'Seguir';
-            btnFollowPet.className = 'follow-btn flex items-center gap-2 px-5 py-2 rounded-full text-sm font-bold ' +
-              (data.seguindo ? 'bg-white border border-gray-300 text-gray-800 hover:border-red-300 hover:bg-red-50 hover:text-red-600' : 'bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-lg shadow-primary-500/20');
-            if (data.totalSeguidores !== undefined) document.getElementById('seguidoresCount').textContent = data.totalSeguidores;
-          }
-          btnFollowPet.disabled = false;
-        })
-        .catch(function () { btnFollowPet.disabled = false; });
+      petProfileDeferred(function () {
+        return fetch('/explorar/pet/' + petId + '/seguir', { method: method, headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
+          .then(function (r) { return r.json(); })
+          .then(function (data) {
+            if (data.sucesso) {
+              btnFollowPet.dataset.following = data.seguindo ? 'true' : 'false';
+              btnFollowPet.querySelector('span').textContent = data.seguindo ? 'Seguindo' : 'Seguir';
+              btnFollowPet.className = 'follow-btn flex items-center gap-2 px-5 py-2 rounded-full text-sm font-bold ' +
+                (data.seguindo ? 'bg-white border border-gray-300 text-gray-800 hover:border-red-300 hover:bg-red-50 hover:text-red-600' : 'bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-lg shadow-primary-500/20');
+              if (data.totalSeguidores !== undefined) document.getElementById('seguidoresCount').textContent = data.totalSeguidores;
+            }
+          });
+      }, following ? 'A deixar de seguir…' : 'A seguir pet…')
+        .finally(function () { btnFollowPet.disabled = false; });
     });
   }
 
@@ -497,27 +509,31 @@
       fd.append('foto_capa', file);
       btnEditarCapaPet.disabled = true;
       btnEditarCapaPet.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i>Enviando';
-      fetch('/explorar/pet/' + petId + '/capa', {
-        method: 'POST',
-        credentials: 'same-origin',
-        body: fd
-      })
-      .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
-      .then(function (result) {
-        btnEditarCapaPet.disabled = false;
-        btnEditarCapaPet.innerHTML = '<i class="fa-solid fa-camera mr-1"></i>Editar capa';
-        if (!result.ok || !result.data.sucesso) {
-          toastPetshop((result.data && result.data.mensagem) || 'Nao foi possivel atualizar capa.', 'error');
-          return;
-        }
-        toastPetshop('Capa atualizada com sucesso.', 'success');
-        window.location.reload();
-      })
-      .catch(function () {
-        btnEditarCapaPet.disabled = false;
-        btnEditarCapaPet.innerHTML = '<i class="fa-solid fa-camera mr-1"></i>Editar capa';
-        toastPetshop('Erro de conexao ao atualizar capa.', 'error');
-      });
+      petProfileDeferred(function () {
+        return fetch('/explorar/pet/' + petId + '/capa', {
+          method: 'POST',
+          credentials: 'same-origin',
+          body: fd
+        })
+          .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
+          .then(function (result) {
+            if (!result.ok || !result.data.sucesso) {
+              toastPetshop((result.data && result.data.mensagem) || 'Nao foi possivel atualizar capa.', 'error');
+              return result;
+            }
+            toastPetshop('Capa atualizada com sucesso.', 'success');
+            window.location.reload();
+            return result;
+          })
+          .catch(function () {
+            toastPetshop('Erro de conexao ao atualizar capa.', 'error');
+            throw new Error('network');
+          });
+      }, 'A enviar capa…')
+        .finally(function () {
+          btnEditarCapaPet.disabled = false;
+          btnEditarCapaPet.innerHTML = '<i class="fa-solid fa-camera mr-1"></i>Editar capa';
+        });
     });
   }
 
@@ -526,26 +542,28 @@
       var petshopId = btn.getAttribute('data-petshop-id');
       if (!petshopId) return;
       btn.disabled = true;
-      fetch('/explorar/pet/' + petId + '/petshops/' + petshopId, {
-        method: 'DELETE',
-        headers: { 'Accept': 'application/json' },
-        credentials: 'same-origin'
-      })
-      .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
-      .then(function (result) {
-        if (!result.ok || !result.data.sucesso) {
-          btn.disabled = false;
-          toastPetshop(result.data && result.data.mensagem ? result.data.mensagem : 'Nao foi possivel desvincular.', 'error');
-          return;
-        }
-        var row = btn.closest('[data-linked-petshop-id]');
-        if (row) row.remove();
-        toastPetshop('Petshop desvinculado.', 'success');
-      })
-      .catch(function () {
-        btn.disabled = false;
-        toastPetshop('Erro de conexao ao desvincular.', 'error');
-      });
+      petProfileDeferred(function () {
+        return fetch('/explorar/pet/' + petId + '/petshops/' + petshopId, {
+          method: 'DELETE',
+          headers: { 'Accept': 'application/json' },
+          credentials: 'same-origin'
+        })
+          .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
+          .then(function (result) {
+            if (!result.ok || !result.data.sucesso) {
+              toastPetshop(result.data && result.data.mensagem ? result.data.mensagem : 'Nao foi possivel desvincular.', 'error');
+              return result;
+            }
+            var row = btn.closest('[data-linked-petshop-id]');
+            if (row) row.remove();
+            toastPetshop('Petshop desvinculado.', 'success');
+            return result;
+          })
+          .catch(function () {
+            toastPetshop('Erro de conexao ao desvincular.', 'error');
+            throw new Error('network');
+          });
+      }, 'A desvincular petshop…').finally(function () { btn.disabled = false; });
     });
   });
 
@@ -554,28 +572,30 @@
       var petshopId = btn.getAttribute('data-petshop-id');
       if (!petshopId) return;
       btn.disabled = true;
-      fetch('/petshops/' + petshopId + '/seguir-json', {
-        method: 'POST',
-        headers: { 'Accept': 'application/json' },
-        credentials: 'same-origin'
-      })
-      .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
-      .then(function (result) {
-        btn.disabled = false;
-        if (!result.ok || !result.data.sucesso) {
-          toastPetshop(result.data && result.data.mensagem ? result.data.mensagem : 'Nao foi possivel atualizar.', 'error');
-          return;
-        }
-        var seguindo = !!result.data.seguindo;
-        btn.textContent = seguindo ? 'Seguindo' : 'Seguir';
-        btn.className = 'btn-toggle-follow-petshop btn-soft text-xs px-3 py-1.5 rounded-xl border font-semibold ' +
-          (seguindo ? 'border-gray-300 bg-white text-gray-600' : 'border-primary-500 bg-white text-primary-600');
-        toastPetshop(seguindo ? 'Agora voce segue este petshop.' : 'Voce deixou de seguir este petshop.', 'success');
-      })
-      .catch(function () {
-        btn.disabled = false;
-        toastPetshop('Erro de conexao ao atualizar seguimento.', 'error');
-      });
+      petProfileDeferred(function () {
+        return fetch('/petshops/' + petshopId + '/seguir-json', {
+          method: 'POST',
+          headers: { 'Accept': 'application/json' },
+          credentials: 'same-origin'
+        })
+          .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
+          .then(function (result) {
+            if (!result.ok || !result.data.sucesso) {
+              toastPetshop(result.data && result.data.mensagem ? result.data.mensagem : 'Nao foi possivel atualizar.', 'error');
+              return result;
+            }
+            var seguindo = !!result.data.seguindo;
+            btn.textContent = seguindo ? 'Seguindo' : 'Seguir';
+            btn.className = 'btn-toggle-follow-petshop btn-soft text-xs px-3 py-1.5 rounded-xl border font-semibold ' +
+              (seguindo ? 'border-gray-300 bg-white text-gray-600' : 'border-primary-500 bg-white text-primary-600');
+            toastPetshop(seguindo ? 'Agora voce segue este petshop.' : 'Voce deixou de seguir este petshop.', 'success');
+            return result;
+          })
+          .catch(function () {
+            toastPetshop('Erro de conexao ao atualizar seguimento.', 'error');
+            throw new Error('network');
+          });
+      }, 'A atualizar seguimento ao petshop…').finally(function () { btn.disabled = false; });
     });
   });
 
@@ -590,9 +610,11 @@
     btn.classList.toggle('text-gray-500', liked);
     if (!liked) btn.classList.add('heart-pop');
     setTimeout(function () { btn.classList.remove('heart-pop'); }, 500);
-    fetch('/explorar/post/' + postId + '/curtir', { method: method, headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
-      .then(function (r) { return r.json(); })
-      .then(function (data) { if (data.sucesso && countEl) countEl.textContent = data.total || ''; });
+    petProfileDeferred(function () {
+      return fetch('/explorar/post/' + postId + '/curtir', { method: method, headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
+        .then(function (r) { return r.json(); })
+        .then(function (data) { if (data.sucesso && countEl) countEl.textContent = data.total || ''; });
+    }, liked ? 'A remover gosto…' : 'A registar gosto…');
   }
   document.addEventListener('click', function (e) {
     var btn = e.target.closest('.btn-like');
@@ -635,27 +657,29 @@
     commentsModal.classList.remove('hidden');
     if (window.AIRPET_modalUi) window.AIRPET_modalUi.refreshBodyScroll();
     commentsBody.innerHTML = '<div class="flex flex-col items-center justify-center py-10 text-gray-300"><i class="fa-solid fa-spinner fa-spin text-xl"></i></div>';
-    fetch('/explorar/post/' + postId + '/comentarios', { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
-      .then(function (r) { return r.json(); })
-      .then(function (data) {
-        var list = (data && data.comentarios) ? data.comentarios : [];
-        if (!list.length) {
-          commentsBody.innerHTML = '<div class="text-center py-8 px-5"><p class="text-sm text-gray-400">Nenhum comentário ainda.</p></div>';
-          return;
-        }
-        if (window.AIRPET_commentRender && window.AIRPET_commentRender.renderList) {
-          commentsBody.innerHTML = window.AIRPET_commentRender.renderList(list, {
-            meuId: myUserId,
-            escapeHtml: escapeHtmlPet,
-            renderMencoes: renderMencoesPet,
-            tempoRelativo: tempoRelativo,
-            useDataTimeAttr: false,
-            forceDeleteButton: true,
-            deleteDataAttr: 'data-id',
-            allowReply: !!myUserId
-          });
-        }
-      });
+    petProfileDeferred(function () {
+      return fetch('/explorar/post/' + postId + '/comentarios', { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          var list = (data && data.comentarios) ? data.comentarios : [];
+          if (!list.length) {
+            commentsBody.innerHTML = '<div class="text-center py-8 px-5"><p class="text-sm text-gray-400">Nenhum comentário ainda.</p></div>';
+            return;
+          }
+          if (window.AIRPET_commentRender && window.AIRPET_commentRender.renderList) {
+            commentsBody.innerHTML = window.AIRPET_commentRender.renderList(list, {
+              meuId: myUserId,
+              escapeHtml: escapeHtmlPet,
+              renderMencoes: renderMencoesPet,
+              tempoRelativo: tempoRelativo,
+              useDataTimeAttr: false,
+              forceDeleteButton: true,
+              deleteDataAttr: 'data-id',
+              allowReply: !!myUserId
+            });
+          }
+        });
+    }, 'A carregar comentários…');
   }
   function closeComments() {
     commentsModal.classList.add('hidden');
@@ -677,15 +701,42 @@
     modalCommentInput.value = '';
     var payload = { texto: texto };
     if (perfilPetReplyParentId) payload.parent_id = parseInt(perfilPetReplyParentId, 10);
-    fetch('/explorar/post/' + currentPostId + '/comentar', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-      credentials: 'same-origin',
-      body: JSON.stringify(payload)
-    })
-    .then(function (r) { return r.json(); })
-    .then(function (data) {
-      if (data.sucesso) {
+    var body = JSON.stringify(payload);
+    var url = '/explorar/post/' + currentPostId + '/comentar';
+    var submitBtn = this.querySelector('button[type="submit"]');
+    var runInner = function () {
+      var c = petProfileCoordinator();
+      if (c && typeof c.enqueue === 'function') {
+        return c.enqueue({
+          key: 'perfilPetComentar:' + currentPostId,
+          group: 'perfilPetComentar',
+          priority: c.PRIORITY ? c.PRIORITY.HIGH : 'HIGH',
+          fetchFn: function (signal) {
+            return fetch(url, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+              credentials: 'same-origin',
+              body: body,
+              signal: signal
+            }).then(function (r) { return r.json(); });
+          }
+        });
+      }
+      return fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        credentials: 'same-origin',
+        body: body
+      }).then(function (r) { return r.json(); });
+    };
+    var run = function () {
+      return petProfileDeferred(runInner, 'A enviar comentário…');
+    };
+    var p = window.AIRPET_LOADING && submitBtn
+      ? window.AIRPET_LOADING.runLocked({ button: submitBtn, busyText: '<span class="airpet-inline-dots">Enviando</span>' }, run)
+      : run();
+    p.then(function (data) {
+      if (data && data.sucesso) {
         clearPerfilPetReplyTarget();
         openComments(currentPostId);
       }
@@ -707,23 +758,57 @@
     var cid = btn.getAttribute('data-id');
     if (!cid || !currentPostId) return;
     if (!confirm('Excluir comentário?')) return;
-    fetch('/explorar/comentario/' + cid, { method: 'DELETE', headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
-      .then(function (r) { return r.json(); })
-      .then(function (d) { if (d.sucesso) openComments(currentPostId); });
+    petProfileDeferred(function () {
+      var c = petProfileCoordinator();
+      if (c && typeof c.enqueue === 'function') {
+        return c.enqueue({
+          key: 'perfilPetDelComment:' + cid,
+          group: 'perfilPetComentar',
+          priority: c.PRIORITY ? c.PRIORITY.HIGH : 'HIGH',
+          fetchFn: function (signal) {
+            return fetch('/explorar/comentario/' + cid, { method: 'DELETE', headers: { 'Accept': 'application/json' }, credentials: 'same-origin', signal: signal })
+              .then(function (r) { return r.json(); });
+          }
+        });
+      }
+      return fetch('/explorar/comentario/' + cid, { method: 'DELETE', headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
+        .then(function (r) { return r.json(); });
+    }, 'A apagar comentário…')
+      .then(function (d) { if (d && d.sucesso) openComments(currentPostId); });
   });
 
   document.querySelectorAll('.btn-repost').forEach(function (btn) {
     btn.addEventListener('click', function () {
       if (btn.dataset.reposted === 'true') return;
       if (!confirm('Repostar esta publicação?')) return;
-      fetch('/explorar/post/' + btn.dataset.postId + '/repost', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        credentials: 'same-origin',
-        body: JSON.stringify({ texto: 'Repostado' })
-      })
-      .then(function (r) { return r.json(); })
-      .then(function (data) { if (data.sucesso) location.reload(); });
+      var pid = btn.dataset.postId;
+      var repBody = JSON.stringify({ texto: 'Repostado' });
+      petProfileDeferred(function () {
+        var c = petProfileCoordinator();
+        if (c && typeof c.enqueue === 'function') {
+          return c.enqueue({
+            key: 'perfilPetRepost:' + pid,
+            group: 'perfilPetRepost',
+            priority: c.PRIORITY ? c.PRIORITY.MEDIUM : 'MEDIUM',
+            fetchFn: function (signal) {
+              return fetch('/explorar/post/' + pid + '/repost', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                credentials: 'same-origin',
+                body: repBody,
+                signal: signal
+              }).then(function (r) { return r.json(); });
+            }
+          });
+        }
+        return fetch('/explorar/post/' + pid + '/repost', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          credentials: 'same-origin',
+          body: repBody
+        }).then(function (r) { return r.json(); });
+      }, 'A republicar…')
+        .then(function (data) { if (data && data.sucesso) location.reload(); });
     });
   });
 
@@ -736,8 +821,10 @@
     listaSegTitulo.textContent = tipo === 'seguidores' ? 'Seguidores' : 'Seguindo';
     listaSegBody.innerHTML = '<div class="text-center py-8 text-gray-400"><i class="fa-solid fa-spinner fa-spin text-xl"></i></div>';
     listaSegModal.classList.remove('hidden');
-    fetch(url, { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
-      .then(function (r) { return r.json(); })
+    petProfileDeferred(function () {
+      return fetch(url, { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
+        .then(function (r) { return r.json(); });
+    }, 'A carregar lista…')
       .then(function (data) {
         var lista = data.lista || [];
         if (lista.length === 0) {
@@ -761,19 +848,23 @@
                 var uid = btn.dataset.usuarioId;
                 if (!uid || !confirm('Remover este seguidor? Ele deixará de seguir o perfil deste pet.')) return;
                 btn.disabled = true;
-                fetch('/explorar/pet/' + petId + '/seguidor/' + uid, { method: 'DELETE', headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
-                  .then(function (r) { return r.json(); })
-                  .then(function (data) {
-                    if (data.sucesso) {
-                      var row = btn.closest('[data-seguidor-id]');
-                      if (row) row.remove();
-                      if (data.totalSeguidores !== undefined) {
-                        var el = document.getElementById('seguidoresCount');
-                        if (el) el.textContent = data.totalSeguidores;
+                petProfileDeferred(function () {
+                  return fetch('/explorar/pet/' + petId + '/seguidor/' + uid, { method: 'DELETE', headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
+                    .then(function (r) { return r.json(); })
+                    .then(function (data) {
+                      if (data.sucesso) {
+                        var row = btn.closest('[data-seguidor-id]');
+                        if (row) row.remove();
+                        if (data.totalSeguidores !== undefined) {
+                          var el = document.getElementById('seguidoresCount');
+                          if (el) el.textContent = data.totalSeguidores;
+                        }
                       }
-                    } else {
-                      btn.disabled = false;
-                    }
+                      return data;
+                    });
+                }, 'A remover seguidor…')
+                  .then(function (data) {
+                    if (!data || !data.sucesso) btn.disabled = false;
                   })
                   .catch(function () { btn.disabled = false; });
               });

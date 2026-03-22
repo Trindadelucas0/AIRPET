@@ -121,15 +121,26 @@
   var tagCode = '${tag.tag_code}';
 
   function enviarLocalizacao(lat, lng, manual) {
-    fetch('/tag/' + tagCode + '/localizacao', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        latitude: lat,
-        longitude: lng,
-        tipo: manual ? 'encontrador_manual' : 'encontrador_auto'
-      })
-    }).catch(function() {});
+    var doFetch = function () {
+      return fetch('/tag/' + tagCode + '/localizacao', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({
+          latitude: lat,
+          longitude: lng,
+          tipo: manual ? 'encontrador_manual' : 'encontrador_auto'
+        })
+      });
+    };
+    if (manual) {
+      var L = window.AIRPET_LOADING;
+      if (L && typeof L.withDeferredOverlay === 'function') {
+        L.withDeferredOverlay(doFetch, { message: 'A enviar localização…' }).catch(function () {});
+        return;
+      }
+    }
+    doFetch().catch(function () {});
   }
 
   if (navigator.geolocation) {

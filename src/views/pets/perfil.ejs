@@ -610,16 +610,25 @@
 function enviarLocalizacao() {
   if (!navigator.geolocation) { alert('Geolocalizacao nao suportada'); return; }
   navigator.geolocation.getCurrentPosition(function (pos) {
-    fetch('/api/localizacao', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        pet_id: '<%= pet.id %>',
-        latitude: pos.coords.latitude,
-        longitude: pos.coords.longitude,
-        origem: 'encontrado'
-      })
-    }).then(function () {
+    var body = JSON.stringify({
+      pet_id: '<%= pet.id %>',
+      latitude: pos.coords.latitude,
+      longitude: pos.coords.longitude,
+      origem: 'encontrado'
+    });
+    var run = function () {
+      return fetch('/api/localizacao', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: body
+      });
+    };
+    var L = window.AIRPET_LOADING;
+    var p = L && typeof L.withDeferredOverlay === 'function'
+      ? L.withDeferredOverlay(run, { message: 'A enviar localização…' })
+      : run();
+    p.then(function () {
       alert('Localizacao enviada! Obrigado por ajudar.');
     }).catch(function () {
       alert('Erro ao enviar. Tente novamente.');

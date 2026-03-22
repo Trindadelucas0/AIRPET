@@ -180,6 +180,14 @@
 
   var marker = null;
 
+  function partnerCadastroDeferred(workFn, message) {
+    var L = window.AIRPET_LOADING;
+    if (L && typeof L.withDeferredOverlay === 'function') {
+      return L.withDeferredOverlay(workFn, { message: message || 'Ainda a processar…' });
+    }
+    return Promise.resolve().then(workFn);
+  }
+
   function setError(msg) {
     if (!msg) {
       locationError.classList.add('hidden');
@@ -243,8 +251,11 @@
     setError('');
     try {
       var url = 'https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&q=' + encodeURIComponent(query);
-      var res = await fetch(url, { headers: { 'Accept': 'application/json' } });
-      var data = await res.json();
+      var data = await partnerCadastroDeferred(function () {
+        return fetch(url, { headers: { 'Accept': 'application/json' } }).then(function (res) {
+          return res.json();
+        });
+      }, 'A localizar endereço…');
       if (!Array.isArray(data) || !data.length) {
         setError('Não encontramos esse endereço. Ajuste os dados e tente novamente.');
         setStatus('');

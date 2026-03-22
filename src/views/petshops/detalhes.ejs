@@ -203,6 +203,14 @@
   var prevBodyOverflow = '';
   var lastFocusEl = null;
 
+  function petshopDetalhesDeferred(workFn, message) {
+    var L = window.AIRPET_LOADING;
+    if (L && typeof L.withDeferredOverlay === 'function') {
+      return L.withDeferredOverlay(workFn, { message: message || 'Ainda a processar…' });
+    }
+    return Promise.resolve().then(workFn);
+  }
+
   function openModal() {
     if (!modal) return;
     lastFocusEl = document.activeElement;
@@ -254,31 +262,37 @@
       setToast('Já existe solicitação pendente para esse pet.', true);
       return;
     }
-    btnSubmit.disabled = true;
-    btnSubmit.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Enviando';
-    fetch('/petshops/' + petshopId + '/solicitar-vinculo', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-      credentials: 'same-origin',
-      body: JSON.stringify({ pet_id: petId, mensagem: (textarea.value || '').trim() })
-    })
-    .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
-    .then(function (result) {
-      btnSubmit.disabled = false;
-      btnSubmit.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Enviar solicitação';
-      if (!result.ok || !result.data.sucesso) {
-        setToast((result.data && result.data.mensagem) || 'Não foi possível enviar a solicitação.', true);
-        return;
-      }
-      setToast('Solicitação enviada com sucesso.', false);
-      select.options[select.selectedIndex].setAttribute('data-status', 'pendente');
-      closeModal();
-    })
-    .catch(function () {
-      btnSubmit.disabled = false;
-      btnSubmit.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Enviar solicitação';
-      setToast('Erro de conexão ao enviar solicitação.', true);
-    });
+    var body = JSON.stringify({ pet_id: petId, mensagem: (textarea.value || '').trim() });
+    var busy = '<i class="fa-solid fa-spinner fa-spin"></i> <span class="airpet-inline-dots">Enviando</span>';
+    var work = function () {
+      return petshopDetalhesDeferred(function () {
+        return fetch('/petshops/' + petshopId + '/solicitar-vinculo', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          credentials: 'same-origin',
+          body: body
+        })
+          .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
+          .then(function (result) {
+            if (!result.ok || !result.data.sucesso) {
+              setToast((result.data && result.data.mensagem) || 'Não foi possível enviar a solicitação.', true);
+              return result;
+            }
+            setToast('Solicitação enviada com sucesso.', false);
+            select.options[select.selectedIndex].setAttribute('data-status', 'pendente');
+            closeModal();
+            return result;
+          })
+          .catch(function () {
+            setToast('Erro de conexão ao enviar solicitação.', true);
+            throw new Error('network');
+          });
+      }, 'A enviar solicitação…');
+    };
+    var p = window.AIRPET_LOADING
+      ? window.AIRPET_LOADING.runLocked({ button: btnSubmit, busyText: busy }, work)
+      : work();
+    p.catch(function () {});
   });
 })();
 </script>
