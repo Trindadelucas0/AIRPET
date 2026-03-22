@@ -28,12 +28,20 @@
   .btn-action.ghost:hover { border-color: var(--border-hover); color: var(--text); }
   .btn-action.secondary { background: rgba(242,96,32,.12); color: var(--accent); border: 1px solid rgba(242,96,32,.28); }
   .btn-action.secondary:hover { background: rgba(242,96,32,.2); }
-  #mapPonto { height: 240px; border-radius: 14px; overflow: hidden; border: 1px solid var(--border); }
-  .modal-shell { position: fixed; inset: 0; z-index: 70; display: none; }
+  #mapPonto {
+    height: 240px; border-radius: 14px; overflow: hidden; border: 1px solid var(--border);
+    position: relative; z-index: 0; isolation: isolate;
+  }
+  #mapPonto .leaflet-container { z-index: 1; }
+  .modal-shell {
+    position: fixed; inset: 0; z-index: 10000; display: none;
+    isolation: isolate;
+  }
   .modal-shell.show { display: block; }
-  .modal-overlay { position: absolute; inset: 0; background: rgba(0,0,0,.45); backdrop-filter: blur(3px); }
+  .modal-overlay { position: absolute; inset: 0; z-index: 0; background: rgba(0,0,0,.45); backdrop-filter: blur(3px); }
   .modal-card {
     position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+    z-index: 1;
     width: min(94vw, 460px); background: #fff; border-radius: 18px; border: 1px solid #f1f5f9;
     box-shadow: 0 24px 60px rgba(2, 6, 23, .25); padding: 16px;
   }
@@ -125,12 +133,12 @@
 </main>
 
 <% if (typeof usuario !== 'undefined' && usuario) { %>
-<div id="modalLinkRequest" class="modal-shell" aria-hidden="true">
+<div id="modalLinkRequest" class="modal-shell" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="modalLinkRequestTitle">
   <div class="modal-overlay" id="closeLinkOverlay"></div>
   <div class="modal-card">
     <div class="flex items-center justify-between gap-2">
-      <h3 class="modal-title">Solicitar vínculo com PetParceiro</h3>
-      <button type="button" id="closeLinkModal" class="text-gray-400 hover:text-gray-700">
+      <h3 id="modalLinkRequestTitle" class="modal-title">Solicitar vínculo com PetParceiro</h3>
+      <button type="button" id="closeLinkModal" class="text-gray-400 hover:text-gray-700" aria-label="Fechar">
         <i class="fa-solid fa-xmark"></i>
       </button>
     </div>
@@ -192,13 +200,39 @@
   var select = document.getElementById('petSelectForLink');
   var textarea = document.getElementById('linkRequestMessage');
   var toast = document.getElementById('linkRequestToast');
+  var prevBodyOverflow = '';
+  var lastFocusEl = null;
 
-  function openModal() { modal.classList.add('show'); }
-  function closeModal() { modal.classList.remove('show'); }
+  function openModal() {
+    if (!modal) return;
+    lastFocusEl = document.activeElement;
+    prevBodyOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    modal.classList.add('show');
+    modal.setAttribute('aria-hidden', 'false');
+    if (btnClose) {
+      setTimeout(function () { btnClose.focus(); }, 0);
+    }
+  }
+  function closeModal() {
+    if (!modal || !modal.classList.contains('show')) return;
+    modal.classList.remove('show');
+    modal.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = prevBodyOverflow;
+    if (lastFocusEl && typeof lastFocusEl.focus === 'function') {
+      try { lastFocusEl.focus(); } catch (e) {}
+    }
+    lastFocusEl = null;
+  }
   function setToast(msg, isError) {
     toast.textContent = msg || '';
     toast.className = 'toast-msg ' + (isError ? 'text-red-600' : 'text-emerald-600');
   }
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Escape') return;
+    if (modal && modal.classList.contains('show')) closeModal();
+  });
 
   if (btnOpen) btnOpen.addEventListener('click', openModal);
   if (btnClose) btnClose.addEventListener('click', closeModal);

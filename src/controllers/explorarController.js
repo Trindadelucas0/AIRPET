@@ -99,6 +99,21 @@ async function autoDeleteSeNecessario(usuarioId) {
   return antiga;
 }
 
+/** Explorar: só exibe cards com mídia (texto só não entra na grade). */
+function postTemMidiaExplorar(p) {
+  if (!p || typeof p !== 'object') return false;
+  if (p.is_petshop_publication) return !!(p.foto_url && String(p.foto_url).trim());
+  if (p.is_sponsored) return !!(p.foto && String(p.foto).trim());
+  if (p.foto && String(p.foto).trim()) return true;
+  if (p.tipo === 'repost' && p.orig_foto && String(p.orig_foto).trim()) return true;
+  return false;
+}
+
+function filtrarPostsExplorarComMidia(posts) {
+  if (!Array.isArray(posts)) return [];
+  return posts.filter(postTemMidiaExplorar);
+}
+
 function selecionarPatrocinado(patrocinados, cursor, ultimoPetId) {
   if (!Array.isArray(patrocinados) || !patrocinados.length) {
     return { item: null, nextCursor: cursor };
@@ -322,6 +337,8 @@ const explorarController = {
 
         posts = mesclarPostsComPetshopPublicacoes(posts, petshopPublicacoesMarcadas, page);
       }
+
+      posts = filtrarPostsExplorarComMidia(posts);
 
       const [pets, totalPosts, totalFixadas, recomendacoes, petsRecomendados] = await Promise.all([
         Pet.buscarPorUsuario(uid),

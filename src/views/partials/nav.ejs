@@ -4,6 +4,7 @@
 <% var currentOriginalUrl = typeof req !== 'undefined' ? (req.originalUrl || '') : ''; %>
 <% var pageTitle = typeof titulo !== 'undefined' ? String(titulo).toLowerCase() : ''; %>
 <% var isHomePage = currentPath === '/' || currentOriginalUrl === '/' || pageTitle === 'inicio'; %>
+<% var isMeuPerfilPublico = isLogado && usuario && currentPath === '/explorar/perfil/' + usuario.id; %>
 
 <!-- Top Nav — estilo Instagram: nome no topo centralizado no mobile -->
 <nav class="sticky top-0 z-50 shadow-sm" id="navbar">
@@ -125,41 +126,44 @@
 <!-- Mobile Bottom Navigation (logged in only) -->
 <% if (isLogado) { %>
 <nav id="bottomNav" class="md:hidden fixed bottom-0 left-0 right-0 z-50 safe-bottom">
-  <div class="flex items-center justify-around h-16 px-2 max-w-lg mx-auto">
-    <a href="/feed" class="bottom-tab flex flex-col items-center justify-center gap-0.5 w-14 py-1 rounded-2xl transition-all duration-200 <%= currentPath === '/feed' ? 'text-primary-500' : 'text-gray-400 hover:text-primary-500' %>">
-      <i class="fa-solid fa-house text-lg"></i>
-      <span class="text-[10px] font-medium">Feed</span>
+  <!-- Mantido no DOM para explorar.ejs / tour / CTAs que chamam .click() — sem botão visual no centro -->
+  <button type="button" id="fabNewPost" class="fab-new-post-hidden" tabindex="-1" aria-hidden="true"></button>
+  <div class="bottom-nav-grid h-[56px] px-1 max-w-lg mx-auto w-full">
+    <a href="/feed" id="bottomNavFeedTab" class="bottom-tab bottom-tab-cell <%= currentPath === '/feed' ? 'bottom-tab--active' : '' %>">
+      <span class="bottom-tab-iconwrap"><i class="fa-solid fa-house text-[1.125rem] leading-none"></i></span>
+      <span class="bottom-tab-label">Feed</span>
     </a>
-    <a href="/explorar" class="bottom-tab flex flex-col items-center justify-center gap-0.5 w-14 py-1 rounded-2xl transition-all duration-200 <%= currentPath === '/explorar' ? 'text-primary-500' : 'text-gray-400 hover:text-primary-500' %>">
-      <i class="fa-solid fa-compass text-lg"></i>
-      <span class="text-[10px] font-medium">Explorar</span>
+    <a href="/explorar" class="bottom-tab bottom-tab-cell <%= currentPath === '/explorar' ? 'bottom-tab--active' : '' %>">
+      <span class="bottom-tab-iconwrap"><i class="fa-solid fa-compass text-[1.125rem] leading-none"></i></span>
+      <span class="bottom-tab-label">Explorar</span>
     </a>
-    <a href="/petshops" class="bottom-tab flex flex-col items-center justify-center gap-0.5 w-14 py-1 rounded-2xl transition-all duration-200 <%= currentPath.startsWith('/petshops') ? 'text-primary-500' : 'text-gray-400 hover:text-primary-500' %>">
-      <i class="fa-solid fa-store text-lg"></i>
-      <span class="text-[10px] font-medium">Petshops</span>
+    <a href="/petshops" class="bottom-tab bottom-tab-cell <%= currentPath.startsWith('/petshops') ? 'bottom-tab--active' : '' %>">
+      <span class="bottom-tab-iconwrap"><i class="fa-solid fa-store text-[1.125rem] leading-none"></i></span>
+      <span class="bottom-tab-label">Petshops</span>
     </a>
-    <button type="button" id="fabNewPost" class="relative -mt-5 w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-primary-500/30 hover:shadow-xl hover:shadow-primary-500/40 hover:scale-105 active:scale-95 transition-all duration-300">
-      <i class="fa-solid fa-plus text-lg"></i>
-    </button>
-    <a href="/notificacoes" class="bottom-tab relative flex flex-col items-center justify-center gap-0.5 w-14 py-1 rounded-2xl transition-all duration-200 <%= currentPath.startsWith('/notificacoes') ? 'text-primary-500' : 'text-gray-400 hover:text-primary-500' %>">
-      <i class="fa-solid fa-bell text-lg"></i>
-      <span data-notif-badge class="absolute top-0 right-2 min-w-[16px] h-[16px] px-0.5 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center <%= notifCount > 0 ? '' : 'hidden' %>">
-        <%= notifCount > 9 ? '9+' : notifCount %>
+    <a href="/notificacoes" class="bottom-tab bottom-tab-cell relative <%= currentPath.startsWith('/notificacoes') ? 'bottom-tab--active' : '' %>">
+      <span class="bottom-tab-iconwrap relative">
+        <i class="fa-solid fa-bell text-[1.125rem] leading-none"></i>
+        <span data-notif-badge class="absolute -top-1 -right-2 min-w-[16px] h-[16px] px-0.5 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center <%= notifCount > 0 ? '' : 'hidden' %>">
+          <%= notifCount > 9 ? '9+' : notifCount %>
+        </span>
       </span>
-      <span class="text-[10px] font-medium">Alertas</span>
+      <span class="bottom-tab-label">Alertas</span>
     </a>
-    <a href="/explorar/perfil/<%= usuario.id %>" class="bottom-tab flex flex-col items-center justify-center gap-0.5 w-12 py-1 rounded-2xl transition-all duration-200 text-gray-400 hover:text-primary-500">
-      <% if (usuario.foto_perfil) { %>
-        <img src="<%= usuario.foto_perfil %>" alt="" class="w-6 h-6 rounded-full object-cover" style="box-shadow: 0 0 0 2px <%= navCor || usuario.cor_perfil || '#ec5a1c' %>">
-      <% } else { %>
-        <span class="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white bg-gray-400"
-              style="box-shadow: 0 0 0 2px <%= navCor || usuario.cor_perfil || '#ec5a1c' %>"><%= usuario.nome ? usuario.nome.charAt(0).toUpperCase() : 'U' %></span>
-      <% } %>
-      <span class="text-[10px] font-medium">Perfil</span>
+    <a href="/explorar/perfil/<%= usuario.id %>" class="bottom-tab bottom-tab-cell <%= isMeuPerfilPublico ? 'bottom-tab--active' : '' %>">
+      <span class="bottom-tab-iconwrap bottom-tab-iconwrap--avatar">
+        <% if (usuario.foto_perfil) { %>
+          <img src="<%= usuario.foto_perfil %>" alt="" class="w-[1.375rem] h-[1.375rem] rounded-full object-cover" style="box-shadow: 0 0 0 2px <%= navCor || usuario.cor_perfil || '#ec5a1c' %>">
+        <% } else { %>
+          <span class="w-[1.375rem] h-[1.375rem] rounded-full flex items-center justify-center text-[9px] font-bold text-white bg-gray-400 leading-none"
+                style="box-shadow: 0 0 0 2px <%= navCor || usuario.cor_perfil || '#ec5a1c' %>"><%= usuario.nome ? usuario.nome.charAt(0).toUpperCase() : 'U' %></span>
+        <% } %>
+      </span>
+      <span class="bottom-tab-label">Perfil</span>
     </a>
-    <a href="/perfil" class="bottom-tab flex flex-col items-center justify-center gap-0.5 w-12 py-1 rounded-2xl transition-all duration-200 <%= currentPath === '/perfil' ? 'text-primary-500' : 'text-gray-400 hover:text-primary-500' %>" title="Configurações">
-      <i class="fa-solid fa-gear text-lg"></i>
-      <span class="text-[10px] font-medium">Config</span>
+    <a href="/perfil" class="bottom-tab bottom-tab-cell <%= currentPath === '/perfil' ? 'bottom-tab--active' : '' %>" title="Configurações">
+      <span class="bottom-tab-iconwrap"><i class="fa-solid fa-gear text-[1.125rem] leading-none"></i></span>
+      <span class="bottom-tab-label">Config</span>
     </a>
   </div>
 </nav>
@@ -214,6 +218,79 @@
     -webkit-backdrop-filter: blur(20px);
     border-top: 1px solid var(--border) !important;
   }
+  .fab-new-post-hidden {
+    position: absolute;
+    width: 0;
+    height: 0;
+    opacity: 0;
+    pointer-events: none;
+    border: 0;
+    padding: 0;
+    margin: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+  }
+  #bottomNav .bottom-nav-grid {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: space-evenly;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  #bottomNav .bottom-tab.bottom-tab-cell {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 0;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    min-width: 0;
+    min-height: 0;
+    padding: 4px 1px 6px;
+    border-radius: 0;
+    text-decoration: none;
+    color: var(--text-dim) !important;
+    background: transparent;
+    transition: color 0.18s ease, opacity 0.18s ease, transform 0.12s ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+  #bottomNav .bottom-tab.bottom-tab-cell:active {
+    transform: scale(0.96);
+  }
+  #bottomNav .bottom-tab-iconwrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 22px;
+    width: 100%;
+    position: relative;
+  }
+  #bottomNav .bottom-tab-iconwrap--avatar {
+    height: 22px;
+  }
+  #bottomNav .bottom-tab-label {
+    font-size: 10px;
+    font-weight: 600;
+    line-height: 1.1;
+    text-align: center;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    padding: 0 1px;
+  }
+  #bottomNav .bottom-tab--active {
+    color: var(--accent) !important;
+    background: transparent;
+  }
+  #bottomNav .bottom-tab-cell:hover:not(.bottom-tab--active) {
+    color: var(--accent) !important;
+    background: transparent;
+    opacity: 0.92;
+  }
   #mobileMenu a {
     color: var(--text) !important;
   }
@@ -223,13 +300,6 @@
   }
   #mobileMenu a:last-child {
     background: var(--accent) !important;
-  }
-  #bottomNav .bottom-tab {
-    color: var(--text-dim) !important;
-  }
-  #bottomNav .bottom-tab.text-primary-500,
-  #bottomNav .bottom-tab:hover {
-    color: var(--accent) !important;
   }
 </style>
 

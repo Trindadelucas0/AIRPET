@@ -60,15 +60,15 @@ nav a:hover.bg-primary-50.text-primary-600 {
   color: var(--color-primary) !important;
 }
 
-/* FAB (botão flutuante novo post) */
-#fabNewPost,
+/* FAB (botão flutuante novo post; exclui stub oculto #fabNewPost no mobile) */
+#fabNewPost:not(.fab-new-post-hidden),
 .fab-new-post,
 button[class*="from-primary-500"].rounded-2xl {
   background: var(--color-primary) !important;
   background-image: none !important;
   box-shadow: 0 10px 15px -3px color-mix(in srgb, var(--color-primary) 30%, transparent) !important;
 }
-#fabNewPost:hover,
+#fabNewPost:not(.fab-new-post-hidden):hover,
 button[class*="from-primary-500"].rounded-2xl:hover {
   filter: brightness(1.05);
 }

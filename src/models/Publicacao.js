@@ -12,7 +12,7 @@ const SELECT_COLS = `
   orig.id AS orig_id, orig.foto AS orig_foto, orig.texto AS orig_texto, orig.legenda AS orig_legenda,
   orig.criado_em AS orig_criado_em, orig.usuario_id AS orig_usuario_id,
   orig_u.nome AS orig_autor_nome, orig_u.cor_perfil AS orig_cor_perfil, orig_u.foto_perfil AS orig_foto_perfil,
-  orig_pet.nome AS orig_pet_nome`;
+  orig.pet_id AS orig_pet_id, orig_pet.nome AS orig_pet_nome, orig_pet.foto AS orig_pet_foto`;
 
 const FROM_JOINS = `
   FROM publicacoes p

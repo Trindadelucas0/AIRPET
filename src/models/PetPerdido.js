@@ -300,7 +300,8 @@ const PetPerdido = {
 
   async listarAprovadosComCoordenadasOrdenadosPorData() {
     const resultado = await query(
-      `SELECT pp.*, pp.ultima_lat AS latitude, pp.ultima_lng AS longitude
+      `SELECT pp.id, pp.pet_id, pp.nivel_alerta, pp.data,
+              pp.ultima_lat AS latitude, pp.ultima_lng AS longitude
        FROM pets_perdidos pp
        WHERE pp.status = 'aprovado'
        ORDER BY pp.data ASC`

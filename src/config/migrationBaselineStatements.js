@@ -143,6 +143,7 @@ const migrations = [
   );`,
 
   `CREATE INDEX IF NOT EXISTS idx_pets_perdidos_loc ON pets_perdidos USING GIST (ultima_localizacao);`,
+  `CREATE INDEX IF NOT EXISTS idx_pets_perdidos_aprovado_data ON pets_perdidos (data ASC) WHERE status = 'aprovado';`,
 
   // 10. Localizacoes / avistamentos
   `CREATE TABLE IF NOT EXISTS localizacoes (

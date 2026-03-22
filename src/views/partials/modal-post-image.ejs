@@ -1,0 +1,75 @@
+<div id="postImageLightbox" class="post-image-lightbox hidden" role="dialog" aria-modal="true" aria-hidden="true" aria-label="Visualização da imagem">
+  <div id="postImageLightboxOverlay" class="post-image-lightbox__overlay"></div>
+  <button type="button" id="postImageLightboxClose" class="post-image-lightbox__close" aria-label="Fechar visualização">
+    <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+  </button>
+  <div class="post-image-lightbox__inner">
+    <img id="postImageLightboxImg" src="" alt="" class="post-image-lightbox__img" />
+  </div>
+</div>
+<style>
+  .post-image-lightbox {
+    position: fixed;
+    inset: 0;
+    z-index: 10050;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+    isolation: isolate;
+  }
+  .post-image-lightbox.hidden {
+    display: none !important;
+  }
+  .post-image-lightbox__overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.82);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    z-index: 0;
+  }
+  .post-image-lightbox__close {
+    position: absolute;
+    top: max(12px, env(safe-area-inset-top));
+    right: max(12px, env(safe-area-inset-right));
+    z-index: 2;
+    width: 44px;
+    height: 44px;
+    border: none;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.95);
+    color: #111827;
+    font-size: 20px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+    transition: background 0.15s ease, transform 0.15s ease;
+  }
+  .post-image-lightbox__close:hover {
+    background: #fff;
+    transform: scale(1.05);
+  }
+  .post-image-lightbox__inner {
+    position: relative;
+    z-index: 1;
+    max-width: min(96vw, 1200px);
+    max-height: min(88vh, 900px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+  }
+  .post-image-lightbox__img {
+    max-width: 100%;
+    max-height: min(88vh, 900px);
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    border-radius: 12px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45);
+    pointer-events: auto;
+  }
+</style>

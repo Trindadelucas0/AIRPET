@@ -272,7 +272,7 @@ const Pet = {
               (SELECT COUNT(*)::int FROM seguidores_pets WHERE pet_id = p.id AND usuario_id = $2) > 0 AS seguindo
        FROM pets p
        JOIN usuarios u ON u.id = p.usuario_id
-       CROSS JOIN usuarios ref ON ref.id = $1
+       INNER JOIN usuarios ref ON ref.id = $1
        WHERE ref.ultima_localizacao IS NOT NULL
          AND u.ultima_localizacao IS NOT NULL
          AND u.id != $1

@@ -184,15 +184,22 @@
       .promo-strip span:last-child { color: var(--text-dim); font-weight: 400; text-transform: none; letter-spacing: 0; }
 
       .post-header {
-        display: flex; align-items: center; gap: 12px;
-        padding: 14px 16px 10px;
+        display: flex; align-items: flex-start; gap: 14px;
+        padding: 16px 16px 12px;
       }
 
-      .post-avatar-wrap { flex-shrink: 0; }
+      .post-avatar-wrap { flex-shrink: 0; transition: transform 0.18s ease, opacity 0.18s ease; }
+      .post-avatar-wrap:active { transform: scale(0.96); }
 
       .post-avatar {
         width: 38px; height: 38px; border-radius: 50%;
         object-fit: cover; display: block;
+      }
+
+      .post-avatar.post-pet-avatar {
+        width: 46px; height: 46px;
+        box-shadow: 0 4px 14px rgba(15, 23, 42, 0.08);
+        border: 2px solid color-mix(in srgb, var(--accent) 22%, transparent);
       }
 
       .post-avatar-initial {
@@ -202,23 +209,67 @@
         background: var(--ink-4);
       }
 
-      .post-meta { flex: 1; min-width: 0; }
+      .post-avatar-initial.post-pet-initial {
+        width: 46px; height: 46px;
+        font-size: 20px;
+        background: color-mix(in srgb, var(--accent) 12%, var(--ink-3));
+        border: 2px solid color-mix(in srgb, var(--accent) 25%, transparent);
+        box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
+      }
+
+      .post-meta { flex: 1; min-width: 0; padding-top: 1px; }
+
+      .post-title-stack { display: flex; flex-direction: column; gap: 3px; }
+
+      .post-pet-name {
+        font-family: var(--font-display);
+        font-size: 1.05rem;
+        font-weight: 800;
+        letter-spacing: -0.03em;
+        color: var(--text);
+        text-decoration: none;
+        line-height: 1.2;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .post-pet-name:hover { color: var(--accent); text-decoration: none; }
+
+      .post-pet-emoji { font-size: 0.95rem; opacity: 0.92; line-height: 1; }
+
+      .post-tutor-line {
+        font-size: 12px;
+        color: var(--text-muted);
+        line-height: 1.35;
+      }
+
+      .post-tutor-prefix {
+        opacity: 0.72;
+        margin-right: 4px;
+        font-weight: 500;
+      }
+
+      .post-tutor-name {
+        font-weight: 600;
+        color: var(--text-dim);
+        text-decoration: none;
+      }
+      .post-tutor-name:hover { color: var(--accent); text-decoration: none; }
 
       .post-author-name {
-        font-weight: 700; font-size: 14px; color: var(--text);
+        font-family: var(--font-display);
+        font-weight: 800; font-size: 15px; color: var(--text);
         text-decoration: none;
-        letter-spacing: -0.01em;
+        letter-spacing: -0.02em;
       }
       .post-author-name:hover { color: var(--accent); text-decoration: none; }
 
-      .post-pet-link {
-        font-size: 11px; color: var(--text-dim); text-decoration: none;
-        display: inline-flex; align-items: center; gap: 3px; margin-left: 6px;
+      .post-author-name.post-author-fallback {
+        font-size: 15px;
       }
-      .post-pet-link:hover { color: var(--accent); text-decoration: none; }
 
       .post-time {
-        font-size: 11px; color: var(--text-dim); display: block; margin-top: 1px;
+        font-size: 11px; color: var(--text-dim); display: block; margin-top: 4px;
       }
 
       .post-menu-btn {
@@ -273,6 +324,7 @@
         max-height: 520px;
         object-fit: cover;
         display: block;
+        cursor: zoom-in;
       }
 
       /* Repost embed */
@@ -285,13 +337,30 @@
       }
 
       .post-embed-header {
-        display: flex; align-items: center; gap: 8px;
+        display: flex; align-items: flex-start; gap: 10px;
         padding: 10px 12px 6px;
       }
 
       .post-embed-avatar {
         width: 22px; height: 22px; border-radius: 50%;
         object-fit: cover;
+      }
+
+      .post-embed-avatar.post-embed-pet-av {
+        width: 28px; height: 28px;
+        border: 1px solid color-mix(in srgb, var(--accent) 20%, transparent);
+      }
+
+      .post-embed-pet-name {
+        font-family: var(--font-display);
+        font-size: 13px; font-weight: 800; color: var(--text);
+        text-decoration: none; letter-spacing: -0.02em;
+        display: block; line-height: 1.2;
+      }
+      .post-embed-pet-name:hover { color: var(--accent); text-decoration: none; }
+
+      .post-embed-tutor {
+        font-size: 11px; color: var(--text-muted); margin-top: 2px;
       }
 
       .post-embed-name {
@@ -308,6 +377,7 @@
 
       .post-embed-img {
         width: 100%; max-height: 180px; object-fit: cover; display: block;
+        cursor: zoom-in;
       }
 
       /* Post actions */
@@ -575,13 +645,24 @@
 
       <!-- Composer -->
       <% if (isLogado) { %>
+      <% var feedFotoRaw = (usuario.foto_perfil || '').trim();
+         var feedFotoSrc = '';
+         if (feedFotoRaw) {
+           if (/^https?:\/\//i.test(feedFotoRaw)) feedFotoSrc = feedFotoRaw;
+           else feedFotoSrc = feedFotoRaw.indexOf('/') === 0 ? feedFotoRaw : '/' + feedFotoRaw;
+         }
+         var feedInicial = (usuario.nome || 'U').charAt(0).toUpperCase();
+         var corMe = usuario.cor_perfil || '#ec5a1c';
+      %>
       <div class="composer">
         <div class="composer-top">
-          <% var corMe = usuario.cor_perfil || '#ec5a1c'; %>
-          <% if (usuario.foto_perfil) { %>
-            <img src="<%= usuario.foto_perfil %>" class="post-avatar" style="box-shadow:0 0 0 2px <%= corMe %>; flex-shrink:0;" alt="">
+          <% if (feedFotoSrc) { %>
+          <span class="post-avatar-wrap" style="flex-shrink:0;width:38px;height:38px;display:inline-flex;align-items:center;justify-content:center;">
+            <img src="<%= feedFotoSrc %>" class="post-avatar" style="box-shadow:0 0 0 2px <%= corMe %>;" alt="" onerror="this.style.display='none';var n=this.nextElementSibling;if(n)n.style.display='flex';">
+            <div class="post-avatar-initial" style="display:none;box-shadow:0 0 0 2px <%= corMe %>;"><%= feedInicial %></div>
+          </span>
           <% } else { %>
-            <div class="post-avatar-initial" style="box-shadow:0 0 0 2px <%= corMe %>; flex-shrink:0;"><%= (usuario.nome || 'U').charAt(0).toUpperCase() %></div>
+          <div class="post-avatar-initial" style="box-shadow:0 0 0 2px <%= corMe %>; flex-shrink:0;"><%= feedInicial %></div>
           <% } %>
           <div style="flex:1; min-width:0; position:relative;">
             <div id="mentionDropdownNovaPublicacao" class="autocomplete-dropdown hidden"></div>
@@ -617,9 +698,6 @@
           <div class="composer-tools">
             <button type="button" class="composer-tool-btn" id="btnAnexarFoto" title="Foto">
               <i class="fa-solid fa-image"></i>
-            </button>
-            <button type="button" class="composer-tool-btn" id="btnEmoji" title="Emoji">
-              <i class="fa-regular fa-face-smile"></i>
             </button>
           </div>
           <div style="display:flex;align-items:center;gap:10px;">
@@ -677,13 +755,24 @@
                   <span><i class="fa-solid fa-circle-dollar mr-1"></i>Patrocinado</span>
                 </div>
                 <div class="post-header">
+                  <% if (post.pet_id) { %><a href="/explorar/pet/<%= post.pet_id %>" class="post-avatar-wrap"><% } else { %><span class="post-avatar-wrap"><% } %>
                   <% if (post.pet_foto) { %>
-                    <img src="<%= post.pet_foto %>" class="post-avatar" alt="">
+                    <img src="<%= post.pet_foto %>" class="post-avatar post-pet-avatar" alt="">
                   <% } else { %>
-                    <div class="post-avatar-initial" style="background:var(--ink-4)"><%= (post.pet_nome || 'P').charAt(0) %></div>
+                    <div class="post-avatar-initial post-pet-initial" style="background:var(--ink-4)">🐾</div>
                   <% } %>
+                  <% if (post.pet_id) { %></a><% } else { %></span><% } %>
                   <div class="post-meta">
-                    <span style="font-size:14px;font-weight:700;color:var(--text);"><%= post.pet_nome || 'Perfil pet patrocinado' %></span>
+                    <div class="post-title-stack">
+                      <% if (post.pet_id) { %>
+                        <a href="/explorar/pet/<%= post.pet_id %>" class="post-pet-name"><span class="post-pet-emoji" aria-hidden="true">🐾</span><%= post.pet_nome || 'Pet' %></a>
+                        <% if (post.autor_nome) { %>
+                          <div class="post-tutor-line"><span class="post-tutor-prefix">por</span><span class="post-tutor-name" style="text-decoration:none;cursor:default;"><%= post.autor_nome %></span></div>
+                        <% } %>
+                      <% } else { %>
+                        <span class="post-pet-name" style="cursor:default;"><span class="post-pet-emoji" aria-hidden="true">🐾</span><%= post.pet_nome || 'Perfil pet patrocinado' %></span>
+                      <% } %>
+                    </div>
                     <span class="post-time">Patrocinado</span>
                   </div>
                 </div>
@@ -720,7 +809,27 @@
                   <div class="post-strip pinned"><i class="fa-solid fa-thumbtack"></i>Fixado</div>
                 <% } %>
 
+                <% var feedHasPet = post.pet_id && post.pet_nome; %>
                 <div class="post-header">
+                  <% if (feedHasPet) { %>
+                  <a href="/explorar/pet/<%= post.pet_id %>" class="post-avatar-wrap">
+                    <% if (post.pet_foto) { %>
+                      <img src="<%= post.pet_foto %>" class="post-avatar post-pet-avatar" alt="">
+                    <% } else { %>
+                      <div class="post-avatar-initial post-pet-initial">🐾</div>
+                    <% } %>
+                  </a>
+                  <div class="post-meta">
+                    <div class="post-title-stack">
+                      <a href="/explorar/pet/<%= post.pet_id %>" class="post-pet-name"><span class="post-pet-emoji" aria-hidden="true">🐾</span><%= post.pet_nome %></a>
+                      <div class="post-tutor-line">
+                        <span class="post-tutor-prefix">por</span>
+                        <a href="/explorar/perfil/<%= post.usuario_id %>" class="post-tutor-name"><%= post.autor_nome %></a>
+                      </div>
+                    </div>
+                    <span class="post-time tempo-relativo" data-time="<%= post.criado_em %>"><%= post.criado_em %></span>
+                  </div>
+                  <% } else { %>
                   <a href="/explorar/perfil/<%= post.usuario_id %>" class="post-avatar-wrap">
                     <% if (post.foto_perfil) { %>
                       <img src="<%= post.foto_perfil %>" class="post-avatar post-author-avatar" style="box-shadow:0 0 0 2px <%= pCor %>" alt="">
@@ -729,14 +838,13 @@
                     <% } %>
                   </a>
                   <div class="post-meta">
-                    <div>
-                      <a href="/explorar/perfil/<%= post.usuario_id %>" class="post-author-name post-author-name"><%= post.autor_nome %></a>
-                      <% if (post.pet_nome && post.pet_id) { %>
-                        <a href="/explorar/pet/<%= post.pet_id %>" class="post-pet-link"><i class="fa-solid fa-paw" style="font-size:9px;"></i> <%= post.pet_nome %></a>
-                      <% } %>
+                    <div class="post-title-stack">
+                      <a href="/explorar/perfil/<%= post.usuario_id %>" class="post-author-name post-author-fallback"><%= post.autor_nome %></a>
+                      <span class="post-tutor-line" style="font-size:11px;opacity:0.85;">Publicação do tutor</span>
                     </div>
                     <span class="post-time tempo-relativo" data-time="<%= post.criado_em %>"><%= post.criado_em %></span>
                   </div>
+                  <% } %>
                   <% if (isMine) { %>
                   <div style="position:relative; flex-shrink:0;">
                     <button type="button" class="post-menu-btn btn-menu-post"><i class="fa-solid fa-ellipsis"></i></button>
@@ -766,12 +874,27 @@
                 <% if (isRepost && post.orig_id) { %>
                   <div class="post-embed">
                     <div class="post-embed-header">
+                      <% var origHasPet = post.orig_pet_id && post.orig_pet_nome; %>
+                      <% if (origHasPet) { %>
+                        <a href="/explorar/pet/<%= post.orig_pet_id %>">
+                          <% if (post.orig_pet_foto) { %>
+                            <img src="<%= post.orig_pet_foto %>" class="post-embed-avatar post-embed-pet-av" alt="">
+                          <% } else { %>
+                            <div class="post-embed-avatar post-embed-pet-av" style="background:color-mix(in srgb,var(--accent) 14%,var(--ink-4));display:flex;align-items:center;justify-content:center;font-size:12px;">🐾</div>
+                          <% } %>
+                        </a>
+                        <div class="min-w-0 flex-1">
+                          <a href="/explorar/pet/<%= post.orig_pet_id %>" class="post-embed-pet-name"><%= post.orig_pet_nome %></a>
+                          <div class="post-embed-tutor"><span class="post-tutor-prefix">por</span><a href="/explorar/perfil/<%= post.orig_usuario_id %>" class="post-tutor-name" style="font-size:11px;"><%= post.orig_autor_nome %></a></div>
+                        </div>
+                      <% } else { %>
                       <% if (post.orig_foto_perfil) { %>
                         <img src="<%= post.orig_foto_perfil %>" class="post-embed-avatar" alt="">
                       <% } else { %>
                         <div class="post-embed-avatar" style="background:var(--ink-4);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:var(--text);"><%= (post.orig_autor_nome || 'U').charAt(0).toUpperCase() %></div>
                       <% } %>
                       <a href="/explorar/perfil/<%= post.orig_usuario_id %>" class="post-embed-name"><%= post.orig_autor_nome %></a>
+                      <% } %>
                     </div>
                     <% if (post.orig_texto || post.orig_legenda) { %>
                       <div class="post-embed-text"><%= post.orig_texto || post.orig_legenda %></div>
@@ -795,7 +918,7 @@
                     <i class="<%= post.curtiu ? 'fa-solid' : 'fa-regular' %> fa-heart"></i>
                     <span class="count-curtidas"><%= post.total_curtidas || '' %></span>
                   </button>
-                  <button type="button" class="post-action-btn btn-share" data-post-id="<%= post.id %>" data-autor="<%= post.autor_nome %>">
+                  <button type="button" class="post-action-btn btn-share" data-post-id="<%= post.id %>" data-autor="<%= post.autor_nome %>" data-pet-nome="<%= feedHasPet ? post.pet_nome : '' %>">
                     <i class="fa-solid fa-share-from-square"></i>
                   </button>
                 </div>
@@ -810,10 +933,14 @@
 
                 <% if (isLogado) { %>
                 <div class="post-comment-row">
-                  <% if (usuario.foto_perfil) { %>
-                    <img src="<%= usuario.foto_perfil %>" style="width:28px;height:28px;border-radius:50%;object-fit:cover;flex-shrink:0;box-shadow:0 0 0 2px <%= usuario.cor_perfil || '#ec5a1c' %>;" alt="">
+                  <% var corCom = usuario.cor_perfil || '#ec5a1c'; %>
+                  <% if (feedFotoSrc) { %>
+                  <span style="flex-shrink:0;width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;">
+                    <img src="<%= feedFotoSrc %>" style="width:28px;height:28px;border-radius:50%;object-fit:cover;box-shadow:0 0 0 2px <%= corCom %>;" alt="" onerror="this.style.display='none';var n=this.nextElementSibling;if(n){n.style.display='flex';n.style.alignItems='center';n.style.justifyContent='center';}">
+                    <div style="display:none;width:28px;height:28px;border-radius:50%;flex-shrink:0;background:var(--ink-4);box-shadow:0 0 0 2px <%= corCom %>;font-size:10px;font-weight:700;color:var(--text);" class="inline-avatar-fallback"><%= feedInicial %></div>
+                  </span>
                   <% } else { %>
-                    <div style="width:28px;height:28px;border-radius:50%;flex-shrink:0;background:var(--ink-4);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--text);box-shadow:0 0 0 2px <%= usuario.cor_perfil || '#ec5a1c' %>;"><%= (usuario.nome || 'U').charAt(0).toUpperCase() %></div>
+                  <div style="width:28px;height:28px;border-radius:50%;flex-shrink:0;background:var(--ink-4);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--text);box-shadow:0 0 0 2px <%= corCom %>;"><%= feedInicial %></div>
                   <% } %>
                   <input type="text" class="comment-input input-comentario-inline" data-post-id="<%= post.id %>" placeholder="Adicionar comentário…" maxlength="500">
                   <button type="button" class="comment-inline-send btn-enviar-inline" data-post-id="<%= post.id %>" aria-label="Enviar comentário">
@@ -944,6 +1071,21 @@
   var meuNome = '<%- typeof usuario !== 'undefined' && usuario ? (usuario.nome || '').replace(/'/g, "\\'") : '' %>';
   var meuFotoPerfil = '<%- typeof usuario !== 'undefined' && usuario ? (usuario.foto_perfil || '').replace(/'/g, "\\'") : '' %>';
   var meuCorPerfil = '<%- typeof usuario !== 'undefined' && usuario ? (usuario.cor_perfil || '#ec5a1c').replace(/'/g, "\\'") : '#ec5a1c' %>';
+  function normalizePerfilFoto(raw) {
+    var s = String(raw || '').trim();
+    if (!s) return '';
+    if (/^https?:\/\//i.test(s)) return s;
+    return s.indexOf('/') === 0 ? s : '/' + s;
+  }
+  function buildInlineCommentAvatarHtml() {
+    var cor = escapeHtml(meuCorPerfil);
+    var ini = escapeHtml((meuNome.charAt(0) || 'U').toUpperCase());
+    var src = normalizePerfilFoto(meuFotoPerfil);
+    if (!src) {
+      return '<div style="width:28px;height:28px;border-radius:50%;flex-shrink:0;background:var(--ink-4);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--text);box-shadow:0 0 0 2px ' + cor + ';">' + ini + '</div>';
+    }
+    return '<span style="flex-shrink:0;width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;"><img src="' + escapeHtml(src) + '" style="width:28px;height:28px;border-radius:50%;object-fit:cover;box-shadow:0 0 0 2px ' + cor + ';" alt="" onerror="this.style.display=\'none\';var n=this.nextElementSibling;if(n){n.style.display=\'flex\';n.style.alignItems=\'center\';n.style.justifyContent=\'center\';}"><div style="display:none;width:28px;height:28px;border-radius:50%;flex-shrink:0;background:var(--ink-4);box-shadow:0 0 0 2px ' + cor + ';font-size:10px;font-weight:700;color:var(--text);" class="inline-avatar-fallback">' + ini + '</div></span>';
+  }
   var feedContainer = document.getElementById('feedContainer');
   var commentPostId = null;
   var commentModal = document.getElementById('commentModal');
@@ -1114,10 +1256,11 @@
   }
 
   // ── Share ──
-  function compartilhar(postId, autor) {
+  function compartilhar(postId, autor, petNome) {
     var url = window.location.origin + '/explorar/post/' + postId;
+    var quem = (petNome && String(petNome).trim()) ? String(petNome).trim() : (autor || 'AIRPET');
     if (navigator.share) {
-      navigator.share({ title: 'Post de ' + autor + ' no AIRPET', url: url });
+      navigator.share({ title: 'Publicação de ' + quem + ' no AIRPET', url: url });
     } else {
       navigator.clipboard.writeText(url).then(function() {
         alert('Link copiado!');
@@ -1255,14 +1398,31 @@
   // ── Render post HTML (for dynamic insertion) ──
   function renderPostHTML(p) {
     var pCor = p.cor_perfil || '#ec5a1c';
-    var avatarHtml = p.foto_perfil
-      ? '<img src="' + escapeHtml(p.foto_perfil) + '" class="post-avatar post-author-avatar" style="box-shadow:0 0 0 2px ' + escapeHtml(pCor) + '" alt="">'
-      : '<div class="post-avatar-initial post-author-avatar" style="box-shadow:0 0 0 2px ' + escapeHtml(pCor) + '">' + escapeHtml((p.autor_nome || 'U').charAt(0).toUpperCase()) + '</div>';
+    var hasPet = p.pet_id && p.pet_nome;
+    var wrapOpen, wrapClose, avatarInner, metaInner;
+    if (hasPet) {
+      wrapOpen = '<a href="/explorar/pet/' + p.pet_id + '" class="post-avatar-wrap">';
+      wrapClose = '</a>';
+      avatarInner = p.pet_foto
+        ? '<img src="' + escapeHtml(p.pet_foto) + '" class="post-avatar post-pet-avatar" alt="">'
+        : '<div class="post-avatar-initial post-pet-initial">🐾</div>';
+      metaInner = '<div class="post-title-stack">' +
+        '<a href="/explorar/pet/' + p.pet_id + '" class="post-pet-name"><span class="post-pet-emoji" aria-hidden="true">🐾</span>' + escapeHtml(p.pet_nome) + '</a>' +
+        '<div class="post-tutor-line"><span class="post-tutor-prefix">por</span><a href="/explorar/perfil/' + p.usuario_id + '" class="post-tutor-name">' + escapeHtml(p.autor_nome) + '</a></div></div>' +
+        '<span class="post-time">agora</span>';
+    } else {
+      wrapOpen = '<a href="/explorar/perfil/' + p.usuario_id + '" class="post-avatar-wrap">';
+      wrapClose = '</a>';
+      avatarInner = p.foto_perfil
+        ? '<img src="' + escapeHtml(p.foto_perfil) + '" class="post-avatar post-author-avatar" style="box-shadow:0 0 0 2px ' + escapeHtml(pCor) + '" alt="">'
+        : '<div class="post-avatar-initial post-author-avatar" style="box-shadow:0 0 0 2px ' + escapeHtml(pCor) + '">' + escapeHtml((p.autor_nome || 'U').charAt(0).toUpperCase()) + '</div>';
+      metaInner = '<div class="post-title-stack"><a href="/explorar/perfil/' + p.usuario_id + '" class="post-author-name post-author-fallback">' + escapeHtml(p.autor_nome) + '</a>' +
+        '<span class="post-tutor-line" style="font-size:11px;opacity:0.85;">Publicação do tutor</span></div><span class="post-time">agora</span>';
+    }
     var txt = p.texto || p.legenda || '';
     var h = '<article class="post-card post-enter" data-post-id="' + p.id + '" id="post-' + p.id + '">';
-    h += '<div class="post-header"><a href="/explorar/perfil/' + p.usuario_id + '" class="post-avatar-wrap">' + avatarHtml + '</a>';
-    h += '<div class="post-meta"><div><a href="/explorar/perfil/' + p.usuario_id + '" class="post-author-name">' + escapeHtml(p.autor_nome) + '</a></div>';
-    h += '<span class="post-time">agora</span></div>';
+    h += '<div class="post-header">' + wrapOpen + avatarInner + wrapClose;
+    h += '<div class="post-meta">' + metaInner + '</div>';
     h += '<div style="position:relative;flex-shrink:0;"><button type="button" class="post-menu-btn btn-menu-post"><i class="fa-solid fa-ellipsis"></i></button>';
     h += '<div class="post-dropdown hidden"><button type="button" class="post-dropdown-item btn-fixar" data-post-id="' + p.id + '" data-fixada="0"><i class="fa-solid fa-thumbtack" style="width:16px;text-align:center;color:var(--text-dim);"></i>Fixar</button>';
     h += '<button type="button" class="post-dropdown-item danger btn-deletar" data-post-id="' + p.id + '"><i class="fa-solid fa-trash-can" style="width:16px;text-align:center;"></i>Excluir</button></div></div></div>';
@@ -1272,9 +1432,11 @@
     h += '<button type="button" class="post-action-btn btn-comentar" data-post-id="' + p.id + '"><i class="fa-regular fa-comment"></i><span class="count-comentarios"></span></button>';
     h += '<button type="button" class="post-action-btn btn-repost" data-post-id="' + p.id + '"><i class="fa-solid fa-retweet"></i><span class="count-reposts"></span></button>';
     h += '<button type="button" class="post-action-btn btn-curtir" data-post-id="' + p.id + '" data-curtiu="0" style="position:relative;"><i class="fa-regular fa-heart"></i><span class="count-curtidas"></span></button>';
-    h += '<button type="button" class="post-action-btn btn-share" data-post-id="' + p.id + '" data-autor="' + escapeHtml(p.autor_nome) + '"><i class="fa-solid fa-share-from-square"></i></button>';
+    h += '<button type="button" class="post-action-btn btn-share" data-post-id="' + p.id + '" data-autor="' + escapeHtml(p.autor_nome) + '" data-pet-nome="' + (hasPet ? escapeHtml(p.pet_nome) : '') + '"><i class="fa-solid fa-share-from-square"></i></button>';
     h += '</div>';
-    if (meuId) h += '<div class="post-comment-row"><div style="width:28px;height:28px;border-radius:50%;flex-shrink:0;background:var(--ink-4);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--text);box-shadow:0 0 0 2px ' + escapeHtml(meuCorPerfil) + ';">' + escapeHtml(meuNome.charAt(0).toUpperCase()) + '</div><input type="text" class="comment-input input-comentario-inline" data-post-id="' + p.id + '" placeholder="Adicionar comentário…" maxlength="500"><button type="button" class="comment-inline-send btn-enviar-inline" data-post-id="' + p.id + '" aria-label="Enviar comentário"><i class="fa-solid fa-paper-plane"></i></button></div>';
+    if (meuId) {
+      h += '<div class="post-comment-row">' + buildInlineCommentAvatarHtml() + '<input type="text" class="comment-input input-comentario-inline" data-post-id="' + p.id + '" placeholder="Adicionar comentário…" maxlength="500"><button type="button" class="comment-inline-send btn-enviar-inline" data-post-id="' + p.id + '" aria-label="Enviar comentário"><i class="fa-solid fa-paper-plane"></i></button></div>';
+    }
     h += '</article>';
     return h;
   }
@@ -1285,7 +1447,7 @@
     btn = e.target.closest('.btn-curtir'); if (btn) { curtirPost(btn.dataset.postId, btn); return; }
     btn = e.target.closest('.btn-comentar'); if (btn) { abrirComentarios(btn.dataset.postId); return; }
     btn = e.target.closest('.btn-repost'); if (btn) { abrirRepostModal(btn.dataset.postId); return; }
-    btn = e.target.closest('.btn-share'); if (btn) { compartilhar(btn.dataset.postId, btn.dataset.autor); return; }
+    btn = e.target.closest('.btn-share'); if (btn) { compartilhar(btn.dataset.postId, btn.dataset.autor, btn.dataset.petNome); return; }
     btn = e.target.closest('.btn-menu-post'); if (btn) { e.stopPropagation(); toggleMenu(btn); return; }
     btn = e.target.closest('.btn-fixar'); if (btn) { fecharMenus(); fixarPost(btn.dataset.postId, btn.dataset.fixada === '1'); return; }
     btn = e.target.closest('.btn-deletar'); if (btn) { fecharMenus(); deletarPost(btn.dataset.postId); return; }

@@ -375,8 +375,28 @@
             </div>
           <% } %>
 
-          <!-- Post header: avatar + name + time -->
+          <!-- Post header: pet em destaque, tutor secundário -->
+          <% var perfilFeedHasPet = post.pet_id && post.pet_nome; %>
           <div class="flex items-center gap-3 px-4 pt-3 pb-2">
+            <% if (perfilFeedHasPet) { %>
+            <a href="/explorar/pet/<%= post.pet_id %>" class="flex-shrink-0 rounded-full transition-transform active:scale-95">
+              <% if (post.pet_foto) { %>
+                <img src="<%= post.pet_foto %>" alt="" class="w-11 h-11 rounded-full object-cover ring-2 ring-primary-200 shadow-sm">
+              <% } else { %>
+                <span class="w-11 h-11 rounded-full flex items-center justify-center text-lg bg-primary-50 text-primary-500 ring-2 ring-primary-200/80">🐾</span>
+              <% } %>
+            </a>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-1.5 flex-wrap">
+                <a href="/explorar/pet/<%= post.pet_id %>" class="font-display font-extrabold text-[15px] text-gray-900 hover:text-primary-600 transition-colors truncate tracking-tight">
+                  <span class="mr-1" aria-hidden="true">🐾</span><%= post.pet_nome %>
+                </a>
+                <span class="text-gray-300 hidden sm:inline">·</span>
+                <span class="post-time text-xs text-gray-400 flex-shrink-0" data-time="<%= post.criado_em %>"></span>
+              </div>
+              <p class="text-xs text-gray-500 truncate mt-0.5">por <a href="/explorar/perfil/<%= post.usuario_id %>" class="font-semibold text-gray-600 hover:text-primary-600"><%= post.autor_nome %></a></p>
+            </div>
+            <% } else { %>
             <a href="/explorar/perfil/<%= post.usuario_id %>" class="flex-shrink-0">
               <% if (post.foto_perfil) { %>
                 <img src="<%= post.foto_perfil %>" alt="" class="w-10 h-10 rounded-full object-cover transition-all" style="box-shadow: 0 0 0 2px <%= post.cor_perfil || '#ec5a1c' %>">
@@ -388,19 +408,16 @@
               <% } %>
             </a>
             <div class="flex-1 min-w-0">
-              <div class="flex items-center gap-1.5">
-                <a href="/explorar/perfil/<%= post.usuario_id %>" class="text-sm font-bold text-gray-900 hover:text-primary-600 transition-colors truncate">
+              <div class="flex items-center gap-1.5 flex-wrap">
+                <a href="/explorar/perfil/<%= post.usuario_id %>" class="font-display font-extrabold text-sm text-gray-900 hover:text-primary-600 transition-colors truncate">
                   <%= post.autor_nome %>
                 </a>
                 <span class="text-gray-300">·</span>
                 <span class="post-time text-xs text-gray-400 flex-shrink-0" data-time="<%= post.criado_em %>"></span>
               </div>
-              <% if (post.pet_nome) { %>
-                <span class="text-xs text-primary-400 font-medium">
-                  <i class="fa-solid fa-paw text-[9px] mr-0.5"></i><%= post.pet_nome %>
-                </span>
-              <% } %>
+              <span class="text-[11px] text-gray-400">Publicação do tutor</span>
             </div>
+            <% } %>
             <div class="relative">
               <button type="button" class="post-menu-btn p-2 -mr-2 text-gray-300 hover:text-gray-500 transition-colors rounded-full hover:bg-gray-50"
                       data-post-id="<%= post.id %>">
@@ -443,7 +460,7 @@
           <!-- Photo -->
           <% if (post.foto) { %>
             <div class="relative mx-4 mb-3 rounded-2xl overflow-hidden">
-              <img src="<%= post.foto %>" alt="" class="w-full rounded-2xl object-cover max-h-[500px]" loading="lazy"
+              <img src="<%= post.foto %>" alt="" class="post-photo w-full rounded-2xl object-cover max-h-[500px] cursor-zoom-in" loading="lazy"
                    ondblclick="toggleLike(this, '<%= post.id %>')">
               <div class="dbl-heart-overlay absolute inset-0 flex items-center justify-center pointer-events-none"></div>
             </div>
@@ -453,7 +470,21 @@
           <% if (post.orig_id) { %>
             <div class="mx-4 mb-3 repost-quote rounded-xl border border-gray-100 overflow-hidden bg-gray-50/50 hover:bg-gray-50 transition-colors">
               <div class="p-3">
-                <div class="flex items-center gap-2 mb-2">
+                <div class="flex items-start gap-2 mb-2">
+                  <% var perfilOrigPet = post.orig_pet_id && post.orig_pet_nome; %>
+                  <% if (perfilOrigPet) { %>
+                    <a href="/explorar/pet/<%= post.orig_pet_id %>" class="shrink-0">
+                      <% if (post.orig_pet_foto) { %>
+                        <img src="<%= post.orig_pet_foto %>" alt="" class="w-8 h-8 rounded-full object-cover ring-1 ring-primary-200">
+                      <% } else { %>
+                        <span class="w-8 h-8 rounded-full flex items-center justify-center text-sm bg-primary-50 text-primary-500 ring-1 ring-primary-200">🐾</span>
+                      <% } %>
+                    </a>
+                    <div class="min-w-0 flex-1">
+                      <a href="/explorar/pet/<%= post.orig_pet_id %>" class="font-display font-extrabold text-xs text-gray-900 block truncate"><%= post.orig_pet_nome %></a>
+                      <span class="text-[10px] text-gray-500">por <a href="/explorar/perfil/<%= post.orig_usuario_id %>" class="font-medium text-gray-600 hover:text-primary-600"><%= post.orig_autor_nome %></a></span>
+                    </div>
+                  <% } else { %>
                   <% if (post.orig_foto_perfil) { %>
                     <img src="<%= post.orig_foto_perfil %>" alt="" class="w-5 h-5 rounded-full object-cover" style="box-shadow: 0 0 0 1px <%= post.orig_cor_perfil || '#ec5a1c' %>">
                   <% } else { %>
@@ -463,17 +494,13 @@
                     </span>
                   <% } %>
                   <span class="text-xs font-bold text-gray-700"><%= post.orig_autor_nome %></span>
-                  <% if (post.orig_pet_nome) { %>
-                    <span class="text-[10px] text-primary-400 font-medium">
-                      <i class="fa-solid fa-paw text-[8px] mr-0.5"></i><%= post.orig_pet_nome %>
-                    </span>
                   <% } %>
                 </div>
                 <% if (post.orig_texto || post.orig_legenda) { %>
                   <p class="text-sm text-gray-700 leading-relaxed line-clamp-3 mb-2"><%= post.orig_texto || post.orig_legenda %></p>
                 <% } %>
                 <% if (post.orig_foto) { %>
-                  <img src="<%= post.orig_foto %>" alt="" class="w-full rounded-lg object-cover max-h-[200px]" loading="lazy">
+                  <img src="<%= post.orig_foto %>" alt="" class="post-embed-img w-full rounded-lg object-cover max-h-[200px] cursor-zoom-in" loading="lazy">
                 <% } %>
               </div>
             </div>
@@ -587,10 +614,13 @@
     </div>
   </div>
 
+<%- include('../partials/modal-post-image') %>
+
 </main>
 
 <%- include('../partials/footer') %>
 
+<script src="/js/post-image-lightbox.js"></script>
 <script>
 (function () {
   'use strict';
@@ -634,6 +664,19 @@
   }
   atualizarTempos();
   setInterval(atualizarTempos, 30000);
+
+  var mainPosts = document.querySelector('main');
+  if (mainPosts && typeof window.openPostImageLightbox === 'function') {
+    mainPosts.addEventListener('click', function (e) {
+      var im = e.target.closest('img.post-photo, img.post-embed-img');
+      if (!im || !mainPosts.contains(im)) return;
+      var s = im.currentSrc || im.src;
+      if (!s) return;
+      e.preventDefault();
+      e.stopPropagation();
+      window.openPostImageLightbox(s, im.getAttribute('alt') || '');
+    });
+  }
 
   /* ── Caption expand ── */
   document.querySelectorAll('.caption-area').forEach(function (area) {
