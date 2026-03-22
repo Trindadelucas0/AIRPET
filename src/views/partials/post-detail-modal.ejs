@@ -43,6 +43,10 @@
       <div class="airpet-post-detail__main-col flex-1 min-w-0 min-h-0 flex flex-col bg-white">
         <div class="airpet-post-detail__scroll">
           <div class="px-4 sm:px-5 pt-4 pb-3 shrink-0 border-b border-gray-100 bg-white">
+            <div id="postDetailRepostCtx" class="hidden mb-2 flex items-center gap-2 text-sm text-gray-600">
+              <i class="fa-solid fa-retweet text-emerald-600" aria-hidden="true"></i>
+              <span><strong class="text-gray-900 post-detail-repost-who"></strong> repostou</span>
+            </div>
             <div id="postDetailAuthorRow" class="flex items-center gap-3"></div>
             <div class="mt-2 space-y-0.5">
               <p id="postDetailDate" class="explorar-card-meta text-gray-600 text-sm font-medium"></p>
@@ -59,6 +63,11 @@
             <div id="postDetailTextWrap" class="mt-3 hidden">
               <p id="postDetailText" class="explorar-modal-body text-gray-800 whitespace-pre-wrap break-words"></p>
             </div>
+            <div id="postDetailQuotedWrap" class="hidden mt-3 rounded-xl border border-gray-200 bg-gray-50 p-3 text-sm">
+              <div id="postDetailQuotedHeader" class="flex items-center gap-2 min-w-0 mb-2"></div>
+              <p id="postDetailQuotedText" class="text-gray-800 whitespace-pre-wrap break-words hidden"></p>
+              <img id="postDetailQuotedImg" src="" alt="" class="hidden rounded-lg max-h-52 w-full object-cover mt-2">
+            </div>
           </div>
           <div id="postDetailCommentsSection" class="bg-gray-50/40 md:bg-white border-t border-gray-100 md:border-t-0">
             <h4 class="text-sm font-semibold text-gray-700 px-4 sm:px-5 pt-3 pb-2 border-b border-gray-100/80 bg-white/90 md:bg-transparent">Comentários</h4>
@@ -73,6 +82,10 @@
         </div>
         <div class="airpet-post-detail__composer relative border-t border-gray-200/80 bg-white">
           <div id="postDetailMentionDropdown" class="autocomplete-dropdown hidden"></div>
+          <div id="postDetailReplyBar" class="hidden px-4 sm:px-5 pt-2 pb-1 flex items-center justify-between gap-2 text-xs bg-primary-50/90 border-b border-primary-100/80">
+            <span class="text-gray-600 truncate">Respondendo a <strong id="postDetailReplyToName" class="text-gray-900"></strong></span>
+            <button type="button" id="postDetailReplyCancel" class="shrink-0 font-semibold text-primary-600 hover:text-primary-700 py-1">Cancelar</button>
+          </div>
           <div id="postDetailCommentComposer" class="flex items-center gap-2 px-4 sm:px-5 pt-3">
             <% if (_isLogado && typeof usuario !== 'undefined' && usuario) { %>
               <% var _detailCor = usuario.cor_perfil || '#ec5a1c'; %>

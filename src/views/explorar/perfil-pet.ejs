@@ -384,6 +384,10 @@
         </button>
       </div>
       <div id="commentsBody" class="airpet-modal__body px-0 min-h-[120px]"></div>
+      <div id="perfilPetCommentsReplyBar" class="hidden px-5 pt-2 pb-1 flex items-center justify-between gap-2 text-xs bg-primary-50/90 border-t border-primary-100/80">
+        <span class="text-gray-600 truncate">Respondendo a <strong id="perfilPetCommentsReplyToName" class="text-gray-900"></strong></span>
+        <button type="button" id="perfilPetCommentsReplyCancel" class="shrink-0 font-semibold text-primary-600 py-1">Cancelar</button>
+      </div>
       <form id="modalCommentForm" class="airpet-modal__footer border-t border-gray-100 flex items-center gap-2 px-5 pt-3">
         <input type="text" id="modalCommentInput" placeholder="Escreva um comentário..." maxlength="300"
                class="flex-1 text-sm bg-gray-50 rounded-full px-4 py-2.5 border-0 outline-none focus:ring-2 focus:ring-primary-500/20">
@@ -617,7 +621,21 @@
   var commentsBody = document.getElementById('commentsBody');
   var modalCommentInput = document.getElementById('modalCommentInput');
   var currentPostId = null;
+  var perfilPetReplyParentId = null;
+  function clearPerfilPetReplyTarget() {
+    perfilPetReplyParentId = null;
+    var bar = document.getElementById('perfilPetCommentsReplyBar');
+    if (bar) bar.classList.add('hidden');
+  }
+  function setPerfilPetReplyTarget(parentId, name) {
+    perfilPetReplyParentId = parentId;
+    var bar = document.getElementById('perfilPetCommentsReplyBar');
+    var nm = document.getElementById('perfilPetCommentsReplyToName');
+    if (nm) nm.textContent = name || '';
+    if (bar) bar.classList.remove('hidden');
+  }
   function openComments(postId) {
+    clearPerfilPetReplyTarget();
     currentPostId = postId;
     commentsModal.classList.remove('hidden');
     if (window.AIRPET_modalUi) window.AIRPET_modalUi.refreshBodyScroll();
@@ -638,7 +656,8 @@
             tempoRelativo: tempoRelativo,
             useDataTimeAttr: false,
             forceDeleteButton: true,
-            deleteDataAttr: 'data-id'
+            deleteDataAttr: 'data-id',
+            allowReply: !!myUserId
           });
         }
       });
@@ -654,22 +673,40 @@
   });
   document.getElementById('closeComments').addEventListener('click', closeComments);
   document.getElementById('commentsOverlay').addEventListener('click', closeComments);
+  var perfilPetCommentsReplyCancel = document.getElementById('perfilPetCommentsReplyCancel');
+  if (perfilPetCommentsReplyCancel) perfilPetCommentsReplyCancel.addEventListener('click', clearPerfilPetReplyTarget);
   document.getElementById('modalCommentForm').addEventListener('submit', function (e) {
     e.preventDefault();
     if (!currentPostId || !modalCommentInput.value.trim()) return;
     var texto = modalCommentInput.value.trim();
     modalCommentInput.value = '';
+    var payload = { texto: texto };
+    if (perfilPetReplyParentId) payload.parent_id = parseInt(perfilPetReplyParentId, 10);
     fetch('/explorar/post/' + currentPostId + '/comentar', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
       credentials: 'same-origin',
-      body: JSON.stringify({ texto: texto })
+      body: JSON.stringify(payload)
     })
     .then(function (r) { return r.json(); })
-    .then(function (data) { if (data.sucesso) openComments(currentPostId); });
+    .then(function (data) {
+      if (data.sucesso) {
+        clearPerfilPetReplyTarget();
+        openComments(currentPostId);
+      }
+    });
   });
 
   document.addEventListener('click', function (e) {
+    var br = e.target.closest('.btn-reply-comment');
+    if (br && commentsBody.contains(br)) {
+      e.preventDefault();
+      var cid = br.getAttribute('data-comment-id');
+      var nm = br.getAttribute('data-author-name') || '';
+      if (cid) setPerfilPetReplyTarget(cid, nm);
+      if (modalCommentInput) modalCommentInput.focus();
+      return;
+    }
     var btn = e.target.closest('.btn-del-comment');
     if (!btn || !commentsBody.contains(btn)) return;
     var cid = btn.getAttribute('data-id');

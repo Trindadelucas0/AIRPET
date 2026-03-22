@@ -663,7 +663,7 @@ const explorarController = {
   async comentarios(req, res) {
     try {
       const { id } = req.params;
-      const lista = await Comentario.buscarPorPublicacao(id);
+      const lista = await Comentario.buscarArvorePorPublicacao(id);
       res.json({ sucesso: true, comentarios: lista });
     } catch (err) {
       logger.error('EXPLORAR', 'Erro ao listar comentários', err);
@@ -675,29 +675,56 @@ const explorarController = {
     try {
       const uid = req.session.usuario.id;
       const { id } = req.params;
-      const { texto } = req.body;
+      const { texto, parent_id: parentIdBody, parentId: parentIdAlt } = req.body || {};
+      const parentIdRaw = parentIdBody != null ? parentIdBody : parentIdAlt;
 
       if (!texto || !texto.trim()) {
         return res.status(400).json({ sucesso: false, mensagem: 'Escreva algo.' });
       }
 
-      const novo = await Comentario.criar({ usuario_id: uid, publicacao_id: id, texto: texto.trim() });
+      let novo;
+      try {
+        novo = await Comentario.criar({
+          usuario_id: uid,
+          publicacao_id: id,
+          texto: texto.trim(),
+          parent_id: parentIdRaw,
+        });
+      } catch (e) {
+        if (e && e.code === 'COMMENT_INVALID_PARENT') {
+          return res.status(400).json({ sucesso: false, mensagem: 'Resposta inválida.' });
+        }
+        throw e;
+      }
       const nomesMencionados = PostMention.extrairMencoes(texto.trim());
       const usuariosMencionados = await PostMention.resolverUsuariosPorNome(nomesMencionados);
       await CommentMention.criarEmLote(novo.id, uid, usuariosMencionados.map((u) => u.id));
       notificarMencoes(texto.trim(), uid, id, 'comentario').catch(() => {});
 
       const svc = getNotificacaoService();
-      if (svc) {
-        const post = await Publicacao.buscarPorId(id);
-        if (post && post.usuario_id !== uid) {
-          const autor = await Usuario.buscarPorId(uid);
-          svc.criar(post.usuario_id, 'comentario', `${autor.nome} comentou na sua publicação.`, `/explorar#post-${id}`, { remetente_id: uid, publicacao_id: parseInt(id), pet_id: post.pet_id || null }).catch(() => {});
+      const post = await Publicacao.buscarPorId(id);
+      const autor = await Usuario.buscarPorId(uid);
+      if (svc && post) {
+        if (!novo.parent_id && post.usuario_id !== uid) {
+          svc.criar(post.usuario_id, 'comentario', `${autor.nome} comentou na sua publicação.`, `/explorar#post-${id}`, { remetente_id: uid, publicacao_id: parseInt(id, 10), pet_id: post.pet_id || null }).catch(() => {});
+        }
+        if (novo.parent_id) {
+          const pai = await Comentario.buscarPorId(novo.parent_id);
+          if (pai && pai.usuario_id !== uid) {
+            svc.criar(
+              pai.usuario_id,
+              'comentario',
+              `${autor.nome} respondeu ao seu comentário.`,
+              `/explorar#post-${id}`,
+              { remetente_id: uid, publicacao_id: parseInt(id, 10), pet_id: post.pet_id || null }
+            ).catch(() => {});
+          }
         }
       }
 
-      const lista = await Comentario.buscarPorPublicacao(id);
-      res.json({ sucesso: true, comentarios: lista, total: lista.length });
+      const lista = await Comentario.buscarArvorePorPublicacao(id);
+      const total = await Comentario.contar(id);
+      res.json({ sucesso: true, comentarios: lista, total });
     } catch (err) {
       logger.error('EXPLORAR', 'Erro ao comentar', err);
       res.status(500).json({ sucesso: false });
@@ -1114,12 +1141,43 @@ const explorarController = {
       if (!uid) return res.status(401).json({ sucesso: false, mensagem: 'Não autenticado.' });
       const postId = parseInt(req.params.id, 10);
       const texto = String(req.body?.texto || req.body?.text || '').trim();
+      const parentRaw = req.body?.parent_id ?? req.body?.parentId;
       if (!postId || !texto) return res.status(400).json({ sucesso: false, mensagem: 'Dados inválidos.' });
-      const novo = await Comentario.criar({ usuario_id: uid, publicacao_id: postId, texto });
+      let novo;
+      try {
+        novo = await Comentario.criar({ usuario_id: uid, publicacao_id: postId, texto, parent_id: parentRaw });
+      } catch (e) {
+        if (e && e.code === 'COMMENT_INVALID_PARENT') {
+          return res.status(400).json({ sucesso: false, mensagem: 'Resposta inválida.' });
+        }
+        throw e;
+      }
       const nomes = PostMention.extrairMencoes(texto);
       const usuarios = await PostMention.resolverUsuariosPorNome(nomes);
       await CommentMention.criarEmLote(novo.id, uid, usuarios.map((u) => u.id));
       await notificarMencoes(texto, uid, postId, 'comentario');
+
+      const svc = getNotificacaoService();
+      const post = await Publicacao.buscarPorId(postId);
+      const autor = await Usuario.buscarPorId(uid);
+      if (svc && post) {
+        if (!novo.parent_id && post.usuario_id !== uid) {
+          svc.criar(post.usuario_id, 'comentario', `${autor.nome} comentou na sua publicação.`, `/explorar#post-${postId}`, { remetente_id: uid, publicacao_id: postId, pet_id: post.pet_id || null }).catch(() => {});
+        }
+        if (novo.parent_id) {
+          const pai = await Comentario.buscarPorId(novo.parent_id);
+          if (pai && pai.usuario_id !== uid) {
+            svc.criar(
+              pai.usuario_id,
+              'comentario',
+              `${autor.nome} respondeu ao seu comentário.`,
+              `/explorar#post-${postId}`,
+              { remetente_id: uid, publicacao_id: postId, pet_id: post.pet_id || null }
+            ).catch(() => {});
+          }
+        }
+      }
+
       return res.json({ sucesso: true, comentario: novo });
     } catch (err) {
       logger.error('EXPLORAR', 'Erro comentar v2', err);

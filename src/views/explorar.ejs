@@ -318,7 +318,19 @@
             pet_nome: post.pet_nome || '',
             pet_foto: post.pet_foto || '',
             fixada: !!post.fixada,
-            comments: true
+            comments: true,
+            tipo: post.tipo || 'original',
+            orig_id: post.orig_id || null,
+            orig_foto: post.orig_foto || '',
+            orig_texto: post.orig_texto || '',
+            orig_legenda: post.orig_legenda || '',
+            orig_autor_nome: post.orig_autor_nome || '',
+            orig_usuario_id: post.orig_usuario_id || null,
+            orig_pet_id: post.orig_pet_id || null,
+            orig_pet_nome: post.orig_pet_nome || '',
+            orig_pet_foto: post.orig_pet_foto || '',
+            orig_foto_perfil: post.orig_foto_perfil || '',
+            orig_criado_em: post.orig_criado_em || ''
           }; %>
           <article class="explore-tile-cell explore-tile--<%= tileSpan %> explorar-post-card post-enter"
                    style="animation-delay:<%= Math.min(idx * 45, 380) %>ms"
@@ -635,6 +647,10 @@
     </div>
     <div class="airpet-modal__footer relative border-t border-gray-100">
       <div id="mentionDropdown" class="autocomplete-dropdown hidden"></div>
+      <div id="commentModalReplyBar" class="hidden px-5 pt-2 pb-1 flex items-center justify-between gap-2 text-xs bg-primary-50/90 border-b border-primary-100/80">
+        <span class="text-gray-600 truncate">Respondendo a <strong id="commentModalReplyToName" class="text-gray-900"></strong></span>
+        <button type="button" id="commentModalReplyCancel" class="shrink-0 font-semibold text-primary-600 hover:text-primary-700 py-1">Cancelar</button>
+      </div>
       <div class="flex items-center gap-2 px-5 pt-3">
         <% if (isLogado) { %>
           <% var modalCor = usuario.cor_perfil || '#ec5a1c'; %>
@@ -915,12 +931,88 @@
     return !!fotoExplorarOrganico(p);
   }
 
+  var commentReplyParentId = null;
+  var commentReplyToName = '';
+  function clearCommentReplyTarget() {
+    commentReplyParentId = null;
+    commentReplyToName = '';
+    var bar = document.getElementById('postDetailReplyBar');
+    var mbar = document.getElementById('commentModalReplyBar');
+    if (bar) bar.classList.add('hidden');
+    if (mbar) mbar.classList.add('hidden');
+  }
+  function setCommentReplyTarget(parentId, name) {
+    commentReplyParentId = parentId;
+    commentReplyToName = name || '';
+    var n1 = document.getElementById('postDetailReplyToName');
+    var n2 = document.getElementById('commentModalReplyToName');
+    if (n1) n1.textContent = commentReplyToName;
+    if (n2) n2.textContent = commentReplyToName;
+    var bar = document.getElementById('postDetailReplyBar');
+    var mbar = document.getElementById('commentModalReplyBar');
+    if (bar) bar.classList.remove('hidden');
+    if (mbar) mbar.classList.remove('hidden');
+  }
+
+  function syncPostDetailRepostLayout(meta) {
+    var repCtx = document.getElementById('postDetailRepostCtx');
+    var quoted = document.getElementById('postDetailQuotedWrap');
+    var qh = document.getElementById('postDetailQuotedHeader');
+    var qt = document.getElementById('postDetailQuotedText');
+    var qi = document.getElementById('postDetailQuotedImg');
+    if (!repCtx || !quoted || !qh || !qt || !qi) return;
+    var isRepost = meta && meta.kind === 'organic' && meta.tipo === 'repost' && meta.orig_id;
+    if (!isRepost) {
+      repCtx.classList.add('hidden');
+      quoted.classList.add('hidden');
+      qt.classList.add('hidden');
+      qi.classList.add('hidden');
+      qt.textContent = '';
+      qi.removeAttribute('src');
+      qh.innerHTML = '';
+      return;
+    }
+    repCtx.classList.remove('hidden');
+    var who = repCtx.querySelector('.post-detail-repost-who');
+    if (who) who.textContent = meta.autor_nome || '';
+    quoted.classList.remove('hidden');
+    var origPet = meta.orig_pet_id && meta.orig_pet_nome;
+    if (origPet) {
+      var pav = meta.orig_pet_foto
+        ? '<a href="/explorar/pet/' + meta.orig_pet_id + '" class="shrink-0"><img src="' + escapeHtml(meta.orig_pet_foto) + '" alt="" class="w-9 h-9 rounded-full object-cover ring-1 ring-gray-200"></a>'
+        : '<a href="/explorar/pet/' + meta.orig_pet_id + '" class="shrink-0 w-9 h-9 rounded-full bg-primary-50 text-primary-500 flex items-center justify-center text-xs">🐾</a>';
+      qh.innerHTML = pav + '<div class="min-w-0 flex-1"><a href="/explorar/pet/' + meta.orig_pet_id + '" class="font-semibold text-gray-900 truncate block">' + escapeHtml(meta.orig_pet_nome) + '</a><p class="text-xs text-gray-500 truncate">por <a href="/explorar/perfil/' + meta.orig_usuario_id + '" class="font-medium hover:text-primary-600">' + escapeHtml(meta.orig_autor_nome || '') + '</a></p></div>';
+    } else {
+      var av = meta.orig_foto_perfil
+        ? '<img src="' + escapeHtml(meta.orig_foto_perfil) + '" alt="" class="w-9 h-9 rounded-full object-cover shrink-0 ring-1 ring-gray-200">'
+        : '<span class="w-9 h-9 rounded-full shrink-0 bg-gray-200 flex items-center justify-center text-xs font-bold text-gray-600">' + escapeHtml((meta.orig_autor_nome || 'U').charAt(0).toUpperCase()) + '</span>';
+      qh.innerHTML = '<div class="flex items-center gap-2 min-w-0">' + av + '<a href="/explorar/perfil/' + meta.orig_usuario_id + '" class="font-semibold text-gray-900 truncate hover:text-primary-600">' + escapeHtml(meta.orig_autor_nome || '') + '</a></div>';
+    }
+    var origTxt = (meta.orig_texto || meta.orig_legenda || '').trim();
+    if (origTxt) {
+      qt.textContent = origTxt;
+      qt.classList.remove('hidden');
+    } else {
+      qt.textContent = '';
+      qt.classList.add('hidden');
+    }
+    if (meta.orig_foto && String(meta.orig_foto).trim()) {
+      qi.src = meta.orig_foto;
+      qi.classList.remove('hidden');
+    } else {
+      qi.removeAttribute('src');
+      qi.classList.add('hidden');
+    }
+  }
+
   function openPostDetailFromArticle(article) {
     if (!article) return;
     var raw = article.getAttribute('data-explorar-meta');
     if (!raw) return;
     var meta;
     try { meta = JSON.parse(decodeURIComponent(raw)); } catch (err) { return; }
+
+    clearCommentReplyTarget();
 
     var pid = meta.postId;
     commentPostId = (meta.kind === 'petshop') ? pid : (pid != null && pid !== '' ? pid : null);
@@ -937,13 +1029,18 @@
     var imgEl = document.getElementById('postDetailImg');
     var fbEl = document.getElementById('postDetailImgFallback');
     var mediaCol = document.getElementById('postDetailMediaCol');
-    var hasFoto = !!(meta.foto && String(meta.foto).trim());
+    var mainPhoto = '';
+    if (meta.foto && String(meta.foto).trim()) mainPhoto = String(meta.foto).trim();
+    else if (meta.kind === 'organic' && meta.tipo === 'repost' && meta.orig_foto && String(meta.orig_foto).trim()) {
+      mainPhoto = String(meta.orig_foto).trim();
+    }
+    var hasFoto = !!mainPhoto;
     if (mediaCol) {
       if (hasFoto) mediaCol.classList.remove('hidden');
       else mediaCol.classList.add('hidden');
     }
     if (hasFoto && imgEl && fbEl) {
-      imgEl.src = meta.foto;
+      imgEl.src = mainPhoto;
       imgEl.classList.remove('hidden');
       fbEl.classList.add('hidden');
     } else if (imgEl && fbEl) {
@@ -1032,6 +1129,9 @@
         tw.classList.add('hidden');
       }
     }
+
+    if (meta.kind === 'organic') syncPostDetailRepostLayout(meta);
+    else syncPostDetailRepostLayout({ kind: 'other' });
 
     var cs = document.getElementById('postDetailCommentsSection');
     var comp = document.getElementById('postDetailCommentComposer');
@@ -1152,6 +1252,7 @@
 
   /* ──────────── Comments ──────────── */
   function abrirComentarios(postId) {
+    clearCommentReplyTarget();
     commentsTarget.list = document.getElementById('commentList');
     commentsTarget.petsC = document.getElementById('petsProximosContainer');
     commentsTarget.petsL = document.getElementById('petsProximosList');
@@ -1205,7 +1306,8 @@
             escapeHtml: escapeHtml,
             renderMencoes: renderMencoes,
             tempoRelativo: tempoRelativo,
-            useDataTimeAttr: true
+            useDataTimeAttr: true,
+            allowReply: !!(meuId) && !isPetshop
           });
         } else {
           html = '<div class="space-y-4">';
@@ -1360,16 +1462,19 @@
       ? '/explorar/petshops-post/' + encodeURIComponent(postId) + '/comentar'
       : '/explorar/post/' + postId + '/comentar';
 
+    var payload = { texto: texto };
+    if (commentReplyParentId && !isPetshop) payload.parent_id = parseInt(commentReplyParentId, 10);
     fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
       credentials: 'same-origin',
-      body: JSON.stringify({ texto: texto })
+      body: JSON.stringify(payload)
     })
     .then(function (r) { return r.json(); })
     .then(function (data) {
       if (!data.sucesso) { toast(data.mensagem || 'Erro ao comentar.', 'erro'); return; }
       if (inputEl) inputEl.value = '';
+      clearCommentReplyTarget();
       if (commentPostId === postId) carregarComentarios(postId);
     })
     .catch(function () { toast('Erro de conexão.', 'erro'); });
@@ -1397,6 +1502,29 @@
   }
   wireCommentDeletes(document.getElementById('commentList'));
   wireCommentDeletes(document.getElementById('postDetailCommentList'));
+
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest('.btn-reply-comment');
+    if (!b) return;
+    var inList = b.closest('#postDetailCommentList, #commentList');
+    if (!inList) return;
+    e.preventDefault();
+    var cid = b.getAttribute('data-comment-id');
+    var nm = b.getAttribute('data-author-name') || '';
+    if (!cid) return;
+    setCommentReplyTarget(cid, nm);
+    if (inList.id === 'postDetailCommentList') {
+      var pi = document.getElementById('postDetailCommentInput');
+      if (pi) pi.focus();
+    } else {
+      var ci = document.getElementById('commentInput');
+      if (ci) ci.focus();
+    }
+  });
+  var postDetailReplyCancel = document.getElementById('postDetailReplyCancel');
+  if (postDetailReplyCancel) postDetailReplyCancel.addEventListener('click', clearCommentReplyTarget);
+  var commentModalReplyCancel = document.getElementById('commentModalReplyCancel');
+  if (commentModalReplyCancel) commentModalReplyCancel.addEventListener('click', clearCommentReplyTarget);
 
   /* ──────────── Comment input in modal ──────────── */
   var commentInput = document.getElementById('commentInput');
@@ -2082,7 +2210,19 @@
       pet_nome: p.pet_nome || '',
       pet_foto: p.pet_foto || '',
       fixada: !!p.fixada,
-      comments: true
+      comments: true,
+      tipo: p.tipo || 'original',
+      orig_id: p.orig_id || null,
+      orig_foto: p.orig_foto || '',
+      orig_texto: p.orig_texto || '',
+      orig_legenda: p.orig_legenda || '',
+      orig_autor_nome: p.orig_autor_nome || '',
+      orig_usuario_id: p.orig_usuario_id || null,
+      orig_pet_id: p.orig_pet_id || null,
+      orig_pet_nome: p.orig_pet_nome || '',
+      orig_pet_foto: p.orig_pet_foto || '',
+      orig_foto_perfil: p.orig_foto_perfil || '',
+      orig_criado_em: p.orig_criado_em || ''
     };
     var sp = explorarTileSpanClass(p);
     var inner = '<div class="explore-tile-inner"><div class="explore-tile-skeleton" aria-hidden="true"></div>';

@@ -684,6 +684,18 @@ const migrations = [
 
   `CREATE INDEX IF NOT EXISTS idx_comentarios_pub ON comentarios (publicacao_id);`,
 
+  `DO $$ BEGIN
+    IF NOT EXISTS (
+      SELECT 1 FROM information_schema.columns
+      WHERE table_schema = 'public' AND table_name = 'comentarios' AND column_name = 'parent_id'
+    ) THEN
+      ALTER TABLE comentarios
+        ADD COLUMN parent_id INTEGER REFERENCES comentarios(id) ON DELETE CASCADE;
+    END IF;
+  END $$;`,
+  `CREATE INDEX IF NOT EXISTS idx_comentarios_parent ON comentarios (parent_id);`,
+  `CREATE INDEX IF NOT EXISTS idx_comentarios_pub_parent ON comentarios (publicacao_id, parent_id);`,
+
   // 22. Seguidores
   `CREATE TABLE IF NOT EXISTS seguidores (
     id SERIAL PRIMARY KEY,

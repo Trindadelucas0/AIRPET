@@ -820,7 +820,19 @@
                   pet_nome: post.pet_nome || '',
                   pet_foto: post.pet_foto || '',
                   fixada: !!post.fixada,
-                  comments: true
+                  comments: true,
+                  tipo: post.tipo || 'original',
+                  orig_id: post.orig_id || null,
+                  orig_foto: post.orig_foto || '',
+                  orig_texto: post.orig_texto || '',
+                  orig_legenda: post.orig_legenda || '',
+                  orig_autor_nome: post.orig_autor_nome || '',
+                  orig_usuario_id: post.orig_usuario_id || null,
+                  orig_pet_id: post.orig_pet_id || null,
+                  orig_pet_nome: post.orig_pet_nome || '',
+                  orig_pet_foto: post.orig_pet_foto || '',
+                  orig_foto_perfil: post.orig_foto_perfil || '',
+                  orig_criado_em: post.orig_criado_em || ''
                 };
               %>
               <article class="post-card post-enter" data-explorar-meta="<%= encodeURIComponent(JSON.stringify(feedMetaObj)) %>" tabindex="0" aria-label="Abrir publicação" data-post-id="<%= post.id %>" data-author-id="<%= post.usuario_id %>" id="post-<%= post.id %>" style="animation-delay:<%= Math.min(idx*50,300) %>ms">
@@ -1079,6 +1091,10 @@
       </button>
     </div>
     <div id="commentList" class="airpet-modal__body px-4 min-h-[160px]"></div>
+    <div id="feedCommentModalReplyBar" class="hidden px-4 pt-2 pb-1 flex items-center justify-between gap-2 text-xs" style="border-top:1px solid var(--border);background:color-mix(in srgb,var(--accent) 8%,var(--ink-2));">
+      <span style="color:var(--text-dim);" class="truncate">Respondendo a <strong id="feedCommentModalReplyToName" style="color:var(--text);"></strong></span>
+      <button type="button" id="feedCommentModalReplyCancel" class="shrink-0 font-semibold" style="color:var(--accent);padding:4px 0;">Cancelar</button>
+    </div>
     <div class="airpet-modal__footer flex gap-2 items-center px-4" style="border-color:var(--border);">
       <input id="commentInputModal" type="text" maxlength="500" placeholder="Adicionar comentário…" class="flex-1 rounded-xl px-3 py-2.5 text-sm" style="background:var(--input);border:1px solid var(--border);color:var(--text);">
       <button id="btnEnviarComentarioModal" type="button" class="btn-primary shrink-0" style="padding:10px 14px;" disabled>Enviar</button>
@@ -1157,6 +1173,80 @@
 
   var postDetailCommentPostId = null;
 
+  var feedCommentReplyParentId = null;
+  var feedCommentReplyToName = '';
+  function clearFeedCommentReplyTarget() {
+    feedCommentReplyParentId = null;
+    feedCommentReplyToName = '';
+    var pd = document.getElementById('postDetailReplyBar');
+    var fm = document.getElementById('feedCommentModalReplyBar');
+    if (pd) pd.classList.add('hidden');
+    if (fm) fm.classList.add('hidden');
+  }
+  function setFeedCommentReplyTarget(parentId, name) {
+    feedCommentReplyParentId = parentId;
+    feedCommentReplyToName = name || '';
+    var n1 = document.getElementById('postDetailReplyToName');
+    var n2 = document.getElementById('feedCommentModalReplyToName');
+    if (n1) n1.textContent = feedCommentReplyToName;
+    if (n2) n2.textContent = feedCommentReplyToName;
+    var pd = document.getElementById('postDetailReplyBar');
+    var fm = document.getElementById('feedCommentModalReplyBar');
+    if (pd) pd.classList.remove('hidden');
+    if (fm) fm.classList.remove('hidden');
+  }
+
+  function syncPostDetailRepostLayoutFeed(meta) {
+    var repCtx = document.getElementById('postDetailRepostCtx');
+    var quoted = document.getElementById('postDetailQuotedWrap');
+    var qh = document.getElementById('postDetailQuotedHeader');
+    var qt = document.getElementById('postDetailQuotedText');
+    var qi = document.getElementById('postDetailQuotedImg');
+    if (!repCtx || !quoted || !qh || !qt || !qi) return;
+    var isRepost = meta && meta.kind === 'organic' && meta.tipo === 'repost' && meta.orig_id;
+    if (!isRepost) {
+      repCtx.classList.add('hidden');
+      quoted.classList.add('hidden');
+      qt.classList.add('hidden');
+      qi.classList.add('hidden');
+      qt.textContent = '';
+      qi.removeAttribute('src');
+      qh.innerHTML = '';
+      return;
+    }
+    repCtx.classList.remove('hidden');
+    var who = repCtx.querySelector('.post-detail-repost-who');
+    if (who) who.textContent = meta.autor_nome || '';
+    quoted.classList.remove('hidden');
+    var origPet = meta.orig_pet_id && meta.orig_pet_nome;
+    if (origPet) {
+      var pav = meta.orig_pet_foto
+        ? '<a href="/explorar/pet/' + meta.orig_pet_id + '" class="shrink-0"><img src="' + escapeHtml(meta.orig_pet_foto) + '" alt="" class="w-9 h-9 rounded-full object-cover ring-1 ring-gray-200"></a>'
+        : '<a href="/explorar/pet/' + meta.orig_pet_id + '" class="shrink-0 w-9 h-9 rounded-full bg-primary-50 text-primary-500 flex items-center justify-center text-xs">🐾</a>';
+      qh.innerHTML = pav + '<div class="min-w-0 flex-1"><a href="/explorar/pet/' + meta.orig_pet_id + '" class="font-semibold text-gray-900 truncate block">' + escapeHtml(meta.orig_pet_nome) + '</a><p class="text-xs text-gray-500 truncate">por <a href="/explorar/perfil/' + meta.orig_usuario_id + '" class="font-medium hover:text-primary-600">' + escapeHtml(meta.orig_autor_nome || '') + '</a></p></div>';
+    } else {
+      var av = meta.orig_foto_perfil
+        ? '<img src="' + escapeHtml(meta.orig_foto_perfil) + '" alt="" class="w-9 h-9 rounded-full object-cover shrink-0 ring-1 ring-gray-200">'
+        : '<span class="w-9 h-9 rounded-full shrink-0 bg-gray-200 flex items-center justify-center text-xs font-bold text-gray-600">' + escapeHtml((meta.orig_autor_nome || 'U').charAt(0).toUpperCase()) + '</span>';
+      qh.innerHTML = '<div class="flex items-center gap-2 min-w-0">' + av + '<a href="/explorar/perfil/' + meta.orig_usuario_id + '" class="font-semibold text-gray-900 truncate hover:text-primary-600">' + escapeHtml(meta.orig_autor_nome || '') + '</a></div>';
+    }
+    var origTxt = (meta.orig_texto || meta.orig_legenda || '').trim();
+    if (origTxt) {
+      qt.textContent = origTxt;
+      qt.classList.remove('hidden');
+    } else {
+      qt.textContent = '';
+      qt.classList.add('hidden');
+    }
+    if (meta.orig_foto && String(meta.orig_foto).trim()) {
+      qi.src = meta.orig_foto;
+      qi.classList.remove('hidden');
+    } else {
+      qi.removeAttribute('src');
+      qi.classList.add('hidden');
+    }
+  }
+
   function carregarComentariosPostDetail(postId) {
     var list = document.getElementById('postDetailCommentList');
     if (!list) return;
@@ -1174,7 +1264,8 @@
             escapeHtml: escapeHtml,
             renderMencoes: renderMencoesFeed,
             tempoRelativo: tempoRelativo,
-            useDataTimeAttr: true
+            useDataTimeAttr: true,
+            allowReply: !!meuId
           });
         }
       })
@@ -1228,6 +1319,7 @@
     var meta;
     try { meta = JSON.parse(decodeURIComponent(raw)); } catch (err) { return; }
     if (meta.kind !== 'organic') return;
+    clearFeedCommentReplyTarget();
     postDetailCommentPostId = meta.postId;
     var titleEl = document.getElementById('postDetailTitle');
     if (titleEl) {
@@ -1236,13 +1328,18 @@
     var imgEl = document.getElementById('postDetailImg');
     var fbEl = document.getElementById('postDetailImgFallback');
     var mediaCol = document.getElementById('postDetailMediaCol');
-    var hasFoto = !!(meta.foto && String(meta.foto).trim());
+    var mainPhoto = '';
+    if (meta.foto && String(meta.foto).trim()) mainPhoto = String(meta.foto).trim();
+    else if (meta.tipo === 'repost' && meta.orig_foto && String(meta.orig_foto).trim()) {
+      mainPhoto = String(meta.orig_foto).trim();
+    }
+    var hasFoto = !!mainPhoto;
     if (mediaCol) {
       if (hasFoto) mediaCol.classList.remove('hidden');
       else mediaCol.classList.add('hidden');
     }
     if (hasFoto && imgEl && fbEl) {
-      imgEl.src = meta.foto;
+      imgEl.src = mainPhoto;
       imgEl.classList.remove('hidden');
       fbEl.classList.add('hidden');
     } else if (imgEl && fbEl) {
@@ -1301,6 +1398,7 @@
         tw.classList.add('hidden');
       }
     }
+    syncPostDetailRepostLayoutFeed(meta);
     var cs = document.getElementById('postDetailCommentsSection');
     var comp = document.getElementById('postDetailCommentComposer');
     var hint = document.getElementById('postDetailLoginHint');
@@ -1392,6 +1490,7 @@
 
   // ── Comments ──
   function abrirComentarios(postId) {
+    clearFeedCommentReplyTarget();
     commentPostId = postId;
     if (!commentModal || !commentList) return;
     commentInputModal.value = '';
@@ -1436,7 +1535,8 @@
         escapeHtml: escapeHtml,
         renderMencoes: renderMencoesFeed,
         tempoRelativo: tempoRelativo,
-        useDataTimeAttr: true
+        useDataTimeAttr: true,
+        allowReply: !!meuId
       });
       return;
     }
@@ -1453,14 +1553,17 @@
   }
 
   function enviarComentario(postId, texto, inputEl) {
+    var payload = { texto: texto };
+    if (feedCommentReplyParentId) payload.parent_id = parseInt(feedCommentReplyParentId, 10);
     fetch('/explorar/post/' + postId + '/comentar', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
       credentials: 'same-origin',
-      body: JSON.stringify({ texto: texto })
+      body: JSON.stringify(payload)
     }).then(function(r) { return r.json(); }).then(function(d) {
       if (d.sucesso) {
         inputEl.value = '';
+        clearFeedCommentReplyTarget();
         var card = document.getElementById('post-' + postId);
         if (card) {
           var countEl = card.querySelector('.count-comentarios');
@@ -1671,7 +1774,19 @@
       pet_id: p.pet_id || null,
       pet_nome: p.pet_nome || '',
       pet_foto: p.pet_foto || '',
-      comments: true
+      comments: true,
+      tipo: p.tipo || 'original',
+      orig_id: p.orig_id || null,
+      orig_foto: p.orig_foto || '',
+      orig_texto: p.orig_texto || '',
+      orig_legenda: p.orig_legenda || '',
+      orig_autor_nome: p.orig_autor_nome || '',
+      orig_usuario_id: p.orig_usuario_id || null,
+      orig_pet_id: p.orig_pet_id || null,
+      orig_pet_nome: p.orig_pet_nome || '',
+      orig_pet_foto: p.orig_pet_foto || '',
+      orig_foto_perfil: p.orig_foto_perfil || '',
+      orig_criado_em: p.orig_criado_em || ''
     };
   }
 
@@ -1791,6 +1906,28 @@
       if (txt) enviarComentario(commentPostId, txt, commentInputModal);
     });
   }
+
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest('.btn-reply-comment');
+    if (!b) return;
+    var inList = b.closest('#postDetailCommentList, #commentList');
+    if (!inList) return;
+    e.preventDefault();
+    var cid = b.getAttribute('data-comment-id');
+    var nm = b.getAttribute('data-author-name') || '';
+    if (!cid) return;
+    setFeedCommentReplyTarget(cid, nm);
+    if (inList.id === 'postDetailCommentList') {
+      var pi = document.getElementById('postDetailCommentInput');
+      if (pi) pi.focus();
+    } else if (commentInputModal) {
+      commentInputModal.focus();
+    }
+  });
+  var postDetailReplyCancelFeed = document.getElementById('postDetailReplyCancel');
+  if (postDetailReplyCancelFeed) postDetailReplyCancelFeed.addEventListener('click', clearFeedCommentReplyTarget);
+  var feedCommentModalReplyCancelEl = document.getElementById('feedCommentModalReplyCancel');
+  if (feedCommentModalReplyCancelEl) feedCommentModalReplyCancelEl.addEventListener('click', clearFeedCommentReplyTarget);
 
   function requestClosePostDetailFeed() {
     if (typeof window.AIRPET_modalHistory_closePostDetail === 'function') {

@@ -13,6 +13,94 @@
   }
 
   var postDetailCommentPostId = null;
+  var organicReplyParentId = null;
+  var organicReplyToName = '';
+
+  function clearOrganicReplyTarget() {
+    organicReplyParentId = null;
+    organicReplyToName = '';
+    var bar = document.getElementById('postDetailReplyBar');
+    if (bar) bar.classList.add('hidden');
+  }
+
+  function setOrganicReplyTarget(parentId, name) {
+    organicReplyParentId = parentId;
+    organicReplyToName = name || '';
+    var n = document.getElementById('postDetailReplyToName');
+    var bar = document.getElementById('postDetailReplyBar');
+    if (n) n.textContent = organicReplyToName;
+    if (bar) bar.classList.remove('hidden');
+  }
+
+  function syncPostDetailRepostLayoutOrganic(meta) {
+    var repCtx = document.getElementById('postDetailRepostCtx');
+    var quoted = document.getElementById('postDetailQuotedWrap');
+    var qh = document.getElementById('postDetailQuotedHeader');
+    var qt = document.getElementById('postDetailQuotedText');
+    var qi = document.getElementById('postDetailQuotedImg');
+    if (!repCtx || !quoted || !qh || !qt || !qi) return;
+    var isRepost = meta && meta.kind === 'organic' && meta.tipo === 'repost' && meta.orig_id;
+    if (!isRepost) {
+      repCtx.classList.add('hidden');
+      quoted.classList.add('hidden');
+      qt.classList.add('hidden');
+      qi.classList.add('hidden');
+      qt.textContent = '';
+      qi.removeAttribute('src');
+      qh.innerHTML = '';
+      return;
+    }
+    repCtx.classList.remove('hidden');
+    var who = repCtx.querySelector('.post-detail-repost-who');
+    if (who) who.textContent = meta.autor_nome || '';
+    quoted.classList.remove('hidden');
+    var origPet = meta.orig_pet_id && meta.orig_pet_nome;
+    if (origPet) {
+      var pav = meta.orig_pet_foto
+        ? '<a href="/explorar/pet/' + meta.orig_pet_id + '" class="shrink-0"><img src="' + escapeHtml(meta.orig_pet_foto) + '" alt="" class="w-9 h-9 rounded-full object-cover ring-1 ring-gray-200"></a>'
+        : '<a href="/explorar/pet/' + meta.orig_pet_id + '" class="shrink-0 w-9 h-9 rounded-full bg-primary-50 text-primary-500 flex items-center justify-center text-xs">🐾</a>';
+      qh.innerHTML =
+        pav +
+        '<div class="min-w-0 flex-1"><a href="/explorar/pet/' +
+        meta.orig_pet_id +
+        '" class="font-semibold text-gray-900 truncate block">' +
+        escapeHtml(meta.orig_pet_nome) +
+        '</a><p class="text-xs text-gray-500 truncate">por <a href="/explorar/perfil/' +
+        meta.orig_usuario_id +
+        '" class="font-medium">' +
+        escapeHtml(meta.orig_autor_nome || '') +
+        '</a></p></div>';
+    } else {
+      var av = meta.orig_foto_perfil
+        ? '<img src="' + escapeHtml(meta.orig_foto_perfil) + '" alt="" class="w-9 h-9 rounded-full object-cover shrink-0 ring-1 ring-gray-200">'
+        : '<span class="w-9 h-9 rounded-full shrink-0 bg-gray-200 flex items-center justify-center text-xs font-bold text-gray-600">' +
+          escapeHtml((meta.orig_autor_nome || 'U').charAt(0).toUpperCase()) +
+          '</span>';
+      qh.innerHTML =
+        '<div class="flex items-center gap-2 min-w-0">' +
+        av +
+        '<a href="/explorar/perfil/' +
+        meta.orig_usuario_id +
+        '" class="font-semibold text-gray-900 truncate">' +
+        escapeHtml(meta.orig_autor_nome || '') +
+        '</a></div>';
+    }
+    var origTxt = (meta.orig_texto || meta.orig_legenda || '').trim();
+    if (origTxt) {
+      qt.textContent = origTxt;
+      qt.classList.remove('hidden');
+    } else {
+      qt.textContent = '';
+      qt.classList.add('hidden');
+    }
+    if (meta.orig_foto && String(meta.orig_foto).trim()) {
+      qi.src = meta.orig_foto;
+      qi.classList.remove('hidden');
+    } else {
+      qi.removeAttribute('src');
+      qi.classList.add('hidden');
+    }
+  }
 
   function tempoRelativo(dateStr) {
     var d = new Date(dateStr);
@@ -57,6 +145,7 @@
             renderMencoes: renderMencoes,
             tempoRelativo: tempoRelativo,
             useDataTimeAttr: true,
+            allowReply: meuId != null,
           });
         }
       })
@@ -145,11 +234,13 @@
 
   function enviarComentarioOrganico(postId, texto, inputEl) {
     if (!texto) return;
+    var payload = { texto: texto };
+    if (organicReplyParentId) payload.parent_id = parseInt(organicReplyParentId, 10);
     fetch('/explorar/post/' + postId + '/comentar', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
       credentials: 'same-origin',
-      body: JSON.stringify({ texto: texto }),
+      body: JSON.stringify(payload),
     })
       .then(function (r) {
         return r.json();
@@ -157,6 +248,7 @@
       .then(function (d) {
         if (!d.sucesso) return;
         if (inputEl) inputEl.value = '';
+        clearOrganicReplyTarget();
         if (postDetailCommentPostId === postId || postDetailCommentPostId === String(postId)) {
           carregarComentariosPostDetail(postId);
         }
@@ -174,6 +266,7 @@
       return;
     }
     if (meta.kind !== 'organic') return;
+    clearOrganicReplyTarget();
     postDetailCommentPostId = meta.postId;
     var titleEl = document.getElementById('postDetailTitle');
     if (titleEl) {
@@ -181,8 +274,13 @@
     }
     var imgEl = document.getElementById('postDetailImg');
     var fbEl = document.getElementById('postDetailImgFallback');
-    if (meta.foto && imgEl && fbEl) {
-      imgEl.src = meta.foto;
+    var mainPhoto = '';
+    if (meta.foto && String(meta.foto).trim()) mainPhoto = String(meta.foto).trim();
+    else if (meta.tipo === 'repost' && meta.orig_foto && String(meta.orig_foto).trim()) {
+      mainPhoto = String(meta.orig_foto).trim();
+    }
+    if (mainPhoto && imgEl && fbEl) {
+      imgEl.src = mainPhoto;
       imgEl.classList.remove('hidden');
       fbEl.classList.add('hidden');
     } else if (imgEl && fbEl) {
@@ -237,6 +335,7 @@
         tw.classList.add('hidden');
       }
     }
+    syncPostDetailRepostLayoutOrganic(meta);
     var cs = document.getElementById('postDetailCommentsSection');
     var comp = document.getElementById('postDetailCommentComposer');
     var hint = document.getElementById('postDetailLoginHint');
@@ -358,6 +457,22 @@
     }
 
     var postDetailCommentListEl = document.getElementById('postDetailCommentList');
+    document.addEventListener('click', function (e) {
+      var br = e.target.closest('.btn-reply-comment');
+      if (!br) return;
+      var list = br.closest('#postDetailCommentList');
+      if (!list) return;
+      e.preventDefault();
+      var cid = br.getAttribute('data-comment-id');
+      var nm = br.getAttribute('data-author-name') || '';
+      if (!cid) return;
+      setOrganicReplyTarget(cid, nm);
+      var pi = document.getElementById('postDetailCommentInput');
+      if (pi) pi.focus();
+    });
+    var replyCancelOrganic = document.getElementById('postDetailReplyCancel');
+    if (replyCancelOrganic) replyCancelOrganic.addEventListener('click', clearOrganicReplyTarget);
+
     if (postDetailCommentListEl) {
       postDetailCommentListEl.addEventListener('click', function (e) {
         var b = e.target.closest('.btn-del-comment');

@@ -596,6 +596,10 @@
           <i class="fa-solid fa-spinner fa-spin text-xl"></i>
         </div>
       </div>
+      <div id="perfilCommentsReplyBar" class="hidden px-5 pt-2 pb-1 flex items-center justify-between gap-2 text-xs bg-primary-50/90 border-t border-primary-100/80">
+        <span class="text-gray-600 truncate">Respondendo a <strong id="perfilCommentsReplyToName" class="text-gray-900"></strong></span>
+        <button type="button" id="perfilCommentsReplyCancel" class="shrink-0 font-semibold text-primary-600 py-1">Cancelar</button>
+      </div>
       <form id="modalCommentForm" class="airpet-modal__footer border-t border-gray-100 flex items-center gap-2 px-5 pt-3">
         <input type="text" id="modalCommentInput" placeholder="Escreva um comentário..." maxlength="300"
                class="flex-1 text-sm bg-gray-50 rounded-full px-4 py-2.5 border-0 outline-none focus:ring-2 focus:ring-primary-500/20 placeholder-gray-400">
@@ -1000,8 +1004,23 @@
   var modalCommentForm = document.getElementById('modalCommentForm');
   var modalCommentInput = document.getElementById('modalCommentInput');
   var activeCommentPostId = null;
+  var perfilReplyParentId = null;
+
+  function clearPerfilReplyTarget() {
+    perfilReplyParentId = null;
+    var bar = document.getElementById('perfilCommentsReplyBar');
+    if (bar) bar.classList.add('hidden');
+  }
+  function setPerfilReplyTarget(parentId, name) {
+    perfilReplyParentId = parentId;
+    var bar = document.getElementById('perfilCommentsReplyBar');
+    var nm = document.getElementById('perfilCommentsReplyToName');
+    if (nm) nm.textContent = name || '';
+    if (bar) bar.classList.remove('hidden');
+  }
 
   function openComments(postId) {
+    clearPerfilReplyTarget();
     activeCommentPostId = postId;
     commentsModal.classList.remove('hidden');
     if (window.AIRPET_modalUi) window.AIRPET_modalUi.refreshBodyScroll();
@@ -1022,7 +1041,8 @@
             tempoRelativo: tempoRelativo,
             useDataTimeAttr: false,
             forceDeleteButton: true,
-            deleteDataAttr: 'data-id'
+            deleteDataAttr: 'data-id',
+            allowReply: !!myUserId
           });
         } else {
           var htmlfb = '';
@@ -1058,6 +1078,17 @@
     var btn = e.target.closest('.btn-open-comments');
     if (btn) openComments(btn.dataset.postId);
   });
+  document.addEventListener('click', function (e) {
+    var br = e.target.closest('.btn-reply-comment');
+    if (!br || !commentsBody.contains(br)) return;
+    e.preventDefault();
+    var cid = br.getAttribute('data-comment-id');
+    var nm = br.getAttribute('data-author-name') || '';
+    if (cid) setPerfilReplyTarget(cid, nm);
+    if (modalCommentInput) modalCommentInput.focus();
+  });
+  var perfilCommentsReplyCancel = document.getElementById('perfilCommentsReplyCancel');
+  if (perfilCommentsReplyCancel) perfilCommentsReplyCancel.addEventListener('click', clearPerfilReplyTarget);
 
   document.getElementById('closeComments').addEventListener('click', closeComments);
   document.getElementById('commentsOverlay').addEventListener('click', closeComments);
@@ -1068,15 +1099,18 @@
     if (!texto || !activeCommentPostId) return;
     modalCommentInput.value = '';
 
+    var payload = { texto: texto };
+    if (perfilReplyParentId) payload.parent_id = parseInt(perfilReplyParentId, 10);
     fetch('/explorar/post/' + activeCommentPostId + '/comentar', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
       credentials: 'same-origin',
-      body: JSON.stringify({ texto: texto })
+      body: JSON.stringify(payload)
     })
     .then(function (r) { return r.json(); })
     .then(function (data) {
       if (data.sucesso) {
+        clearPerfilReplyTarget();
         openComments(activeCommentPostId);
         var article = document.querySelector('article[data-post-id="' + activeCommentPostId + '"]');
         if (article && data.total !== undefined) {

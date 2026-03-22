@@ -1,13 +1,51 @@
 const { query } = require('../config/database');
 
+function montarArvoreComentarios(rows) {
+  if (!rows || !rows.length) return [];
+  const byId = new Map();
+  rows.forEach((r) => {
+    byId.set(r.id, { ...r, respostas: [] });
+  });
+  const roots = [];
+  byId.forEach((node) => {
+    const pid = node.parent_id;
+    if (pid != null && byId.has(pid)) {
+      byId.get(pid).respostas.push(node);
+    } else {
+      roots.push(node);
+    }
+  });
+  function sortRec(n) {
+    n.respostas.sort((a, b) => new Date(a.criado_em) - new Date(b.criado_em));
+    n.respostas.forEach(sortRec);
+  }
+  roots.sort((a, b) => new Date(a.criado_em) - new Date(b.criado_em));
+  roots.forEach(sortRec);
+  return roots;
+}
+
 const Comentario = {
 
   async criar(dados) {
-    const { usuario_id, publicacao_id, texto } = dados;
+    const { usuario_id, publicacao_id, texto, parent_id: parentIdIn } = dados;
+    const pubId = parseInt(publicacao_id, 10);
+    let parentId = null;
+    if (parentIdIn != null && parentIdIn !== '') {
+      const n = parseInt(parentIdIn, 10);
+      if (Number.isFinite(n) && n > 0) parentId = n;
+    }
+    if (parentId) {
+      const parent = await Comentario.buscarPorId(parentId);
+      if (!parent || parseInt(parent.publicacao_id, 10) !== pubId) {
+        const err = new Error('Comentário pai inválido.');
+        err.code = 'COMMENT_INVALID_PARENT';
+        throw err;
+      }
+    }
     const resultado = await query(
-      `INSERT INTO comentarios (usuario_id, publicacao_id, texto)
-       VALUES ($1, $2, $3) RETURNING *`,
-      [usuario_id, publicacao_id, texto]
+      `INSERT INTO comentarios (usuario_id, publicacao_id, texto, parent_id)
+       VALUES ($1, $2, $3, $4) RETURNING *`,
+      [usuario_id, pubId, texto, parentId]
     );
     return resultado.rows[0];
   },
@@ -20,7 +58,8 @@ const Comentario = {
     return resultado.rows[0] || null;
   },
 
-  async buscarPorPublicacao(publicacaoId, limite = 50) {
+  async buscarPorPublicacao(publicacaoId, limite = 120) {
+    const lim = Number.isInteger(limite) && limite > 0 ? limite : 120;
     const resultado = await query(
       `SELECT c.*, u.nome AS autor_nome, u.cor_perfil, u.foto_perfil
        FROM comentarios c
@@ -28,9 +67,14 @@ const Comentario = {
        WHERE c.publicacao_id = $1
        ORDER BY c.criado_em ASC
        LIMIT $2`,
-      [publicacaoId, limite]
+      [publicacaoId, lim]
     );
     return resultado.rows;
+  },
+
+  async buscarArvorePorPublicacao(publicacaoId, limite = 120) {
+    const flat = await Comentario.buscarPorPublicacao(publicacaoId, limite);
+    return montarArvoreComentarios(flat);
   },
 
   async deletar(id) {

@@ -30,6 +30,61 @@
     return d.getDate() + ' ' + meses[d.getMonth()];
   }
 
+  function buildTreeFromFlat(rows) {
+    if (!rows || !rows.length) return [];
+    var byId = {};
+    for (var i = 0; i < rows.length; i++) {
+      var r = rows[i];
+      byId[r.id] = Object.assign({}, r, { respostas: [] });
+    }
+    var roots = [];
+    for (var j = 0; j < rows.length; j++) {
+      var row = rows[j];
+      var node = byId[row.id];
+      var pid = row.parent_id;
+      if (pid != null && byId[pid]) {
+        byId[pid].respostas.push(node);
+      } else {
+        roots.push(node);
+      }
+    }
+    function sortRec(n) {
+      n.respostas.sort(function (a, b) {
+        return new Date(a.criado_em) - new Date(b.criado_em);
+      });
+      for (var k = 0; k < n.respostas.length; k++) sortRec(n.respostas[k]);
+    }
+    roots.sort(function (a, b) {
+      return new Date(a.criado_em) - new Date(b.criado_em);
+    });
+    for (var m = 0; m < roots.length; m++) sortRec(roots[m]);
+    return roots;
+  }
+
+  function renderThread(nodes, opts, depth) {
+    var html = '';
+    for (var i = 0; i < nodes.length; i++) {
+      var c = nodes[i];
+      var ml = '';
+      if (depth > 0) {
+        ml =
+          'margin-left:' +
+          Math.min(depth * 14, 56) +
+          'px;padding-left:10px;border-left:2px solid #e5e7eb';
+      }
+      html +=
+        '<div class="airpet-comment-thread-branch"' +
+        (ml ? ' style="' + ml + '"' : '') +
+        '>';
+      html += renderComentario(c, opts);
+      if (c.respostas && c.respostas.length) {
+        html += renderThread(c.respostas, opts, depth + 1);
+      }
+      html += '</div>';
+    }
+    return html;
+  }
+
   /**
    * @param {object} c - comentário da API
    * @param {object} opts
@@ -39,6 +94,7 @@
    * @param {function} [opts.tempoRelativo]
    * @param {boolean} [opts.useDataTimeAttr] - se true, data-time no span para atualizar depois
    * @param {string} [opts.deleteDataAttr='data-comment-id'] - atributo no botão apagar
+   * @param {boolean} [opts.allowReply] - botão Responder (comentários orgânicos)
    */
   function renderComentario(c, opts) {
     opts = opts || {};
@@ -89,6 +145,16 @@
         '" aria-label="Excluir comentário"><i class="fa-solid fa-trash-can text-xs"></i></button>';
     }
 
+    var replyBtn = '';
+    if (opts.allowReply === true && meuId != null && c.publicacao_id != null) {
+      replyBtn =
+        '<button type="button" class="mt-0.5 text-xs font-semibold text-gray-500 hover:text-primary-600 btn-reply-comment" data-comment-id="' +
+        escapeHtml(String(c.id)) +
+        '" data-author-name="' +
+        escapeHtml(nome) +
+        '">Responder</button>';
+    }
+
     return (
       '<article class="airpet-comment-row group" data-comment-id="' +
       escapeHtml(String(c.id)) +
@@ -110,6 +176,7 @@
       '<p class="airpet-comment-row__text">' +
       renderMencoes(c.texto || '') +
       '</p>' +
+      replyBtn +
       '</div>' +
       delBtn +
       '</article>'
@@ -118,10 +185,13 @@
 
   function renderList(comentarios, opts) {
     if (!comentarios || !comentarios.length) return '';
-    var html = '<div class="airpet-modal__comments-stack">';
-    for (var i = 0; i < comentarios.length; i++) {
-      html += renderComentario(comentarios[i], opts);
+    opts = opts || {};
+    var tree = comentarios;
+    if (!Object.prototype.hasOwnProperty.call(comentarios[0], 'respostas')) {
+      tree = buildTreeFromFlat(comentarios);
     }
+    var html = '<div class="airpet-modal__comments-stack">';
+    html += renderThread(tree, opts, 0);
     html += '</div>';
     return html;
   }
@@ -129,6 +199,8 @@
   window.AIRPET_commentRender = {
     renderComentario: renderComentario,
     renderList: renderList,
+    renderThread: renderThread,
+    buildTreeFromFlat: buildTreeFromFlat,
     escapeHtml: defaultEscapeHtml,
     renderMencoes: defaultRenderMencoes,
     tempoRelativo: defaultTempoRelativo
