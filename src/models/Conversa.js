@@ -25,7 +25,7 @@ const Conversa = {
    * @returns {Promise<object>} O registro da conversa criada
    */
   async criar(dados) {
-    const { pet_perdido_id, iniciador_id, tutor_id } = dados;
+    const { pet_perdido_id, iniciador_id = null, tutor_id } = dados;
 
     const resultado = await query(
       `INSERT INTO conversas (pet_perdido_id, iniciador_id, tutor_id)
@@ -57,7 +57,7 @@ const Conversa = {
        FROM conversas c
        JOIN pets_perdidos pp ON pp.id = c.pet_perdido_id
        JOIN pets p ON p.id = pp.pet_id
-       JOIN usuarios ini ON ini.id = c.iniciador_id
+       LEFT JOIN usuarios ini ON ini.id = c.iniciador_id
        JOIN usuarios tut ON tut.id = c.tutor_id
        WHERE c.id = $1`,
       [id]
@@ -80,7 +80,7 @@ const Conversa = {
               ini.nome AS iniciador_nome,
               tut.nome AS tutor_nome
        FROM conversas c
-       JOIN usuarios ini ON ini.id = c.iniciador_id
+       LEFT JOIN usuarios ini ON ini.id = c.iniciador_id
        JOIN usuarios tut ON tut.id = c.tutor_id
        WHERE c.pet_perdido_id = $1
        ORDER BY c.data_criacao DESC`,
@@ -110,6 +110,19 @@ const Conversa = {
       [usuarioId]
     );
     return resultado.rows;
+  },
+
+  async buscarAtivaPorPetPerdido(petPerdidoId) {
+    const resultado = await query(
+      `SELECT c.*
+       FROM conversas c
+       WHERE c.pet_perdido_id = $1
+         AND c.status = 'ativa'
+       ORDER BY c.data_criacao DESC
+       LIMIT 1`,
+      [petPerdidoId]
+    );
+    return resultado.rows[0] || null;
   },
 
   /**

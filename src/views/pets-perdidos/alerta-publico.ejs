@@ -1,15 +1,21 @@
 <% locals.titulo = titulo %>
+<% locals.extraHead = `
+<style>
+  .lost-public-wrap{max-width:560px;margin:0 auto;}
+  .lost-public-hero{box-shadow:0 10px 30px rgba(15,23,42,0.06);}
+</style>
+` %>
 <%- include('../partials/header') %>
 <%- include('../partials/flash') %>
 
 <main class="flex-1 min-h-[60vh]">
-  <div class="max-w-lg mx-auto px-5 py-10">
+  <div class="lost-public-wrap px-5 py-10">
     <% if (ativo) { %>
       <div class="rounded-2xl border border-red-200 bg-red-50/80 px-5 py-4 text-center mb-6">
         <p class="text-sm font-bold text-red-700 uppercase tracking-wide"><i class="fa-solid fa-triangle-exclamation mr-1"></i> Pet perdido</p>
         <p class="text-xs text-red-600/90 mt-1">Se você viu este animal, ajude a avisar a comunidade.</p>
       </div>
-      <div class="air-section-card text-center">
+      <div class="air-section-card text-center lost-public-hero">
         <% if (alerta.pet_foto) { %>
           <img src="<%= alerta.pet_foto %>" alt="<%= alerta.pet_nome %>" class="w-28 h-28 rounded-2xl object-cover mx-auto mb-4 shadow-md border border-gray-100">
         <% } else { %>
@@ -35,6 +41,32 @@
         <a href="/auth/registro" class="btn-primary-inline text-center py-3 px-6 text-sm">Criar conta</a>
         <a href="/auth/login" class="btn-ghost text-center py-3 px-6 text-sm">Entrar</a>
       </div>
+      <div class="mt-4">
+        <button type="button" id="btnMsgRapida" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl border border-primary-200 text-primary-700 bg-primary-50 hover:bg-primary-100 px-5 py-3 text-sm font-semibold">
+          <i class="fa-solid fa-paper-plane"></i> Enviar mensagem rapida ao tutor
+        </button>
+      </div>
+
+      <div id="modalMsgRapida" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 p-4">
+        <div class="w-full max-w-md rounded-2xl bg-white p-5 shadow-xl">
+          <div class="flex items-start justify-between gap-4">
+            <h3 class="text-lg font-bold text-gray-900">Mensagem rapida</h3>
+            <button type="button" id="fecharMsgRapida" class="text-gray-400 hover:text-gray-700"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+          <p class="text-xs text-gray-500 mt-1">Contato sem login. O tutor recebe no chat com moderacao.</p>
+          <form id="formMsgRapida" class="mt-4 space-y-3">
+            <input type="text" name="guest_nome" maxlength="80" placeholder="Seu nome (opcional)" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <button type="button" class="msg-template rounded-lg border border-gray-200 px-3 py-2 text-xs text-left" data-msg="Encontrei seu pet agora e ele esta seguro.">Encontrei e esta seguro</button>
+              <button type="button" class="msg-template rounded-lg border border-gray-200 px-3 py-2 text-xs text-left" data-msg="Vi seu pet nesta regiao agora ha pouco.">Vi nesta regiao agora</button>
+            </div>
+            <textarea name="conteudo" rows="4" maxlength="500" required class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm" placeholder="Escreva uma mensagem curta..."></textarea>
+            <input type="text" name="website" class="hidden" tabindex="-1" autocomplete="off">
+            <button type="submit" class="w-full rounded-xl bg-primary-600 text-white font-semibold py-2.5 hover:bg-primary-700">Enviar</button>
+            <p id="msgRapidaStatus" class="text-xs text-gray-500"></p>
+          </form>
+        </div>
+      </div>
     <% } else { %>
       <div class="air-section-card text-center py-12">
         <div class="text-5xl mb-4">✅</div>
@@ -47,5 +79,73 @@
     <% } %>
   </div>
 </main>
+
+<% if (ativo) { %>
+<script>
+(function () {
+  var btn = document.getElementById('btnMsgRapida');
+  var modal = document.getElementById('modalMsgRapida');
+  var fechar = document.getElementById('fecharMsgRapida');
+  var form = document.getElementById('formMsgRapida');
+  var statusEl = document.getElementById('msgRapidaStatus');
+  var token = '';
+  var conversaId = '';
+  var alertaId = '<%= alerta.id %>';
+  if (!btn || !modal || !form) return;
+
+  function setStatus(msg, ok) {
+    statusEl.textContent = msg || '';
+    statusEl.className = 'text-xs ' + (ok ? 'text-emerald-600' : 'text-rose-600');
+  }
+  function abrir() { modal.classList.remove('hidden'); modal.classList.add('flex'); }
+  function fecharModal() { modal.classList.add('hidden'); modal.classList.remove('flex'); }
+
+  btn.addEventListener('click', abrir);
+  if (fechar) fechar.addEventListener('click', fecharModal);
+  modal.addEventListener('click', function (e) { if (e.target === modal) fecharModal(); });
+
+  Array.prototype.forEach.call(document.querySelectorAll('.msg-template'), function (el) {
+    el.addEventListener('click', function () {
+      var ta = form.querySelector('textarea[name="conteudo"]');
+      ta.value = this.getAttribute('data-msg') || '';
+      ta.focus();
+    });
+  });
+
+  form.addEventListener('submit', async function (e) {
+    e.preventDefault();
+    setStatus('Enviando...', true);
+    var fd = new FormData(form);
+    var body = {
+      pet_perdido_id: alertaId,
+      guest_nome: String(fd.get('guest_nome') || ''),
+      conteudo: String(fd.get('conteudo') || ''),
+      website: String(fd.get('website') || '')
+    };
+    if (token && conversaId) {
+      body.conversa_id = conversaId;
+      body.token = token;
+    }
+    var endpoint = (token && conversaId) ? '/chat/publico/enviar' : '/chat/publico/iniciar-ou-enviar';
+    try {
+      var r = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify(body)
+      });
+      var data = await r.json();
+      if (!r.ok || !data.sucesso) throw new Error(data.mensagem || 'Falha ao enviar');
+      token = data.token || token;
+      conversaId = data.conversa_id || conversaId;
+      form.querySelector('textarea[name="conteudo"]').value = '';
+      setStatus(data.mensagem || 'Mensagem enviada com sucesso.', true);
+    } catch (err) {
+      setStatus(err.message || 'Erro ao enviar.', false);
+    }
+  });
+})();
+</script>
+<% } %>
 
 <%- include('../partials/footer') %>

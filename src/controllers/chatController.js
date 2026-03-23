@@ -31,6 +31,33 @@ const Conversa = require('../models/Conversa');
 const MensagemChat = require('../models/MensagemChat');
 const PetPerdido = require('../models/PetPerdido');
 const logger = require('../utils/logger');
+const crypto = require('crypto');
+
+const TOKEN_TTL_MS = 1000 * 60 * 60 * 12;
+
+function segredoToken() {
+  return process.env.CHAT_GUEST_TOKEN_SECRET || process.env.SESSION_SECRET || 'airpet-chat-guest-secret';
+}
+
+function assinarPayload(payloadObj) {
+  const payload = Buffer.from(JSON.stringify(payloadObj)).toString('base64url');
+  const sig = crypto.createHmac('sha256', segredoToken()).update(payload).digest('base64url');
+  return `${payload}.${sig}`;
+}
+
+function validarToken(token) {
+  if (!token || typeof token !== 'string' || token.indexOf('.') === -1) return null;
+  const [payload, sig] = token.split('.');
+  const esperado = crypto.createHmac('sha256', segredoToken()).update(payload).digest('base64url');
+  if (sig !== esperado) return null;
+  try {
+    const dados = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8'));
+    if (!dados || !dados.conversaId || !dados.exp || Date.now() > Number(dados.exp)) return null;
+    return dados;
+  } catch (_) {
+    return null;
+  }
+}
 
 /**
  * mostrarConversa — Renderiza a tela de chat de uma conversa
@@ -291,6 +318,99 @@ async function enviarMensagem(req, res) {
   }
 }
 
+async function enviarMensagemVisitante(req, res) {
+  try {
+    const conversaId = String(req.body.conversa_id || '');
+    const token = String(req.body.token || '');
+    const conteudo = String(req.body.conteudo || '').trim();
+    const guestNome = String(req.body.guest_nome || 'Visitante').trim().slice(0, 80) || 'Visitante';
+    const tokenDados = validarToken(token);
+
+    if (!tokenDados || tokenDados.conversaId !== conversaId) {
+      return res.status(401).json({ sucesso: false, mensagem: 'Sessao visitante expirada. Reabra o modal.' });
+    }
+
+    const conversa = await Conversa.buscarPorId(conversaId);
+    if (!conversa || conversa.status !== 'ativa') {
+      return res.status(409).json({ sucesso: false, mensagem: 'Conversa encerrada.' });
+    }
+
+    const alerta = await PetPerdido.buscarPorId(conversa.pet_perdido_id);
+    if (!alerta || alerta.status !== 'aprovado') {
+      return res.status(409).json({ sucesso: false, mensagem: 'Este alerta nao esta mais ativo.' });
+    }
+
+    const remetente = `visitante:${tokenDados.guestId}`;
+    const msg = await MensagemChat.criar({
+      conversa_id: conversa.id,
+      remetente,
+      conteudo: `[${guestNome}] ${conteudo}`,
+      tipo: 'texto',
+      foto_url: null,
+    });
+
+    return res.status(201).json({
+      sucesso: true,
+      mensagem: 'Mensagem enviada. Aguardando moderacao.',
+      conversa_id: conversa.id,
+      mensagem_id: msg.id,
+    });
+  } catch (erro) {
+    logger.error('ChatController', 'Erro em enviarMensagemVisitante', erro);
+    return res.status(500).json({ sucesso: false, mensagem: 'Erro ao enviar mensagem.' });
+  }
+}
+
+async function iniciarOuEnviarVisitante(req, res) {
+  try {
+    const petPerdidoId = String(req.body.pet_perdido_id || '').trim();
+    const conteudo = String(req.body.conteudo || '').trim();
+    const guestNome = String(req.body.guest_nome || 'Visitante').trim().slice(0, 80) || 'Visitante';
+
+    const alerta = await PetPerdido.buscarPorId(petPerdidoId);
+    if (!alerta || alerta.status !== 'aprovado') {
+      return res.status(409).json({ sucesso: false, mensagem: 'Alerta nao esta ativo.' });
+    }
+
+    let conversa = await Conversa.buscarAtivaPorPetPerdido(petPerdidoId);
+    if (!conversa) {
+      conversa = await Conversa.criar({
+        pet_perdido_id: petPerdidoId,
+        iniciador_id: null,
+        tutor_id: alerta.usuario_id,
+      });
+    }
+
+    const tokenPayload = {
+      conversaId: conversa.id,
+      petPerdidoId,
+      guestId: crypto.randomBytes(8).toString('hex'),
+      exp: Date.now() + TOKEN_TTL_MS,
+    };
+    const token = assinarPayload(tokenPayload);
+
+    const msg = await MensagemChat.criar({
+      conversa_id: conversa.id,
+      remetente: `visitante:${tokenPayload.guestId}`,
+      conteudo: `[${guestNome}] ${conteudo}`,
+      tipo: 'texto',
+      foto_url: null,
+    });
+
+    return res.status(201).json({
+      sucesso: true,
+      mensagem: 'Mensagem enviada. Aguardando moderacao.',
+      conversa_id: conversa.id,
+      mensagem_id: msg.id,
+      token,
+      token_expira_em: tokenPayload.exp,
+    });
+  } catch (erro) {
+    logger.error('ChatController', 'Erro em iniciarOuEnviarVisitante', erro);
+    return res.status(500).json({ sucesso: false, mensagem: 'Erro ao iniciar contato.' });
+  }
+}
+
 /* Exporta os métodos do controller */
 module.exports = {
   listarConversas,
@@ -298,4 +418,6 @@ module.exports = {
   iniciarConversa,
   abrirOuIniciarPorPet,
   enviarMensagem,
+  iniciarOuEnviarVisitante,
+  enviarMensagemVisitante,
 };

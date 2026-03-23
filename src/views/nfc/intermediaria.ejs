@@ -99,13 +99,34 @@
     <% if (perdido) { %>
       <section class="bg-white rounded-3xl shadow-sm border border-slate-200 p-5 space-y-3">
         <h3 class="text-sm font-bold text-slate-500 uppercase tracking-wide">Acoes extras</h3>
-        <a href="/chat/novo/<%= pet.id %>" target="_blank" rel="noopener" class="block w-full rounded-2xl border border-slate-300 px-4 py-3 text-slate-700 hover:bg-slate-50">
-          <i class="fa-solid fa-comments mr-2"></i> Conversar com o tutor
-        </a>
+        <button type="button" id="btnMsgRapida" class="block w-full text-left rounded-2xl border border-slate-300 px-4 py-3 text-slate-700 hover:bg-slate-50">
+          <i class="fa-solid fa-comments mr-2"></i> Conversar com o tutor (sem login)
+        </button>
         <a href="/tag/<%= tag.tag_code %>/enviar-foto" class="block w-full rounded-2xl border border-slate-300 px-4 py-3 text-slate-700 hover:bg-slate-50">
           <i class="fa-solid fa-camera mr-2"></i> Enviar foto do pet agora
         </a>
       </section>
+
+      <div id="modalMsgRapida" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 p-4">
+        <div class="w-full max-w-md rounded-2xl bg-white p-5 shadow-xl">
+          <div class="flex items-start justify-between gap-4">
+            <h3 class="text-lg font-bold text-gray-900">Mensagem rapida</h3>
+            <button type="button" id="fecharMsgRapida" class="text-gray-400 hover:text-gray-700"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+          <p class="text-xs text-gray-500 mt-1">Contato sem conta. O tutor recebe no chat.</p>
+          <form id="formMsgRapida" class="mt-4 space-y-3">
+            <input type="text" name="guest_nome" maxlength="80" placeholder="Seu nome (opcional)" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <button type="button" class="msg-template rounded-lg border border-gray-200 px-3 py-2 text-xs text-left" data-msg="Encontrei seu pet agora e ele esta seguro.">Encontrei e esta seguro</button>
+              <button type="button" class="msg-template rounded-lg border border-gray-200 px-3 py-2 text-xs text-left" data-msg="Vi seu pet nesta regiao agora ha pouco.">Vi nesta regiao agora</button>
+            </div>
+            <textarea name="conteudo" rows="4" maxlength="500" required class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm" placeholder="Escreva uma mensagem curta..."></textarea>
+            <input type="text" name="website" class="hidden" tabindex="-1" autocomplete="off">
+            <button type="submit" class="w-full rounded-xl bg-primary-600 text-white font-semibold py-2.5 hover:bg-primary-700">Enviar</button>
+            <p id="msgRapidaStatus" class="text-xs text-gray-500"></p>
+          </form>
+        </div>
+      </div>
     <% } %>
 
     <p class="text-center text-slate-500 text-xs leading-relaxed px-2">
@@ -119,6 +140,7 @@
 <script>
 (function() {
   var tagCode = '${tag.tag_code}';
+  var alertaId = '${petPerdido ? petPerdido.id : ''}';
 
   function enviarLocalizacao(lat, lng, manual) {
     var doFetch = function () {
@@ -185,6 +207,69 @@
         );
       } else {
         label.textContent = 'Navegador sem suporte';
+      }
+    });
+  }
+
+  var btnChat = document.getElementById('btnMsgRapida');
+  var modal = document.getElementById('modalMsgRapida');
+  var fechar = document.getElementById('fecharMsgRapida');
+  var form = document.getElementById('formMsgRapida');
+  var statusEl = document.getElementById('msgRapidaStatus');
+  var token = '';
+  var conversaId = '';
+
+  function setStatus(msg, ok) {
+    if (!statusEl) return;
+    statusEl.textContent = msg || '';
+    statusEl.className = 'text-xs ' + (ok ? 'text-emerald-600' : 'text-rose-600');
+  }
+  function abrirModal() { if (modal) { modal.classList.remove('hidden'); modal.classList.add('flex'); } }
+  function fecharModal() { if (modal) { modal.classList.add('hidden'); modal.classList.remove('flex'); } }
+
+  if (btnChat && modal && form && alertaId) {
+    btnChat.addEventListener('click', abrirModal);
+    if (fechar) fechar.addEventListener('click', fecharModal);
+    modal.addEventListener('click', function (e) { if (e.target === modal) fecharModal(); });
+
+    Array.prototype.forEach.call(document.querySelectorAll('.msg-template'), function (el) {
+      el.addEventListener('click', function () {
+        var ta = form.querySelector('textarea[name="conteudo"]');
+        ta.value = this.getAttribute('data-msg') || '';
+        ta.focus();
+      });
+    });
+
+    form.addEventListener('submit', async function (e) {
+      e.preventDefault();
+      setStatus('Enviando...', true);
+      var fd = new FormData(form);
+      var body = {
+        pet_perdido_id: alertaId,
+        guest_nome: String(fd.get('guest_nome') || ''),
+        conteudo: String(fd.get('conteudo') || ''),
+        website: String(fd.get('website') || '')
+      };
+      if (token && conversaId) {
+        body.conversa_id = conversaId;
+        body.token = token;
+      }
+      var endpoint = (token && conversaId) ? '/chat/publico/enviar' : '/chat/publico/iniciar-ou-enviar';
+      try {
+        var r = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify(body)
+        });
+        var data = await r.json();
+        if (!r.ok || !data.sucesso) throw new Error(data.mensagem || 'Falha ao enviar');
+        token = data.token || token;
+        conversaId = data.conversa_id || conversaId;
+        form.querySelector('textarea[name="conteudo"]').value = '';
+        setStatus(data.mensagem || 'Mensagem enviada com sucesso.', true);
+      } catch (err) {
+        setStatus(err.message || 'Erro ao enviar.', false);
       }
     });
   }

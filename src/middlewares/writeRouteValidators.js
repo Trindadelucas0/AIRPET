@@ -71,6 +71,34 @@ const validarChatEnviar = [
   body('conteudo').optional({ checkFalsy: true }).trim().isLength({ max: 4000 }),
 ];
 
+const RE_LINK = /(https?:\/\/|www\.)/i;
+const CAMPOS_CHAT_VISITANTE = ['pet_perdido_id', 'conversa_id', 'token', 'guest_nome', 'conteudo', 'template', 'website'];
+const validarChatVisitante = [
+  camposPermitidos(CAMPOS_CHAT_VISITANTE),
+  body('pet_perdido_id').optional({ checkFalsy: true }).trim().isUUID().withMessage('ID do alerta invalido.'),
+  body('conversa_id').optional({ checkFalsy: true }).trim().isUUID().withMessage('ID da conversa invalido.'),
+  body('token').optional({ checkFalsy: true }).trim().isLength({ max: 500 }).withMessage('Token invalido.'),
+  body('guest_nome').optional({ checkFalsy: true }).trim().isLength({ max: 80 }).withMessage('Nome muito longo.'),
+  body('template').optional({ checkFalsy: true }).trim().isLength({ max: 120 }),
+  body('website').optional({ checkFalsy: true }).trim().isLength({ max: 10 }),
+  body('conteudo')
+    .trim()
+    .notEmpty()
+    .withMessage('Digite uma mensagem.')
+    .isLength({ min: 4, max: 500 })
+    .withMessage('A mensagem precisa ter entre 4 e 500 caracteres.')
+    .custom((v) => {
+      if (RE_LINK.test(String(v || ''))) throw new Error('Nao envie links na mensagem.');
+      return true;
+    }),
+  body().custom((_, { req }) => {
+    if (String(req.body?.website || '').trim()) {
+      throw new Error('Envio invalido.');
+    }
+    return true;
+  }),
+];
+
 const validarNotifMarcarLida = [camposPermitidos([])];
 const validarNotifMarcarTodas = [camposPermitidos([])];
 
@@ -459,6 +487,7 @@ module.exports = {
   validarPetPerdidoResolver,
   validarChatIniciar,
   validarChatEnviar,
+  validarChatVisitante,
   validarNotifMarcarLida,
   validarNotifMarcarTodas,
   validarPushSubscribe,

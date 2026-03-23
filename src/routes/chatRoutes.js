@@ -4,7 +4,11 @@ const router = express.Router();
 const { estaAutenticado } = require('../middlewares/authMiddleware');
 const chatController = require('../controllers/chatController');
 const { uploadChat } = require('../utils/upload');
-const { validarChatIniciar, validarChatEnviar, validarResultado } = require('../middlewares/writeRouteValidators');
+const { limiterChatPublico } = require('../middlewares/rateLimiter');
+const { validarChatIniciar, validarChatEnviar, validarChatVisitante, validarResultado } = require('../middlewares/writeRouteValidators');
+
+router.post('/publico/iniciar-ou-enviar', limiterChatPublico, ...validarChatVisitante, validarResultado, chatController.iniciarOuEnviarVisitante);
+router.post('/publico/enviar', limiterChatPublico, ...validarChatVisitante, validarResultado, chatController.enviarMensagemVisitante);
 
 router.get('/', estaAutenticado, chatController.listarConversas);
 router.post('/iniciar', estaAutenticado, ...validarChatIniciar, validarResultado, chatController.iniciarConversa);

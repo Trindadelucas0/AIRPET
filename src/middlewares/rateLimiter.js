@@ -59,9 +59,22 @@ const limiterAtivacao = rateLimit({
   skip: () => envSemRateLimit(),
 });
 
+const limiterChatPublico = rateLimit({
+  windowMs: JANELA_MS,
+  max: parseInt(process.env.RATE_LIMIT_CHAT_PUBLICO, 10) || 20,
+  handler: handlerRateLimit(
+    { sucesso: false, mensagem: 'Muitas tentativas de contato. Aguarde alguns minutos.' },
+    'Muitas tentativas de contato. Aguarde alguns minutos e tente novamente.'
+  ),
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: () => envSemRateLimit(),
+});
+
 module.exports = {
   limiterGeral,
   limiterAuth,
   limiterLogin: limiterAuth,
   limiterAtivacao,
+  limiterChatPublico,
 };
