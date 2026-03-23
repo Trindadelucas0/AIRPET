@@ -23,6 +23,7 @@ router.post('/admin/gerar', estaAutenticado, apenasAdmin, ...validarTagGerarLote
 router.post('/admin/:id/reservar', estaAutenticado, apenasAdmin, ...validarTagReservar, validarResultado, tagController.reservar);
 router.post('/admin/:id/enviar', estaAutenticado, apenasAdmin, ...validarTagEnviarBloquear, validarResultado, tagController.enviar);
 router.post('/admin/:id/bloquear', estaAutenticado, apenasAdmin, ...validarTagEnviarBloquear, validarResultado, tagController.bloquear);
+router.post('/admin/:id/desbloquear', estaAutenticado, apenasAdmin, ...validarTagEnviarBloquear, validarResultado, tagController.desbloquear);
 
 // --- Rotas de ativação e vinculação (usuário autenticado) ---
 router.get('/minhas', estaAutenticado, tagController.minhasTags);

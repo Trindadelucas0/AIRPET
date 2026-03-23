@@ -51,7 +51,7 @@
 
           <div class="flex flex-col items-stretch gap-2 md:items-end">
             <% let statusLabel = 'Desconhecido'; let statusClass = 'bg-gray-100 text-gray-700'; %>
-            <% if (tag.status === 'manufactured' || tag.status === 'stock') { statusLabel = 'Em preparação'; statusClass = 'bg-gray-100 text-gray-700'; } %>
+            <% if (tag.status === 'stock' || tag.status === 'manufactured') { statusLabel = 'Em preparação'; statusClass = 'bg-gray-100 text-gray-700'; } %>
             <% if (tag.status === 'reserved') { statusLabel = 'Reservada'; statusClass = 'bg-amber-50 text-amber-700'; } %>
             <% if (tag.status === 'sent') { statusLabel = 'Enviada para você'; statusClass = 'bg-blue-50 text-blue-700'; } %>
             <% if (tag.status === 'active') { statusLabel = 'Ativa'; statusClass = 'bg-emerald-50 text-emerald-700'; } %>

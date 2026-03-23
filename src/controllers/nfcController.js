@@ -9,7 +9,7 @@
  *   2. O navegador abre a URL: /nfc/:tag_code
  *   3. processarScan() é chamado
  *   4. O serviço NFC determina qual tela exibir baseado no status da tag:
- *      - 'manufactured' → tela "não ativada" (tag ainda não foi vendida)
+ *      - 'stock' → tela "não ativada" (tag ainda não foi vendida)
  *      - 'sent'/'reserved' → tela "ativar" (dono precisa ativar)
  *      - 'active' → tela "intermediária" (mostra dados do pet e contato do dono)
  *      - 'blocked' → tela de erro (tag bloqueada pelo admin)
@@ -53,7 +53,7 @@ const nfcController = {
    *   5. Renderiza a view apropriada baseada no campo 'tela'
    *
    * Possíveis telas retornadas pelo serviço:
-   *   - 'nao-ativada': tag ainda no estado manufactured (não foi vendida)
+   *   - 'nao-ativada': tag ainda no estado stock (não foi vendida)
    *   - 'ativar': tag foi enviada mas não ativada pelo dono
    *   - 'intermediaria': tag ativa — mostra dados do pet para quem escaneou
    *   - 'bloqueada': tag foi bloqueada pelo admin
@@ -96,7 +96,7 @@ const nfcController = {
        */
       switch (resultado.tela) {
         /*
-         * Tag não ativada — ainda está no estado 'manufactured'.
+         * Tag não ativada — ainda está no estado 'stock'.
          * Mostra uma página informativa dizendo que a tag ainda não foi vendida.
          */
         case 'nao-ativada':

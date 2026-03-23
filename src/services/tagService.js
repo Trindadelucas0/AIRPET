@@ -111,7 +111,7 @@ const tagService = {
   /**
    * Reserva uma tag para um usuário específico.
    *
-   * Muda o status da tag de 'manufactured' para 'reserved'.
+   * Muda o status da tag de 'stock' para 'reserved'.
    * Associa a tag ao user_id do tutor que irá recebê-la.
    * Normalmente feito pelo admin quando o tutor faz o pedido.
    *
@@ -212,7 +212,7 @@ const tagService = {
     /**
      * PASSO 2: Verifica se a tag está com status 'sent'.
      * Tags em outros status não podem ser ativadas:
-     *   - manufactured/reserved: ainda não foi enviada ao tutor
+     *   - stock/reserved: ainda não foi enviada ao tutor
      *   - active: já está ativa (ativação duplicada)
      *   - blocked: foi bloqueada por segurança
      */

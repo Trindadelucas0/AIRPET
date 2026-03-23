@@ -189,10 +189,15 @@ const NfcTag = {
     const executor = client || pool;
     const resultado = await executor.query(
       `UPDATE nfc_tags
-       SET status = 'reserved',
+       SET status = CASE
+             WHEN status IN ('stock', 'manufactured') THEN 'reserved'
+             ELSE status
+           END,
            user_id = $2,
            reserved_at = NOW()
        WHERE id = $1
+         AND status IN ('stock', 'manufactured', 'sent')
+         AND (user_id IS NULL OR user_id = $2)
        RETURNING *`,
       [id, userId]
     );
@@ -213,6 +218,7 @@ const NfcTag = {
        SET status = 'sent',
            sent_at = NOW()
        WHERE id = $1
+         AND status = 'reserved'
        RETURNING *`,
       [id]
     );
@@ -236,6 +242,7 @@ const NfcTag = {
            pet_id = $2,
            activated_at = NOW()
        WHERE id = $1
+         AND status = 'sent'
        RETURNING *`,
       [id, petId]
     );
@@ -255,6 +262,7 @@ const NfcTag = {
       `UPDATE nfc_tags
        SET status = 'blocked'
        WHERE id = $1
+         AND status <> 'blocked'
        RETURNING *`,
       [id]
     );
@@ -271,8 +279,12 @@ const NfcTag = {
   async desbloquear(id) {
     const resultado = await query(
       `UPDATE nfc_tags
-       SET status = 'active'
+       SET status = CASE
+         WHEN pet_id IS NOT NULL THEN 'active'
+         ELSE 'sent'
+       END
        WHERE id = $1
+         AND status = 'blocked'
        RETURNING *`,
       [id]
     );

@@ -502,6 +502,11 @@ const petController = {
         return res.redirect(`/pets/${id}/vincular-tag`);
       }
 
+      if (tag.user_id && tag.user_id !== usuarioId) {
+        req.session.flash = { tipo: 'erro', mensagem: 'Esta tag já está reservada para outra conta.' };
+        return res.redirect(`/pets/${id}/vincular-tag`);
+      }
+
       if (tag.status !== 'sent') {
         const msgs = {
           manufactured: 'Esta tag ainda não foi preparada para envio.',
@@ -542,7 +547,10 @@ const petController = {
 
       await withTransaction(async (client) => {
         await NfcTag.resetarTentativas(tag.id, client);
-        await NfcTag.reservar(tag.id, usuarioId, client);
+        const reservada = await NfcTag.reservar(tag.id, usuarioId, client);
+        if (!reservada) {
+          throw new Error('TAG_RESERVA_INVALIDA');
+        }
         await NfcTag.ativar(tag.id, id, client);
       });
 
@@ -551,6 +559,10 @@ const petController = {
       req.session.flash = { tipo: 'sucesso', mensagem: `Tag vinculada a ${pet.nome} com sucesso! A tag NFC agora identifica seu pet.` };
       return res.redirect(`/pets/${id}`);
     } catch (erro) {
+      if (erro && erro.message === 'TAG_RESERVA_INVALIDA') {
+        req.session.flash = { tipo: 'erro', mensagem: 'Esta tag está vinculada a outra conta e não pode ser ativada por este usuário.' };
+        return res.redirect(`/pets/${req.params.id}/vincular-tag`);
+      }
       logger.error('PET_CTRL', 'Erro ao vincular tag ao pet', erro);
       req.session.flash = { tipo: 'erro', mensagem: 'Erro ao vincular a tag. Tente novamente.' };
       return res.redirect(`/pets/${req.params.id}/vincular-tag`);

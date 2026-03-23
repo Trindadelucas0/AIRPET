@@ -120,7 +120,7 @@ const nfcService = {
      * PASSO 3: Determina qual tela exibir baseado no status da tag.
      *
      * Mapeamento status → tela:
-     *   manufactured (stock) → 'nao-ativada': tag ainda em estoque
+     *   stock/manufactured → 'nao-ativada': tag ainda em estoque
      *   reserved             → 'nao-ativada': tag reservada mas não enviada
      *   sent                 → 'ativar': tutor pode ativar via formulário
      *   active               → 'intermediaria': exibe perfil público do pet

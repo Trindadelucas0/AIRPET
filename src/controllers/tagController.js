@@ -229,7 +229,10 @@ async function ativar(req, res) {
 
     await withTransaction(async (client) => {
       await NfcTag.resetarTentativas(tag.id, client);
-      await NfcTag.reservar(tag.id, usuarioId, client);
+      const reservada = await NfcTag.reservar(tag.id, usuarioId, client);
+      if (!reservada) {
+        throw new Error('TAG_RESERVA_INVALIDA');
+      }
     });
 
     logger.info('TagController', `Tag ativada: ${tag_code} pelo usuário ${usuarioId}`);
@@ -237,6 +240,10 @@ async function ativar(req, res) {
     req.session.flash = { tipo: 'sucesso', mensagem: 'Tag validada com sucesso! Agora escolha um pet para vincular.' };
     return res.redirect(`/tags/${tag_code}/escolher-pet`);
   } catch (erro) {
+    if (erro && erro.message === 'TAG_RESERVA_INVALIDA') {
+      req.session.flash = { tipo: 'erro', mensagem: 'Esta tag está vinculada a outra conta e não pode ser ativada por este usuário.' };
+      return res.redirect(`/tags/${req.params.tag_code}/ativar`);
+    }
     logger.error('TagController', 'Erro ao ativar tag', erro);
     req.session.flash = { tipo: 'erro', mensagem: 'Erro ao ativar a tag. Tente novamente.' };
     return res.redirect(`/tags/${req.params.tag_code}/ativar`);
@@ -538,6 +545,10 @@ async function reservar(req, res) {
       req.session.flash = { tipo: 'erro', mensagem: 'Tag não encontrada.' };
       return res.redirect('/tags/admin/lista');
     }
+    if (tag.status !== 'stock' && tag.status !== 'manufactured') {
+      req.session.flash = { tipo: 'erro', mensagem: `Esta tag não pode ser reservada. Status atual: ${tag.status}.` };
+      return res.redirect('/tags/admin/lista');
+    }
 
     if (!emailInformado) {
       req.session.flash = { tipo: 'erro', mensagem: 'Informe o e-mail do usuário para reservar a tag.' };
@@ -552,6 +563,10 @@ async function reservar(req, res) {
 
     /* Reserva a tag para o usuário informado */
     const tagAtualizada = await NfcTag.reservar(id, usuario.id);
+    if (!tagAtualizada) {
+      req.session.flash = { tipo: 'erro', mensagem: 'Não foi possível reservar a tag no estado atual.' };
+      return res.redirect('/tags/admin/lista');
+    }
 
     logger.info('TagController', `Tag ${tag.tag_code} reservada para usuário ${usuario.id} (${emailInformado})`);
 
@@ -601,6 +616,10 @@ async function enviar(req, res) {
 
     /* Marca como enviada — muda status e registra sent_at */
     const tagAtualizada = await NfcTag.marcarEnviada(id);
+    if (!tagAtualizada) {
+      req.session.flash = { tipo: 'erro', mensagem: `A tag ${tag.tag_code} só pode ser enviada quando estiver reservada.` };
+      return res.redirect('/tags/admin/lista');
+    }
 
     logger.info('TagController', `Tag ${tag.tag_code} marcada como enviada`);
 
@@ -657,7 +676,11 @@ async function bloquear(req, res) {
     }
 
     /* Bloqueia a tag — muda status para 'blocked' */
-    await NfcTag.bloquear(id);
+    const tagAtualizada = await NfcTag.bloquear(id);
+    if (!tagAtualizada) {
+      req.session.flash = { tipo: 'erro', mensagem: `A tag ${tag.tag_code} já está bloqueada.` };
+      return res.redirect('/tags/admin/lista');
+    }
 
     logger.info('TagController', `Tag ${tag.tag_code} bloqueada`);
 
@@ -666,6 +689,39 @@ async function bloquear(req, res) {
   } catch (erro) {
     logger.error('TagController', 'Erro ao bloquear tag', erro);
     req.session.flash = { tipo: 'erro', mensagem: 'Erro ao bloquear a tag.' };
+    return res.redirect('/tags/admin/lista');
+  }
+}
+
+/**
+ * desbloquear — Desbloqueia uma tag NFC
+ *
+ * Rota: POST /admin/tags/:id/desbloquear
+ */
+async function desbloquear(req, res) {
+  try {
+    const { id } = req.params;
+
+    const tag = await NfcTag.buscarPorId(id);
+
+    if (!tag) {
+      req.session.flash = { tipo: 'erro', mensagem: 'Tag não encontrada.' };
+      return res.redirect('/tags/admin/lista');
+    }
+
+    const tagAtualizada = await NfcTag.desbloquear(id);
+    if (!tagAtualizada) {
+      req.session.flash = { tipo: 'erro', mensagem: 'Não foi possível desbloquear esta tag no estado atual.' };
+      return res.redirect('/tags/admin/lista');
+    }
+
+    logger.info('TagController', `Tag ${tag.tag_code} desbloqueada`);
+
+    req.session.flash = { tipo: 'sucesso', mensagem: `Tag ${tag.tag_code} desbloqueada com sucesso.` };
+    return res.redirect('/tags/admin/lista');
+  } catch (erro) {
+    logger.error('TagController', 'Erro ao desbloquear tag', erro);
+    req.session.flash = { tipo: 'erro', mensagem: 'Erro ao desbloquear a tag.' };
     return res.redirect('/tags/admin/lista');
   }
 }
@@ -688,4 +744,5 @@ module.exports = {
   reservar,
   enviar,
   bloquear,
+  desbloquear,
 };
