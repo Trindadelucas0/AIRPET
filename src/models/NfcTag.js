@@ -14,7 +14,7 @@
  *                    activated_at, data_criacao
  */
 
-const { query, getClient } = require('../config/database');
+const { query, getClient, pool } = require('../config/database');
 
 const NfcTag = {
 
@@ -228,8 +228,9 @@ const NfcTag = {
    * @param {string} petId - UUID do pet a ser vinculado
    * @returns {Promise<object>} Tag atualizada
    */
-  async ativar(id, petId) {
-    const resultado = await query(
+  async ativar(id, petId, client = null) {
+    const executor = client || pool;
+    const resultado = await executor.query(
       `UPDATE nfc_tags
        SET status = 'active',
            pet_id = $2,

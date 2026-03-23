@@ -529,7 +529,7 @@ async function mostrarLote(req, res) {
 async function reservar(req, res) {
   try {
     const { id } = req.params;
-    const { email } = req.body;
+    const emailInformado = String(req.body?.email || '').trim().toLowerCase();
 
     /* Verifica se a tag existe */
     const tag = await NfcTag.buscarPorId(id);
@@ -539,25 +539,34 @@ async function reservar(req, res) {
       return res.redirect('/tags/admin/lista');
     }
 
-    /* Reserva a tag para o usuário informado */
-    const tagAtualizada = await NfcTag.reservar(id, null);
-
-    logger.info('TagController', `Tag ${tag.tag_code} reservada para contato ${email}`);
-
-    if (email) {
-      try {
-        await emailService.enviarTagReservada({
-          to: String(email).trim().toLowerCase(),
-          nome: tagAtualizada.usuario_nome || 'cliente AIRPET',
-          tagCode: tagAtualizada.tag_code,
-          activationCode: tagAtualizada.activation_code,
-        });
-      } catch (emailErro) {
-        logger.error('TagController', 'Falha ao enviar e-mail de tag reservada', emailErro);
-      }
+    if (!emailInformado) {
+      req.session.flash = { tipo: 'erro', mensagem: 'Informe o e-mail do usuário para reservar a tag.' };
+      return res.redirect('/tags/admin/lista');
     }
 
-    req.session.flash = { tipo: 'sucesso', mensagem: `Tag ${tag.tag_code} reservada com sucesso.` };
+    const usuario = await Usuario.buscarPorEmail(emailInformado);
+    if (!usuario) {
+      req.session.flash = { tipo: 'erro', mensagem: 'Nenhum usuário encontrado com esse e-mail.' };
+      return res.redirect('/tags/admin/lista');
+    }
+
+    /* Reserva a tag para o usuário informado */
+    const tagAtualizada = await NfcTag.reservar(id, usuario.id);
+
+    logger.info('TagController', `Tag ${tag.tag_code} reservada para usuário ${usuario.id} (${emailInformado})`);
+
+    try {
+      await emailService.enviarTagReservada({
+        to: emailInformado,
+        nome: usuario.nome || 'cliente AIRPET',
+        tagCode: tagAtualizada.tag_code,
+        activationCode: tagAtualizada.activation_code,
+      });
+    } catch (emailErro) {
+      logger.error('TagController', 'Falha ao enviar e-mail de tag reservada', emailErro);
+    }
+
+    req.session.flash = { tipo: 'sucesso', mensagem: `Tag ${tag.tag_code} reservada com sucesso para ${emailInformado}.` };
     return res.redirect('/tags/admin/lista');
   } catch (erro) {
     logger.error('TagController', 'Erro ao reservar tag', erro);

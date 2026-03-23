@@ -128,7 +128,7 @@ const Vacina = {
       `SELECT v.*, p.nome AS pet_nome, p.usuario_id
        FROM vacinas v
        JOIN pets p ON p.id = v.pet_id
-       WHERE v.data_proxima BETWEEN NOW() AND NOW() + ($1 || ' days')::interval
+       WHERE v.data_proxima BETWEEN NOW() AND NOW() + ($1 * INTERVAL '1 day')
        ORDER BY v.data_proxima ASC`,
       [diasAntecedencia]
     );
