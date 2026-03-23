@@ -302,6 +302,9 @@
   btnSearchAddress.addEventListener('click', searchAddress);
 
   form.addEventListener('submit', function(e) {
+    // #region agent log
+    fetch('http://127.0.0.1:7619/ingest/ae098eda-cae8-4273-b296-012a1e446933',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'8f331f'},body:JSON.stringify({sessionId:'8f331f',runId:'partner-debug',hypothesisId:'H2',location:'parceiros/cadastro.ejs:submit',message:'Partner form submit on client',data:{locationMode:(document.querySelector('input[name=\"location_mode\"]:checked')||{}).value||'',latValue:latitudeInput.value||'',lngValue:longitudeInput.value||'',latFinite:Number.isFinite(parseFloat(latitudeInput.value||'')),lngFinite:Number.isFinite(parseFloat(longitudeInput.value||'')),hasEndereco:!!String((enderecoInput&&enderecoInput.value)||'').trim(),hasEmpresaNome:!!String((document.querySelector('[name=\"empresa_nome\"]')||{}).value||'').trim(),hasEmailLogin:!!String((document.querySelector('[name=\"email_login\"]')||{}).value||'').trim()},timestamp:Date.now()})}).catch(()=>{});
+    // #endregion
     var lat = parseFloat(latitudeInput.value || '');
     var lng = parseFloat(longitudeInput.value || '');
     if (!Number.isFinite(lat) || !Number.isFinite(lng)) {

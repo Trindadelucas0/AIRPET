@@ -35,6 +35,9 @@ const petshopOnboardingService = {
     const lngRaw = reqBody.longitude;
     const latitude = latRaw === undefined || latRaw === '' ? null : parseFloat(latRaw);
     const longitude = lngRaw === undefined || lngRaw === '' ? null : parseFloat(lngRaw);
+    // #region agent log
+    fetch('http://127.0.0.1:7619/ingest/ae098eda-cae8-4273-b296-012a1e446933',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'8f331f'},body:JSON.stringify({sessionId:'8f331f',runId:'partner-debug',hypothesisId:'H4',location:'petshopOnboardingService.js:criarSolicitacao:parsed',message:'Onboarding parsed core fields',data:{hasEndereco:!!String(reqBody.endereco||'').trim(),latIsFinite:Number.isFinite(latitude),lngIsFinite:Number.isFinite(longitude),hasEmailLogin:!!String(reqBody.email_login||reqBody.email||'').trim(),senhaLen:String(reqBody.senha||'').length,confirmarLen:String(reqBody.confirmar_senha||'').length},timestamp:Date.now()})}).catch(()=>{});
+    // #endregion
 
     if (!endereco) {
       throw new Error('Endereço é obrigatório.');
@@ -54,7 +57,12 @@ const petshopOnboardingService = {
 
     return withTransaction(async (client) => {
       const contaExistente = await PetshopAccount.buscarPorEmail(emailLogin, client);
-      if (contaExistente) throw new Error('Já existe uma conta com este e-mail de acesso.');
+      if (contaExistente) {
+        // #region agent log
+        fetch('http://127.0.0.1:7619/ingest/ae098eda-cae8-4273-b296-012a1e446933',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'8f331f'},body:JSON.stringify({sessionId:'8f331f',runId:'partner-debug',hypothesisId:'H5',location:'petshopOnboardingService.js:criarSolicitacao:duplicateEmail',message:'Duplicate partner login email',data:{emailDomain:emailLogin.includes('@')?emailLogin.split('@')[1]:''},timestamp:Date.now()})}).catch(()=>{});
+        // #endregion
+        throw new Error('Já existe uma conta com este e-mail de acesso.');
+      }
 
       const baseSlug = gerarSlug(reqBody.empresa_nome) || 'petshop';
       let slugFinal = baseSlug;
