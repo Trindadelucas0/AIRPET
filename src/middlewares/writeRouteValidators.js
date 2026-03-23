@@ -33,18 +33,30 @@ const validarNfcEncontrei = [
 const validarNfcEnviarFoto = [camposPermitidos([])];
 
 const validarPetPerdidoReportar = [
-  camposPermitidos(['descricao', 'latitude', 'longitude', 'recompensa', '_method']),
+  camposPermitidos(['descricao', 'latitude', 'longitude', 'local_descricao', 'recompensa', '_method']),
   body('descricao').optional({ checkFalsy: true }).trim().isLength({ max: 4000 }),
   body('latitude').optional({ checkFalsy: true }).trim().isLength({ max: 24 }),
   body('longitude').optional({ checkFalsy: true }).trim().isLength({ max: 24 }),
+  body('local_descricao').optional({ checkFalsy: true }).trim().isLength({ max: 200 }),
   body('recompensa').optional({ checkFalsy: true }).trim().isLength({ max: 200 }),
 ];
 
 const validarPetPerdidoEncontrado = [
-  camposPermitidos(['mensagem', 'latitude', 'longitude', '_method']),
-  body('mensagem').optional({ checkFalsy: true }).trim().isLength({ max: 2000 }),
+  camposPermitidos([
+    'como_encontrado',
+    'descricao_encontrado',
+    'mensagem_agradecimento',
+    'latitude',
+    'longitude',
+    'local_descricao',
+    '_method',
+  ]),
+  body('como_encontrado').optional({ checkFalsy: true }).trim().isLength({ max: 80 }),
+  body('descricao_encontrado').optional({ checkFalsy: true }).trim().isLength({ max: 2000 }),
+  body('mensagem_agradecimento').optional({ checkFalsy: true }).trim().isLength({ max: 2000 }),
   body('latitude').optional({ checkFalsy: true }).trim().isLength({ max: 24 }),
   body('longitude').optional({ checkFalsy: true }).trim().isLength({ max: 24 }),
+  body('local_descricao').optional({ checkFalsy: true }).trim().isLength({ max: 200 }),
 ];
 
 const validarPetPerdidoResolver = [camposPermitidos(['_method'])];

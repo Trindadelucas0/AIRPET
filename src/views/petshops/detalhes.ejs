@@ -42,11 +42,15 @@
   .modal-card {
     position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
     z-index: 1;
-    width: min(94vw, 460px); background: #fff; border-radius: 18px; border: 1px solid #f1f5f9;
-    box-shadow: 0 24px 60px rgba(2, 6, 23, .25); padding: 16px;
+    width: min(94vw, 460px);
+    background: var(--ink-2);
+    border-radius: 18px;
+    border: 1px solid var(--border);
+    box-shadow: 0 24px 60px rgba(2, 6, 23, .25);
+    padding: 16px;
   }
-  .modal-title { font-size: 18px; font-weight: 900; color: #111827; }
-  .modal-hint { color: #6b7280; font-size: 13px; margin-top: 4px; }
+  .modal-title { font-size: 18px; font-weight: 900; color: var(--text); }
+  .modal-hint { color: var(--text-dim); font-size: 13px; margin-top: 4px; }
   .toast-msg { font-size: 13px; margin-top: 8px; }
 </style>
 ` %>

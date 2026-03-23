@@ -2,26 +2,26 @@
 <% locals.extraHead = `
 <link href="https://fonts.googleapis.com/css2?family=Rubik+Doodle+Shadow&family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-  :root{--ink:#0d0d0f;--ink-2:#13131a;--ink-3:#1c1c26;--ink-4:#242432;--border:rgba(255,255,255,0.07);--border-hover:rgba(255,255,255,0.13);--text:#e4e4f0;--text-dim:#7a7a96;--text-muted:#3d3d52;--accent:#f26020;--accent-light:#ff7a3d;--accent-glow:rgba(242,96,32,0.12);--green:#22c55e;--red:#ef4444;--purple:#a78bfa;--blue:#60a5fa;--yellow:#facc15;}
-  body{background:var(--ink)!important;color:var(--text)!important;font-family:'DM Sans',sans-serif;}
+  /* Layout do fluxo de pets deve seguir o design system (tema claro no PC). */
+  body{font-family:'DM Sans',sans-serif;}
   .saude-wrap{max-width:680px;margin:0 auto;padding:24px 20px 80px;}
-  .page-topbar{position:sticky;top:56px;z-index:40;background:rgba(13,13,15,0.88);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:12px 0;}
+  .page-topbar{position:sticky;top:56px;z-index:40;background:rgba(255,255,255,0.88);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:12px 0;}
   .topbar-inner{max-width:680px;margin:0 auto;padding:0 20px;display:flex;align-items:center;justify-content:space-between;}
   .back-link{color:var(--text-dim);font-size:13px;text-decoration:none;display:flex;align-items:center;gap:6px;transition:color 0.15s;}
   .back-link:hover{color:var(--accent);text-decoration:none;}
   .page-title-row{display:flex;align-items:center;gap:10px;}
-  .page-title{font-family:var(--font-display);font-size:18px;font-weight:800;color:#fff;}
+  .page-title{font-family:var(--font-display);font-size:18px;font-weight:800;color:var(--text);}
   .pet-mini-avatar{width:32px;height:32px;border-radius:50%;object-fit:cover;}
   /* Pet hero strip */
   .saude-hero{background:var(--ink-2);border:1px solid var(--border);border-radius:18px;padding:20px;margin-bottom:16px;display:flex;align-items:center;gap:14px;}
   .saude-hero-avatar{width:56px;height:56px;border-radius:16px;object-fit:cover;flex-shrink:0;}
   .saude-hero-init{width:56px;height:56px;border-radius:16px;background:var(--ink-3);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;}
-  .saude-hero-name{font-family:var(--font-display);font-size:18px;font-weight:800;color:#fff;}
+  .saude-hero-name{font-family:var(--font-display);font-size:18px;font-weight:800;color:var(--text);}
   .saude-hero-sub{font-size:12px;color:var(--text-dim);}
   /* Section */
   .health-section{background:var(--ink-2);border:1px solid var(--border);border-radius:18px;margin-bottom:14px;overflow:hidden;}
   .health-section-header{display:flex;align-items:center;justify-content:space-between;padding:18px 20px;border-bottom:1px solid var(--border);}
-  .health-section-title{display:flex;align-items:center;gap:10px;font-family:var(--font-display);font-size:14px;font-weight:700;color:#fff;}
+  .health-section-title{display:flex;align-items:center;gap:10px;font-family:var(--font-display);font-size:14px;font-weight:700;color:var(--text);}
   .health-icon{width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;}
   .health-icon.green{background:rgba(34,197,94,0.1);color:var(--green);}
   .health-icon.blue{background:rgba(96,165,250,0.1);color:var(--blue);}
@@ -34,7 +34,7 @@
   .health-item{display:flex;align-items:flex-start;gap:12px;padding:14px 20px;border-bottom:1px solid var(--border);}
   .health-item:last-child{border-bottom:none;}
   .health-item-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px;}
-  .health-item-name{font-size:14px;font-weight:700;color:#fff;margin-bottom:4px;}
+  .health-item-name{font-size:14px;font-weight:700;color:var(--text);margin-bottom:4px;}
   .health-item-meta{display:flex;flex-wrap:wrap;gap:10px;font-size:11px;color:var(--text-dim);}
   .health-item-meta span{display:flex;align-items:center;gap:4px;}
   .health-item-delete{margin-left:auto;padding:0;background:transparent;border:none;color:var(--text-muted);cursor:pointer;font-size:13px;transition:color 0.15s;flex-shrink:0;}
@@ -48,7 +48,7 @@
   .modal-overlay.open{display:flex;}
   .modal-bg{position:absolute;inset:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(4px);}
   .modal-box{position:relative;z-index:1;margin:auto;width:calc(100% - 40px);max-width:440px;background:var(--ink-2);border:1px solid var(--border);border-radius:20px;padding:28px;box-shadow:0 24px 60px rgba(0,0,0,0.5);}
-  .modal-title{font-family:var(--font-display);font-size:18px;font-weight:800;color:#fff;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;}
+  .modal-title{font-family:var(--font-display);font-size:18px;font-weight:800;color:var(--text);margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;}
   .modal-close{background:transparent;border:none;color:var(--text-dim);font-size:18px;cursor:pointer;transition:color 0.15s;}
   .modal-close:hover{color:var(--text);}
   .ds-label{display:block;font-size:11px;font-weight:700;color:var(--text-dim);letter-spacing:0.07em;text-transform:uppercase;margin-bottom:6px;}
