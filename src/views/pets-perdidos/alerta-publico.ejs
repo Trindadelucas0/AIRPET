@@ -130,11 +130,18 @@
     try {
       var r = await fetch(endpoint, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
         credentials: 'same-origin',
         body: JSON.stringify(body)
       });
-      var data = await r.json();
+      var ct = String(r.headers.get('content-type') || '').toLowerCase();
+      var data;
+      if (ct.indexOf('application/json') !== -1) {
+        data = await r.json();
+      } else {
+        var txt = await r.text();
+        throw new Error((txt && txt.trim()) ? 'Resposta invalida do servidor. Atualize a pagina e tente novamente.' : 'Falha ao enviar');
+      }
       if (!r.ok || !data.sucesso) throw new Error(data.mensagem || 'Falha ao enviar');
       token = data.token || token;
       conversaId = data.conversa_id || conversaId;
