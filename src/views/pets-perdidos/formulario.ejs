@@ -160,14 +160,17 @@ function setLocal(lat, lng, desc) {
   document.getElementById('localSelecionadoText').textContent = desc || lat+', '+lng;
 }
 
-<% if (typeof ultimoScan !== 'undefined' && ultimoScan && ultimoScan.latitude && ultimoScan.longitude) { %>
 function usarUltimoScan() {
-  clearActive(); optScan.classList.add('active');
+  clearActive();
+  if (!optScan) return;
+  optScan.classList.add('active');
   document.getElementById('mapaPerdidoWrap').classList.add('hidden');
   document.getElementById('buscaWrap').classList.add('hidden');
-  setLocal(${ultimoScan.latitude}, ${ultimoScan.longitude}, 'Último scan da tag NFC');
+  var lat = ${ultimoScan?.latitude ?? null};
+  var lng = ${ultimoScan?.longitude ?? null};
+  if (lat == null || lng == null) return;
+  setLocal(lat, lng, 'Último scan da tag NFC');
 }
-<% } %>
 
 function usarMapa() {
   clearActive(); optMapa.classList.add('active');
