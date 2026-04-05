@@ -1,12 +1,11 @@
 const express = require('express');
 const router = express.Router();
-const fs = require('fs');
 const multer = require('multer');
 const path = require('path');
-const crypto = require('crypto');
 
 const explorarController = require('../controllers/explorarController');
 const { estaAutenticadoAPI } = require('../middlewares/authMiddleware');
+const { persistSingle, persistArray } = require('../middlewares/persistUploadMiddleware');
 const {
   validarExplorarPostV1,
   validarExplorarPostV2,
@@ -19,24 +18,8 @@ const {
   validarResultado,
 } = require('../middlewares/writeRouteValidators');
 
-const postsDir = path.join(__dirname, '..', 'public', 'images', 'posts');
-if (!fs.existsSync(postsDir)) {
-  fs.mkdirSync(postsDir, { recursive: true });
-}
-const petCoverDir = path.join(__dirname, '..', 'public', 'images', 'pets', 'capa');
-if (!fs.existsSync(petCoverDir)) {
-  fs.mkdirSync(petCoverDir, { recursive: true });
-}
-
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, postsDir),
-  filename: (req, file, cb) => {
-    const ext = (path.extname(file.originalname) || '.jpg').toLowerCase().replace(/[^a-z.]/g, '') || '.jpg';
-    cb(null, crypto.randomBytes(16).toString('hex') + ext);
-  },
-});
 const upload = multer({
-  storage,
+  storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     const ext = (path.extname(file.originalname) || '').toLowerCase();
@@ -46,13 +29,7 @@ const upload = multer({
   },
 });
 const uploadPetCover = multer({
-  storage: multer.diskStorage({
-    destination: (req, file, cb) => cb(null, petCoverDir),
-    filename: (req, file, cb) => {
-      const ext = (path.extname(file.originalname) || '.jpg').toLowerCase().replace(/[^a-z.]/g, '') || '.jpg';
-      cb(null, 'pet-cover-' + crypto.randomBytes(12).toString('hex') + ext);
-    },
-  }),
+  storage: multer.memoryStorage(),
   limits: { fileSize: 8 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     const ext = (path.extname(file.originalname) || '').toLowerCase();
@@ -89,7 +66,7 @@ router.post('/post', estaAutenticadoAPI, postRateLimit, function (req, res, next
     }
     next();
   });
-}, ...validarExplorarPostV1, validarResultado, explorarController.criarPost);
+}, persistSingle('posts'), ...validarExplorarPostV1, validarResultado, explorarController.criarPost);
 
 router.post('/api/v2/posts', estaAutenticadoAPI, postRateLimit, function (req, res, next) {
   upload.array('media', 4)(req, res, function (err) {
@@ -101,7 +78,7 @@ router.post('/api/v2/posts', estaAutenticadoAPI, postRateLimit, function (req, r
     }
     next();
   });
-}, ...validarExplorarPostV2, validarResultado, explorarController.criarPostV2);
+}, persistArray('posts'), ...validarExplorarPostV2, validarResultado, explorarController.criarPostV2);
 router.get('/api/v2/feed', estaAutenticadoAPI, explorarController.feedV2);
 router.post('/api/v2/posts/:id/comments', estaAutenticadoAPI, postRateLimit, ...validarExplorarComentarV2, validarResultado, explorarController.comentarV2);
 router.get('/api/v2/users/search', estaAutenticadoAPI, explorarController.buscarUsuariosV2);
@@ -157,7 +134,7 @@ router.post('/pet/:id/capa', estaAutenticadoAPI, function (req, res, next) {
     }
     next();
   });
-}, ...validarBodyVazioJson, validarResultado, explorarController.atualizarCapaPet);
+}, persistSingle('pets/capa'), ...validarBodyVazioJson, validarResultado, explorarController.atualizarCapaPet);
 router.delete('/pet/:id/seguidor/:usuarioId', estaAutenticadoAPI, explorarController.removerSeguidorPet);
 
 router.get('/busca', explorarController.paginaBusca);

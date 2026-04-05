@@ -21,7 +21,15 @@ function createApplication() {
   const server = http.createServer(app);
   const io = new Server(server);
 
-  if (process.env.NODE_ENV === 'production') {
+  const trustProxyEnv = process.env.TRUST_PROXY;
+  if (trustProxyEnv !== undefined && trustProxyEnv !== '') {
+    if (trustProxyEnv === 'true') app.set('trust proxy', true);
+    else if (trustProxyEnv === 'false') app.set('trust proxy', false);
+    else {
+      const n = parseInt(trustProxyEnv, 10);
+      app.set('trust proxy', Number.isFinite(n) ? n : 1);
+    }
+  } else if (process.env.NODE_ENV === 'production') {
     app.set('trust proxy', 1);
   }
 
@@ -121,6 +129,8 @@ function createApplication() {
       return res.status(503).json({ ok: false, erro: 'database_unavailable' });
     }
   });
+
+  app.use('/api/internal', require('./routes/internalWebhooks'));
 
   app.get('/manifest.json', async (req, res) => {
     try {

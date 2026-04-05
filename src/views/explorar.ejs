@@ -62,6 +62,27 @@
       .explorar-hero { background: linear-gradient(180deg, rgba(236,90,28,.06) 0%, transparent 100%); }
       .explorar-search-bar { transition: box-shadow .2s, border-color .2s; }
       .explorar-search-bar:focus-within { box-shadow: 0 0 0 3px rgba(236,90,28,.12); border-color: rgba(236,90,28,.4); }
+      /* Mobile: barra explorar fixa abaixo da navbar */
+      .explorar-mobile-topbar {
+        position: fixed;
+        top: var(--explorar-mobile-nav-h, 56px);
+        left: 0;
+        right: 0;
+      }
+      .explorar-mobile-content-offset {
+        padding-top: calc(var(--explorar-mobile-topbar-h, 148px) + 8px);
+      }
+      @media (min-width: 768px) {
+        .explorar-mobile-topbar {
+          position: sticky;
+          top: 56px;
+          left: auto;
+          right: auto;
+        }
+        .explorar-mobile-content-offset {
+          padding-top: 1.25rem;
+        }
+      }
       /* Mosaico Explorar (CSS Grid dense) */
       #feedContainer.explore-mosaic-grid {
         --explore-cols: 2;
@@ -192,7 +213,7 @@
 <main class="explorar-page flex-1 pb-24 md:pb-6">
 
   <!-- ═══ Header Explorar ═══ -->
-  <div class="sticky top-14 z-40 bg-white/95 backdrop-blur-xl border-b border-gray-100/80 explorar-hero">
+  <div id="explorarTopbar" class="explorar-mobile-topbar z-40 bg-white/95 backdrop-blur-xl border-b border-gray-100/80 explorar-hero">
     <div class="max-w-7xl mx-auto px-4 py-4 md:py-5">
       <div class="flex flex-col gap-4">
         <div class="flex items-baseline justify-between gap-3">
@@ -216,7 +237,42 @@
     </div>
   </div>
 
-  <div class="max-w-7xl mx-auto flex gap-6 px-4 pt-5 pb-2">
+  <script>
+    (function () {
+      var root = document.documentElement;
+      var topbar = document.getElementById('explorarTopbar');
+      if (!root || !topbar) return;
+
+      function syncMobileTopbarOffset() {
+        if (window.innerWidth >= 768) {
+          root.style.removeProperty('--explorar-mobile-topbar-h');
+          root.style.removeProperty('--explorar-mobile-nav-h');
+          return;
+        }
+
+        var navbar = document.getElementById('navbar');
+        if (navbar) {
+          var navH = Math.ceil(navbar.getBoundingClientRect().height || 0);
+          if (navH > 0) root.style.setProperty('--explorar-mobile-nav-h', navH + 'px');
+        }
+
+        var h = Math.ceil(topbar.getBoundingClientRect().height || 0);
+        if (h > 0) root.style.setProperty('--explorar-mobile-topbar-h', h + 'px');
+      }
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', syncMobileTopbarOffset, { once: true });
+      } else {
+        syncMobileTopbarOffset();
+      }
+
+      window.addEventListener('resize', syncMobileTopbarOffset, { passive: true });
+      window.addEventListener('orientationchange', syncMobileTopbarOffset);
+      window.addEventListener('load', syncMobileTopbarOffset, { once: true });
+    })();
+  </script>
+
+  <div class="max-w-7xl mx-auto flex gap-6 px-4 pb-2 explorar-mobile-content-offset">
 
   <!-- ═══ Feed (coluna principal) ═══ -->
   <div class="flex-1 min-w-0">

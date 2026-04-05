@@ -3,6 +3,7 @@ const router = express.Router();
 
 const petshopPanelController = require('../controllers/petshopPanelController');
 const { uploadPetshopMediaMiddleware } = require('../middlewares/uploadPetshopMediaMiddleware');
+const { persistSingle } = require('../middlewares/persistUploadMiddleware');
 const { petshopAuthMiddleware } = require('../middlewares/petshopAuthMiddleware');
 const { petshopOwnerMiddleware } = require('../middlewares/petshopOwnerMiddleware');
 const { petshopApprovalMiddleware } = require('../middlewares/petshopApprovalMiddleware');
@@ -36,6 +37,7 @@ router.post(
   '/posts',
   petshopApprovalMiddleware,
   uploadPetshopMediaMiddleware.single('foto'),
+  persistSingle('petshops'),
   ...validarPetshopPost,
   validarResultado,
   promotionModerationMiddleware,

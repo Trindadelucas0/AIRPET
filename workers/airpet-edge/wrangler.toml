@@ -1,0 +1,25 @@
+# Deploy: cd workers/airpet-edge && npx wrangler deploy
+# Defina secrets: npx wrangler secret put WEBHOOK_SECRET
+# Crie a fila "airpet-jobs" no painel e descomente [[queues.consumers]] se usar Queue → webhook Express.
+
+name = "airpet-edge"
+main = "src/index.js"
+compatibility_date = "2024-09-23"
+
+[vars]
+ORIGIN_BASE_URL = "https://ALTERE-para-o-host-do-seu-tunel.exemplo.com"
+SLOT_COUNT = "10"
+WEBHOOK_URL = "https://ALTERE-para-o-host-do-seu-tunel.exemplo.com/api/internal/cloudflare-queue"
+
+[[durable_objects.bindings]]
+name = "SLOT"
+class_name = "SlotProxy"
+
+[[migrations]]
+tag = "v1"
+new_classes = ["SlotProxy"]
+
+# [[queues.consumers]]
+# queue = "airpet-jobs"
+# max_batch_size = 10
+# max_batch_timeout = 5

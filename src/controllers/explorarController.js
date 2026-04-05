@@ -23,6 +23,7 @@ const PostMention = require('../models/PostMention');
 const CommentMention = require('../models/CommentMention');
 const PostTag = require('../models/PostTag');
 const PostMedia = require('../models/PostMedia');
+const { multerPublicUrl } = require('../middlewares/persistUploadMiddleware');
 
 function getNotificacaoService() {
   try { return require('../services/notificacaoService'); } catch (_) { return null; }
@@ -516,7 +517,7 @@ const explorarController = {
         return res.status(401).json({ sucesso: false, mensagem: 'Faça login para publicar.' });
       }
       const { texto, pet_id } = req.body || {};
-      const foto = req.file ? `/images/posts/${req.file.filename}` : null;
+      const foto = multerPublicUrl(req.file, 'posts');
 
       if (!texto && !foto) {
         return res.status(400).json({ sucesso: false, mensagem: 'Escreva algo ou envie uma imagem.' });
@@ -1074,13 +1075,14 @@ const explorarController = {
       const post = await Publicacao.criar({
         usuario_id: uid,
         pet_id: petId || null,
-        foto: mediaFiles[0] ? `/images/posts/${mediaFiles[0].filename}` : null,
+        foto: mediaFiles[0] ? multerPublicUrl(mediaFiles[0], 'posts') : null,
         legenda: texto || null,
         texto: texto || null,
       });
       for (let i = 0; i < mediaFiles.length; i += 1) {
         const f = mediaFiles[i];
-        await PostMedia.criar(post.id, `/images/posts/${f.filename}`, 'image', i, 'ready');
+        const urlMidia = multerPublicUrl(f, 'posts');
+        if (urlMidia) await PostMedia.criar(post.id, urlMidia, 'image', i, 'ready');
       }
 
       const nomesMencionados = PostMention.extrairMencoes(texto);
@@ -1341,7 +1343,7 @@ const explorarController = {
       if (!req.file) {
         return res.status(400).json({ sucesso: false, mensagem: 'Envie uma imagem para a capa.' });
       }
-      const capaPath = `/images/pets/capa/${req.file.filename}`;
+      const capaPath = multerPublicUrl(req.file, 'pets/capa');
       const atualizado = await Pet.atualizarCapa(petId, capaPath);
       return res.json({ sucesso: true, foto_capa: atualizado ? atualizado.foto_capa : capaPath });
     } catch (err) {

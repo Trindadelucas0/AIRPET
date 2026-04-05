@@ -1,38 +1,32 @@
 const multer = require('multer');
 const path = require('path');
-const crypto = require('crypto');
-const fs = require('fs');
 
 const ALLOWED_TYPES = /jpeg|jpg|png|gif|webp/;
 const MAX_SIZE = 5 * 1024 * 1024;
 
-function criarUpload(destino) {
-  const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-      const dir = path.join(__dirname, '..', 'public', 'images', destino);
-      try {
-        fs.mkdirSync(dir, { recursive: true });
-        return cb(null, dir);
-      } catch (error) {
-        return cb(error);
-      }
-    },
-    filename: (req, file, cb) => cb(null, crypto.randomBytes(16).toString('hex') + path.extname(file.originalname))
-  });
-
-  return multer({
-    storage,
-    limits: { fileSize: MAX_SIZE },
-    fileFilter: (req, file, cb) => {
+function criarUploadMemoria(destino, maxSize = MAX_SIZE, fileFilter) {
+  const filter =
+    fileFilter ||
+    ((req, file, cb) => {
       cb(null, ALLOWED_TYPES.test(path.extname(file.originalname).toLowerCase()) && ALLOWED_TYPES.test(file.mimetype));
-    }
+    });
+  return multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: maxSize },
+    fileFilter: filter,
   });
 }
 
+/** @deprecated usar criarUploadMemoria — mantido para compat */
+function criarUpload(destino) {
+  return criarUploadMemoria(destino);
+}
+
 module.exports = {
-  uploadPets: criarUpload('pets'),
-  uploadChat: criarUpload('chat'),
-  uploadCapa: criarUpload('capa'),
-  uploadPerfilGaleria: criarUpload('perfil-galeria'),
+  uploadPets: criarUploadMemoria('pets'),
+  uploadChat: criarUploadMemoria('chat'),
+  uploadCapa: criarUploadMemoria('capa'),
+  uploadPerfilGaleria: criarUploadMemoria('perfil-galeria'),
   criarUpload,
+  criarUploadMemoria,
 };

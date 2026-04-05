@@ -2,10 +2,130 @@
 <% locals.extraHead = `
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
-  #mapaScan { height: 350px; border-radius: 12px; z-index: 1; }
-  .scan-item { transition: all .2s ease; }
-  .scan-item:hover { background: #fff7ed; }
-  .scan-item.active { background: #fff7ed; border-left: 3px solid var(--color-primary); }
+  #mapaScan { height: 350px; border-radius: 14px; z-index: 1; }
+
+  .profile-soft-card {
+    border-color: color-mix(in srgb, var(--border) 82%, white);
+    border-radius: 1.25rem;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
+  }
+
+  .profile-soft-subcard {
+    border: 1px solid color-mix(in srgb, var(--border) 76%, white);
+    border-radius: 0.95rem;
+    background: color-mix(in srgb, var(--muted) 45%, white);
+  }
+
+  .profile-info-card {
+    border-color: color-mix(in srgb, var(--border) 78%, white);
+    border-radius: 1rem;
+    box-shadow: 0 2px 10px rgba(15, 23, 42, 0.03);
+  }
+
+  .profile-action-card {
+    border-color: color-mix(in srgb, var(--border) 80%, white);
+    border-radius: 1rem;
+    min-height: 84px;
+  }
+
+  .profile-focus:focus-visible {
+    outline: 0;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--ring) 20%, transparent);
+    border-color: color-mix(in srgb, var(--ring) 60%, white);
+  }
+
+  .profile-callout-card {
+    background: color-mix(in srgb, var(--muted) 62%, white);
+    border: 1px solid color-mix(in srgb, var(--border) 76%, white);
+    border-radius: 1rem;
+  }
+
+  .pet-panel {
+    padding: 1.1rem;
+    border-radius: 1rem;
+    border: 1px solid color-mix(in srgb, var(--border) 74%, white);
+    background: linear-gradient(180deg, #ffffff 0%, color-mix(in srgb, var(--muted) 45%, white) 100%);
+  }
+
+  .pet-chip-soft {
+    border: 1px solid color-mix(in srgb, var(--border) 72%, white);
+    background: color-mix(in srgb, var(--muted) 58%, white);
+  }
+
+  .panel-modal-overlay {
+    background: rgba(15, 23, 42, 0.58);
+    backdrop-filter: blur(3px);
+  }
+
+  .panel-modal-surface {
+    border: 1px solid color-mix(in srgb, var(--border) 75%, white);
+    border-radius: 1.1rem;
+    box-shadow: 0 24px 54px rgba(15, 23, 42, 0.28);
+    background: #ffffff;
+    overflow: hidden;
+  }
+
+  .panel-modal-header {
+    padding: 0.85rem 1rem;
+    border-bottom: 1px solid color-mix(in srgb, var(--border) 74%, white);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .75rem;
+  }
+
+  .panel-modal-close {
+    width: 2rem;
+    height: 2rem;
+    border: 1px solid color-mix(in srgb, var(--border) 76%, white);
+    border-radius: 999px;
+    color: #475569;
+    background: #fff;
+    transition: all .2s ease;
+  }
+
+  .panel-modal-close:hover { background: #f8fafc; color: #0f172a; }
+
+  .panel-modal-media-wrap {
+    background: #f8fafc;
+    max-height: min(70vh, 760px);
+    overflow: hidden;
+  }
+
+  .panel-map-shell {
+    border: 1px solid color-mix(in srgb, var(--border) 76%, white);
+    border-radius: 1rem;
+    background: color-mix(in srgb, var(--muted) 42%, white);
+  }
+
+  .scan-info-grid {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0.75rem;
+    align-items: center;
+  }
+
+  .panel-nav-btn {
+    border-radius: .85rem;
+    border: 1px solid color-mix(in srgb, var(--border) 72%, white);
+    font-weight: 600;
+    font-size: .86rem;
+    transition: all .2s ease;
+  }
+
+  .panel-nav-btn:hover { transform: translateY(-1px); }
+
+  .scan-item {
+    border-left: 3px solid transparent;
+    transition: background-color .2s ease, border-color .2s ease;
+  }
+
+  .scan-item:hover { background: color-mix(in srgb, var(--muted) 72%, white); }
+
+  .scan-item.active {
+    background: color-mix(in srgb, var(--muted) 64%, white);
+    border-left-color: var(--primary);
+  }
 </style>
 ` %>
 <%- include('../partials/header') %>
@@ -15,7 +135,7 @@
   <%- include('../partials/page-header', { backHref: '/pets', backLabel: 'Meus Pets', sticky: false }) %>
 
   <!-- Hero com foto do pet -->
-  <div class="card p-0 overflow-hidden mb-6">
+  <div class="card profile-soft-card p-0 overflow-hidden mb-6">
     <div class="relative">
       <% if (pet.foto) { %>
         <img src="<%= pet.foto %><%= pet.data_atualizacao ? '?t=' + new Date(pet.data_atualizacao).getTime() : '' %>" alt="<%= pet.nome %>"
@@ -32,48 +152,53 @@
       </span>
     </div>
 
-    <div class="p-6">
-      <h1 class="text-2xl sm:text-3xl font-bold text-gray-900">
-        <%= pet.nome %>
-      </h1>
-
-      <% if (pet.data_nascimento) {
-        var agora = new Date();
-        var nasc = new Date(pet.data_nascimento);
-        var anos = agora.getFullYear() - nasc.getFullYear();
-        var meses = agora.getMonth() - nasc.getMonth();
-        if (meses < 0) { anos--; meses += 12; }
-      %>
-        <p class="text-sm text-gray-500 mt-1">
-          <i class="fa-solid fa-cake-candles mr-1"></i>
-          <%= anos %> ano<%= anos !== 1 ? 's' : '' %><% if (meses > 0) { %> e <%= meses %> m<%= meses !== 1 ? 'eses' : 'es' %><% } %>
-        </p>
-      <% } %>
-
-      <% if (pet.descricao_emocional) { %>
-        <p class="text-gray-500 italic text-sm leading-relaxed mt-3">"<%= pet.descricao_emocional %>"</p>
-      <% } %>
-
-      <% if (typeof idadePet !== 'undefined' && idadePet) { %>
-        <div class="mt-3 flex flex-wrap items-center gap-2">
-          <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-orange-100 text-orange-700 text-xs font-semibold">
-            <i class="fa-solid fa-hourglass-half"></i>
-            <%= idadePet.anos %> ano<%= idadePet.anos !== 1 ? 's' : '' %>,
-            <%= idadePet.meses %> m<%= idadePet.meses !== 1 ? 'eses' : 'es' %> e
-            <%= idadePet.dias %> dia<%= idadePet.dias !== 1 ? 's' : '' %>
-          </span>
-          <% if (idadePet.idadeHumana > 0 && (idadePet.tipo === 'cachorro' || idadePet.tipo === 'gato')) { %>
-            <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-blue-100 text-blue-700 text-xs font-semibold">
-              <i class="fa-solid fa-person"></i>
-              ~<%= idadePet.idadeHumana %> anos humanos
-            </span>
-          <% } %>
+    <div class="p-5 sm:p-6">
+      <div class="pet-panel">
+        <div class="flex items-start justify-between gap-3">
+          <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 leading-tight">
+            <%= pet.nome %>
+          </h1>
+          <i class="fa-solid fa-paw text-primary-500/60 text-xl mt-1"></i>
         </div>
-      <% } %>
 
-      <% if (pet.dono_nome) { %>
-        <p class="text-xs text-gray-400 mt-3"><i class="fa-solid fa-user mr-1"></i> Tutor: <%= pet.dono_nome %></p>
-      <% } %>
+        <% if (pet.data_nascimento) {
+          var agora = new Date();
+          var nasc = new Date(pet.data_nascimento);
+          var anos = agora.getFullYear() - nasc.getFullYear();
+          var meses = agora.getMonth() - nasc.getMonth();
+          if (meses < 0) { anos--; meses += 12; }
+        %>
+          <p class="text-sm text-gray-500 mt-1.5">
+            <i class="fa-solid fa-cake-candles mr-1"></i>
+            <%= anos %> ano<%= anos !== 1 ? 's' : '' %><% if (meses > 0) { %> e <%= meses %> m<%= meses !== 1 ? 'eses' : 'es' %><% } %>
+          </p>
+        <% } %>
+
+        <% if (pet.descricao_emocional) { %>
+          <p class="text-gray-600 italic text-sm leading-relaxed mt-3">"<%= pet.descricao_emocional %>"</p>
+        <% } %>
+
+        <% if (typeof idadePet !== 'undefined' && idadePet) { %>
+          <div class="mt-3.5 flex flex-wrap items-center gap-2">
+            <span class="pet-chip-soft inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-orange-700 text-xs font-semibold">
+              <i class="fa-solid fa-hourglass-half"></i>
+              <%= idadePet.anos %> ano<%= idadePet.anos !== 1 ? 's' : '' %>,
+              <%= idadePet.meses %> m<%= idadePet.meses !== 1 ? 'eses' : 'es' %> e
+              <%= idadePet.dias %> dia<%= idadePet.dias !== 1 ? 's' : '' %>
+            </span>
+            <% if (idadePet.idadeHumana > 0 && (idadePet.tipo === 'cachorro' || idadePet.tipo === 'gato')) { %>
+              <span class="pet-chip-soft inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-blue-700 text-xs font-semibold">
+                <i class="fa-solid fa-person"></i>
+                ~<%= idadePet.idadeHumana %> anos humanos
+              </span>
+            <% } %>
+          </div>
+        <% } %>
+
+        <% if (pet.dono_nome) { %>
+          <p class="text-xs text-gray-500 mt-3.5"><i class="fa-solid fa-user mr-1"></i> Tutor: <%= pet.dono_nome %></p>
+        <% } %>
+      </div>
     </div>
   </div>
 
@@ -89,7 +214,7 @@
 
   <!-- Info cards -->
   <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-    <div class="card text-center !p-4">
+    <div class="card profile-info-card text-center !p-4">
       <i class="fa-solid fa-paw text-primary-500 text-lg mb-1"></i>
       <p class="text-xs text-gray-400 uppercase font-medium">Tipo</p>
       <p class="text-sm font-bold text-gray-800 mt-0.5">
@@ -100,17 +225,17 @@
         <% } %>
       </p>
     </div>
-    <div class="card text-center !p-4">
+    <div class="card profile-info-card text-center !p-4">
       <i class="fa-solid fa-dna text-primary-500 text-lg mb-1"></i>
       <p class="text-xs text-gray-400 uppercase font-medium">Raca</p>
       <p class="text-sm font-bold text-gray-800 mt-0.5"><%= pet.raca || 'SRD' %></p>
     </div>
-    <div class="card text-center !p-4">
+    <div class="card profile-info-card text-center !p-4">
       <i class="fa-solid fa-weight-scale text-primary-500 text-lg mb-1"></i>
       <p class="text-xs text-gray-400 uppercase font-medium">Peso</p>
       <p class="text-sm font-bold text-gray-800 mt-0.5"><%= pet.peso ? pet.peso + ' kg' : '—' %></p>
     </div>
-    <div class="card text-center !p-4">
+    <div class="card profile-info-card text-center !p-4">
       <i class="fa-solid fa-cake-candles text-primary-500 text-lg mb-1"></i>
       <p class="text-xs text-gray-400 uppercase font-medium">Nascimento</p>
       <p class="text-sm font-bold text-gray-800 mt-0.5">
@@ -125,21 +250,21 @@
   <% if (pet.sexo || pet.porte || pet.cor) { %>
     <div class="grid grid-cols-3 gap-3 mb-6">
       <% if (pet.sexo) { %>
-        <div class="card text-center !p-3">
+        <div class="card profile-info-card text-center !p-3">
           <i class="fa-solid <%= pet.sexo === 'macho' ? 'fa-mars text-blue-500' : pet.sexo === 'femea' ? 'fa-venus text-pink-500' : 'fa-question text-gray-400' %> text-lg mb-1"></i>
           <p class="text-xs text-gray-400 uppercase font-medium">Sexo</p>
           <p class="text-sm font-bold text-gray-800 capitalize"><%= pet.sexo === 'femea' ? 'Femea' : pet.sexo === 'nao_sei' ? 'N/A' : pet.sexo %></p>
         </div>
       <% } %>
       <% if (pet.porte) { %>
-        <div class="card text-center !p-3">
+        <div class="card profile-info-card text-center !p-3">
           <span class="text-lg block mb-1"><%= pet.porte === 'pequeno' ? '🐕' : pet.porte === 'medio' ? '🐕‍🦺' : '🦮' %></span>
           <p class="text-xs text-gray-400 uppercase font-medium">Porte</p>
           <p class="text-sm font-bold text-gray-800 capitalize"><%= pet.porte %></p>
         </div>
       <% } %>
       <% if (pet.cor) { %>
-        <div class="card text-center !p-3">
+        <div class="card profile-info-card text-center !p-3">
           <i class="fa-solid fa-palette text-primary-500 text-lg mb-1"></i>
           <p class="text-xs text-gray-400 uppercase font-medium">Cor</p>
           <p class="text-sm font-bold text-gray-800"><%= pet.cor %></p>
@@ -151,21 +276,21 @@
   <!-- Acoes do dono -->
   <% if (ehDono) { %>
     <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6">
-      <a href="/pets/<%= pet.id %>/editar" class="card !p-4 text-center hover:bg-orange-50 transition-colors group">
+      <a href="/pets/<%= pet.id %>/editar" class="card profile-action-card profile-focus !p-4 text-center hover:bg-orange-50/50 transition-colors group">
         <i class="fa-solid fa-pen text-gray-400 group-hover:text-primary-500 text-xl mb-2"></i>
         <p class="text-xs font-semibold text-gray-700">Editar</p>
       </a>
-      <a href="/pets/<%= pet.id %>/saude" class="card !p-4 text-center hover:bg-green-50 transition-colors group">
+      <a href="/pets/<%= pet.id %>/saude" class="card profile-action-card profile-focus !p-4 text-center hover:bg-green-50/60 transition-colors group">
         <i class="fa-solid fa-heart-pulse text-gray-400 group-hover:text-green-500 text-xl mb-2"></i>
         <p class="text-xs font-semibold text-gray-700">Saude</p>
       </a>
       <% if (pet.status !== 'perdido') { %>
-        <a href="/perdidos/<%= pet.id %>/formulario" class="card !p-4 text-center hover:bg-red-50 transition-colors group">
+        <a href="/perdidos/<%= pet.id %>/formulario" class="card profile-action-card profile-focus !p-4 text-center hover:bg-red-50/60 transition-colors group">
           <i class="fa-solid fa-triangle-exclamation text-gray-400 group-hover:text-red-500 text-xl mb-2"></i>
           <p class="text-xs font-semibold text-gray-700">Reportar Perda</p>
         </a>
       <% } else { %>
-        <a href="/perdidos/<%= pet.id %>/encontrado" class="card !p-4 text-center hover:bg-green-50 transition-colors group">
+        <a href="/perdidos/<%= pet.id %>/encontrado" class="card profile-action-card profile-focus !p-4 text-center hover:bg-green-50/60 transition-colors group">
           <i class="fa-solid fa-check-circle text-gray-400 group-hover:text-green-500 text-xl mb-2"></i>
           <p class="text-xs font-semibold text-gray-700">Encontrado!</p>
         </a>
@@ -173,7 +298,7 @@
     </div>
 
     <!-- Seção de Tag NFC -->
-    <div class="card mb-6">
+    <div class="card profile-soft-card mb-6">
       <div class="flex items-center justify-between mb-3">
         <div class="flex items-center gap-2">
           <div class="w-9 h-9 rounded-xl bg-primary-500/10 flex items-center justify-center">
@@ -194,7 +319,7 @@
       <% if (typeof tags !== 'undefined' && tags && tags.length > 0) { %>
         <div class="space-y-2 mb-4">
           <% tags.forEach(function(tag) { %>
-            <div class="flex items-center gap-3 bg-gray-50 rounded-xl p-3">
+            <div class="flex items-center gap-3 profile-soft-subcard p-3">
               <span class="w-9 h-9 rounded-lg bg-primary-500/10 text-primary-500 flex items-center justify-center flex-shrink-0">
                 <i class="fa-solid fa-microchip text-sm"></i>
               </span>
@@ -254,7 +379,7 @@
          HISTORICO DE SCANS DA TAG NFC (ultimos 10)
          ===================================================== -->
     <% if (typeof scans !== 'undefined' && scans && scans.length > 0) { %>
-      <div class="card mb-6">
+      <div class="card profile-soft-card mb-6">
         <div class="flex items-center justify-between mb-4">
           <h2 class="text-lg font-bold text-gray-900">
             <i class="fa-solid fa-satellite-dish text-primary-500 mr-2"></i>Historico de Scans
@@ -267,7 +392,7 @@
           Ultimas vezes que a tag NFC de <%= pet.nome %> foi escaneada. Toque para ver no mapa.
         </p>
 
-        <div class="space-y-0 divide-y divide-gray-100 max-h-[400px] overflow-y-auto rounded-xl border border-gray-100">
+        <div class="space-y-0 divide-y divide-gray-200/70 max-h-[400px] overflow-y-auto rounded-xl border border-gray-200/70 bg-white">
           <% scans.forEach(function(scan, idx) {
             var dt = new Date(scan.data);
             var agora2 = new Date();
@@ -322,26 +447,26 @@
       </div>
 
       <!-- Mapa de scans -->
-      <div id="mapaScansContainer" class="card mb-6 hidden">
+      <div id="mapaScansContainer" class="card profile-soft-card panel-map-shell mb-6 hidden">
         <div class="flex items-center justify-between mb-3">
-          <h2 class="text-lg font-bold text-gray-900">
+          <h2 class="text-lg font-bold text-gray-900 leading-tight">
             <i class="fa-solid fa-map text-primary-500 mr-2"></i>Localizacao do Scan
           </h2>
-          <button type="button" onclick="fecharMapaScan()" class="text-gray-400 hover:text-gray-600 transition-colors">
+          <button type="button" onclick="fecharMapaScan()" class="panel-modal-close profile-focus inline-flex items-center justify-center" aria-label="Fechar painel de localizacao">
             <i class="fa-solid fa-times text-lg"></i>
           </button>
         </div>
 
         <!-- Info do scan selecionado -->
-        <div id="scanInfoCard" class="bg-orange-50 border border-orange-200 rounded-xl p-3 mb-3">
-          <div class="flex items-center justify-between">
+        <div id="scanInfoCard" class="profile-callout-card p-3.5 mb-3">
+          <div class="scan-info-grid">
             <div>
-              <p class="text-sm font-bold text-gray-800" id="scanInfoTitle"></p>
-              <p class="text-xs text-gray-500" id="scanInfoData"></p>
+              <p class="text-sm font-bold text-gray-800 leading-tight" id="scanInfoTitle"></p>
+              <p class="text-xs text-gray-500 mt-0.5" id="scanInfoData"></p>
             </div>
-            <div class="text-right">
-              <p class="text-sm font-bold text-primary-500" id="scanInfoDist"></p>
-              <p class="text-xs text-gray-500" id="scanInfoTempo"></p>
+            <div class="text-right rounded-lg border border-gray-200/80 bg-white px-3 py-1.5">
+              <p class="text-sm font-bold text-primary-500 leading-tight" id="scanInfoDist"></p>
+              <p class="text-[11px] text-gray-500 mt-0.5" id="scanInfoTempo"></p>
             </div>
           </div>
         </div>
@@ -351,11 +476,11 @@
         <!-- Botoes de navegacao -->
         <div class="grid grid-cols-2 gap-3 mt-3" id="navButtons" style="display:none">
           <a id="btnGoogleMaps" href="#" target="_blank"
-             class="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm transition-colors">
+             class="panel-nav-btn profile-focus flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white">
             <i class="fa-solid fa-diamond-turn-right"></i> Google Maps
           </a>
           <a id="btnWaze" href="#" target="_blank"
-             class="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-[#33ccff] hover:bg-[#28b8e8] text-white font-semibold text-sm transition-colors">
+             class="panel-nav-btn profile-focus flex items-center justify-center gap-2 px-4 py-3 bg-[#33ccff] hover:bg-[#28b8e8] text-white">
             <i class="fa-brands fa-waze"></i> Waze
           </a>
         </div>
@@ -363,7 +488,7 @@
     <% } else { %>
       <!-- Sem scans -->
       <% if (typeof tags !== 'undefined' && tags && tags.length > 0) { %>
-        <div class="card mb-6 text-center">
+        <div class="card profile-soft-card mb-6 text-center">
           <i class="fa-solid fa-satellite-dish text-gray-300 text-3xl mb-2"></i>
           <p class="text-sm text-gray-500">Nenhum scan registrado ainda.</p>
           <p class="text-xs text-gray-400 mt-1">Quando alguem escanear a tag NFC de <%= pet.nome %>, o historico aparecera aqui.</p>
@@ -374,7 +499,7 @@
 
   <!-- Fotos recebidas (quem encontrou enviou foto) -->
   <% if (typeof ehDono !== 'undefined' && ehDono && typeof fotosRecebidas !== 'undefined' && fotosRecebidas && fotosRecebidas.length > 0) { %>
-    <div class="card mb-6" id="fotos-recebidas">
+    <div class="card profile-soft-card mb-6" id="fotos-recebidas">
       <h2 class="text-lg font-bold text-gray-900 mb-3">
         <i class="fa-solid fa-camera text-primary-500 mr-2"></i>Fotos recebidas
       </h2>
@@ -384,7 +509,7 @@
           var dt = loc.data ? new Date(loc.data) : null;
           var dataStr = dt ? dt.toLocaleDateString('pt-BR') + ' ' + dt.toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'}) : '';
         %>
-          <button type="button" class="block rounded-xl overflow-hidden border border-gray-200 hover:border-primary-500/50 focus:outline-none focus:ring-2 focus:ring-primary-500/30 foto-recebida-btn"
+          <button type="button" class="block rounded-xl overflow-hidden border border-gray-200/80 hover:border-primary-400/50 focus:outline-none focus:ring-2 focus:ring-primary-500/25 foto-recebida-btn profile-focus"
                   data-foto-url="<%= loc.foto_url %>" data-data-str="<%= dataStr %>">
             <img src="<%= loc.foto_url %>" alt="Foto recebida" class="w-full aspect-square object-cover">
           </button>
@@ -392,13 +517,22 @@
       </div>
     </div>
     <!-- Modal foto recebida -->
-    <div id="modalFotoRecebida" class="fixed inset-0 z-[9999] hidden items-center justify-center p-4 bg-black/70" aria-hidden="true">
-      <div class="relative max-w-2xl w-full" onclick="if (event.target === this) fecharModalFoto();">
-        <button type="button" onclick="fecharModalFoto()" class="absolute -top-10 right-0 text-white hover:text-gray-200 text-2xl">
-          <i class="fa-solid fa-times"></i>
-        </button>
-        <img id="modalFotoRecebidaImg" src="" alt="Foto" class="w-full rounded-2xl shadow-2xl">
-        <p id="modalFotoRecebidaData" class="text-white/90 text-sm mt-2 text-center"></p>
+    <div id="modalFotoRecebida" class="fixed inset-0 z-[9999] hidden items-center justify-center p-4 panel-modal-overlay" aria-hidden="true">
+      <div class="relative max-w-2xl w-full">
+        <div class="panel-modal-surface">
+          <div class="panel-modal-header">
+            <div class="min-w-0">
+              <p class="text-sm font-semibold text-gray-900 truncate">Foto enviada por quem encontrou</p>
+              <p id="modalFotoRecebidaData" class="text-xs text-gray-500 truncate"></p>
+            </div>
+            <button type="button" onclick="fecharModalFoto()" class="panel-modal-close profile-focus inline-flex items-center justify-center flex-shrink-0" aria-label="Fechar modal de foto">
+              <i class="fa-solid fa-times text-sm"></i>
+            </button>
+          </div>
+          <div class="panel-modal-media-wrap">
+            <img id="modalFotoRecebidaImg" src="" alt="Foto recebida" class="w-full object-contain max-h-[70vh]">
+          </div>
+        </div>
       </div>
     </div>
     <script>
@@ -411,6 +545,7 @@
         if (dataEl) dataEl.textContent = dataStr || '';
         modal.classList.remove('hidden');
         modal.classList.add('flex');
+        modal.setAttribute('aria-hidden', 'false');
         document.body.style.overflow = 'hidden';
       }
     }
@@ -419,6 +554,7 @@
       if (modal) {
         modal.classList.add('hidden');
         modal.classList.remove('flex');
+        modal.setAttribute('aria-hidden', 'true');
         document.body.style.overflow = '';
       }
     }
@@ -429,12 +565,15 @@
     });
     var modalEl = document.getElementById('modalFotoRecebida');
     if (modalEl) modalEl.addEventListener('click', function(e) { if (e.target === this) fecharModalFoto(); });
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') fecharModalFoto();
+    });
     </script>
   <% } %>
 
   <!-- Telefone de contato publico -->
   <% if (pet.telefone_contato) { %>
-    <div class="card mb-6">
+    <div class="card profile-soft-card mb-6">
       <h2 class="text-lg font-bold text-gray-900 mb-3">
         <i class="fa-solid fa-phone text-primary-500 mr-2"></i>Contato
       </h2>
@@ -443,7 +582,7 @@
           <i class="fa-solid fa-phone"></i> Ligar
         </a>
         <a href="https://wa.me/55<%= pet.telefone_contato.replace(/\D/g,'') %>" target="_blank"
-           class="flex-1 inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-green-500 hover:bg-green-600 text-white font-semibold transition-colors">
+           class="flex-1 inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-green-500 hover:bg-green-600 text-white font-semibold transition-colors profile-focus">
           <i class="fa-brands fa-whatsapp"></i> WhatsApp
         </a>
       </div>
@@ -452,7 +591,7 @@
 
   <!-- Contato para quem encontrou (view publica) -->
   <% if (!ehDono) { %>
-    <div class="card text-center mb-6 bg-orange-50 border border-orange-200">
+    <div class="card profile-callout-card text-center mb-6">
       <h2 class="text-lg font-bold text-gray-900 mb-2">
         <i class="fa-solid fa-heart text-red-400 mr-1"></i> Encontrou este pet?
       </h2>

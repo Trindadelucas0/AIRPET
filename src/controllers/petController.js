@@ -30,6 +30,7 @@ const NfcTag = require('../models/NfcTag');
 const Localizacao = require('../models/Localizacao');
 const { withTransaction } = require('../config/database');
 const logger = require('../utils/logger');
+const { multerPublicUrl } = require('../middlewares/persistUploadMiddleware');
 
 const petController = {
 
@@ -100,7 +101,7 @@ const petController = {
         microchip, castrado: castradoBody, alergias_medicacoes, veterinario_nome, veterinario_telefone, observacoes } = req.body;
       const castrado = castradoBody === 'sim' || castradoBody === 'on' ? true : (castradoBody === 'nao' ? false : null);
 
-      const foto = req.file ? `/images/pets/${req.file.filename}` : null;
+      const foto = multerPublicUrl(req.file, 'pets');
 
       const dadosPet = {
         usuario_id: req.session.usuario.id,
@@ -365,7 +366,8 @@ const petController = {
       /* Se uma nova foto foi enviada via multer, atualiza a foto separadamente */
       if (req.file) {
         try {
-          await Pet.atualizarFoto(id, `/images/pets/${req.file.filename}`);
+          const urlFoto = multerPublicUrl(req.file, 'pets');
+          if (urlFoto) await Pet.atualizarFoto(id, urlFoto);
         } catch (errFoto) {
           logger.error('PET_CTRL', 'Erro ao atualizar foto do pet', errFoto);
           req.session.flash = { tipo: 'aviso', mensagem: 'Dados salvos, mas não foi possível atualizar a foto.' };

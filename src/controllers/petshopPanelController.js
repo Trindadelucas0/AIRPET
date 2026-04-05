@@ -9,6 +9,7 @@ const PetshopProfile = require('../models/PetshopProfile');
 const PetshopPartnerRequest = require('../models/PetshopPartnerRequest');
 const PetPetshopLinkRequest = require('../models/PetPetshopLinkRequest');
 const petshopPublishingService = require('../services/petshopPublishingService');
+const { multerPublicUrl } = require('../middlewares/persistUploadMiddleware');
 const petshopScheduleService = require('../services/petshopScheduleService');
 const petshopAppointmentService = require('../services/petshopAppointmentService');
 const logger = require('../utils/logger');
@@ -117,7 +118,7 @@ const petshopPanelController = {
 
   async criarPost(req, res) {
     try {
-      const foto = req.file ? `/images/petshops/${req.file.filename}` : null;
+      const foto = multerPublicUrl(req.file, 'petshops');
       await petshopPublishingService.criarPost(
         req.petshopAccount.petshop_id,
         req.petshopAccount.id,

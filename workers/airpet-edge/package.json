@@ -1,0 +1,8 @@
+{
+  "name": "airpet-edge",
+  "private": true,
+  "description": "Cloudflare Worker: limite de concorrência ao origin (Durable Objects) + consumer opcional de Queue",
+  "devDependencies": {
+    "wrangler": "^3.114.0"
+  }
+}

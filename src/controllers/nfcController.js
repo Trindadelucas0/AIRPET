@@ -31,6 +31,7 @@ const Pet = require('../models/Pet');
 const Localizacao = require('../models/Localizacao');
 const notificacaoService = require('../services/notificacaoService');
 const logger = require('../utils/logger');
+const { multerPublicUrl } = require('../middlewares/persistUploadMiddleware');
 
 const nfcController = {
 
@@ -185,7 +186,7 @@ const nfcController = {
     const tag_code = req.params.tag_code;
     try {
       const { nome, telefone, mensagem, latitude, longitude } = req.body;
-      const foto = req.file ? `/images/pets/${req.file.filename}` : null;
+      const foto = multerPublicUrl(req.file, 'pets');
 
       const tag = await NfcTag.buscarAtivaPorCodigo(tag_code);
       if (!tag || !tag.pet_id) {
@@ -315,7 +316,7 @@ const nfcController = {
   async processarEnviarFoto(req, res) {
     try {
       const { tag_code } = req.params;
-      const foto = req.file ? `/images/pets/${req.file.filename}` : null;
+      const foto = multerPublicUrl(req.file, 'pets');
       if (!foto) {
         req.session.flash = { tipo: 'erro', mensagem: 'Nenhuma foto enviada.' };
         return res.redirect(`/tag/${tag_code}/enviar-foto`);

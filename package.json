@@ -17,6 +17,8 @@
     "db:migrate:down": "node scripts/run-pgm.cjs down",
     "db:migrate:create": "node scripts/run-pgm.cjs create",
     "db:health": "node scripts/db-health.cjs",
+    "migrate:r2": "node scripts/migrate-local-images-to-r2.cjs",
+    "test:r2": "node scripts/test-r2-put.cjs",
     "lint": "eslint \"src/controllers\" \"src/services\" \"src/routes\""
   },
   "keywords": [
@@ -28,6 +30,7 @@
   ],
   "license": "ISC",
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1023.0",
     "bcrypt": "^6.0.0",
     "connect-pg-simple": "^10.0.0",
     "cookie-parser": "^1.4.7",

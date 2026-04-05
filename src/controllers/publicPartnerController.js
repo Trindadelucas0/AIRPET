@@ -14,9 +14,6 @@ const publicPartnerController = {
   async enviarSolicitacao(req, res) {
     try {
       const body = req.body || {};
-      // #region agent log
-      fetch('http://127.0.0.1:7619/ingest/ae098eda-cae8-4273-b296-012a1e446933',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'8f331f'},body:JSON.stringify({sessionId:'8f331f',runId:'partner-debug',hypothesisId:'H3',location:'publicPartnerController.js:enviarSolicitacao:entry',message:'Partner submit reached controller',data:{bodyKeys:Object.keys(body||{}),hasEmailLogin:!!String(body.email_login||'').trim(),hasSenha:!!String(body.senha||''),hasConfirmarSenha:!!String(body.confirmar_senha||''),hasLatitude:!!String(body.latitude||'').trim(),hasLongitude:!!String(body.longitude||'').trim()},timestamp:Date.now()})}).catch(()=>{});
-      // #endregion
       const solicitacao = await petshopOnboardingService.criarSolicitacao(body, req.files || {});
 
       const emailContato = String(body.email || body.email_login || '').trim().toLowerCase();
@@ -34,9 +31,6 @@ const publicPartnerController = {
 
       return res.render('parceiros/sucesso', { titulo: 'Solicitação enviada' });
     } catch (erro) {
-      // #region agent log
-      fetch('http://127.0.0.1:7619/ingest/ae098eda-cae8-4273-b296-012a1e446933',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'8f331f'},body:JSON.stringify({sessionId:'8f331f',runId:'partner-debug',hypothesisId:'H3',location:'publicPartnerController.js:enviarSolicitacao:catch',message:'Partner submit failed in controller',data:{errorMessage:erro&&erro.message?String(erro.message).slice(0,220):'unknown'},timestamp:Date.now()})}).catch(()=>{});
-      // #endregion
       logger.error('PublicPartnerController', 'Erro ao enviar solicitação de parceria', erro);
       const body = req.body || {};
 

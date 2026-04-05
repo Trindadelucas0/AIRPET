@@ -32,6 +32,7 @@ const MensagemChat = require('../models/MensagemChat');
 const PetPerdido = require('../models/PetPerdido');
 const logger = require('../utils/logger');
 const crypto = require('crypto');
+const { multerPublicUrl } = require('../middlewares/persistUploadMiddleware');
 
 const TOKEN_TTL_MS = 1000 * 60 * 60 * 12;
 
@@ -291,9 +292,9 @@ async function enviarMensagem(req, res) {
     let tipo = 'texto';
     let fotoUrl = null;
 
-    if (foto && foto.filename) {
+    if (foto && (foto.storagePublicUrl || foto.filename)) {
       tipo = 'foto';
-      fotoUrl = '/images/chat/' + foto.filename;
+      fotoUrl = multerPublicUrl(foto, 'chat');
     }
 
     if (!conteudo && !fotoUrl) {

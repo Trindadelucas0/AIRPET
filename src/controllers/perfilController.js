@@ -1,10 +1,10 @@
 const Usuario = require('../models/Usuario');
 const Pet = require('../models/Pet');
 const FotoPerfilPet = require('../models/FotoPerfilPet');
-const path = require('path');
-const fs = require('fs');
 const Raca = require('../models/Raca');
 const logger = require('../utils/logger');
+const { multerPublicUrl } = require('../middlewares/persistUploadMiddleware');
+const storageService = require('../services/storageService');
 
 const PERFIS_RETURN_ALLOWED = new Set([
   '/perfil',
@@ -181,8 +181,10 @@ const perfilController = {
           else dados[campo] = body[campo];
         }
       });
-      if (fotoPerfilFile) dados.foto_perfil = `/images/perfil/${fotoPerfilFile.filename}`;
-      if (fotoCapaFile) dados.foto_capa = `/images/capa/${fotoCapaFile.filename}`;
+      const urlPerfil = fotoPerfilFile ? multerPublicUrl(fotoPerfilFile, 'perfil') : null;
+      const urlCapa = fotoCapaFile ? multerPublicUrl(fotoCapaFile, 'capa') : null;
+      if (urlPerfil) dados.foto_perfil = urlPerfil;
+      if (urlCapa) dados.foto_capa = urlCapa;
 
       if (Object.keys(dados).length === 0) {
         req.session.flash = { tipo: 'sucesso', mensagem: 'Nenhuma alteração enviada.' };
@@ -236,7 +238,8 @@ const perfilController = {
         return res.status(400).json({ sucesso: false, mensagem: `Máximo de ${FotoPerfilPet.MAX_FOTOS_POR_PET} fotos por pet.` });
       }
       if (!req.file) return res.status(400).json({ sucesso: false, mensagem: 'Nenhuma imagem enviada.' });
-      const foto = `/images/perfil-galeria/${req.file.filename}`;
+      const foto = multerPublicUrl(req.file, 'perfil-galeria');
+      if (!foto) return res.status(400).json({ sucesso: false, mensagem: 'Não foi possível salvar a imagem.' });
       const registro = await FotoPerfilPet.criar(uid, pet_id, foto);
       res.json({ sucesso: true, id: registro.id, foto: registro.foto });
     } catch (erro) {
@@ -252,8 +255,7 @@ const perfilController = {
       if (!id) return res.status(400).json({ sucesso: false });
       const registro = await FotoPerfilPet.deletar(id, uid);
       if (!registro) return res.status(404).json({ sucesso: false });
-      const caminho = path.join(__dirname, '..', 'public', registro.foto);
-      try { fs.unlinkSync(caminho); } catch (_) {}
+      await storageService.removeByPublicUrl(registro.foto);
       res.json({ sucesso: true });
     } catch (erro) {
       logger.error('PERFIL_CTRL', 'Erro ao remover foto galeria', erro);

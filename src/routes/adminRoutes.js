@@ -1,6 +1,5 @@
 const express = require('express');
 const router = express.Router();
-const path = require('path');
 const bcrypt = require('bcrypt');
 const multer = require('multer');
 
@@ -22,18 +21,9 @@ const {
   validarResultado,
 } = require('../middlewares/writeRouteValidators');
 
-const pwaDir = path.join(__dirname, '..', 'public', 'images', 'pwa');
-const storagePwa = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, pwaDir),
-  filename: (req, file, cb) => {
-    const rawExt = (path.extname(file.originalname) || '.png').toLowerCase();
-    const ext = rawExt === '.svg' ? '.svg' : '.png';
-    const name = file.fieldname === 'icon_192' ? 'icon-192' : 'icon-512';
-    cb(null, name + ext);
-  },
-});
+const { persistPwaIcons } = require('../middlewares/persistUploadMiddleware');
 const uploadPwa = multer({
-  storage: storagePwa,
+  storage: multer.memoryStorage(),
   limits: { fileSize: 2 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     const ok = /\.(png|svg)$/i.test(file.originalname) && /image\/(png|svg\+xml)/.test(file.mimetype);
@@ -143,6 +133,7 @@ router.post(
   '/aparencia',
   apenasAdmin,
   uploadPwa.fields([{ name: 'icon_192', maxCount: 1 }, { name: 'icon_512', maxCount: 1 }]),
+  persistPwaIcons(),
   ...validarAdminAparencia,
   validarResultado,
   adminController.salvarAparencia

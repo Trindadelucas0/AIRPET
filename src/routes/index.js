@@ -1,35 +1,14 @@
 const express = require('express');
 const router = express.Router();
 const path = require('path');
-const crypto = require('crypto');
 const multer = require('multer');
 
 const { estaAutenticado } = require('../middlewares/authMiddleware');
 const { limiterGeral } = require('../middlewares/rateLimiter');
+const { persistFields, persistSingle } = require('../middlewares/persistUploadMiddleware');
 
-const storagePerfil = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, path.join(__dirname, '..', 'public', 'images', 'perfil')),
-  filename: (req, file, cb) => cb(null, crypto.randomBytes(16).toString('hex') + path.extname(file.originalname || '.jpg')),
-});
-const uploadPerfil = multer({
-  storage: storagePerfil,
-  limits: { fileSize: 5 * 1024 * 1024 },
-  fileFilter: (req, file, cb) => {
-    const allowed = /jpeg|jpg|png|gif|webp/;
-    const ext = path.extname(file.originalname || '').toLowerCase();
-    cb(null, allowed.test(ext) && (file.mimetype && allowed.test(file.mimetype)));
-  },
-});
-
-const storagePerfilCapa = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const dir = file.fieldname === 'foto_capa' ? 'capa' : 'perfil';
-    cb(null, path.join(__dirname, '..', 'public', 'images', dir));
-  },
-  filename: (req, file, cb) => cb(null, crypto.randomBytes(16).toString('hex') + path.extname(file.originalname || '.jpg')),
-});
 const uploadPerfilCapa = multer({
-  storage: storagePerfilCapa,
+  storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     const allowed = /jpeg|jpg|png|gif|webp/;
@@ -130,7 +109,16 @@ router.get('/perfil/aparencia', estaAutenticado, perfilController.mostrarAparenc
 router.get('/perfil/localizacao', estaAutenticado, perfilController.mostrarLocalizacao);
 router.get('/perfil/seguranca', estaAutenticado, perfilController.mostrarSeguranca);
 router.get('/perfil/galeria', estaAutenticado, perfilController.mostrarGaleriaPagina);
-router.put('/perfil', estaAutenticado, uploadPerfilCapa.fields([{ name: 'foto_perfil', maxCount: 1 }, { name: 'foto_capa', maxCount: 1 }]), camposPermitidos(CAMPOS_PERFIL), validarPerfil, validarResultado, perfilController.atualizar);
+router.put(
+  '/perfil',
+  estaAutenticado,
+  uploadPerfilCapa.fields([{ name: 'foto_perfil', maxCount: 1 }, { name: 'foto_capa', maxCount: 1 }]),
+  persistFields({ foto_perfil: 'perfil', foto_capa: 'capa' }),
+  camposPermitidos(CAMPOS_PERFIL),
+  validarPerfil,
+  validarResultado,
+  perfilController.atualizar
+);
 
 router.get('/api/perfil/galeria', estaAutenticado, perfilController.listarGaleria);
 const { uploadPerfilGaleria } = require('../utils/upload');
@@ -138,6 +126,7 @@ router.post(
   '/perfil/galeria',
   estaAutenticado,
   uploadPerfilGaleria.single('foto'),
+  persistSingle('perfil-galeria'),
   ...validarPerfilGaleriaPost,
   ...validarPerfilGaleriaBody,
   validarResultado,
