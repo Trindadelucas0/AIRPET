@@ -14,7 +14,7 @@
  *  - NOTIFICATIONCLICK: abre a URL da notificacao ao clicar
  */
 
-const CACHE_VERSION = 'airpet-v6';
+const CACHE_VERSION = 'airpet-v7';
 
 const SHELL_ASSETS = [
   '/',
@@ -25,9 +25,19 @@ const SHELL_ASSETS = [
   '/js/pwa.js',
   '/js/permissions.js',
   '/manifest.json',
-  '/images/icons/icon-192.png',
-  '/images/icons/icon-512.png',
+  '/images/icons/icon-192.svg',
+  '/images/icons/icon-512.svg',
 ];
+
+function precacheShell(cache, urls) {
+  return Promise.all(
+    urls.map(function (url) {
+      return cache.add(url).catch(function () {
+        /* Um 404 não deve impedir o registo do SW (addAll falhava por completo). */
+      });
+    })
+  );
+}
 
 // ========================
 // INSTALL
@@ -35,7 +45,7 @@ const SHELL_ASSETS = [
 self.addEventListener('install', function (event) {
   event.waitUntil(
     caches.open(CACHE_VERSION).then(function (cache) {
-      return cache.addAll(SHELL_ASSETS);
+      return precacheShell(cache, SHELL_ASSETS);
     })
   );
   self.skipWaiting();
@@ -166,7 +176,7 @@ self.addEventListener('fetch', function (event) {
 // PUSH NOTIFICATIONS
 // ========================
 self.addEventListener('push', function (event) {
-  var data = { titulo: 'AIRPET', corpo: 'Você tem uma nova notificação', url: '/notificacoes', icone: '/images/icons/icon-192.png' };
+  var data = { titulo: 'AIRPET', corpo: 'Você tem uma nova notificação', url: '/notificacoes', icone: '/images/icons/icon-192.svg' };
 
   if (event.data) {
     try {
@@ -184,7 +194,7 @@ self.addEventListener('push', function (event) {
   var options = {
     body: data.corpo,
     icon: data.icone,
-    badge: '/images/icons/icon-192.png',
+    badge: '/images/icons/icon-192.svg',
     tag: data.tag || 'airpet-notif',
     renotify: true,
     requireInteraction: false,

@@ -198,7 +198,10 @@
       }).then(function (res) {
         renderFeatures(res.data);
       }).catch(function () {
-        // Ignore aborts/offline. Keep last known map state.
+        /* Abort/offline: mantém último estado; aviso só quando não há marcadores. */
+        if (Object.keys(markers).length === 0) {
+          mostrarErroPinsRede();
+        }
       });
       return;
     }
@@ -209,6 +212,9 @@
       .then(renderFeatures)
       .catch(function (err) {
         console.error('[MAPA] Erro ao carregar pins:', err);
+        if (Object.keys(markers).length === 0) {
+          mostrarErroPinsRede();
+        }
       });
   }
 
@@ -250,6 +256,42 @@
 
   var _isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
     (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+  function mostrarErroPinsRede() {
+    var toast = document.getElementById('airpet-mapa-pins-toast');
+    if (toast) toast.remove();
+
+    toast = document.createElement('div');
+    toast.id = 'airpet-mapa-pins-toast';
+    toast.style.cssText = 'position:fixed;bottom:88px;left:16px;right:16px;z-index:9999;background:#7c2d12;color:#fff;border-radius:12px;padding:14px 16px;box-shadow:0 8px 32px rgba(0,0,0,0.25);max-width:420px;margin:0 auto;animation:slideUpMapaToast 0.3s ease-out;font-size:13px;line-height:1.5;';
+    toast.setAttribute('role', 'alert');
+    toast.innerHTML =
+      '<div style="display:flex;align-items:flex-start;gap:10px;">' +
+        '<i class="fa-solid fa-wifi" style="font-size:18px;margin-top:2px;flex-shrink:0;opacity:.9"></i>' +
+        '<div>' +
+          '<strong>Não foi possível carregar os pontos</strong><br>' +
+          '<span style="opacity:.92">Verifique a ligação à internet e mova ou amplie o mapa para tentar de novo.</span>' +
+        '</div>' +
+        '<button type="button" aria-label="Fechar" onclick="this.parentNode.parentNode.remove()" style="background:none;border:none;color:#fdba74;font-size:18px;cursor:pointer;flex-shrink:0;padding:0 0 0 4px;">✕</button>' +
+      '</div>';
+
+    var styleEl = document.getElementById('airpet-mapa-toast-style');
+    if (!styleEl) {
+      styleEl = document.createElement('style');
+      styleEl.id = 'airpet-mapa-toast-style';
+      styleEl.textContent = '@keyframes slideUpMapaToast{from{transform:translateY(24px);opacity:0}to{transform:translateY(0);opacity:1}}';
+      document.head.appendChild(styleEl);
+    }
+    document.body.appendChild(toast);
+
+    setTimeout(function () {
+      if (toast.parentNode) {
+        toast.style.transition = 'opacity 0.3s';
+        toast.style.opacity = '0';
+        setTimeout(function () { if (toast.parentNode) toast.remove(); }, 300);
+      }
+    }, 10000);
+  }
 
   function mostrarErroGeo(err) {
     if (!err || err.code !== 1) return;

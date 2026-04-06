@@ -75,8 +75,8 @@ const RE_LINK = /(https?:\/\/|www\.)/i;
 const CAMPOS_CHAT_VISITANTE = ['pet_perdido_id', 'conversa_id', 'token', 'guest_nome', 'conteudo', 'template', 'website'];
 const validarChatVisitante = [
   camposPermitidos(CAMPOS_CHAT_VISITANTE),
-  body('pet_perdido_id').optional({ checkFalsy: true }).trim().isUUID().withMessage('ID do alerta invalido.'),
-  body('conversa_id').optional({ checkFalsy: true }).trim().isUUID().withMessage('ID da conversa invalido.'),
+  body('pet_perdido_id').optional({ checkFalsy: true }).trim().isInt({ min: 1 }).withMessage('ID do alerta invalido.'),
+  body('conversa_id').optional({ checkFalsy: true }).trim().isInt({ min: 1 }).withMessage('ID da conversa invalido.'),
   body('token').optional({ checkFalsy: true }).trim().isLength({ max: 500 }).withMessage('Token invalido.'),
   body('guest_nome').optional({ checkFalsy: true }).trim().isLength({ max: 80 }).withMessage('Nome muito longo.'),
   body('template').optional({ checkFalsy: true }).trim().isLength({ max: 120 }),

@@ -326,13 +326,13 @@ async function enviarMensagem(req, res) {
 
 async function enviarMensagemVisitante(req, res) {
   try {
-    const conversaId = String(req.body.conversa_id || '');
+    const conversaId = String(req.body.conversa_id || '').trim();
     const token = String(req.body.token || '');
     const conteudo = String(req.body.conteudo || '').trim();
     const guestNome = String(req.body.guest_nome || 'Visitante').trim().slice(0, 80) || 'Visitante';
     const tokenDados = validarToken(token);
 
-    if (!tokenDados || tokenDados.conversaId !== conversaId) {
+    if (!tokenDados || String(tokenDados.conversaId) !== conversaId) {
       return res.status(401).json({ sucesso: false, mensagem: 'Sessao visitante expirada. Reabra o modal.' });
     }
 

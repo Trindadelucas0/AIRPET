@@ -40,6 +40,7 @@ const Usuario = require('../models/Usuario');
 const PontoMapa = require('../models/PontoMapa');
 const PetPerdido = require('../models/PetPerdido');
 const petPerdidoController = require('../controllers/petPerdidoController');
+const logger = require('../utils/logger');
 
 router.use(limiterGeral);
 
@@ -52,6 +53,7 @@ router.get('/', async (req, res) => {
 
   let stats = { pets: 0, usuarios: 0, petshops: 0 };
   let petsPerdidosRecentes = [];
+  let statsCarregamentoFalhou = false;
 
   try {
     const [petsTotal, usuariosTotal, pontosMapaAtivos, perdidosRecentes] = await Promise.all([
@@ -66,9 +68,12 @@ router.get('/', async (req, res) => {
       petshops: pontosMapaAtivos,
     };
     petsPerdidosRecentes = perdidosRecentes;
-  } catch (e) {}
+  } catch (e) {
+    statsCarregamentoFalhou = true;
+    logger.error('ROUTES', 'Erro ao carregar estatísticas da home', e);
+  }
 
-  res.render('home', { titulo: 'Inicio', stats, petsPerdidosRecentes });
+  res.render('home', { titulo: 'Inicio', stats, petsPerdidosRecentes, statsCarregamentoFalhou });
 });
 
 router.get('/termos', (req, res) => res.render('termos', { titulo: 'Termos de Uso' }));
@@ -83,9 +88,14 @@ router.use('/petshops', petshopRoutes);
 router.use('/parceiros', partnerRoutes);
 router.use('/petshop-panel', petshopPanelRoutes);
 router.get('/api/petshops/mapa', async (req, res) => {
-  const Petshop = require('../models/Petshop');
-  const petshops = await Petshop.listarAtivosParaMapaPublico();
-  return res.json({ sucesso: true, petshops });
+  try {
+    const Petshop = require('../models/Petshop');
+    const petshops = await Petshop.listarAtivosParaMapaPublico();
+    return res.json({ sucesso: true, petshops });
+  } catch (err) {
+    logger.error('ROUTES', 'Erro em GET /api/petshops/mapa', err);
+    return res.status(500).json({ sucesso: false, mensagem: 'Não foi possível carregar os petshops para o mapa.' });
+  }
 });
 router.use('/mapa', mapaRoutes);
 router.use('/chat', chatRoutes);

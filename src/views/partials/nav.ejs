@@ -6,6 +6,11 @@
 <% var isHomePage = currentPath === '/' || currentOriginalUrl === '/' || pageTitle === 'inicio'; %>
 <% var isMeuPerfilPublico = isLogado && usuario && currentPath === '/explorar/perfil/' + usuario.id; %>
 <% var isPerfilSettings = currentPath === '/perfil' || (currentPath && String(currentPath).indexOf('/perfil/') === 0); %>
+<% var isMaisDestaque = isLogado && currentPath && (
+  currentPath.startsWith('/pets') ||
+  currentPath.startsWith('/mapa') ||
+  currentPath.startsWith('/explorar/busca')
+); %>
 
 <!-- Top Nav — estilo Instagram: nome no topo centralizado no mobile -->
 <nav class="sticky top-0 z-50 shadow-sm" id="navbar">
@@ -166,6 +171,28 @@
       <span class="bottom-tab-iconwrap"><i class="fa-solid fa-gear text-[1.125rem] leading-none"></i></span>
       <span class="bottom-tab-label">Config</span>
     </a>
+    <button type="button" id="bottomNavMaisBtn" class="bottom-tab bottom-tab-cell bottom-nav-mais-btn <%= isMaisDestaque ? 'bottom-tab--active' : '' %>"
+            aria-expanded="false" aria-controls="bottomNavMaisPanel" aria-label="Mais opções">
+      <span class="bottom-tab-iconwrap"><i class="fa-solid fa-ellipsis text-[1.125rem] leading-none"></i></span>
+      <span class="bottom-tab-label">Mais</span>
+    </button>
+  </div>
+
+  <div id="bottomNavMaisPanel" class="bottom-nav-mais-panel hidden md:hidden" role="menu" aria-hidden="true">
+    <div class="bottom-nav-mais-panel-inner">
+      <a href="/pets" role="menuitem" class="bottom-nav-mais-link <%= currentPath && currentPath.startsWith('/pets') ? 'bottom-nav-mais-link--active' : '' %>">
+        <span class="bottom-nav-mais-ic"><i class="fa-solid fa-paw"></i></span>
+        <span>Meus Pets</span>
+      </a>
+      <a href="/mapa" role="menuitem" class="bottom-nav-mais-link <%= currentPath && currentPath.startsWith('/mapa') ? 'bottom-nav-mais-link--active' : '' %>">
+        <span class="bottom-nav-mais-ic"><i class="fa-solid fa-map-location-dot"></i></span>
+        <span>Mapa</span>
+      </a>
+      <a href="/explorar/busca" role="menuitem" class="bottom-nav-mais-link <%= currentPath && currentPath.startsWith('/explorar/busca') ? 'bottom-nav-mais-link--active' : '' %>">
+        <span class="bottom-nav-mais-ic"><i class="fa-solid fa-magnifying-glass"></i></span>
+        <span>Buscar</span>
+      </a>
+    </div>
   </div>
 </nav>
 <% } %>
@@ -239,6 +266,72 @@
     justify-content: space-evenly;
     width: 100%;
     box-sizing: border-box;
+  }
+  #bottomNav .bottom-nav-mais-btn {
+    border: none;
+    font: inherit;
+    cursor: pointer;
+    width: auto;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  #bottomNav .bottom-nav-mais-panel {
+    position: fixed;
+    left: 12px;
+    right: 12px;
+    z-index: 55;
+    bottom: calc(56px + env(safe-area-inset-bottom, 0px) + 6px);
+    pointer-events: none;
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+  }
+  #bottomNav .bottom-nav-mais-panel:not(.hidden) {
+    pointer-events: auto;
+    opacity: 1;
+    transform: translateY(0);
+  }
+  #bottomNav .bottom-nav-mais-panel-inner {
+    background: var(--ink-2) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 16px;
+    box-shadow: 0 -8px 40px rgba(15, 23, 42, 0.12);
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  #bottomNav .bottom-nav-mais-link {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    text-decoration: none !important;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text) !important;
+    transition: background 0.15s ease;
+  }
+  #bottomNav .bottom-nav-mais-link:hover,
+  #bottomNav .bottom-nav-mais-link:focus-visible {
+    background: var(--ink-3) !important;
+    outline: none;
+  }
+  #bottomNav .bottom-nav-mais-link--active {
+    color: var(--accent) !important;
+    background: color-mix(in srgb, var(--accent) 10%, transparent) !important;
+  }
+  #bottomNav .bottom-nav-mais-ic {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--ink-3);
+    color: var(--accent);
+    flex-shrink: 0;
   }
   #bottomNav .bottom-tab.bottom-tab-cell {
     position: relative;
@@ -332,6 +425,43 @@
       var open = !mobileMenu.classList.contains('hidden');
       mobileMenu.classList.toggle('hidden');
       if (menuIcon) menuIcon.className = open ? 'fa-solid fa-bars text-lg' : 'fa-solid fa-xmark text-lg';
+    });
+  }
+
+  var maisBtn = document.getElementById('bottomNavMaisBtn');
+  var maisPanel = document.getElementById('bottomNavMaisPanel');
+  function closeMaisPanel() {
+    if (!maisPanel || !maisBtn) return;
+    maisPanel.classList.add('hidden');
+    maisPanel.setAttribute('aria-hidden', 'true');
+    maisBtn.setAttribute('aria-expanded', 'false');
+  }
+  function toggleMaisPanel() {
+    if (!maisPanel || !maisBtn) return;
+    var open = maisPanel.classList.contains('hidden');
+    if (open) {
+      maisPanel.classList.remove('hidden');
+      maisPanel.setAttribute('aria-hidden', 'false');
+      maisBtn.setAttribute('aria-expanded', 'true');
+    } else {
+      closeMaisPanel();
+    }
+  }
+  if (maisBtn && maisPanel) {
+    maisBtn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      toggleMaisPanel();
+    });
+    maisPanel.addEventListener('click', function (e) {
+      e.stopPropagation();
+    });
+    maisPanel.querySelectorAll('a[href]').forEach(function (link) {
+      link.addEventListener('click', function () {
+        closeMaisPanel();
+      });
+    });
+    document.addEventListener('click', function () {
+      closeMaisPanel();
     });
   }
 })();
