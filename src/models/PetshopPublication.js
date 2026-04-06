@@ -9,6 +9,22 @@ function safeDateToMs(v) {
   return Number.isFinite(t) ? t : 0;
 }
 
+async function buscarWhatsappPorPetshopIds(petshopIds) {
+  const ids = [...new Set((petshopIds || []).map((id) => Number(id)).filter((id) => Number.isInteger(id) && id > 0))];
+  if (!ids.length) return new Map();
+  const result = await query(
+    `SELECT petshop_id, whatsapp_publico
+     FROM petshop_profiles
+     WHERE petshop_id = ANY($1::int[])`,
+    [ids]
+  );
+  const map = new Map();
+  (result.rows || []).forEach((row) => {
+    map.set(Number(row.petshop_id), row.whatsapp_publico || null);
+  });
+  return map;
+}
+
 function mapPostToUnified(post, petshopMeta) {
   const publicationKey = `post:${post.id}`;
   return {
@@ -309,6 +325,10 @@ async function listarCardsPublicacoesParaExplorar({ usuarioId, lat, lng, limite 
   mappedPosts.forEach((it) => { it.__relRank = relRank[it.relationship_level] ?? 3; });
 
   const combined = mappedPosts.concat(mappedPromos);
+  const whatsappByPetshop = await buscarWhatsappPorPetshopIds(combined.map((item) => item.petshop_id));
+  combined.forEach((item) => {
+    item.whatsapp_publico = whatsappByPetshop.get(Number(item.petshop_id)) || null;
+  });
   combined.sort((a, b) => {
     const ra = a.__relRank ?? 3;
     const rb = b.__relRank ?? 3;

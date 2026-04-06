@@ -3,11 +3,41 @@ const PetshopProduct = require('../models/PetshopProduct');
 const PetPetshopLink = require('../models/PetPetshopLink');
 const notificacaoService = require('./notificacaoService');
 const petshopProductService = require('./petshopProductService');
+const fs = require('fs');
+const path = require('path');
+
+function isHttpUrl(value) {
+  return /^https?:\/\//i.test(String(value || '').trim());
+}
+
+function hasMediaUrl(value) {
+  return String(value || '').trim().length > 0;
+}
+
+function resolverCaminhoMidiaLocal(fotoUrl) {
+  const raw = String(fotoUrl || '').trim();
+  if (!raw || isHttpUrl(raw)) return null;
+
+  const semQuery = raw.split('?')[0].split('#')[0];
+  const relativo = semQuery.replace(/^\/+/, '');
+  if (!relativo) return null;
+
+  const publicDir = path.resolve(__dirname, '..', 'public');
+  const filePath = path.resolve(publicDir, relativo);
+  if (!filePath.startsWith(publicDir)) return null;
+  return filePath;
+}
+
+function removerArquivoMidia(fotoUrl) {
+  const caminho = resolverCaminhoMidiaLocal(fotoUrl);
+  if (!caminho) return;
+  fs.unlink(caminho, () => {});
+}
 
 const petshopPublishingService = {
   async criarPost(petshopId, accountId, dados) {
     const postType = dados.post_type || 'normal';
-    const approval_status = postType === 'promocao' ? 'pendente' : 'aprovado';
+    const approval_status = 'aprovado';
     const isHighlighted = dados.is_highlighted === true || dados.is_highlighted === 'on' || dados.is_highlighted === '1';
     const highlightRank = dados.highlight_rank != null && String(dados.highlight_rank).trim() !== ''
       ? parseInt(dados.highlight_rank, 10)
@@ -15,6 +45,18 @@ const petshopPublishingService = {
     const serviceId = dados.service_id != null && String(dados.service_id).trim() !== ''
       ? parseInt(dados.service_id, 10)
       : null;
+    const fotoUrl = dados.foto_url;
+
+    if (postType === 'normal' && hasMediaUrl(fotoUrl)) {
+      const totalFotos = await PetshopPost.contarFotosFeedAtivas(petshopId);
+      if (totalFotos >= PetshopPost.MAX_FOTOS_FEED) {
+        const maisAntiga = await PetshopPost.buscarFotoFeedMaisAntiga(petshopId);
+        if (maisAntiga) {
+          await PetshopPost.desativar(maisAntiga.id);
+          removerArquivoMidia(maisAntiga.foto_url);
+        }
+      }
+    }
 
     const post = await PetshopPost.criar({
       petshop_id: petshopId,
@@ -23,7 +65,7 @@ const petshopPublishingService = {
       approval_status,
       titulo: dados.titulo,
       texto: dados.texto,
-      foto_url: dados.foto_url,
+      foto_url: fotoUrl,
       is_highlighted: isHighlighted,
       highlight_rank: Number.isFinite(highlightRank) ? highlightRank : 0,
     });

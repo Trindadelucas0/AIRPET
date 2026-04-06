@@ -294,6 +294,8 @@
             avatar: post.petshop_logo_url || '',
             petshop_id: post.petshop_id,
             preco: post.preco,
+            whatsapp_publico: post.whatsapp_publico || '',
+            contato_link: post.contato_link || '',
             isPromo: !!(post.publicationType === 'promocao' || post.is_promocao),
             comments: true
           }; %>
@@ -880,6 +882,23 @@
     return escapeHtml(texto).replace(/@(\S+)/g, '<span class="mention" data-user="$1">@$1</span>');
   }
 
+  function normalizeWhatsappDigits(raw) {
+    var digits = String(raw || '').replace(/\D+/g, '');
+    if (!digits) return '';
+    if (digits.length === 11 && digits.charAt(0) === '0') digits = digits.slice(1);
+    if (digits.length === 10 || digits.length === 11) return '55' + digits;
+    if (digits.length > 11 && digits.slice(0, 2) === '55') return digits;
+    return digits;
+  }
+
+  function buildWhatsappUrl(phone, text) {
+    var normalized = normalizeWhatsappDigits(phone);
+    if (!normalized) return null;
+    var msg = String(text || '').trim();
+    if (!msg) return 'https://wa.me/' + normalized;
+    return 'https://wa.me/' + normalized + '?text=' + encodeURIComponent(msg);
+  }
+
   function toast(msg, tipo) {
     var el = document.createElement('div');
     var isErro = (tipo === 'erro');
@@ -1174,6 +1193,26 @@
         extra.classList.remove('hidden');
       } else {
         extra.classList.add('hidden');
+      }
+    }
+
+    var whatsappRow = document.getElementById('postDetailWhatsappRow');
+    var whatsappBtn = document.getElementById('postDetailBtnWhatsapp');
+    if (whatsappRow && whatsappBtn) {
+      if (meta.kind === 'petshop' && meta.isPromo) {
+        var precoLabel = (meta.preco != null) ? ('R$ ' + Number(meta.preco).toFixed(2).replace('.', ',')) : '';
+        var textoWa = 'Olá! Tenho interesse na promoção "' + (meta.displayName || 'parceiro') + '"' + (precoLabel ? (' por ' + precoLabel) : '') + ' que vi no AIRPET.';
+        var waUrl = buildWhatsappUrl(meta.whatsapp_publico, textoWa) || (meta.contato_link || '');
+        if (waUrl) {
+          whatsappBtn.setAttribute('href', waUrl);
+          whatsappRow.classList.remove('hidden');
+        } else {
+          whatsappBtn.setAttribute('href', '#');
+          whatsappRow.classList.add('hidden');
+        }
+      } else {
+        whatsappBtn.setAttribute('href', '#');
+        whatsappRow.classList.add('hidden');
       }
     }
 
@@ -2422,6 +2461,8 @@
       avatar: p.petshop_logo_url || '',
       petshop_id: p.petshop_id,
       preco: p.preco,
+      whatsapp_publico: p.whatsapp_publico || '',
+      contato_link: p.contato_link || '',
       isPromo: !!isPromo,
       comments: true
     };

@@ -29,6 +29,13 @@ const Pet = require('../models/Pet');
 const PetPetshopLink = require('../models/PetPetshopLink');
 const PetPetshopLinkRequest = require('../models/PetPetshopLinkRequest');
 const logger = require('../utils/logger');
+const { buildWhatsappUrl } = require('../utils/whatsappPublicUrl');
+
+function formatarMoedaBRL(valor) {
+  const num = Number(valor);
+  if (!Number.isFinite(num)) return null;
+  return num.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+}
 
 function usuarioSessaoOuBearer(req) {
   return req.airpetApiUser || (req.session && req.session.usuario) || null;
@@ -117,6 +124,19 @@ async function mostrarDetalhes(req, res) {
 
     const servicosSafe = Array.isArray(servicos) ? servicos : [];
     const profileSafe = profile || null;
+    const postsComFoto = (posts || []).filter((p) => p && p.foto_url && String(p.foto_url).trim());
+    const promocoes = (products || []).filter((item) => item && item.is_promocao);
+    const whatsappPublico = profileSafe && profileSafe.whatsapp_publico ? String(profileSafe.whatsapp_publico) : '';
+    const whatsappPerfilUrl = buildWhatsappUrl(whatsappPublico, `Olá! Vim pelo perfil da ${petshop.nome} no AIRPET.`);
+    const promocoesComWhatsapp = promocoes.map((promo) => {
+      const precoLabel = formatarMoedaBRL(promo.preco);
+      const texto = `Olá! Tenho interesse na promoção "${promo.nome || 'Oferta'}"${precoLabel ? ` por ${precoLabel}` : ''} da ${petshop.nome}.`;
+      return {
+        ...promo,
+        preco_label: precoLabel,
+        whatsapp_link: buildWhatsappUrl(whatsappPublico, texto),
+      };
+    });
 
     const uDetalhe = usuarioSessaoOuBearer(req);
     const usuarioId = uDetalhe && uDetalhe.id;
@@ -154,6 +174,9 @@ async function mostrarDetalhes(req, res) {
       reviews,
       reviewSummary,
       followerCount,
+      postsComFoto,
+      promocoes: promocoesComWhatsapp,
+      whatsappPerfilUrl,
       userSegue,
       meusPets,
       statusSolicitacoesPorPet,

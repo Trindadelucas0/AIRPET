@@ -1,5 +1,7 @@
 const { query } = require('../config/database');
 
+const MAX_FOTOS_FEED = 10;
+
 const PetshopPost = {
   async criar(dados) {
     const result = await query(
@@ -38,6 +40,47 @@ const PetshopPost = {
     return result.rows;
   },
 
+  async contarFotosFeedAtivas(petshopId) {
+    const result = await query(
+      `SELECT COUNT(*)::int AS total
+       FROM petshop_posts
+       WHERE petshop_id = $1
+         AND ativo = true
+         AND approval_status = 'aprovado'
+         AND post_type = 'normal'
+         AND NULLIF(BTRIM(COALESCE(foto_url, '')), '') IS NOT NULL`,
+      [petshopId]
+    );
+    return result.rows[0]?.total || 0;
+  },
+
+  async buscarFotoFeedMaisAntiga(petshopId) {
+    const result = await query(
+      `SELECT *
+       FROM petshop_posts
+       WHERE petshop_id = $1
+         AND ativo = true
+         AND approval_status = 'aprovado'
+         AND post_type = 'normal'
+         AND NULLIF(BTRIM(COALESCE(foto_url, '')), '') IS NOT NULL
+       ORDER BY COALESCE(publicado_em, data_criacao) ASC, id ASC
+       LIMIT 1`,
+      [petshopId]
+    );
+    return result.rows[0] || null;
+  },
+
+  async desativar(id) {
+    const result = await query(
+      `UPDATE petshop_posts
+       SET ativo = false, data_atualizacao = NOW()
+       WHERE id = $1
+       RETURNING *`,
+      [id]
+    );
+    return result.rows[0] || null;
+  },
+
   async listarModeracaoPendentes() {
     const result = await query(
       `SELECT pp.*, p.nome AS petshop_nome
@@ -61,5 +104,7 @@ const PetshopPost = {
     return result.rows[0];
   },
 };
+
+PetshopPost.MAX_FOTOS_FEED = MAX_FOTOS_FEED;
 
 module.exports = PetshopPost;

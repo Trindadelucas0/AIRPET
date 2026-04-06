@@ -52,6 +52,24 @@
   .modal-title { font-size: 18px; font-weight: 900; color: var(--text); }
   .modal-hint { color: var(--text-dim); font-size: 13px; margin-top: 4px; }
   .toast-msg { font-size: 13px; margin-top: 8px; }
+  .profile-bio { font-size: 14px; color: var(--text-dim); line-height: 1.7; margin-bottom: 12px; }
+  .profile-stats { display: flex; gap: 16px; margin-bottom: 14px; }
+  .profile-stats .item { min-width: 84px; }
+  .profile-stats .num { color: var(--text); font-size: 18px; font-weight: 900; line-height: 1; }
+  .profile-stats .lbl { color: var(--text-dim); font-size: 11px; text-transform: uppercase; letter-spacing: .08em; margin-top: 4px; }
+  .section-card { background: var(--ink-2); border: 1px solid var(--border); border-radius: 18px; padding: 16px; margin-bottom: 14px; }
+  .section-title { font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; color: var(--text-dim); margin-bottom: 10px; }
+  .insta-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+  .insta-grid .cell { border-radius: 12px; overflow: hidden; background: var(--ink-3); border: 1px solid var(--border); aspect-ratio: 1/1; }
+  .insta-grid .cell img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .promo-list { display: grid; grid-template-columns: 1fr; gap: 10px; }
+  .promo-card { border: 1px solid var(--border); border-radius: 14px; overflow: hidden; background: var(--ink-3); }
+  .promo-media { width: 100%; aspect-ratio: 16/9; background: var(--ink-2); }
+  .promo-media img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .promo-body { padding: 12px; }
+  .promo-preco { font-size: 18px; font-weight: 900; color: var(--accent); margin-top: 4px; }
+  .list-clean { display: grid; gap: 10px; }
+  .list-item { border: 1px solid var(--border); border-radius: 12px; padding: 11px; background: var(--ink-3); }
 </style>
 ` %>
 <%- include('../partials/header') %>
@@ -65,12 +83,26 @@
 
 <main class="flex-1">
   <div class="det-wrap">
+    <% const bioCurta = (profile && profile.descricao_curta) || petshop.descricao || ''; %>
+    <% const totalFotos = (postsComFoto || []).length; %>
+    <% const totalPromos = (promocoes || []).length; %>
     <div class="hero-card">
       <div class="hero-banner">
         <span class="tipo-chip"><i class="fa-solid fa-store"></i> Petshop parceiro</span>
       </div>
       <div class="hero-body">
         <h1 class="hero-title"><%= petshop.nome %></h1>
+        <% if (profile && profile.slogan) { %>
+          <p class="profile-bio"><strong><%= profile.slogan %></strong></p>
+        <% } %>
+        <% if (bioCurta) { %>
+          <p class="profile-bio"><%= bioCurta %></p>
+        <% } %>
+        <div class="profile-stats">
+          <div class="item"><p class="num"><%= totalFotos %></p><p class="lbl">Fotos</p></div>
+          <div class="item"><p class="num"><%= totalPromos %></p><p class="lbl">Promoções</p></div>
+          <div class="item"><p class="num"><%= followerCount || 0 %></p><p class="lbl">Seguidores</p></div>
+        </div>
 
         <% if (petshop.descricao) { %>
           <p style="font-size:14px;color:var(--text-dim);line-height:1.7;margin-bottom:16px;"><%= petshop.descricao %></p>
@@ -105,6 +137,17 @@
 
         <div class="actions-row">
           <% if (typeof usuario !== 'undefined' && usuario) { %>
+            <form action="/petshops/<%= petshop.id %>/seguir" method="POST" class="flex-1">
+              <button class="btn-action ghost w-full" type="submit">
+                <i class="fa-solid fa-heart"></i> <%= userSegue ? 'Seguindo' : 'Seguir perfil' %>
+              </button>
+            </form>
+          <% } else { %>
+            <a href="/auth/login" class="btn-action ghost">
+              <i class="fa-solid fa-heart"></i> Entrar para seguir
+            </a>
+          <% } %>
+          <% if (typeof usuario !== 'undefined' && usuario) { %>
             <button type="button" id="btnOpenLinkRequest" class="btn-action secondary">
               <i class="fa-solid fa-link"></i> Solicitar vínculo
             </button>
@@ -123,6 +166,16 @@
               <i class="fa-solid fa-phone"></i> Ligar
             </a>
           <% } %>
+          <% if (whatsappPerfilUrl) { %>
+            <a href="<%= whatsappPerfilUrl %>" target="_blank" rel="noopener" class="btn-action primary">
+              <i class="fa-brands fa-whatsapp"></i> WhatsApp
+            </a>
+          <% } %>
+          <% if (profile && profile.instagram_url) { %>
+            <a href="<%= profile.instagram_url %>" target="_blank" rel="noopener" class="btn-action ghost">
+              <i class="fa-brands fa-instagram"></i> Instagram
+            </a>
+          <% } %>
         </div>
       </div>
     </div>
@@ -133,6 +186,81 @@
         <div id="mapPonto"></div>
       </div>
     <% } %>
+
+    <section class="section-card">
+      <h2 class="section-title">Fotos do dia a dia</h2>
+      <% if (!totalFotos) { %>
+        <p class="text-sm text-gray-500">Este parceiro ainda não publicou fotos do feed.</p>
+      <% } else { %>
+        <div class="insta-grid">
+          <% (postsComFoto || []).forEach(function(post) { %>
+            <div class="cell">
+              <img src="<%= post.foto_url %>" alt="<%= post.titulo || 'Foto do petshop' %>">
+            </div>
+          <% }) %>
+        </div>
+      <% } %>
+    </section>
+
+    <section class="section-card">
+      <h2 class="section-title">Promoções</h2>
+      <% if (!totalPromos) { %>
+        <p class="text-sm text-gray-500">Nenhuma promoção ativa no momento.</p>
+      <% } else { %>
+        <div class="promo-list">
+          <% (promocoes || []).forEach(function(pr) { %>
+            <article class="promo-card">
+              <% if (pr.foto_url) { %>
+                <div class="promo-media"><img src="<%= pr.foto_url %>" alt="<%= pr.nome || 'Promoção' %>"></div>
+              <% } %>
+              <div class="promo-body">
+                <p class="font-bold text-gray-900"><%= pr.nome || 'Promoção' %></p>
+                <% if (pr.preco_label) { %><p class="promo-preco"><%= pr.preco_label %></p><% } %>
+                <% if (pr.descricao) { %><p class="text-sm text-gray-600 mt-1"><%= pr.descricao %></p><% } %>
+                <% if (pr.whatsapp_link) { %>
+                  <a href="<%= pr.whatsapp_link %>" target="_blank" rel="noopener" class="btn-action primary !mt-3 !text-sm !py-2.5">
+                    <i class="fa-brands fa-whatsapp"></i> Comprar no WhatsApp
+                  </a>
+                <% } else { %>
+                  <p class="text-xs text-gray-500 mt-2">Este parceiro ainda não configurou WhatsApp público.</p>
+                <% } %>
+              </div>
+            </article>
+          <% }) %>
+        </div>
+      <% } %>
+    </section>
+
+    <section class="section-card">
+      <h2 class="section-title">Módulos profissionais</h2>
+      <% if ((servicos || []).length) { %>
+        <div class="list-clean mb-3">
+          <% (servicos || []).forEach(function(s) { %>
+            <div class="list-item">
+              <p class="font-semibold text-gray-900"><%= s.nome %></p>
+              <p class="text-sm text-gray-500"><%= s.duracao_minutos || '-' %> min <% if (s.preco_base != null) { %>· R$ <%= Number(s.preco_base).toFixed(2).replace('.', ',') %><% } %></p>
+            </div>
+          <% }) %>
+        </div>
+      <% } else { %>
+        <p class="text-sm text-gray-500 mb-3">Serviços ainda não cadastrados.</p>
+      <% } %>
+      <div class="list-item">
+        <p class="text-sm text-gray-600">Avaliação média</p>
+        <p class="font-bold text-gray-900"><%= reviewSummary && reviewSummary.rating_medio ? Number(reviewSummary.rating_medio).toFixed(1).replace('.', ',') : 'Sem avaliações' %></p>
+      </div>
+      <% if ((reviews || []).length) { %>
+        <div class="list-clean mt-3">
+          <% (reviews || []).slice(0, 3).forEach(function(r) { %>
+            <div class="list-item">
+              <p class="font-semibold text-gray-900"><%= r.usuario_nome || 'Tutor' %></p>
+              <p class="text-xs text-gray-500">Nota <%= r.rating %>/5</p>
+              <% if (r.comentario) { %><p class="text-sm text-gray-600 mt-1"><%= r.comentario %></p><% } %>
+            </div>
+          <% }) %>
+        </div>
+      <% } %>
+    </section>
   </div>
 </main>
 

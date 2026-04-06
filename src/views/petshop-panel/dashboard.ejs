@@ -65,6 +65,8 @@
       : statusAtual === 'em_analise'
         ? 'bg-amber-100 text-amber-700'
         : 'bg-blue-100 text-blue-700'; %>
+  <% const postsComFoto = (posts || []).filter(function(p) { return p && p.foto_url && String(p.foto_url).trim(); }); %>
+  <% const ultimasFotos = postsComFoto.slice(0, 10); %>
   <div class="partner-top flex items-center justify-between flex-wrap gap-3">
     <div>
       <h1>Dashboard do Parceiro</h1>
@@ -117,7 +119,7 @@
   <section class="partner-kpis">
     <div class="partner-kpi"><p class="label">Serviços</p><p class="value"><%= (services || []).length %></p></div>
     <div class="partner-kpi"><p class="label">Produtos</p><p class="value"><%= (products || []).length %><span class="text-base font-semibold">/15</span></p></div>
-    <div class="partner-kpi"><p class="label">Posts</p><p class="value"><%= (posts || []).length %></p></div>
+    <div class="partner-kpi"><p class="label">Fotos do feed</p><p class="value"><%= postsComFoto.length %><span class="text-base font-semibold">/10</span></p></div>
     <div class="partner-kpi"><p class="label">Agendamentos</p><p class="value"><%= (appointments || []).length %></p></div>
   </section>
 
@@ -158,17 +160,69 @@
 
     <div id="perfil-publico" class="partner-card">
       <h2 class="font-bold mb-3">Atualizar perfil público</h2>
-      <p class="hint mb-3">Deixe seu perfil com cara de feed: slogan curto, descrição objetiva e links sociais.</p>
+      <p class="hint mb-3">Deixe seu perfil com cara de feed: slogan curto, bio e WhatsApp para fechar promoções.</p>
       <form action="/petshop-panel/perfil" method="POST" class="space-y-3">
         <input class="input w-full" name="slogan" placeholder="Slogan" value="<%= profile?.slogan || '' %>">
         <input class="input w-full" name="descricao_curta" placeholder="Descrição curta" value="<%= profile?.descricao_curta || '' %>">
         <textarea class="input w-full min-h-20" name="descricao_longa" placeholder="Descrição completa"><%= profile?.descricao_longa || '' %></textarea>
+        <input class="input w-full" name="whatsapp_publico" placeholder="WhatsApp público (ex: 11999999999)" value="<%= profile?.whatsapp_publico || '' %>">
         <input class="input w-full" name="instagram_url" placeholder="Instagram URL" value="<%= profile?.instagram_url || '' %>">
         <input class="input w-full" name="facebook_url" placeholder="Facebook URL" value="<%= profile?.facebook_url || '' %>">
+        <input class="input w-full" name="website_url" placeholder="Website URL" value="<%= profile?.website_url || '' %>">
+        <p class="hint">O botão de compra das promoções usa este WhatsApp.</p>
         <button class="btn-primary-inline">Salvar perfil</button>
       </form>
     </div>
 
+  </section>
+
+  <section class="partner-card">
+    <div class="flex items-center justify-between gap-2 mb-3">
+      <h2 class="font-bold">Últimas fotos do feed</h2>
+      <span class="text-xs text-gray-500"><%= postsComFoto.length %>/10</span>
+    </div>
+    <p class="hint mb-3">Ao publicar a 11ª foto, a mais antiga sai automaticamente.</p>
+    <% if (!ultimasFotos.length) { %>
+      <p class="text-sm text-gray-500">Ainda não há fotos publicadas no feed do parceiro.</p>
+    <% } else { %>
+      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
+        <% ultimasFotos.forEach(function(postFoto) { %>
+          <div class="rounded-xl overflow-hidden border border-gray-200 bg-gray-100">
+            <img src="<%= postFoto.foto_url %>" alt="<%= postFoto.titulo || 'Foto do feed' %>" class="w-full h-24 object-cover">
+          </div>
+        <% }) %>
+      </div>
+    <% } %>
+  </section>
+
+  <section class="grid lg:grid-cols-2 gap-6">
+    <div id="nova-postagem" class="partner-card">
+      <h2 class="font-bold mb-3">Post do dia</h2>
+      <p class="hint mb-3">Mostre rotina, bastidores e pets atendidos. Este post entra no seu grid social.</p>
+      <form action="/petshop-panel/posts" method="POST" enctype="multipart/form-data" class="space-y-3">
+        <input type="hidden" name="post_type" value="normal">
+        <input class="input w-full" name="titulo" placeholder="Título (ex: Banho do Thor)">
+        <textarea class="input w-full min-h-20" name="texto" placeholder="Legenda opcional"></textarea>
+        <input class="input w-full" type="file" name="foto" accept="image/*" required>
+        <button class="btn-primary-inline">Publicar</button>
+      </form>
+    </div>
+
+    <div class="partner-card">
+      <h2 class="font-bold mb-3">Promoção rápida</h2>
+      <p class="hint mb-3">Oferta simples: preço + botão direto para WhatsApp do perfil.</p>
+      <form action="/petshop-panel/posts" method="POST" enctype="multipart/form-data" class="space-y-3">
+        <input type="hidden" name="post_type" value="promocao">
+        <input class="input w-full" name="titulo" placeholder="Título da promoção" required>
+        <input class="input w-full" type="number" step="0.01" name="preco" placeholder="Preço" required>
+        <textarea class="input w-full min-h-20" name="texto" placeholder="Descrição curta (opcional)"></textarea>
+        <input class="input w-full" type="file" name="foto" accept="image/*">
+        <button class="btn-primary-inline">Publicar promoção</button>
+      </form>
+    </div>
+  </section>
+
+  <section class="grid lg:grid-cols-2 gap-6">
     <div id="novo-servico" class="partner-card">
       <h2 class="font-bold mb-3">Novo serviço</h2>
       <form action="/petshop-panel/servicos" method="POST" class="space-y-3">
@@ -177,43 +231,6 @@
         <input class="input w-full" type="number" step="0.01" name="preco_base" placeholder="Preço base">
         <textarea class="input w-full min-h-20" name="descricao" placeholder="Descrição"></textarea>
         <button class="btn-primary-inline">Salvar serviço</button>
-      </form>
-    </div>
-  </section>
-
-  <section class="grid lg:grid-cols-2 gap-6">
-    <div id="nova-postagem" class="partner-card">
-      <h2 class="font-bold mb-3">Nova postagem/produto</h2>
-      <p class="hint mb-3">Use título curto e imagem forte para parecer uma vitrine tipo Instagram.</p>
-      <form action="/petshop-panel/posts" method="POST" enctype="multipart/form-data" class="space-y-3">
-        <select class="input w-full" name="post_type">
-          <option value="normal">Post normal (feed)</option>
-          <option value="produto">Produto (catálogo)</option>
-          <option value="promocao">Promoção (com moderação)</option>
-        </select>
-        <input class="input w-full" name="titulo" placeholder="Título" required>
-        <textarea class="input w-full min-h-20" name="texto" placeholder="Texto"></textarea>
-
-        <select class="input w-full" name="service_id">
-          <option value="">Vincular a um serviço (opcional)</option>
-          <% (services || []).forEach(function(s) { %>
-            <option value="<%= s.id %>"><%= s.nome %></option>
-          <% }) %>
-        </select>
-
-        <div class="grid md:grid-cols-2 gap-3">
-          <label class="flex items-center gap-2 text-sm text-gray-700 bg-gray-50 rounded-xl p-3 border border-gray-200">
-            <input type="checkbox" name="is_highlighted" value="1">
-            Marcar como Destaque
-          </label>
-          <input class="input w-full" type="number" name="highlight_rank" placeholder="Rank (maior = melhor)" value="0">
-        </div>
-
-        <input class="input w-full" name="nome_produto" placeholder="Nome do produto (se aplicável)">
-        <input class="input w-full" type="number" step="0.01" name="preco" placeholder="Preço (se aplicável)">
-        <input class="input w-full" name="contato_link" placeholder="Link de contato">
-        <input class="input w-full" type="file" name="foto" accept="image/*">
-        <button class="btn-primary-inline">Publicar</button>
       </form>
     </div>
 
