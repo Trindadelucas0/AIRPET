@@ -10,15 +10,22 @@ const { performance } = require('node:perf_hooks');
 const { Pool } = require('pg');
 const logger = require('../utils/logger');
 
+const rawPoolMax = parseInt(process.env.DB_POOL_MAX ?? '20', 10);
+const poolMax = Number.isFinite(rawPoolMax) && rawPoolMax >= 1 ? rawPoolMax : 20;
+
+const rawConnTimeout = parseInt(process.env.DB_CONNECTION_TIMEOUT_MS ?? '5000', 10);
+const connectionTimeoutMillis =
+  Number.isFinite(rawConnTimeout) && rawConnTimeout >= 0 ? rawConnTimeout : 5000;
+
 const pool = new Pool({
   host: process.env.DB_HOST,
   port: parseInt(process.env.DB_PORT, 10) || 5432,
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_DATABASE,
-  max: 20,
+  max: poolMax,
   idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 5000,
+  connectionTimeoutMillis,
 });
 
 pool.on('error', (err) => {
