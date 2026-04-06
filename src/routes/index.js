@@ -152,6 +152,8 @@ router.use('/api/localizacao', estaAutenticado, localizacaoRoutes);
 const petController = require('../controllers/petController');
 router.get('/api/pets/:id/alerta-ativo', estaAutenticado, petController.alertaAtivo.bind(petController));
 
+router.use('/api/v1', require('./syncApiRoutes'));
+
 // Painel administrativo — rota secreta via .env (usuarios nao sabem que existe)
 const adminPath = process.env.ADMIN_PATH || '/admin';
 router.use(adminPath, adminRoutes);

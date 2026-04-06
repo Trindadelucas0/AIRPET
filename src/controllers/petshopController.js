@@ -30,6 +30,10 @@ const PetPetshopLink = require('../models/PetPetshopLink');
 const PetPetshopLinkRequest = require('../models/PetPetshopLinkRequest');
 const logger = require('../utils/logger');
 
+function usuarioSessaoOuBearer(req) {
+  return req.airpetApiUser || (req.session && req.session.usuario) || null;
+}
+
 /**
  * listar — Lista todos os petshops ativos para exibição pública
  *
@@ -114,7 +118,8 @@ async function mostrarDetalhes(req, res) {
     const servicosSafe = Array.isArray(servicos) ? servicos : [];
     const profileSafe = profile || null;
 
-    const usuarioId = req.session && req.session.usuario && req.session.usuario.id;
+    const uDetalhe = usuarioSessaoOuBearer(req);
+    const usuarioId = uDetalhe && uDetalhe.id;
     const userSegue = usuarioId ? await PetshopFollower.usuarioSegue(petshop.id, usuarioId) : false;
     let meusPets = [];
     let statusSolicitacoesPorPet = {};
@@ -162,7 +167,7 @@ async function mostrarDetalhes(req, res) {
 
 async function solicitarVinculo(req, res) {
   try {
-    const usuario = req.session && req.session.usuario;
+    const usuario = usuarioSessaoOuBearer(req);
     if (!usuario) {
       return res.status(401).json({ sucesso: false, mensagem: 'Faça login para solicitar vínculo.' });
     }
@@ -219,7 +224,7 @@ async function mapa(req, res) {
 
 async function seguir(req, res) {
   try {
-    const usuario = req.session && req.session.usuario;
+    const usuario = usuarioSessaoOuBearer(req);
     const wantsJson = req.xhr || (req.headers.accept || '').includes('application/json');
     if (!usuario) {
       if (wantsJson) return res.status(401).json({ sucesso: false, mensagem: 'Sessão expirada. Faça login novamente.' });
@@ -252,7 +257,7 @@ async function seguir(req, res) {
 
 async function avaliar(req, res) {
   try {
-    const usuario = req.session && req.session.usuario;
+    const usuario = usuarioSessaoOuBearer(req);
     if (!usuario) return res.redirect('/auth/login');
     const { id } = req.params;
     const rating = parseInt(req.body.rating, 10);

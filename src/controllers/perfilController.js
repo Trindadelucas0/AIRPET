@@ -5,6 +5,7 @@ const Raca = require('../models/Raca');
 const logger = require('../utils/logger');
 const { multerPublicUrl } = require('../middlewares/persistUploadMiddleware');
 const storageService = require('../services/storageService');
+const { profileVersionMs, stripUsuario } = require('../utils/syncContract');
 
 const PERFIS_RETURN_ALLOWED = new Set([
   '/perfil',
@@ -189,7 +190,15 @@ const perfilController = {
       if (Object.keys(dados).length === 0) {
         req.session.flash = { tipo: 'sucesso', mensagem: 'Nenhuma alteração enviada.' };
         const wantsJson = req.get('Accept') && req.get('Accept').includes('application/json');
-        if (wantsJson) return res.json({ sucesso: true, mensagem: 'Nenhuma alteração enviada.' });
+        if (wantsJson) {
+          const u = await Usuario.buscarPorId(id);
+          return res.json({
+            sucesso: true,
+            mensagem: 'Nenhuma alteração enviada.',
+            profileVersion: profileVersionMs(u),
+            user: stripUsuario(u),
+          });
+        }
         return res.redirect(returnTo);
       }
 
@@ -203,7 +212,15 @@ const perfilController = {
 
       req.session.flash = { tipo: 'sucesso', mensagem: 'Perfil atualizado com sucesso!' };
       const wantsJson = req.get('Accept') && req.get('Accept').includes('application/json');
-      if (wantsJson) return res.json({ sucesso: true, mensagem: 'Perfil atualizado com sucesso!' });
+      if (wantsJson) {
+        const usuarioAtual = await Usuario.buscarPorId(id);
+        return res.json({
+          sucesso: true,
+          mensagem: 'Perfil atualizado com sucesso!',
+          profileVersion: profileVersionMs(usuarioAtual),
+          user: stripUsuario(usuarioAtual),
+        });
+      }
       return res.redirect(returnTo);
     } catch (erro) {
       logger.error('PERFIL_CTRL', 'Erro ao atualizar perfil', erro);

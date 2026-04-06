@@ -15,9 +15,11 @@
  *   3. Requisições autenticadas → token JWT é verificado no middleware
  */
 
+const crypto = require('crypto');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const Usuario = require('../models/Usuario');
+const RefreshToken = require('../models/RefreshToken');
 const logger = require('../utils/logger');
 
 /**
@@ -190,6 +192,63 @@ const authService = {
    * const payload = authService.verificarToken('eyJhbGciOiJIUz...');
    * // payload = { id: 'uuid', email: 'joao@email.com', role: 'tutor', iat: ..., exp: ... }
    */
+  /**
+   * JWT de curta duração para app mobile / Authorization Bearer (typ: access).
+   * Duração: JWT_ACCESS_EXPIRES_IN (ex.: 15m). Web continua usando cookie + token 7d no login HTML.
+   */
+  gerarAccessTokenCurto(usuario) {
+    const expiresIn = process.env.JWT_ACCESS_EXPIRES_IN || '15m';
+    return jwt.sign(
+      {
+        id: usuario.id,
+        email: usuario.email,
+        role: usuario.role,
+        typ: 'access',
+      },
+      process.env.JWT_SECRET,
+      { expiresIn }
+    );
+  },
+
+  gerarRefreshPlainEHash() {
+    const plain = crypto.randomBytes(32).toString('hex');
+    const hash = crypto.createHash('sha256').update(plain).digest('hex');
+    return { plain, hash };
+  },
+
+  accessTokenExpiresInSegundos(token) {
+    const decoded = jwt.decode(token);
+    if (!decoded || !decoded.exp) return 900;
+    return Math.max(0, decoded.exp - Math.floor(Date.now() / 1000));
+  },
+
+  /**
+   * Login JSON para mobile: access JWT curto + refresh opaco (armazenar só hash no PG).
+   */
+  async loginMobileComRefresh({ email, senha, userAgent }) {
+    const base = await this.login({ email, senha });
+    if (base.erro) return base;
+
+    const dias = parseInt(process.env.JWT_REFRESH_DAYS || '30', 10);
+    const expiraEm = new Date(Date.now() + Math.max(1, dias) * 24 * 60 * 60 * 1000);
+    const { plain, hash } = this.gerarRefreshPlainEHash();
+    await RefreshToken.inserir({
+      usuarioId: base.usuario.id,
+      tokenHash: hash,
+      expiraEm,
+      userAgent,
+    });
+
+    const access_token = this.gerarAccessTokenCurto(base.usuario);
+    return {
+      usuario: base.usuario,
+      access_token,
+      refresh_token: plain,
+      expires_in: this.accessTokenExpiresInSegundos(access_token),
+      refresh_expires_at: expiraEm.toISOString(),
+    };
+  },
+
   verificarToken(token) {
     /**
      * jwt.verify() lança exceção se:

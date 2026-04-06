@@ -891,7 +891,10 @@ async function aprovarMensagem(req, res) {
   try {
     const { id } = req.params;
     const adminId = req.session.admin ? null : req.session.usuario?.id;
-    await MensagemChat.aprovar(id, adminId);
+    const msg = await MensagemChat.aprovar(id, adminId);
+    const io = req.app.get('io');
+    const { entregarMensagemAprovada } = require('../services/chatAprovacaoEntrega');
+    await entregarMensagemAprovada(io, msg);
     req.session.flash = { tipo: 'sucesso', mensagem: 'Mensagem aprovada.' };
     return res.redirect(getAdminPath() + '/moderacao');
   } catch (erro) {

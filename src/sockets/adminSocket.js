@@ -6,9 +6,8 @@
  * - rejeitar_mensagem: admin rejeita e remetente e notificado
  */
 
-const Conversa = require('../models/Conversa');
 const MensagemChat = require('../models/MensagemChat');
-const notificacaoService = require('../services/notificacaoService');
+const { entregarMensagemAprovada } = require('../services/chatAprovacaoEntrega');
 
 module.exports = function (adminNs) {
   adminNs.use((socket, next) => {
@@ -32,26 +31,7 @@ module.exports = function (adminNs) {
         const msg = await MensagemChat.aprovar(mensagemId, adminId);
         if (!msg) return;
 
-        // Entrega a mensagem no chat
-        const chatNs = socket.nsp.server.of('/chat');
-        chatNs.to(`conversa:${msg.conversa_id}`).emit('nova_mensagem', msg);
-
-        // Notifica o destinatario (quem nao enviou) com link para a conversa
-        try {
-          const conversa = await Conversa.buscarPorId(msg.conversa_id);
-          if (conversa) {
-            const remetenteId = parseInt(msg.remetente, 10);
-            const isNumerico = !Number.isNaN(remetenteId);
-            const destinatarioId = isNumerico
-              ? (remetenteId === conversa.iniciador_id ? conversa.tutor_id : conversa.iniciador_id)
-              : conversa.tutor_id;
-            const texto = (msg.conteudo || '').substring(0, 80);
-            const mensagemResumo = texto ? `Nova mensagem: ${texto}${texto.length >= 80 ? '…' : ''}` : 'Nova mensagem no chat.';
-            await notificacaoService.criar(destinatarioId, 'chat', mensagemResumo, '/chat/' + msg.conversa_id, { remetente_id: isNumerico ? remetenteId : null });
-          }
-        } catch (errNotif) {
-          require('../utils/logger').error('AdminSocket', 'Erro ao criar notificacao de chat', errNotif);
-        }
+        await entregarMensagemAprovada(socket.nsp.server, msg);
 
         socket.emit('mensagem_moderada', { id: mensagemId, status: 'aprovada' });
       } catch (err) {

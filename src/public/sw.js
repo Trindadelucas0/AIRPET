@@ -14,7 +14,7 @@
  *  - NOTIFICATIONCLICK: abre a URL da notificacao ao clicar
  */
 
-const CACHE_VERSION = 'airpet-v7';
+const CACHE_VERSION = 'airpet-v8';
 
 const SHELL_ASSETS = [
   '/',
@@ -93,6 +93,12 @@ self.addEventListener('fetch', function (event) {
     url.pathname.startsWith('/_painel_') ||
     url.pathname.indexOf('/_painel_') !== -1
   ) {
+    event.respondWith(fetch(req));
+    return;
+  }
+
+  // APIs JSON (incl. /api/v1 autenticada): sempre rede — nunca Cache API (evita JSON stale / credenciais confusas).
+  if (url.pathname.startsWith('/api/')) {
     event.respondWith(fetch(req));
     return;
   }

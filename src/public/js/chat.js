@@ -101,16 +101,18 @@
     });
   }
 
-  // --- Receive approved messages ---
-  socket.on('mensagem_aprovada', function (msg) {
+  function appendMensagemAprovadaSocket(msg) {
     appendMessage({
       conteudo: msg.conteudo,
       tipo: msg.tipo,
-      remetente: msg.remetente_id,
+      remetente: msg.remetente_id != null ? msg.remetente_id : msg.remetente,
       nome: msg.remetente_nome,
       pendente: false
     });
-  });
+  }
+
+  socket.on('mensagem_aprovada', appendMensagemAprovadaSocket);
+  socket.on('nova_mensagem', appendMensagemAprovadaSocket);
 
   // --- Append message to DOM ---
   function appendMessage(msg) {

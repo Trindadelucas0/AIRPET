@@ -44,6 +44,21 @@ function verificarTokenJWT(req) {
 }
 
 /**
+ * JWT no header Authorization: Bearer <token> — usado por app mobile e clientes API.
+ */
+function verificarBearerJWT(req) {
+  const h = req.headers.authorization;
+  if (!h || typeof h !== 'string') return null;
+  const m = /^Bearer\s+(\S+)/i.exec(h.trim());
+  if (!m) return null;
+  try {
+    return jwt.verify(m[1], process.env.JWT_SECRET);
+  } catch {
+    return null;
+  }
+}
+
+/**
  * estaAutenticado — Middleware para rotas WEB
  *
  * Fluxo de verificacao:
@@ -131,6 +146,11 @@ async function estaAutenticado(req, res, next) {
  */
 async function estaAutenticadoAPI(req, res, next) {
   try {
+    function continuarApiAutenticado() {
+      req.airpetApiUser = (req.session && req.session.usuario) || req.airpetAuthUser || null;
+      return next();
+    }
+
     // Verifica sessao primeiro — mesmo fluxo do middleware web
     if (req.session && req.session.usuario) {
       const usuario = await Usuario.buscarPorId(req.session.usuario.id);
@@ -145,10 +165,33 @@ async function estaAutenticadoAPI(req, res, next) {
           mensagem: 'Sua conta nao existe mais. Faca login ou crie uma nova conta.',
         });
       }
-      return next();
+      return continuarApiAutenticado();
     }
 
-    // Tenta fallback via JWT
+    // Bearer (mobile / API): não grava sessão no store — req.airpetAuthUser + req.airpetApiUser
+    const dadosBearer = verificarBearerJWT(req);
+    if (dadosBearer) {
+      const usuario = await Usuario.buscarPorId(dadosBearer.id);
+      if (!usuario || usuario.bloqueado) {
+        return res.status(401).json({
+          sucesso: false,
+          motivo: 'usuario_inexistente',
+          mensagem: 'Sua conta nao existe mais ou esta bloqueada.',
+        });
+      }
+      req.airpetAuthUser = {
+        id: usuario.id,
+        nome: usuario.nome,
+        email: usuario.email,
+        role: usuario.role,
+        cor_perfil: usuario.cor_perfil || '#ec5a1c',
+        foto_perfil: usuario.foto_perfil || null,
+        apelido: usuario.apelido || null,
+      };
+      return continuarApiAutenticado();
+    }
+
+    // Tenta fallback via JWT no cookie
     const dadosJWT = verificarTokenJWT(req);
 
     if (dadosJWT) {
@@ -170,7 +213,7 @@ async function estaAutenticadoAPI(req, res, next) {
         email: usuario.email,
         role: usuario.role,
       };
-      return next();
+      return continuarApiAutenticado();
     }
 
     // Sem autenticacao — retorna erro JSON com status 401

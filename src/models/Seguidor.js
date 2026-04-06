@@ -59,6 +59,24 @@ const Seguidor = {
     return resultado.rows;
   },
 
+  /**
+   * Metadados para ETag / listVersion da lista "seguindo" (reduz payload quando nada mudou).
+   * @param {string|number} seguidorId
+   * @returns {Promise<{ total: number, ultima_mudanca: Date|null }>}
+   */
+  async resumoSeguindo(seguidorId) {
+    const resultado = await query(
+      `SELECT COUNT(*)::int AS total, MAX(criado_em) AS ultima_mudanca
+       FROM seguidores WHERE seguidor_id = $1`,
+      [seguidorId]
+    );
+    const row = resultado.rows[0];
+    return {
+      total: row ? parseInt(row.total, 10) || 0 : 0,
+      ultima_mudanca: row && row.ultima_mudanca ? row.ultima_mudanca : null,
+    };
+  },
+
   async listarSeguindo(usuarioId, limite = 50) {
     const resultado = await query(
       `SELECT u.id, u.nome, u.cor_perfil, u.foto_perfil, s.criado_em

@@ -29,6 +29,11 @@ function getNotificacaoService() {
   try { return require('../services/notificacaoService'); } catch (_) { return null; }
 }
 
+/** Sessão web ou API JSON (estaAutenticadoAPI preenche req.airpetApiUser). */
+function usuarioAtor(req) {
+  return req.airpetApiUser || (req.session && req.session.usuario) || null;
+}
+
 async function notificarMencoes(texto, autorId, publicacaoId, contexto = 'publicacao') {
   const nomes = PostMention.extrairMencoes(texto);
   if (!nomes.length) return;
@@ -334,7 +339,7 @@ const explorarController = {
 
   async feedSeguidos(req, res) {
     try {
-      const uid = req.session.usuario.id;
+      const uid = usuarioAtor(req).id;
       const page = parseInt(req.query.page) || 1;
       const limite = 20;
       const offset = (page - 1) * limite;
@@ -387,7 +392,7 @@ const explorarController = {
 
   async feed(req, res) {
     try {
-      const uid = req.session.usuario.id;
+      const uid = usuarioAtor(req).id;
       const page = parseInt(req.query.page, 10) || 1;
       const limite = 20;
       const offset = (page - 1) * limite;
@@ -512,7 +517,7 @@ const explorarController = {
 
   async criarPost(req, res) {
     try {
-      const uid = req.session.usuario?.id;
+      const uid = usuarioAtor(req)?.id;
       if (!uid) {
         return res.status(401).json({ sucesso: false, mensagem: 'Faça login para publicar.' });
       }
@@ -587,7 +592,7 @@ const explorarController = {
 
   async repostar(req, res) {
     try {
-      const uid = req.session.usuario.id;
+      const uid = usuarioAtor(req).id;
       const { id } = req.params;
       const { texto } = req.body;
 
@@ -627,7 +632,7 @@ const explorarController = {
 
   async curtir(req, res) {
     try {
-      const uid = req.session.usuario.id;
+      const uid = usuarioAtor(req).id;
       const { id } = req.params;
       await Curtida.curtir(uid, id);
       const total = await Curtida.contar(id);
@@ -650,7 +655,7 @@ const explorarController = {
 
   async descurtir(req, res) {
     try {
-      const uid = req.session.usuario.id;
+      const uid = usuarioAtor(req).id;
       const { id } = req.params;
       await Curtida.descurtir(uid, id);
       const total = await Curtida.contar(id);
@@ -674,7 +679,7 @@ const explorarController = {
 
   async comentar(req, res) {
     try {
-      const uid = req.session.usuario.id;
+      const uid = usuarioAtor(req).id;
       const { id } = req.params;
       const { texto, parent_id: parentIdBody, parentId: parentIdAlt } = req.body || {};
       const parentIdRaw = parentIdBody != null ? parentIdBody : parentIdAlt;
@@ -734,7 +739,7 @@ const explorarController = {
 
   async curtirPetshopPublicacao(req, res) {
     try {
-      const uid = req.session.usuario.id;
+      const uid = usuarioAtor(req).id;
       const { id } = req.params; // publicaçãoKey (post:123 / product:456)
       const parsed = parsePetshopPublicationKey(id);
       if (!parsed) return res.status(400).json({ sucesso: false, mensagem: 'Publicação inválida.' });
@@ -750,7 +755,7 @@ const explorarController = {
 
   async descurtirPetshopPublicacao(req, res) {
     try {
-      const uid = req.session.usuario.id;
+      const uid = usuarioAtor(req).id;
       const { id } = req.params;
       const parsed = parsePetshopPublicationKey(id);
       if (!parsed) return res.status(400).json({ sucesso: false, mensagem: 'Publicação inválida.' });
@@ -780,7 +785,7 @@ const explorarController = {
 
   async comentarPetshopPublicacao(req, res) {
     try {
-      const uid = req.session.usuario.id;
+      const uid = usuarioAtor(req).id;
       const { id } = req.params;
       const parsed = parsePetshopPublicationKey(id);
       if (!parsed) return res.status(400).json({ sucesso: false, mensagem: 'Publicação inválida.' });
@@ -806,7 +811,7 @@ const explorarController = {
 
   async deletarComentario(req, res) {
     try {
-      const uid = req.session.usuario.id;
+      const uid = usuarioAtor(req).id;
       const { id } = req.params;
       const check = await Comentario.buscarPorId(id);
       if (!check || check.usuario_id !== uid) {
@@ -822,7 +827,7 @@ const explorarController = {
 
   async fixar(req, res) {
     try {
-      const uid = req.session.usuario.id;
+      const uid = usuarioAtor(req).id;
       const { id } = req.params;
       const post = await Publicacao.buscarPorId(id);
 
@@ -845,7 +850,7 @@ const explorarController = {
 
   async desafixar(req, res) {
     try {
-      const uid = req.session.usuario.id;
+      const uid = usuarioAtor(req).id;
       const { id } = req.params;
       const post = await Publicacao.buscarPorId(id);
 
@@ -863,7 +868,7 @@ const explorarController = {
 
   async deletarPost(req, res) {
     try {
-      const uid = req.session.usuario.id;
+      const uid = usuarioAtor(req).id;
       const { id } = req.params;
       const post = await Publicacao.buscarPorId(id);
 
@@ -888,7 +893,7 @@ const explorarController = {
 
   async seguir(req, res) {
     try {
-      const uid = req.session.usuario.id;
+      const uid = usuarioAtor(req).id;
       const { id } = req.params;
       if (parseInt(id) === uid) {
         return res.status(400).json({ sucesso: false, mensagem: 'Você não pode seguir a si mesmo.' });
@@ -911,7 +916,7 @@ const explorarController = {
 
   async deixarDeSeguir(req, res) {
     try {
-      const uid = req.session.usuario.id;
+      const uid = usuarioAtor(req).id;
       const { id } = req.params;
       await Seguidor.deixarDeSeguir(uid, id);
       const total = await Seguidor.contarSeguidores(id);
@@ -925,7 +930,7 @@ const explorarController = {
   async perfilPet(req, res) {
     try {
       const { id } = req.params;
-      const uid = req.session.usuario ? req.session.usuario.id : null;
+      const uid = usuarioAtor(req) ? usuarioAtor(req).id : null;
       const pet = await Pet.buscarPorId(id);
       if (!pet) {
         req.session.flash = { tipo: 'erro', mensagem: 'Pet não encontrado.' };
@@ -966,7 +971,7 @@ const explorarController = {
   async perfilPublico(req, res) {
     try {
       const { id } = req.params;
-      const uid = req.session.usuario ? req.session.usuario.id : null;
+      const uid = usuarioAtor(req) ? usuarioAtor(req).id : null;
       const usuario = await Usuario.buscarPorId(id);
 
       if (!usuario) {
@@ -1246,7 +1251,7 @@ const explorarController = {
 
   async seguirPet(req, res) {
     try {
-      const uid = req.session.usuario.id;
+      const uid = usuarioAtor(req).id;
       const { id } = req.params;
       const pet = await Pet.buscarPorId(id);
       await SeguidorPet.seguir(uid, id);
@@ -1267,7 +1272,7 @@ const explorarController = {
 
   async deixarDeSeguirPet(req, res) {
     try {
-      const uid = req.session.usuario.id;
+      const uid = usuarioAtor(req).id;
       const { id } = req.params;
       await SeguidorPet.deixarDeSeguir(uid, id);
       const total = await SeguidorPet.contarSeguidores(id);
@@ -1354,7 +1359,7 @@ const explorarController = {
 
   async removerSeguidorPet(req, res) {
     try {
-      const uid = req.session.usuario.id;
+      const uid = usuarioAtor(req).id;
       const { id: petId, usuarioId } = req.params;
       const pet = await Pet.buscarPorId(petId);
       if (!pet || pet.usuario_id !== uid) {
@@ -1421,7 +1426,7 @@ const explorarController = {
 
   async buscarPets(req, res) {
     try {
-      const uid = req.session.usuario.id;
+      const uid = usuarioAtor(req).id;
       const { q } = req.query;
       if (!q || q.length < 2) return res.json([]);
       const resultados = await recomendacaoService.buscarPets(q, uid, 20);
@@ -1434,7 +1439,7 @@ const explorarController = {
 
   async petsProximosPost(req, res) {
     try {
-      const uid = req.session.usuario.id;
+      const uid = usuarioAtor(req).id;
       const { id } = req.params;
       const post = await Publicacao.buscarPorId(id);
       if (!post) return res.status(404).json({ lista: [] });
@@ -1483,7 +1488,7 @@ const explorarController = {
 
   async paginaBusca(req, res) {
     try {
-      const uid = req.session.usuario.id;
+      const uid = usuarioAtor(req).id;
       const q = req.query.q || '';
       let resultadosPets = [];
       let resultadosUsuarios = [];

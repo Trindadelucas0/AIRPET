@@ -8,7 +8,6 @@
 <% var isPerfilSettings = currentPath === '/perfil' || (currentPath && String(currentPath).indexOf('/perfil/') === 0); %>
 <% var isMaisDestaque = isLogado && currentPath && (
   currentPath.startsWith('/pets') ||
-  currentPath.startsWith('/mapa') ||
   currentPath.startsWith('/explorar/busca')
 ); %>
 
@@ -143,6 +142,10 @@
       <span class="bottom-tab-iconwrap"><i class="fa-solid fa-compass text-[1.125rem] leading-none"></i></span>
       <span class="bottom-tab-label">Explorar</span>
     </a>
+    <a href="/mapa" class="bottom-tab bottom-tab-cell <%= currentPath.startsWith('/mapa') ? 'bottom-tab--active' : '' %>">
+      <span class="bottom-tab-iconwrap"><i class="fa-solid fa-map-location-dot text-[1.125rem] leading-none"></i></span>
+      <span class="bottom-tab-label">Mapa</span>
+    </a>
     <a href="/petshops" class="bottom-tab bottom-tab-cell <%= currentPath.startsWith('/petshops') ? 'bottom-tab--active' : '' %>">
       <span class="bottom-tab-iconwrap"><i class="fa-solid fa-store text-[1.125rem] leading-none"></i></span>
       <span class="bottom-tab-label">Petshops</span>
@@ -183,10 +186,6 @@
       <a href="/pets" role="menuitem" class="bottom-nav-mais-link <%= currentPath && currentPath.startsWith('/pets') ? 'bottom-nav-mais-link--active' : '' %>">
         <span class="bottom-nav-mais-ic"><i class="fa-solid fa-paw"></i></span>
         <span>Meus Pets</span>
-      </a>
-      <a href="/mapa" role="menuitem" class="bottom-nav-mais-link <%= currentPath && currentPath.startsWith('/mapa') ? 'bottom-nav-mais-link--active' : '' %>">
-        <span class="bottom-nav-mais-ic"><i class="fa-solid fa-map-location-dot"></i></span>
-        <span>Mapa</span>
       </a>
       <a href="/explorar/busca" role="menuitem" class="bottom-nav-mais-link <%= currentPath && currentPath.startsWith('/explorar/busca') ? 'bottom-nav-mais-link--active' : '' %>">
         <span class="bottom-nav-mais-ic"><i class="fa-solid fa-magnifying-glass"></i></span>
@@ -375,6 +374,11 @@
     text-overflow: ellipsis;
     white-space: nowrap;
     padding: 0 1px;
+  }
+  @media (max-width: 380px) {
+    #bottomNav .bottom-tab-label {
+      font-size: 9px;
+    }
   }
   #bottomNav .bottom-tab--active {
     color: var(--accent) !important;

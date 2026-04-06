@@ -76,6 +76,38 @@
     setPersisted(k, value, updatedAt, cacheTimeMs);
   }
 
+  function invalidateKey(key) {
+    var k = String(key);
+    mem.delete(k);
+    try { localStorage.removeItem(storageKey(k)); } catch (_) {}
+  }
+
+  /** Remove chaves cujo identificador lógico contém `substr` (memória + localStorage). */
+  function invalidateKeysContaining(substr) {
+    var s = String(substr);
+    var toDel = [];
+    mem.forEach(function (_, k) {
+      if (String(k).indexOf(s) !== -1) toDel.push(k);
+    });
+    toDel.forEach(invalidateKey);
+    try {
+      var prefix = 'airpet_swr_';
+      for (var i = localStorage.length - 1; i >= 0; i--) {
+        var full = localStorage.key(i);
+        if (!full || full.indexOf(prefix) !== 0) continue;
+        var logical = full.slice(prefix.length);
+        if (logical.indexOf(s) !== -1) localStorage.removeItem(full);
+      }
+    } catch (_) {}
+  }
+
+  /** Chaves sugeridas para swrFetchGet com GET /api/v1/* (alinhar key com URL facilita invalidação). */
+  var SYNC_SWR_KEYS = {
+    ME: 'GET:/api/v1/me',
+    PREFERENCES: 'GET:/api/v1/me/preferences',
+    FOLLOWING: 'GET:/api/v1/me/following'
+  };
+
   /**
    * stale-while-revalidate:
    * - if fresh -> return cache
@@ -190,7 +222,11 @@
   global.AIRPET_SWR_CACHE = {
     getCached: getCached,
     setCached: setCached,
-    swrFetchGet: swrFetchGet
+    swrFetchGet: swrFetchGet,
+    invalidateKey: invalidateKey,
+    invalidateKeysContaining: invalidateKeysContaining,
+    invalidateSyncV1: function () { invalidateKeysContaining('/api/v1/me'); },
+    SYNC_SWR_KEYS: SYNC_SWR_KEYS
   };
 
   // Small convenience alias.

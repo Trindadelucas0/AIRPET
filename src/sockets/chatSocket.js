@@ -41,7 +41,7 @@ module.exports = function (chatNs) {
           socket.emit('erro', { mensagem: 'Você não tem permissão para esta conversa.' });
           return;
         }
-        socket.join(`conversa:${conversaId}`);
+        socket.join(`conversa:${String(conversaId)}`);
       } catch (_e) {
         socket.emit('erro', { mensagem: 'Não foi possível entrar na conversa.' });
       }

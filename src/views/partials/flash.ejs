@@ -43,6 +43,13 @@
           setTimeout(function () { el.remove(); }, 400);
         });
       }, 5000);
+      <% var perfilOk = msgs.some(function (m) { return m.tipo === 'sucesso' && String(m.mensagem || '').indexOf('Perfil atualizado') !== -1; }); %>
+      <% if (perfilOk) { %>
+      (function () {
+        var c = window.AIRPET_SWR_CACHE;
+        if (c && typeof c.invalidateSyncV1 === 'function') c.invalidateSyncV1();
+      })();
+      <% } %>
     </script>
   <% } %>
 <% } %>
