@@ -142,7 +142,9 @@
         var txt = await r.text();
         throw new Error((txt && txt.trim()) ? 'Resposta invalida do servidor. Atualize a pagina e tente novamente.' : 'Falha ao enviar');
       }
-      if (!r.ok || !data.sucesso) throw new Error(data.mensagem || 'Falha ao enviar');
+      var errMsg = data.mensagem;
+      if (!errMsg && Array.isArray(data.erros) && data.erros.length) errMsg = data.erros.join(' ');
+      if (!r.ok || !data.sucesso) throw new Error(errMsg || 'Falha ao enviar');
       token = data.token || token;
       conversaId = data.conversa_id || conversaId;
       form.querySelector('textarea[name="conteudo"]').value = '';

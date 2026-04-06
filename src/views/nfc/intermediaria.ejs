@@ -4,6 +4,7 @@
 <main class="flex-1 min-h-screen bg-slate-100">
   <%- include('../partials/flash') %>
   <% var perdido = (typeof pet !== 'undefined' && pet && pet.status === 'perdido') || (typeof petPerdido !== 'undefined' && petPerdido && petPerdido.status === 'aprovado'); %>
+  <% var podeChatVisitante = typeof petPerdido !== 'undefined' && petPerdido && petPerdido.id && petPerdido.status === 'aprovado'; %>
   <% var telefone = (dono && dono.telefone) || pet.telefone_contato; %>
   <% var ultimaCidade = (ultimaLocalizacao && ultimaLocalizacao.cidade) || (petPerdido && petPerdido.cidade) || null; %>
 
@@ -99,14 +100,22 @@
     <% if (perdido) { %>
       <section class="bg-white rounded-3xl shadow-sm border border-slate-200 p-5 space-y-3">
         <h3 class="text-sm font-bold text-slate-500 uppercase tracking-wide">Acoes extras</h3>
-        <button type="button" id="btnMsgRapida" class="block w-full text-left rounded-2xl border border-slate-300 px-4 py-3 text-slate-700 hover:bg-slate-50">
-          <i class="fa-solid fa-comments mr-2"></i> Conversar com o tutor (sem login)
-        </button>
+        <% if (podeChatVisitante) { %>
+          <button type="button" id="btnMsgRapida" class="block w-full text-left rounded-2xl border border-slate-300 px-4 py-3 text-slate-700 hover:bg-slate-50">
+            <i class="fa-solid fa-comments mr-2"></i> Conversar com o tutor (sem login)
+          </button>
+        <% } else { %>
+          <p class="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+            <i class="fa-solid fa-circle-info mr-2"></i>
+            Mensagem rapida no chat fica disponivel quando o alerta de pet perdido estiver <strong>aprovado</strong>. Enquanto isso, use ligar, localizacao ou enviar foto abaixo.
+          </p>
+        <% } %>
         <a href="/tag/<%= tag.tag_code %>/enviar-foto" class="block w-full rounded-2xl border border-slate-300 px-4 py-3 text-slate-700 hover:bg-slate-50">
           <i class="fa-solid fa-camera mr-2"></i> Enviar foto do pet agora
         </a>
       </section>
 
+      <% if (podeChatVisitante) { %>
       <div id="modalMsgRapida" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 p-4">
         <div class="w-full max-w-md rounded-2xl bg-white p-5 shadow-xl">
           <div class="flex items-start justify-between gap-4">
@@ -127,6 +136,7 @@
           </form>
         </div>
       </div>
+      <% } %>
     <% } %>
 
     <p class="text-center text-slate-500 text-xs leading-relaxed px-2">
@@ -140,7 +150,7 @@
 <script>
 (function() {
   var tagCode = '${tag.tag_code}';
-  var alertaId = '${petPerdido ? petPerdido.id : ''}';
+  var alertaId = '${podeChatVisitante && petPerdido ? petPerdido.id : ''}';
 
   function enviarLocalizacao(lat, lng, manual) {
     var doFetch = function () {
@@ -270,7 +280,9 @@
           var txt = await r.text();
           throw new Error((txt && txt.trim()) ? 'Resposta invalida do servidor. Atualize a pagina e tente novamente.' : 'Falha ao enviar');
         }
-        if (!r.ok || !data.sucesso) throw new Error(data.mensagem || 'Falha ao enviar');
+        var errMsg = data.mensagem;
+        if (!errMsg && Array.isArray(data.erros) && data.erros.length) errMsg = data.erros.join(' ');
+        if (!r.ok || !data.sucesso) throw new Error(errMsg || 'Falha ao enviar');
         token = data.token || token;
         conversaId = data.conversa_id || conversaId;
         form.querySelector('textarea[name="conteudo"]').value = '';

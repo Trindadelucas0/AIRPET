@@ -16,9 +16,11 @@ function responderValidacaoFalha(req, res, listaErros) {
   fetch('http://127.0.0.1:7619/ingest/ae098eda-cae8-4273-b296-012a1e446933',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'8f331f'},body:JSON.stringify({sessionId:'8f331f',runId:'partner-debug',hypothesisId:'H1',location:'validator.js:responderValidacaoFalha',message:'Validation failed',data:{path:req.originalUrl||req.url||'',method:req.method||'',errorsCount:Array.isArray(listaErros)?listaErros.length:0,firstError:Array.isArray(listaErros)&&listaErros[0]?String(listaErros[0]).slice(0,160):''},timestamp:Date.now()})}).catch(()=>{});
   // #endregion
   if (req.accepts('json') && !req.accepts('html')) {
+    const mensagem = Array.isArray(listaErros) ? listaErros.join(' | ') : String(listaErros || '');
     return res.status(422).json({
       sucesso: false,
       erros: listaErros,
+      mensagem: mensagem || 'Dados invalidos.',
     });
   }
   if (req.session) {
