@@ -37,7 +37,12 @@ const { multerPublicUrl } = require('../middlewares/persistUploadMiddleware');
 const TOKEN_TTL_MS = 1000 * 60 * 60 * 12;
 
 function segredoToken() {
-  return process.env.CHAT_GUEST_TOKEN_SECRET || process.env.SESSION_SECRET || 'airpet-chat-guest-secret';
+  const guest = process.env.CHAT_GUEST_TOKEN_SECRET;
+  const sess = process.env.SESSION_SECRET;
+  if (process.env.NODE_ENV === 'production') {
+    return guest || sess;
+  }
+  return guest || sess || 'airpet-chat-guest-secret-dev-only';
 }
 
 function assinarPayload(payloadObj) {

@@ -18,6 +18,16 @@
     <p class="text-xs text-gray-500 mt-4">
       Dica: ja acesse o painel para completar perfil, servicos e primeira publicacao.
     </p>
+    <% if (typeof partnerRequestId !== 'undefined' && partnerRequestId && typeof partnerStatusToken !== 'undefined' && partnerStatusToken) {
+      var _base = typeof BASE_URL !== 'undefined' && BASE_URL ? BASE_URL : '';
+      var _statusPath = '/parceiros/status/' + partnerRequestId + '?t=' + encodeURIComponent(partnerStatusToken);
+      var _statusUrl = _base ? (_base.replace(/\/$/, '') + _statusPath) : _statusPath;
+    %>
+    <p class="text-xs text-gray-500 mt-5 text-left border-t border-gray-100 pt-4">
+      <span class="font-semibold text-gray-700">Consulta de status (link privado — guarde):</span><br>
+      <a href="<%= _statusUrl %>" class="text-primary-600 break-all underline"><%= _statusUrl %></a>
+    </p>
+    <% } %>
   </div>
 </main>
 

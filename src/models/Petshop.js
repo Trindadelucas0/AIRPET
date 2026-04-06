@@ -88,6 +88,21 @@ const Petshop = {
   },
 
   /**
+   * Campos mínimos para JSON público (ex.: GET /api/petshops/mapa).
+   * Não expõe email, email_contato nem outras colunas internas.
+   */
+  async listarAtivosParaMapaPublico() {
+    const resultado = await query(
+      `SELECT id, nome, slug, endereco, latitude, longitude,
+              telefone, whatsapp, descricao, logo_url, ponto_de_apoio
+       FROM petshops
+       WHERE ativo = true
+       ORDER BY nome ASC`
+    );
+    return resultado.rows;
+  },
+
+  /**
    * Lista todos os petshops (ativos e inativos).
    * Usado no painel administrativo.
    *

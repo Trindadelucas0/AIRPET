@@ -9,6 +9,18 @@
  */
 
 const MensagemChat = require('../models/MensagemChat');
+const Conversa = require('../models/Conversa');
+
+function podeAcessarConversa(session, conversa) {
+  if (!session || !conversa) return false;
+  const usuarioId = session.usuario?.id;
+  const ehParticipante =
+    usuarioId != null &&
+    (conversa.iniciador_id === usuarioId || conversa.tutor_id === usuarioId);
+  const ehAdminUsuario = session.usuario?.role === 'admin';
+  const ehAdminLegado = !!session.admin;
+  return ehParticipante || ehAdminUsuario || ehAdminLegado;
+}
 
 module.exports = function (chatNs) {
   chatNs.on('connection', (socket) => {
@@ -16,10 +28,23 @@ module.exports = function (chatNs) {
     const usuarioId = session?.usuario?.id;
 
     // Entra na sala de uma conversa especifica
-    socket.on('entrar_conversa', (payload) => {
+    socket.on('entrar_conversa', async (payload) => {
       const conversaId = (payload && typeof payload === 'object') ? payload.conversa_id : payload;
       if (!conversaId) return;
-      socket.join(`conversa:${conversaId}`);
+      if (!usuarioId) {
+        socket.emit('erro', { mensagem: 'Sessão inválida para entrar na conversa.' });
+        return;
+      }
+      try {
+        const conversa = await Conversa.buscarPorId(conversaId);
+        if (!conversa || !podeAcessarConversa(session, conversa)) {
+          socket.emit('erro', { mensagem: 'Você não tem permissão para esta conversa.' });
+          return;
+        }
+        socket.join(`conversa:${conversaId}`);
+      } catch (_e) {
+        socket.emit('erro', { mensagem: 'Não foi possível entrar na conversa.' });
+      }
     });
 
     // Envia mensagem — salva como pendente e avisa o admin
@@ -33,6 +58,11 @@ module.exports = function (chatNs) {
         const conteudo = (dados && typeof dados.conteudo === 'string') ? dados.conteudo.trim() : '';
         if (!conversaId || !conteudo) {
           socket.emit('erro', { mensagem: 'Dados inválidos para enviar mensagem.' });
+          return;
+        }
+        const conversa = await Conversa.buscarPorId(conversaId);
+        if (!conversa || !podeAcessarConversa(session, conversa)) {
+          socket.emit('erro', { mensagem: 'Você não tem permissão para enviar nesta conversa.' });
           return;
         }
         const mensagem = await MensagemChat.criar({

@@ -84,7 +84,7 @@ router.use('/parceiros', partnerRoutes);
 router.use('/petshop-panel', petshopPanelRoutes);
 router.get('/api/petshops/mapa', async (req, res) => {
   const Petshop = require('../models/Petshop');
-  const petshops = await Petshop.listarAtivos();
+  const petshops = await Petshop.listarAtivosParaMapaPublico();
   return res.json({ sucesso: true, petshops });
 });
 router.use('/mapa', mapaRoutes);

@@ -4,6 +4,7 @@ const bcrypt = require('bcrypt');
 const multer = require('multer');
 
 const adminController = require('../controllers/adminController');
+const adminMonitoramentoController = require('../controllers/adminMonitoramentoController');
 const pontoMapaController = require('../controllers/pontoMapaController');
 const { apenasAdmin } = require('../middlewares/adminMiddleware');
 const { limiterLogin } = require('../middlewares/rateLimiter');
@@ -94,6 +95,8 @@ router.get('/logout', (req, res) => {
 
 router.get('/', apenasAdmin, adminController.dashboard);
 router.get('/analytics', apenasAdmin, adminController.mostrarAnalyticsAvancado);
+router.get('/monitoramento', apenasAdmin, adminMonitoramentoController.pagina);
+router.get('/api/monitoramento', apenasAdmin, adminMonitoramentoController.apiJson);
 router.get('/boosts', apenasAdmin, adminController.listarBoosts);
 router.get('/boosts/buscar-usuarios', apenasAdmin, adminController.buscarUsuariosParaBoost);
 router.get('/boosts/buscar-pets', apenasAdmin, adminController.buscarPetsParaBoost);

@@ -2,6 +2,7 @@ const petshopOnboardingService = require('../services/petshopOnboardingService')
 const PetshopPartnerRequest = require('../models/PetshopPartnerRequest');
 const logger = require('../utils/logger');
 const emailService = require('../services/emailService');
+const partnerStatusToken = require('../utils/partnerStatusToken');
 
 const publicPartnerController = {
   mostrarFormulario(req, res) {
@@ -29,7 +30,12 @@ const publicPartnerController = {
         }
       }
 
-      return res.render('parceiros/sucesso', { titulo: 'Solicitação enviada' });
+      const statusTok = partnerStatusToken.sign(solicitacao.id);
+      return res.render('parceiros/sucesso', {
+        titulo: 'Solicitação enviada',
+        partnerRequestId: solicitacao.id,
+        partnerStatusToken: statusTok,
+      });
     } catch (erro) {
       logger.error('PublicPartnerController', 'Erro ao enviar solicitação de parceria', erro);
       const body = req.body || {};
@@ -60,6 +66,10 @@ const publicPartnerController = {
 
   async apiStatus(req, res) {
     try {
+      const token = String(req.query.t || req.query.token || '').trim();
+      if (!partnerStatusToken.verify(req.params.id, token)) {
+        return res.status(404).json({ sucesso: false, mensagem: 'Solicitação não encontrada.' });
+      }
       const request = await PetshopPartnerRequest.buscarPorId(req.params.id);
       if (!request) return res.status(404).json({ sucesso: false, mensagem: 'Solicitação não encontrada.' });
       return res.json({ sucesso: true, status: request.status, atualizado_em: request.data_atualizacao || request.data_criacao });

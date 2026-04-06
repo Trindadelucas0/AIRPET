@@ -33,7 +33,11 @@ const PORT = process.env.PORT || 3000;
 
 const ENV_REQUIRED = ['DB_HOST', 'DB_USER', 'DB_PASSWORD', 'DB_DATABASE', 'SESSION_SECRET', 'JWT_SECRET'];
 function validarEnv() {
-  const faltando = ENV_REQUIRED.filter((k) => !process.env[k] || String(process.env[k]).trim() === '');
+  const obrigatorias = [...ENV_REQUIRED];
+  if (process.env.NODE_ENV === 'production') {
+    obrigatorias.push('CHAT_GUEST_TOKEN_SECRET');
+  }
+  const faltando = obrigatorias.filter((k) => !process.env[k] || String(process.env[k]).trim() === '');
   if (faltando.length) {
     console.error('[AIRPET] Variaveis de ambiente obrigatorias nao definidas:', faltando.join(', '));
     console.error('Defina-as no arquivo .env (veja .env.example).');

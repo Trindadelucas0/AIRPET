@@ -15,6 +15,7 @@ const routes = require('./routes');
 const logger = require('./utils/logger');
 const ConfigSistema = require('./models/ConfigSistema');
 const { query: dbHealthQuery, getPoolStats } = require('./config/database');
+const { accessMetricsMiddleware } = require('./middlewares/accessMetricsMiddleware');
 
 function createApplication() {
   const app = express();
@@ -33,17 +34,40 @@ function createApplication() {
     app.set('trust proxy', 1);
   }
 
-  app.use(helmet({
-    contentSecurityPolicy: false,
+  const cspReportOnly = String(process.env.CSP_REPORT_ONLY || '').toLowerCase() === 'true';
+  const helmetOpts = {
     crossOriginEmbedderPolicy: false,
     downloadOptions: false,
-  }));
+  };
+  if (cspReportOnly) {
+    const reportUri = (process.env.CSP_REPORT_URI || '').trim();
+    helmetOpts.contentSecurityPolicy = {
+      reportOnly: true,
+      useDefaults: false,
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-inline'", 'https:', 'http:'],
+        styleSrc: ["'self'", "'unsafe-inline'", 'https:'],
+        imgSrc: ["'self'", 'data:', 'blob:', 'https:'],
+        connectSrc: ["'self'", 'wss:', 'ws:', 'https:'],
+        fontSrc: ["'self'", 'https:', 'data:'],
+        frameSrc: ["'self'", 'https:'],
+        ...(reportUri ? { reportUri: [reportUri] } : {}),
+      },
+    };
+  } else {
+    helmetOpts.contentSecurityPolicy = false;
+  }
+  app.use(helmet(helmetOpts));
+
+  // CSRF: cookies de sessao sem token anti-CSRF; proximo passo e tokens em forms + header em fetch (ver plano de seguranca).
   app.use((req, res, next) => {
     res.removeHeader('X-Download-Options');
     next();
   });
 
   app.use(logger.requestLogger());
+  app.use(accessMetricsMiddleware);
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
   app.use(methodOverride('_method'));

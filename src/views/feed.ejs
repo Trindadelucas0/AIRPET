@@ -1147,10 +1147,12 @@
 (function () {
   'use strict';
 
-  var meuId = <%- typeof usuario !== 'undefined' && usuario ? usuario.id : 'null' %>;
-  var meuNome = '<%- typeof usuario !== 'undefined' && usuario ? (usuario.nome || '').replace(/'/g, "\\'") : '' %>';
-  var meuFotoPerfil = '<%- typeof usuario !== 'undefined' && usuario ? (usuario.foto_perfil || '').replace(/'/g, "\\'") : '' %>';
-  var meuCorPerfil = '<%- typeof usuario !== 'undefined' && usuario ? (usuario.cor_perfil || '#ec5a1c').replace(/'/g, "\\'") : '#ec5a1c' %>';
+  <% var _feedSessaoUsuario = typeof usuario !== 'undefined' && usuario ? { id: usuario.id, nome: usuario.nome || '', foto_perfil: usuario.foto_perfil || '', cor_perfil: usuario.cor_perfil || '#ec5a1c' } : null; %>
+  var sessaoFeedUsuario = <%- JSON.stringify(_feedSessaoUsuario) %>;
+  var meuId = sessaoFeedUsuario ? sessaoFeedUsuario.id : null;
+  var meuNome = sessaoFeedUsuario ? sessaoFeedUsuario.nome : '';
+  var meuFotoPerfil = sessaoFeedUsuario ? (sessaoFeedUsuario.foto_perfil || '') : '';
+  var meuCorPerfil = sessaoFeedUsuario && sessaoFeedUsuario.cor_perfil ? sessaoFeedUsuario.cor_perfil : '#ec5a1c';
   function normalizePerfilFoto(raw) {
     var s = String(raw || '').trim();
     if (!s) return '';

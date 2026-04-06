@@ -1,0 +1,158 @@
+<% locals.titulo = 'Monitoramento' %>
+<%- include('../partials/admin-layout') %>
+
+<main class="flex-1 app-shell">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+    <div class="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div>
+        <h1 class="text-2xl font-bold text-gray-900">Monitoramento</h1>
+        <p class="text-sm text-gray-500 mt-1">
+          Armazenamento de imagens (R2 ou local), contagem de acessos HTTP e alertas por limites no <code class="text-xs bg-gray-100 px-1 rounded">.env</code>.
+          Pedidos em voo são por instância Node.
+        </p>
+      </div>
+      <div class="flex items-center gap-3">
+        <span id="metric-status-badge" class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-semibold border <%= statusOk ? 'bg-green-50 text-green-800 border-green-200' : 'bg-amber-50 text-amber-900 border-amber-200' %>">
+          <i class="fa-solid <%= statusOk ? 'fa-circle-check' : 'fa-triangle-exclamation' %>"></i>
+          <span id="metric-status-text"><%= statusOk ? 'OK' : 'ALERTA' %></span>
+        </span>
+        <span class="text-xs text-gray-400">Atualiza a cada 8s</span>
+      </div>
+    </div>
+
+    <% if (!metricsEnabled) { %>
+      <div class="card border-amber-200 bg-amber-50 text-amber-900 mb-6">
+        <p class="text-sm font-medium">Métricas desativadas (<code>METRICS_ENABLED=false</code>). Ative no .env e reinicie o servidor.</p>
+      </div>
+    <% } %>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div class="card">
+        <div class="flex items-center justify-center w-10 h-10 rounded-lg bg-sky-50 text-sky-600 mb-3">
+          <i class="fa-solid fa-images text-lg"></i>
+        </div>
+        <p id="metric-objects" class="text-2xl font-bold text-gray-900"><%= storageObjects %></p>
+        <p class="text-xs font-medium text-gray-500 mt-1">Imagens (objetos contados)</p>
+      </div>
+      <div class="card">
+        <div class="flex items-center justify-center w-10 h-10 rounded-lg bg-violet-50 text-violet-600 mb-3">
+          <i class="fa-solid fa-hard-drive text-lg"></i>
+        </div>
+        <p id="metric-gb" class="text-2xl font-bold text-gray-900"><%= storageGb.toFixed(3) %> GB</p>
+        <p class="text-xs font-medium text-gray-500 mt-1">
+          <% if (quotaGb != null) { %>
+            Quota: <%= quotaGb.toFixed(2) %> GB
+            <span id="metric-pct" class="block text-violet-600 font-semibold mt-0.5"><%= storagePctOfQuota != null ? storagePctOfQuota.toFixed(1) : '—' %>% usado</span>
+          <% } else { %>
+            Sem quota definida (<code>STORAGE_QUOTA_GB</code>)
+          <% } %>
+        </p>
+      </div>
+      <div class="card">
+        <div class="flex items-center justify-center w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 mb-3">
+          <i class="fa-solid fa-chart-line text-lg"></i>
+        </div>
+        <p id="metric-access" class="text-2xl font-bold text-gray-900"><%= accessTotal %></p>
+        <p class="text-xs font-medium text-gray-500 mt-1">Acessos HTTP contados</p>
+      </div>
+      <div class="card">
+        <div class="flex items-center justify-center w-10 h-10 rounded-lg bg-orange-50 text-orange-600 mb-3">
+          <i class="fa-solid fa-bolt text-lg"></i>
+        </div>
+        <p id="metric-concurrent" class="text-2xl font-bold text-gray-900"><%= activeConcurrent %></p>
+        <p class="text-xs font-medium text-gray-500 mt-1">Pedidos em voo (esta instância)</p>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+      <div class="card">
+        <h2 class="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+          <i class="fa-solid fa-clock text-gray-400"></i>
+          Última reconciliação
+        </h2>
+        <p id="metric-reconcile" class="text-sm text-gray-700">
+          <% if (lastReconcileAt) { %>
+            <%= new Date(lastReconcileAt).toLocaleString('pt-BR') %>
+          <% } else { %>
+            Ainda não executada. Rode <code class="text-xs bg-gray-100 px-1 rounded">npm run metrics:reconcile</code> no servidor.
+          <% } %>
+        </p>
+      </div>
+      <div class="card">
+        <h2 class="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+          <i class="fa-solid fa-bell text-amber-500"></i>
+          Alertas ativos
+        </h2>
+        <ul id="metric-alerts" class="space-y-2 text-sm">
+          <% if (alerts && alerts.length) { %>
+            <% alerts.forEach(function(a) { %>
+              <li class="flex gap-2 text-amber-900 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
+                <i class="fa-solid fa-triangle-exclamation mt-0.5 shrink-0"></i>
+                <span><%= a.message %></span>
+              </li>
+            <% }); %>
+          <% } else { %>
+            <li class="text-gray-500">Nenhum alerta no momento.</li>
+          <% } %>
+        </ul>
+      </div>
+    </div>
+
+    <p class="text-xs text-gray-400">
+      Excluídos da contagem de acessos: <code>/css/</code>, <code>/images/</code>, <code>/health</code>, <code>/api/internal</code>, etc.
+      Reconciliação sobrescreve bytes/objetos na BD com o total real do bucket ou pasta <code>public/images</code>.
+    </p>
+  </div>
+</main>
+
+<script>
+(function () {
+  const apiUrl = '<%= adminPath %>/api/monitoramento';
+  const badge = document.getElementById('metric-status-badge');
+  const statusText = document.getElementById('metric-status-text');
+  const fmtGb = (n) => (Number(n) || 0).toFixed(3) + ' GB';
+  const fmtDate = (iso) => {
+    if (!iso) return 'Ainda não executada.';
+    try { return new Date(iso).toLocaleString('pt-BR'); } catch (_) { return String(iso); }
+  };
+  async function tick() {
+    try {
+      const r = await fetch(apiUrl, { credentials: 'same-origin', headers: { Accept: 'application/json' } });
+      if (!r.ok) return;
+      const d = await r.json();
+      const el = (id) => document.getElementById(id);
+      if (el('metric-objects')) el('metric-objects').textContent = String(d.storageObjects ?? '—');
+      if (el('metric-gb')) el('metric-gb').textContent = fmtGb(d.storageGb);
+      if (el('metric-pct') && d.storagePctOfQuota != null) {
+        el('metric-pct').textContent = Number(d.storagePctOfQuota).toFixed(1) + '% usado';
+      }
+      if (el('metric-access')) el('metric-access').textContent = String(d.accessTotal ?? '—');
+      if (el('metric-concurrent')) el('metric-concurrent').textContent = String(d.activeConcurrent ?? '—');
+      if (el('metric-reconcile')) el('metric-reconcile').textContent = fmtDate(d.lastReconcileAt);
+      const list = el('metric-alerts');
+      if (list) {
+        if (!d.alerts || !d.alerts.length) {
+          list.innerHTML = '<li class="text-gray-500">Nenhum alerta no momento.</li>';
+        } else {
+          list.innerHTML = d.alerts.map(function (a) {
+            return '<li class="flex gap-2 text-amber-900 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">' +
+              '<i class="fa-solid fa-triangle-exclamation mt-0.5 shrink-0"></i><span>' +
+              String(a.message || '').replace(/</g, '&lt;') +
+              '</span></li>';
+          }).join('');
+        }
+      }
+      if (badge && statusText) {
+        const ok = !!d.statusOk;
+        badge.className = 'inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-semibold border ' +
+          (ok ? 'bg-green-50 text-green-800 border-green-200' : 'bg-amber-50 text-amber-900 border-amber-200');
+        statusText.textContent = ok ? 'OK' : 'ALERTA';
+      }
+    } catch (_) {}
+  }
+  setInterval(tick, 8000);
+})();
+</script>
+
+<%- include('../partials/admin-footer') %>

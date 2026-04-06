@@ -7,6 +7,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const logger = require('../utils/logger');
+const metricsService = require('./metrics/metricsService');
 
 const DRIVER = (process.env.STORAGE_DRIVER || 'local').toLowerCase();
 const PUBLIC_ROOT = path.join(__dirname, '..', 'public');
@@ -102,10 +103,16 @@ async function saveBuffer(opts) {
   const ext = sanitizeExt(originalname);
   const filename = opts.filename || crypto.randomBytes(16).toString('hex') + ext;
   const f = String(folder).replace(/^\/+|\/+$/g, '').replace(/\\/g, '/');
+  let out;
   if (DRIVER === 'r2') {
-    return saveR2({ buffer, mimetype, folder: f, filename });
+    out = await saveR2({ buffer, mimetype, folder: f, filename });
+  } else {
+    out = await saveLocal({ buffer, folder: f, filename });
   }
-  return saveLocal({ buffer, folder: f, filename });
+  try {
+    await metricsService.recordStorageUploaded(buffer.length);
+  } catch (_) {}
+  return out;
 }
 
 function isLikelyLocalImagePath(url) {
@@ -123,13 +130,22 @@ function isR2ManagedUrl(url) {
 async function removeByPublicUrl(url) {
   if (!url || typeof url !== 'string') return;
   if (DRIVER === 'r2' && isR2ManagedUrl(url)) {
-    const { DeleteObjectCommand } = require('@aws-sdk/client-s3');
+    const { DeleteObjectCommand, HeadObjectCommand } = require('@aws-sdk/client-s3');
     const base = envTrim('R2_PUBLIC_BASE_URL').replace(/\/$/, '');
     const key = url.slice(base.length + 1).split('?')[0];
     const bucket = envTrim('R2_BUCKET_NAME');
     if (!bucket || !key) return;
+    const decodedKey = decodeURIComponent(key);
+    let size = 0;
     try {
-      await getS3().send(new DeleteObjectCommand({ Bucket: bucket, Key: decodeURIComponent(key) }));
+      const head = await getS3().send(new HeadObjectCommand({ Bucket: bucket, Key: decodedKey }));
+      size = Number(head.ContentLength) || 0;
+    } catch (_) {}
+    try {
+      await getS3().send(new DeleteObjectCommand({ Bucket: bucket, Key: decodedKey }));
+      try {
+        await metricsService.recordStorageRemoved(size);
+      } catch (_) {}
     } catch (_) {}
     return;
   }
@@ -137,7 +153,12 @@ async function removeByPublicUrl(url) {
     const rel = url.split('?')[0].replace(/^\/+/, '');
     const abs = path.join(PUBLIC_ROOT, rel);
     try {
+      const st = await fs.promises.stat(abs);
+      const size = st.size;
       await fs.promises.unlink(abs);
+      try {
+        await metricsService.recordStorageRemoved(size);
+      } catch (_) {}
     } catch (_) {}
   }
 }

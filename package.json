@@ -19,6 +19,7 @@
     "db:health": "node scripts/db-health.cjs",
     "migrate:r2": "node scripts/migrate-local-images-to-r2.cjs",
     "test:r2": "node scripts/test-r2-put.cjs",
+    "metrics:reconcile": "node scripts/reconcile-r2-metrics.cjs",
     "lint": "eslint \"src/controllers\" \"src/services\" \"src/routes\""
   },
   "keywords": [
