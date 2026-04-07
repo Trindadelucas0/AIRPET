@@ -270,6 +270,19 @@ const validarPetshopAgendaStatus = [
   body('motivo_recusa').optional({ checkFalsy: true }).trim().isLength({ max: 2000 }),
 ];
 
+const validarPetshopAgendaConfig = [
+  camposPermitidos([
+    'dia_0_ativo', 'dia_0_abre', 'dia_0_fecha', 'dia_0_intervalo_inicio', 'dia_0_intervalo_fim',
+    'dia_1_ativo', 'dia_1_abre', 'dia_1_fecha', 'dia_1_intervalo_inicio', 'dia_1_intervalo_fim',
+    'dia_2_ativo', 'dia_2_abre', 'dia_2_fecha', 'dia_2_intervalo_inicio', 'dia_2_intervalo_fim',
+    'dia_3_ativo', 'dia_3_abre', 'dia_3_fecha', 'dia_3_intervalo_inicio', 'dia_3_intervalo_fim',
+    'dia_4_ativo', 'dia_4_abre', 'dia_4_fecha', 'dia_4_intervalo_inicio', 'dia_4_intervalo_fim',
+    'dia_5_ativo', 'dia_5_abre', 'dia_5_fecha', 'dia_5_intervalo_inicio', 'dia_5_intervalo_fim',
+    'dia_6_ativo', 'dia_6_abre', 'dia_6_fecha', 'dia_6_intervalo_inicio', 'dia_6_intervalo_fim',
+    '_method',
+  ]),
+];
+
 const validarPetshopPost = [
   camposPermitidos([
     'post_type', 'titulo', 'texto', 'nome_produto', 'descricao_produto', 'preco', 'contato_link',
@@ -511,6 +524,7 @@ module.exports = {
   validarPetshopServico,
   validarPetshopAgendaCriar,
   validarPetshopAgendaStatus,
+  validarPetshopAgendaConfig,
   validarPetshopPost,
   validarExplorarPostV1,
   validarExplorarPostV2,

@@ -1,6 +1,6 @@
 ---
 name: TAG NFC paga e dashboard
-overview: Unir scan/resgate com SaaS de TAG paga, personalização pet/foto, páginas de venda claras, plano com ciclo de 30 dias renovado por pagamento (validação server-side + indicador na tag), tiers de recursos (incl. busca), InfinitePay e camada antifraude.
+overview: Unir scan/resgate com SaaS de TAG paga — tag física comprada uma vez; continuidade só por assinatura; nova compra de tag só para substituição (tag anterior desativada). Personalização, vendas, 30 dias, três tiers, promoções e antifraude.
 todos:
   - id: schema-order-units
     content: "Migrar/criar tabelas: pedido TAG (SaaS) + tag_order_units com pet_id, print_photo_url, personalization_status, FKs e constraints"
@@ -12,7 +12,10 @@ todos:
     content: "EJS landing + pricing: benefícios, comparativo de planos, CTA login/compra; copy explícito sobre ciclo 30 dias e o que a tag mostra"
     status: pending
   - id: infinitepay-e-alocacao
-    content: Implementar fluxo InfinitePay (links + webhook + payment_check); pós-pagamento estender valid_until + alocar tags; preencher INFINITYPAY.MD no repo
+    content: "InfinitePay: dois fluxos — (A) compra de tag(s) hardware; (B) só assinatura. Webhook estende valid_until; (A) aloca tags. Preencher INFINITYPAY.MD"
+    status: pending
+  - id: substituicao-tag-desativa
+    content: "Ao comprar nova tag (substituição): desativar/revogar tag física anterior vinculada ao mesmo pet (ou política por usuário); scan da antiga mostra estado substituída"
     status: pending
   - id: servico-entitlement
     content: "Serviço único: requirePlanoAtivo(usuario|pet), bloqueio de rotas premium; job lembrete pré-expiração e grace opcional"
@@ -34,6 +37,15 @@ todos:
     status: pending
   - id: doc-producao
     content: "Checklist pré-prod: INFINITYPAY.MD, regra renovação, limites, runbook webhook, testes de carga mínimos"
+    status: pending
+  - id: definir-tres-planos
+    content: "Fechar nomes comerciais + matriz recurso×plano (Básico/Plus/Família ou outros) e preços mensais por tier"
+    status: pending
+  - id: promocoes-cupom-pacote
+    content: "Servidor: cupom % ou fixo + pacotes por qtd tags; snapshot no pedido; validade e limite de uso"
+    status: pending
+  - id: promocoes-indicacao
+    content: "Programa indicação: código único, crédito (R$ ou dias), anti-abuso; regras pendentes ver seção do plano"
     status: pending
   - id: wizard-pet-foto
     content: "Rotas + EJS: escolher pet, foto (principal ou upload), confirmar snapshot no servidor"
@@ -85,7 +97,7 @@ Objetivo: usuário entender **o que compra**, **por quanto tempo vale**, **o que
 |--------|------------------|
 | **Landing TAG** (`/tag` ou `/loja-tag`) | Proposta de valor (resgate + identificação), como funciona em 3 passos, prova social opcional, CTA “Ver planos” / “Comprar”. |
 | **Planos e preços** | Tabela comparativa dos **tiers** (ver seção abaixo): o que cada um libera (scan básico vs. completo, busca, mapa, notificações). |
-| **Checkout** | Resumo do carrinho (qtd tags, petshop se aplicável), **texto legal curto**: ciclo de **30 dias** a partir da confirmação de pagamento (ou da data acordada), renovação ao pagar novo link/fatura, consequência de expirar (tag continua física mas recursos premium caem). |
+| **Checkout** | Distinguir **1ª compra / nova tag** (carrinho com hardware + 1º período ou só hardware conforme precificação) vs **renovação** (só assinatura, sem tag nova). Texto legal: **assinatura em ciclo de 30 dias**; **nova compra de tag** só quando o tutor quiser **outra tag** — a tag **anterior** (substituída) é **desativada** no sistema. Se assinatura vencer: tag física existe, serviço premium degrada após `valid_until` + grace. |
 | **Pós-pagamento** | Estado do pedido + próximos passos (personalização, retirada, ativação) — já previsto no fluxo dashboard. |
 
 Design: reaproveitar Tailwind/partials existentes; hierarquia visual forte (preço, duração do plano, “inclui X dias de serviço”).
@@ -99,7 +111,9 @@ Design: reaproveitar Tailwind/partials existentes; hierarquia visual forte (pre�
 - **Regra de renovação fechada (recomendada):** a cada pagamento aprovado, `valid_until_novo = max(valid_until_atual, data_hora_confirmacao_pagamento) + 30 dias`. Assim **não se perdem dias já pagos** (renovação antecipada **empilha** sobre o saldo restante). Alternativa rara: sempre `paid_at + 30d` (ignora saldo) — só usar se negócio exigir; se escolher, comunicar com muito destaque.
 - **Não** usar apenas JWT no browser como prova de assinatura: token pode ser **complemento** (ex.: cookie de sessão), mas **middleware e scan** consultam **PostgreSQL** (`tag_subscriptions` / `usuario_entitlements` ou campos em `usuarios`).
 
-**Renovação:** conforme InfinitePay (link por cobrança), ao receber webhook/`payment_check` válido, numa **transação**: gravar pagamento, atualizar `valid_until`, registrar `transaction_nsu` com **idempotência**.
+**Renovação (só assinatura):** cobranças seguintes **não** incluem hardware — apenas estendem `valid_until` (+ regra dos 30 dias). Link InfinitePay / fatura recorrente conforme modelo escolhido.
+
+**Compra de nova tag (substituição):** fluxo de pedido separado (ou item tipo `hardware_tag` no checkout). Após pagamento e ativação da **nova** tag no pet, a **tag antiga** daquele vínculo passa a `blocked`/`revogada`/`substituida` (definir status único), **desvinculada** ou redirecionando scan para mensagem “Tag substituída — use a nova tag”. Evita duas tags ativas com o mesmo propósito para o mesmo pet (ajustar se a política for **N pets = N tags** sem substituir todas de uma vez).
 
 **Indicador na tag (público):** ao montar dados em [`nfcService.processarScan`](src/services/nfcService.js), incluir flags derivadas do servidor, por exemplo:
 
@@ -131,15 +145,50 @@ Alinhar com o que já existe no código para não prometer o que não existe na 
 
 **Entrega:** documentar a matriz em código (`config/planos.js` ou tabela `plan_definitions`) para **uma única fonte** usada pela landing, pelo middleware e pelo `nfcService` (feature flags por `plan_slug`).
 
+**Nota:** com **3 níveis pagos** (decisão abaixo), esta tabela vira **3 colunas** (ou mais): cada recurso marca se entra em Básico, Plus e/ou Família — ainda **pendente preencher célula a célula** com o sócio/produto.
+
+---
+
+## Planos comerciais e promoções (decisões fechadas e pendentes)
+
+### O que já foi definido (produto)
+
+| Decisão | Escolha |
+|---------|---------|
+| **Quantidade de planos pagos na v1** | **3 níveis** (ex.: linha Básico / Plus / Família — **nomes finais e preços a fechar**). |
+| **Modelo de cobrança** | **Tag física = compra única** (paga uma vez por unidade). **Todo o restante = só assinatura** (renovações mensais 30 dias). **Próxima “compra” de tag** só se o tutor quiser **outra tag**; nesse caso a tag **anterior** (a que estava em uso e é substituída) é **desativada** no app. Sem assinatura ativa: degradar serviço premium após `valid_until` + grace (hardware continua existindo). |
+| **Promoções na v1** | (1) **Pacotes por quantidade** de tags (ex. 2 e 4 unidades, desconto progressivo); (2) **Cupom** (% ou valor fixo); (3) **Indicação** (crédito para quem indica e/ou indicado — **regra exata pendente**). |
+
+### O que ainda falta fechar (para o plano ficar “completo”)
+
+Sugestão: responder numa próxima rodada (chat ou doc) cada item — vira critério de aceite da loja.
+
+1. **Nomes e preço de tabela** dos 3 planos: mensalidade cada um? na **primeira adesão**, tag(s) entra(m) no mesmo checkout da 1ª mensalidade ou tag à vista + assinatura separada?
+2. **Distribuição de recursos** da matriz (scan rico, mapa perdido, petshop próximo, notificações, contatos extras, etc.) por plano — quem fica só no Plus/Família?
+3. **Cupom:** duração, uso único por CPF/e-mail, combina com pacote de tags ou é um ou outro?
+4. **Indicação:** crédito em **reais** na próxima mensalidade, **dias grátis**, ou **desconto na tag**? limite de indicações por mês? validação de conta nova (anti-fraude)?
+5. **Campanhas sazonais** (Black Friday): na v1 só via cupom genérico ou fora de escopo?
+
+### Modelagem sugerida (implementação futura)
+
+- **`plan_definitions`:** `slug`, `nome_exibicao`, `mensalidade_centavos`, `features_json` (ou colunas booleanas), `ordem`.
+- **`promo_codes`:** `codigo`, `tipo` (% / fixo), `valor`, `valid_from`, `valid_until`, `max_usos_global`, `max_usos_por_usuario`, `plan_slugs_permitidos` (opcional).
+- **`referrals` / `referral_credits`:** código por usuário; ao primeira compra paga do indicado, registrar evento idempotente e aplicar crédito conforme regra.
+
+**Antifraude promoções:** cálculo do total **sempre no servidor**; `snapshot_json` do pedido grava `plan_slug`, preços unitários, cupom aplicado e linhas; webhook confere total esperado.
+
 ---
 
 ## Pagamento: lógica completa e permanência no plano
 
-1. **Criar pedido** no backend com `snapshot_json` (preço, itens, `plan_slug`, duração em dias).
+1. **Criar pedido** no backend com `snapshot_json` (preço, itens, `plan_slug`, tipo: `assinatura_recorrente` | `compra_tag` | `combo_primeira_vez`, duração em dias quando for período).
 2. **InfinitePay:** criar link com `order_nsu` estável; redirecionar usuário; na volta, **`payment_check`** na `redirect_url`.
 3. **Webhook:** marcar pago **uma vez** por `transaction_nsu` (tabela idempotência, padrão [`ApiIdempotencyResponse`](src/models/ApiIdempotencyResponse.js) se aplicável).
 4. **Conferência antifraude (servidor):** valor total e itens do webhook devem **bater** com o pedido pendente; rejeitar se pedido já cancelado/expirado ou usuário diferente.
-5. **Efeito colateral:** estender `valid_until` + liberar entitlements + alocar tags conforme plano SaaS.
+5. **Efeitos colaterais por tipo de pedido:**
+   - **Só assinatura:** atualizar `valid_until` + histórico de pagamento; **não** alocar nova `nfc_tag`.
+   - **Compra de tag(s):** alocar/reservar unidades de hardware; se for **substituição**, ao concluir ativação da nova, **desativar** a tag anterior do mesmo pet (ver todo `substituicao-tag-desativa`).
+   - **Primeira adesão (combo):** definir se um único checkout inclui hardware + 1º mês ou dois eventos — refletir no `snapshot_json` e nos webhooks.
 
 ---
 
@@ -158,8 +207,9 @@ Alinhar com o que já existe no código para não prometer o que não existe na 
 ## Modelagem de dados (extensão — resumo)
 
 - Manter `tag_product_orders`, `tag_order_units`, evolução `nfc_tags` (plano anterior).
-- Acrescentar **entitlement explícito**: por `usuario_id` (ou `pet_id` se cobrança por pet): `plan_slug`, `valid_until`, `last_renewal_at`, `last_transaction_nsu`.
-- Opcional: `payment_events` para auditoria e disputas.
+- Em `nfc_tags` (ou tabela de histórico): campos **`substituida_por_tag_id`**, **`desativada_em`**, **`motivo_desativacao`** (`substituicao`, `perda`, `fraude`, …) para auditoria e UX no scan da peça antiga.
+- Acrescentar **entitlement explícito** (assinatura): por `usuario_id`: `plan_slug`, `valid_until`, `last_renewal_at`, `last_transaction_nsu` — **desacoplado** da compra pontual de hardware.
+- Opcional: `payment_events` com `tipo` (`tag`, `assinatura`) para relatórios.
 
 ---
 
@@ -167,24 +217,33 @@ Alinhar com o que já existe no código para não prometer o que não existe na 
 
 ```mermaid
 flowchart TD
-  Venda[Paginas_venda] --> Auth[Usuario_logado]
-  Auth --> Checkout[InfinitePay_link]
-  Checkout --> WH[Webhook_ou_payment_check]
+  Venda[Paginas_venda] --> Planos[Escolha_tres_niveis]
+  Planos --> Auth[Usuario_logado]
+  Auth --> Promo[Cupom_ou_pacote_ou_indicacao]
+  Promo --> Tipo{Tipo_compra}
+  Tipo -->|Primeira_vez_ou_mais_tags| CheckoutTag[Checkout_tag_hardware]
+  Tipo -->|So_renovacao| CheckoutSub[Checkout_somente_assinatura]
+  CheckoutTag --> WH[Webhook_ou_payment_check]
+  CheckoutSub --> WH
   WH --> Idem[Idempotencia_e_valida_valor]
-  Idem --> Extend[valid_until_plus_30d]
-  Extend --> Aloca[Alocar_tags]
-  Aloca --> Dash[Dashboard_pedido]
+  Idem --> Branch{Tipo_pedido}
+  Branch -->|assinatura| Extend[valid_until_plus_30d]
+  Branch -->|tag| Aloca[Alocar_nova_tag]
+  Extend --> Dash[Dashboard]
+  Aloca --> Dash
   Dash --> Personaliza[Pet_e_foto]
-  Personaliza --> Scan[Scan_com_sello_plano]
+  Personaliza --> Ativar[Ativar_tag]
+  Ativar --> DesativaAnt[Desativar_tag_anterior_se_substituicao]
+  DesativaAnt --> Scan[Scan_com_sello_plano]
 ```
 
 ---
 
 ## Ordem de implementação sugerida (atualizada)
 
-1. Preencher **INFINITYPAY.MD** + schema pedido + **entitlement 30d**.
-2. **Serviço de plano** + middleware + `config`/tabela de definições de planos (incl. busca).
-3. **Páginas de venda** + checkout.
+1. Preencher **INFINITYPAY.MD** + schema pedido + **entitlement 30d** + tabelas de **cupom** e **indicação** (se forem na v1).
+2. **Definir matriz 3 planos** (recursos × tier) + preços; implementar `plan_definitions` + middleware.
+3. **Páginas de venda** (comparativo 3 colunas) + checkout com aplicação de **cupom** e **pacote por qtd**.
 4. Integração **InfinitePay** + antifraude.
 5. **nfcService** + view intermediária: indicador “dentro do plano”.
 6. Wizard pet/foto + dashboard pedido + ativação.
@@ -204,6 +263,7 @@ flowchart TD
 
 - **Âncora dos 30 dias (fechada no plano):** usar **`valid_until_novo = max(valid_until_atual, momento_confirmacao_pagamento) + 30 dias`** — preserva saldo de dias já pagos; alinhar marketing e suporte a esta frase única.
 - **Teto comercial:** **máximo 10 pets por usuário** no escopo do produto TAG pago — bloquear compra/ativação que ultrapasse; expor o limite na **loja** e no **dashboard** (evita frustração no checkout).
+- **Substituição de tag:** desativar apenas a tag **do mesmo pet** que recebeu a nova (se o tutor tem vários pets com várias tags, comprar “tag nova” para o pet B não desativa a tag do pet A). Fechar no runbook.
 - **Grace period:** **48–72h** após `valid_until` (definir valor fixo, ex. 72h), com política explícita: durante grace, **quais recursos** permanecem (ex. scan premium sim/não). Após grace, degradar para baseline documentado.
 - **INFINITYPAY.MD vazio:** risco alto de endpoint/payload errado — **bloqueio de deploy** até doc + teste em sandbox/homologação com webhook real ou ferramenta da adquirente.
 - **Dica operacional:** **documentar tudo antes de produção** — runbook mínimo: (1) reprocessar webhook seguro, (2) estorno/cancelamento de pedido, (3) usuário com plano errado (correção manual de `valid_until`), (4) quem acorda se pagamento cair às 3h. Checklist go-live: variáveis de ambiente (`WEBHOOK_SECRET`, URLs), monitoramento de taxa de 4xx/5xx no webhook, alerta se `payment_check` divergir do PG.

@@ -12,7 +12,30 @@ const petshopPublishingService = require('../services/petshopPublishingService')
 const { multerPublicUrl } = require('../middlewares/persistUploadMiddleware');
 const petshopScheduleService = require('../services/petshopScheduleService');
 const petshopAppointmentService = require('../services/petshopAppointmentService');
+const petshopAgendaResumoService = require('../services/petshopAgendaResumoService');
 const logger = require('../utils/logger');
+
+function formatDateKey(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+function parseDateKey(input) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(input || ''))) {
+    return new Date();
+  }
+  const parsed = new Date(`${input}T00:00:00`);
+  if (Number.isNaN(parsed.getTime())) return new Date();
+  return parsed;
+}
+
+function dayRange(date) {
+  const inicio = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0);
+  const fim = new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1, 0, 0, 0, 0);
+  return { inicio, fim };
+}
 
 const petshopPanelController = {
   mostrarLogin(req, res) {
@@ -98,15 +121,23 @@ const petshopPanelController = {
         PetPetshopLinkRequest.listarPendentesPorPetshop(petshopId, 100),
       ]);
       const solicitacao = await PetshopPartnerRequest.buscarPorPetshopId(petshopId);
+      const [{ agendaDiasResumo }, { agendaResumo }] = await Promise.all([
+        petshopAgendaResumoService.gerarResumoMensal(petshopId, new Date()),
+        petshopAgendaResumoService.gerarResumoHoje(petshopId, new Date()),
+      ]);
+
       return res.render('petshop-panel/dashboard', {
         titulo: 'Painel do Petshop',
         services,
         products,
         posts,
         appointments,
+        appointmentsPreview: (appointments || []).slice(0, 5),
         profile,
         solicitacoesVinculo,
         solicitacao,
+        agendaResumo,
+        agendaDiasResumo,
         accountStatus: req.petshopAccount.status,
       });
     } catch (erro) {
@@ -157,6 +188,86 @@ const petshopPanelController = {
     }
   },
 
+  async mostrarAgenda(req, res) {
+    try {
+      const petshopId = req.petshopAccount.petshop_id;
+      const dataSelecionada = parseDateKey(req.query?.dia);
+      const dia = formatDateKey(dataSelecionada);
+      const { inicio, fim } = dayRange(dataSelecionada);
+      const appointments = await PetshopAppointment.listarPorPetshopNoDia(petshopId, inicio, fim);
+
+      return res.render('petshop-panel/agenda', {
+        titulo: 'Agenda do Petshop',
+        diaSelecionado: dia,
+        dataSelecionada,
+        appointments,
+      });
+    } catch (erro) {
+      logger.error('PetshopPanelController', 'Erro ao carregar agenda do parceiro', erro);
+      req.session.flash = { tipo: 'erro', mensagem: 'Erro ao carregar agenda.' };
+      return res.redirect('/petshop-panel/dashboard');
+    }
+  },
+
+  async mostrarConfiguracaoAgenda(req, res) {
+    try {
+      const petshopId = req.petshopAccount.petshop_id;
+      const regras = await petshopScheduleService.listarRegrasSemanais(petshopId);
+      const regrasMap = (regras || []).reduce((acc, regra) => {
+        acc[String(regra.dia_semana)] = regra;
+        return acc;
+      }, {});
+
+      return res.render('petshop-panel/agenda-config', {
+        titulo: 'Horários de Atendimento',
+        regrasMap,
+      });
+    } catch (erro) {
+      logger.error('PetshopPanelController', 'Erro ao carregar configuração da agenda', erro);
+      req.session.flash = { tipo: 'erro', mensagem: 'Erro ao carregar horários.' };
+      return res.redirect('/petshop-panel/dashboard');
+    }
+  },
+
+  async salvarConfiguracaoAgenda(req, res) {
+    try {
+      const petshopId = req.petshopAccount.petshop_id;
+      const operacoes = [];
+
+      for (let dia = 0; dia <= 6; dia += 1) {
+        const ativo = Boolean(req.body[`dia_${dia}_ativo`]);
+        const abre = String(req.body[`dia_${dia}_abre`] || '').trim() || '08:00';
+        const fecha = String(req.body[`dia_${dia}_fecha`] || '').trim() || '18:00';
+        const intervaloInicio = String(req.body[`dia_${dia}_intervalo_inicio`] || '').trim() || null;
+        const intervaloFim = String(req.body[`dia_${dia}_intervalo_fim`] || '').trim() || null;
+
+        if (!ativo) {
+          operacoes.push(petshopScheduleService.desativarRegraSemanal(petshopId, dia));
+          continue;
+        }
+
+        operacoes.push(
+          petshopScheduleService.salvarRegraSemanal(petshopId, {
+            dia_semana: dia,
+            abre,
+            fecha,
+            intervalo_inicio: intervaloInicio,
+            intervalo_fim: intervaloFim,
+            ativo: true,
+          })
+        );
+      }
+
+      await Promise.all(operacoes);
+      req.session.flash = { tipo: 'sucesso', mensagem: 'Horários de atendimento atualizados.' };
+      return res.redirect('/petshop-panel/agenda/config');
+    } catch (erro) {
+      logger.error('PetshopPanelController', 'Erro ao salvar configuração da agenda', erro);
+      req.session.flash = { tipo: 'erro', mensagem: 'Erro ao salvar horários.' };
+      return res.redirect('/petshop-panel/agenda/config');
+    }
+  },
+
   async atualizarAgendamento(req, res) {
     try {
       await petshopAppointmentService.atualizarStatus(
@@ -165,9 +276,17 @@ const petshopPanelController = {
         req.body.motivo_recusa || null
       );
       req.session.flash = { tipo: 'sucesso', mensagem: 'Agendamento atualizado.' };
+      const referer = req.get('referer') || '';
+      if (referer.includes('/petshop-panel/agenda')) {
+        return res.redirect(referer);
+      }
       return res.redirect('/petshop-panel/dashboard');
     } catch (erro) {
       req.session.flash = { tipo: 'erro', mensagem: 'Erro ao atualizar agendamento.' };
+      const referer = req.get('referer') || '';
+      if (referer.includes('/petshop-panel/agenda')) {
+        return res.redirect(referer);
+      }
       return res.redirect('/petshop-panel/dashboard');
     }
   },

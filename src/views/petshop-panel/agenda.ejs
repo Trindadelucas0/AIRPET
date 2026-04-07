@@ -1,0 +1,79 @@
+<% locals.titulo = 'Agenda do Petshop' %>
+<%
+  const formatKey = function(date) {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return y + '-' + m + '-' + d;
+  };
+  const base = new Date(diaSelecionado + 'T00:00:00');
+  const anterior = new Date(base);
+  anterior.setDate(anterior.getDate() - 1);
+  const proximo = new Date(base);
+  proximo.setDate(proximo.getDate() + 1);
+  locals.extraHead = `
+  <link rel="stylesheet" href="/css/partner-ui.css">
+  <style>
+    .partner-app { max-width: 1080px; }
+    .partner-card { background: var(--ink-2); border:1px solid var(--border); border-radius: 18px; padding: 16px; }
+    .partner-list-item { border: 1px solid var(--border); border-radius: 14px; padding: 12px; background: var(--ink-3); }
+  </style>
+  `;
+%>
+<%- include('../partials/header') %>
+<%- include('../partials/flash') %>
+
+<main class="flex-1 container mx-auto partner-app px-4 py-8 space-y-5 app-shell">
+  <%- include('../partials/petshop-panel-nav', { activeTab: 'agenda' }) %>
+
+  <section class="partner-card">
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <div>
+        <h1 class="text-xl font-bold text-[color:var(--text)]">Agenda diária</h1>
+        <p class="text-sm text-[color:var(--text-dim)] mt-1">
+          <%= new Date(diaSelecionado + 'T00:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' }) %>
+        </p>
+      </div>
+      <div class="flex items-center gap-2">
+        <a href="/petshop-panel/agenda?dia=<%= formatKey(anterior) %>" class="btn-ghost border border-[color:var(--border)] rounded-xl px-3 py-2 text-xs">Dia anterior</a>
+        <a href="/petshop-panel/agenda?dia=<%= formatKey(proximo) %>" class="btn-ghost border border-[color:var(--border)] rounded-xl px-3 py-2 text-xs">Próximo dia</a>
+        <a href="/petshop-panel/agenda/config" class="btn-primary-inline !px-3 !py-2 text-xs">Ajustar horários</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="partner-card">
+    <div class="flex items-center justify-between mb-3">
+      <h2 class="font-bold">Agendamentos do dia</h2>
+      <span class="text-xs text-[color:var(--text-dim)]"><%= (appointments || []).length %> registro(s)</span>
+    </div>
+
+    <% if (!(appointments || []).length) { %>
+      <p class="text-sm text-[color:var(--text-dim)]">Nenhum agendamento para a data selecionada.</p>
+    <% } else { %>
+      <div class="space-y-3">
+        <% (appointments || []).forEach(function(a) { %>
+          <div class="partner-list-item flex flex-col md:flex-row md:items-center gap-3 md:justify-between">
+            <div>
+              <p class="font-semibold"><%= a.pet_nome %> • <%= a.servico_nome || 'Serviço' %></p>
+              <p class="text-sm text-[color:var(--text-dim)]"><%= a.usuario_nome %> • <%= new Date(a.data_agendada).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) %></p>
+              <% if (a.observacoes) { %>
+                <p class="text-xs text-[color:var(--text-dim)] mt-1"><%= a.observacoes %></p>
+              <% } %>
+            </div>
+            <form action="/petshop-panel/agenda/<%= a.id %>/status" method="POST" class="flex gap-2">
+              <select name="status" class="input">
+                <option value="aceito" <%= a.status === 'aceito' ? 'selected' : '' %>>Aceitar</option>
+                <option value="recusado" <%= a.status === 'recusado' ? 'selected' : '' %>>Recusar</option>
+                <option value="concluido" <%= a.status === 'concluido' ? 'selected' : '' %>>Concluir</option>
+              </select>
+              <button class="btn-primary-inline">Atualizar</button>
+            </form>
+          </div>
+        <% }) %>
+      </div>
+    <% } %>
+  </section>
+</main>
+
+<%- include('../partials/footer') %>

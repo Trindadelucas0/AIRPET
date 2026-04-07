@@ -15,6 +15,14 @@ const petshopScheduleService = {
   async salvarRegraSemanal(petshopId, regra) {
     return PetshopScheduleRule.upsertSemanal(petshopId, regra);
   },
+
+  async listarRegrasSemanais(petshopId) {
+    return PetshopScheduleRule.listarPorPetshop(petshopId);
+  },
+
+  async desativarRegraSemanal(petshopId, diaSemana) {
+    return PetshopScheduleRule.desativarDia(petshopId, diaSemana);
+  },
 };
 
 module.exports = petshopScheduleService;

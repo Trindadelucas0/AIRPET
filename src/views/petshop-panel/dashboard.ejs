@@ -57,6 +57,7 @@
 <%- include('../partials/flash') %>
 
 <main class="flex-1 container mx-auto partner-app px-4 py-8 space-y-6 app-shell">
+  <%- include('../partials/petshop-panel-nav', { activeTab: 'dashboard' }) %>
   <% const statusAtual = (solicitacao && solicitacao.status) || (accountStatus === 'ativo' ? 'aprovado' : 'pendente'); %>
   <% const statusClasses = statusAtual === 'aprovado'
     ? 'bg-emerald-100 text-emerald-700'
@@ -222,7 +223,7 @@
     </div>
   </section>
 
-  <section class="grid lg:grid-cols-2 gap-6">
+  <section class="grid lg:grid-cols-1 gap-6">
     <div id="novo-servico" class="partner-card">
       <h2 class="font-bold mb-3">Novo serviço</h2>
       <form action="/petshop-panel/servicos" method="POST" class="space-y-3">
@@ -233,25 +234,18 @@
         <button class="btn-primary-inline">Salvar serviço</button>
       </form>
     </div>
-
-    <div class="partner-card">
-      <h2 class="font-bold mb-3">Agendamento interno rapido</h2>
-      <p class="hint mb-3">Preencha dados para testes operacionais e ajuste de fluxo antes de abrir agenda publica.</p>
-      <form action="/petshop-panel/agenda" method="POST" class="space-y-3">
-        <input class="input w-full" name="usuario_id" placeholder="ID do usuário" required>
-        <input class="input w-full" name="pet_id" placeholder="ID do pet" required>
-        <input class="input w-full" name="service_id" placeholder="ID do serviço">
-        <input class="input w-full" type="datetime-local" name="data_agendada" required>
-        <textarea class="input w-full min-h-20" name="observacoes" placeholder="Observações"></textarea>
-        <button class="btn-primary-inline">Criar agendamento</button>
-      </form>
-    </div>
   </section>
 
   <section id="agendamentos" class="partner-card">
-    <h2 class="font-bold mb-3">Agendamentos recebidos</h2>
+    <div class="flex items-center justify-between gap-3 mb-3">
+      <h2 class="font-bold">Agendamentos recebidos</h2>
+      <a href="/petshop-panel/agenda" class="btn-ghost border border-[color:var(--border)] rounded-xl px-3 py-2 text-xs">Ver agenda completa</a>
+    </div>
+    <% if (!(appointmentsPreview || []).length) { %>
+      <p class="text-sm text-gray-500">Nenhum agendamento recebido ainda.</p>
+    <% } else { %>
     <div class="space-y-3">
-      <% (appointments || []).forEach(function(a) { %>
+      <% (appointmentsPreview || []).forEach(function(a) { %>
         <div class="partner-list-item flex flex-col md:flex-row md:items-center gap-3 md:justify-between">
           <div>
             <p class="font-semibold"><%= a.pet_nome %> • <%= a.servico_nome || 'Serviço' %></p>
@@ -268,6 +262,7 @@
         </div>
       <% }) %>
     </div>
+    <% } %>
   </section>
 </main>
 

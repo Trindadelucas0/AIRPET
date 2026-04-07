@@ -1,0 +1,79 @@
+<% locals.titulo = 'Horários de Atendimento' %>
+<%
+  const dias = [
+    { id: 0, label: 'Domingo' },
+    { id: 1, label: 'Segunda' },
+    { id: 2, label: 'Terça' },
+    { id: 3, label: 'Quarta' },
+    { id: 4, label: 'Quinta' },
+    { id: 5, label: 'Sexta' },
+    { id: 6, label: 'Sábado' },
+  ];
+  function valorHora(rule, field, fallback) {
+    if (!rule || !rule[field]) return fallback;
+    return String(rule[field]).slice(0, 5);
+  }
+  locals.extraHead = `
+  <link rel="stylesheet" href="/css/partner-ui.css">
+  <style>
+    .partner-app { max-width: 1080px; }
+    .partner-card { background: var(--ink-2); border:1px solid var(--border); border-radius: 18px; padding: 16px; }
+    .row-dia { border: 1px solid var(--border); border-radius: 14px; padding: 12px; background: var(--ink-3); }
+    .label-col { color: var(--text); font-weight: 700; }
+  </style>
+  `;
+%>
+<%- include('../partials/header') %>
+<%- include('../partials/flash') %>
+
+<main class="flex-1 container mx-auto partner-app px-4 py-8 space-y-5 app-shell">
+  <%- include('../partials/petshop-panel-nav', { activeTab: 'horarios' }) %>
+
+  <section class="partner-card">
+    <h1 class="text-xl font-bold text-[color:var(--text)]">Configuração semanal</h1>
+    <p class="text-sm text-[color:var(--text-dim)] mt-1">
+      Defina apenas os períodos em que você atende. Dias desmarcados ficam bloqueados.
+    </p>
+  </section>
+
+  <form action="/petshop-panel/agenda/config" method="POST" class="space-y-3">
+    <% dias.forEach(function(dia) { %>
+      <% const regra = (regrasMap && regrasMap[String(dia.id)]) || null; %>
+      <% const ativo = regra ? regra.ativo !== false : false; %>
+      <div class="row-dia">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <label class="inline-flex items-center gap-2 label-col">
+            <input type="checkbox" name="dia_<%= dia.id %>_ativo" value="1" <%= ativo ? 'checked' : '' %>>
+            <span><%= dia.label %></span>
+          </label>
+          <span class="text-xs text-[color:var(--text-dim)]">Dia <%= dia.id %></span>
+        </div>
+
+        <div class="grid md:grid-cols-4 gap-3 mt-3">
+          <label class="text-xs text-[color:var(--text-dim)]">
+            Abre
+            <input class="input w-full mt-1" type="time" name="dia_<%= dia.id %>_abre" value="<%= valorHora(regra, 'abre', '08:00') %>">
+          </label>
+          <label class="text-xs text-[color:var(--text-dim)]">
+            Fecha
+            <input class="input w-full mt-1" type="time" name="dia_<%= dia.id %>_fecha" value="<%= valorHora(regra, 'fecha', '18:00') %>">
+          </label>
+          <label class="text-xs text-[color:var(--text-dim)]">
+            Intervalo início (opcional)
+            <input class="input w-full mt-1" type="time" name="dia_<%= dia.id %>_intervalo_inicio" value="<%= valorHora(regra, 'intervalo_inicio', '') %>">
+          </label>
+          <label class="text-xs text-[color:var(--text-dim)]">
+            Intervalo fim (opcional)
+            <input class="input w-full mt-1" type="time" name="dia_<%= dia.id %>_intervalo_fim" value="<%= valorHora(regra, 'intervalo_fim', '') %>">
+          </label>
+        </div>
+      </div>
+    <% }) %>
+
+    <div class="pt-1">
+      <button class="btn-primary-inline">Salvar horários</button>
+    </div>
+  </form>
+</main>
+
+<%- include('../partials/footer') %>

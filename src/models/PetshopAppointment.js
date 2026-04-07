@@ -27,6 +27,42 @@ const PetshopAppointment = {
     return result.rows;
   },
 
+  async listarPorPetshopNoDia(petshopId, inicioDia, fimDia) {
+    const result = await query(
+      `SELECT a.*, u.nome AS usuario_nome, p.nome AS pet_nome, s.nome AS servico_nome
+       FROM petshop_appointments a
+       JOIN usuarios u ON u.id = a.usuario_id
+       JOIN pets p ON p.id = a.pet_id
+       LEFT JOIN petshop_services s ON s.id = a.service_id
+       WHERE a.petshop_id = $1
+         AND a.data_agendada >= $2
+         AND a.data_agendada < $3
+       ORDER BY a.data_agendada ASC`,
+      [petshopId, inicioDia, fimDia]
+    );
+    return result.rows;
+  },
+
+  async contarPorDiaNoIntervalo(
+    petshopId,
+    inicio,
+    fim,
+    statuses = ['pendente', 'aceito', 'concluido']
+  ) {
+    const result = await query(
+      `SELECT TO_CHAR(DATE(a.data_agendada), 'YYYY-MM-DD') AS dia,
+              COUNT(*)::int AS total
+       FROM petshop_appointments a
+       WHERE a.petshop_id = $1
+         AND a.data_agendada >= $2
+         AND a.data_agendada < $3
+         AND a.status = ANY($4::text[])
+       GROUP BY DATE(a.data_agendada)`,
+      [petshopId, inicio, fim, statuses]
+    );
+    return result.rows;
+  },
+
   async atualizarStatus(id, status, motivo_recusa = null) {
     const result = await query(
       `UPDATE petshop_appointments

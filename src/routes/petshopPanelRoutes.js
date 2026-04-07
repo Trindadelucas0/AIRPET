@@ -14,6 +14,7 @@ const {
   validarPetshopServico,
   validarPetshopAgendaCriar,
   validarPetshopAgendaStatus,
+  validarPetshopAgendaConfig,
   validarPetshopPost,
   validarAgendaSemBody,
   validarResultado,
@@ -26,6 +27,8 @@ router.get('/auth/logout', petshopPanelController.logout);
 router.use(petshopAuthMiddleware, petshopOwnerMiddleware);
 
 router.get('/dashboard', petshopPanelController.dashboard);
+router.get('/agenda', petshopPanelController.mostrarAgenda);
+router.get('/agenda/config', petshopPanelController.mostrarConfiguracaoAgenda);
 router.get('/vinculos/solicitacoes', petshopPanelController.listarSolicitacoesVinculo);
 router.post('/perfil', ...validarPetshopPerfil, validarResultado, petshopPanelController.salvarPerfil);
 router.post('/vinculos/solicitacoes/:id/aprovar', ...validarAgendaSemBody, validarResultado, petshopPanelController.aprovarSolicitacaoVinculo);
@@ -33,6 +36,7 @@ router.post('/vinculos/solicitacoes/:id/recusar', ...validarAgendaSemBody, valid
 router.post('/servicos', petshopApprovalMiddleware, ...validarPetshopServico, validarResultado, petshopPanelController.criarServico);
 router.post('/agenda', petshopApprovalMiddleware, ...validarPetshopAgendaCriar, validarResultado, petshopPanelController.criarAgendamento);
 router.post('/agenda/:id/status', petshopApprovalMiddleware, ...validarPetshopAgendaStatus, validarResultado, petshopPanelController.atualizarAgendamento);
+router.post('/agenda/config', ...validarPetshopAgendaConfig, validarResultado, petshopPanelController.salvarConfiguracaoAgenda);
 router.post(
   '/posts',
   petshopApprovalMiddleware,
