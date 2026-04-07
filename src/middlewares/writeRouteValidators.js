@@ -138,11 +138,18 @@ const validarSaudeRegistro = [
 ];
 
 const validarAgendaCriar = [
-  camposPermitidos(['petshop_id', 'pet_id', 'servico', 'data', '_method']),
+  camposPermitidos(['petshop_id', 'pet_id', 'service_id', 'data', 'data_agendada', 'observacoes', '_method']),
   body('petshop_id').notEmpty().withMessage('Petshop e obrigatorio.'),
-  body('servico').trim().notEmpty().withMessage('Servico e obrigatorio.').isLength({ max: 200 }),
-  body('data').trim().notEmpty().withMessage('Data e obrigatoria.').isLength({ max: 64 }),
+  body('service_id').notEmpty().withMessage('Servico e obrigatorio.'),
+  body('data').optional({ checkFalsy: true }).trim().isLength({ max: 64 }),
+  body('data_agendada').optional({ checkFalsy: true }).trim().isLength({ max: 64 }),
   body('pet_id').optional({ checkFalsy: true }).trim().isLength({ max: 20 }),
+  body('observacoes').optional({ checkFalsy: true }).trim().isLength({ max: 2000 }),
+  body().custom((_, { req }) => {
+    const valor = String(req.body?.data_agendada || req.body?.data || '').trim();
+    if (!valor) throw new Error('Data e obrigatoria.');
+    return true;
+  }),
 ];
 
 const validarAgendaSemBody = [camposPermitidos(['_method'])];
@@ -234,7 +241,9 @@ const validarPetshopLogin = [
 const validarPetshopPerfil = [
   camposPermitidos([
     'slogan', 'descricao_curta', 'descricao_longa', 'instagram_url', 'facebook_url', 'website_url',
-    'whatsapp_publico', 'contato_link', 'aceita_agendamento', '_method',
+    'whatsapp_publico', 'contato_link', 'aceita_agendamento',
+    'petshop_nome', 'petshop_telefone', 'petshop_endereco', 'petshop_descricao',
+    '_method',
   ]),
   body('slogan').optional({ checkFalsy: true }).trim().isLength({ max: 200 }),
   body('descricao_curta').optional({ checkFalsy: true }).trim().isLength({ max: 2000 }),
@@ -243,6 +252,10 @@ const validarPetshopPerfil = [
   body('facebook_url').optional({ checkFalsy: true }).trim().isLength({ max: 300 }),
   body('website_url').optional({ checkFalsy: true }).trim().isLength({ max: 300 }),
   body('whatsapp_publico').optional({ checkFalsy: true }).trim().isLength({ max: 30 }),
+  body('petshop_nome').optional({ checkFalsy: true }).trim().isLength({ max: 200 }),
+  body('petshop_telefone').optional({ checkFalsy: true }).trim().isLength({ max: 30 }),
+  body('petshop_endereco').optional({ checkFalsy: true }).trim().isLength({ max: 300 }),
+  body('petshop_descricao').optional({ checkFalsy: true }).trim().isLength({ max: 8000 }),
   body('contato_link').optional({ checkFalsy: true }).trim().isLength({ max: 500 }),
   body('aceita_agendamento').optional(),
 ];
@@ -281,6 +294,14 @@ const validarPetshopAgendaConfig = [
     'dia_6_ativo', 'dia_6_abre', 'dia_6_fecha', 'dia_6_intervalo_inicio', 'dia_6_intervalo_fim',
     '_method',
   ]),
+];
+
+const validarPetshopAgendaBloqueio = [
+  camposPermitidos(['service_id', 'inicio', 'fim', 'motivo', '_method']),
+  body('service_id').optional({ checkFalsy: true }),
+  body('inicio').trim().notEmpty().withMessage('Início e obrigatório.').isLength({ max: 64 }),
+  body('fim').trim().notEmpty().withMessage('Fim e obrigatório.').isLength({ max: 64 }),
+  body('motivo').optional({ checkFalsy: true }).trim().isLength({ max: 255 }),
 ];
 
 const validarPetshopPost = [
@@ -525,6 +546,7 @@ module.exports = {
   validarPetshopAgendaCriar,
   validarPetshopAgendaStatus,
   validarPetshopAgendaConfig,
+  validarPetshopAgendaBloqueio,
   validarPetshopPost,
   validarExplorarPostV1,
   validarExplorarPostV2,

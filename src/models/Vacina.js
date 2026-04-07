@@ -63,6 +63,18 @@ const Vacina = {
     return resultado.rows;
   },
 
+  async buscarPorPets(petIds = []) {
+    if (!Array.isArray(petIds) || !petIds.length) return [];
+    const resultado = await query(
+      `SELECT *
+       FROM vacinas
+       WHERE pet_id = ANY($1::int[])
+       ORDER BY data_aplicacao DESC`,
+      [petIds]
+    );
+    return resultado.rows;
+  },
+
   async buscarPorIdComUsuarioDono(id) {
     const resultado = await query(
       `SELECT v.*, p.usuario_id FROM vacinas v JOIN pets p ON p.id = v.pet_id WHERE v.id = $1`,

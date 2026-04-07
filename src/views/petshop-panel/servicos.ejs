@@ -1,0 +1,61 @@
+<% locals.titulo = 'Serviços do Petshop' %>
+<%
+  locals.extraHead = `
+  <link rel="stylesheet" href="/css/partner-ui.css">
+  <style>
+    .partner-app { max-width: 1080px; }
+    .partner-card { background: var(--ink-2); border:1px solid var(--border); border-radius: 18px; padding: 16px; }
+    .service-item { border: 1px solid var(--border); border-radius: 14px; padding: 12px; background: var(--ink-3); }
+  </style>
+  `;
+%>
+<%- include('../partials/header') %>
+<%- include('../partials/flash') %>
+
+<main class="flex-1 container mx-auto partner-app px-4 py-8 space-y-5 app-shell">
+  <%- include('../partials/petshop-panel-nav', { activeTab: 'servicos' }) %>
+
+  <section class="partner-card">
+    <h1 class="text-xl font-bold text-[color:var(--text)]">Serviços e capacidade</h1>
+    <p class="text-sm text-[color:var(--text-dim)] mt-1">Cadastre seus serviços com duração e preço para liberar agendamentos consistentes.</p>
+  </section>
+
+  <section class="partner-card">
+    <h2 class="font-bold mb-3">Novo serviço</h2>
+    <form action="/petshop-panel/servicos" method="POST" class="grid md:grid-cols-2 gap-3">
+      <input class="input w-full" name="nome" placeholder="Nome do serviço" required>
+      <input class="input w-full" type="number" name="duracao_minutos" placeholder="Duração (min)" required>
+      <input class="input w-full" type="number" step="0.01" name="preco_base" placeholder="Preço base">
+      <textarea class="input w-full md:col-span-2 min-h-20" name="descricao" placeholder="Descrição"></textarea>
+      <div class="md:col-span-2">
+        <button class="btn-primary-inline">Salvar serviço</button>
+      </div>
+    </form>
+  </section>
+
+  <section class="partner-card">
+    <div class="flex items-center justify-between mb-3">
+      <h2 class="font-bold">Serviços cadastrados</h2>
+      <span class="text-xs text-[color:var(--text-dim)]"><%= (services || []).length %> serviço(s)</span>
+    </div>
+    <% if (!(services || []).length) { %>
+      <p class="text-sm text-[color:var(--text-dim)]">Ainda não há serviços ativos.</p>
+    <% } else { %>
+      <div class="space-y-3">
+        <% (services || []).forEach(function(s) { %>
+          <article class="service-item">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <p class="font-semibold"><%= s.nome %></p>
+              <p class="text-xs text-[color:var(--text-dim)]"><%= s.duracao_minutos || 30 %> min • <%= s.preco_base != null ? ('R$ ' + Number(s.preco_base).toFixed(2).replace('.', ',')) : 'Sem preço' %></p>
+            </div>
+            <% if (s.descricao) { %>
+              <p class="text-sm text-[color:var(--text-dim)] mt-1"><%= s.descricao %></p>
+            <% } %>
+          </article>
+        <% }) %>
+      </div>
+    <% } %>
+  </section>
+</main>
+
+<%- include('../partials/footer') %>

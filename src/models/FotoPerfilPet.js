@@ -39,6 +39,18 @@ const FotoPerfilPet = {
     return resultado.rows;
   },
 
+  async listarPorPets(petIds = []) {
+    if (!Array.isArray(petIds) || !petIds.length) return [];
+    const resultado = await query(
+      `SELECT *
+       FROM fotos_perfil_pet
+       WHERE pet_id = ANY($1::int[])
+       ORDER BY ordem ASC, criado_em DESC`,
+      [petIds]
+    );
+    return resultado.rows;
+  },
+
   async buscarPorId(id) {
     const resultado = await query(
       `SELECT * FROM fotos_perfil_pet WHERE id = $1`,

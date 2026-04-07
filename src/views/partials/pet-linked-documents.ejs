@@ -1,0 +1,12 @@
+<% const docs = Array.isArray(documentos) ? documentos : []; %>
+<div class="grid sm:grid-cols-2 md:grid-cols-3 gap-2">
+  <% if (!docs.length) { %>
+    <p class="text-xs text-[color:var(--text-dim)]">Sem anexos/fotos cadastrados.</p>
+  <% } else { %>
+    <% docs.forEach(function(doc) { %>
+      <a href="<%= doc.foto %>" target="_blank" rel="noopener" class="block rounded-xl overflow-hidden border border-[color:var(--border)] bg-[color:var(--ink-3)]">
+        <img src="<%= doc.foto %>" alt="Documento do pet" class="w-full h-24 object-cover">
+      </a>
+    <% }) %>
+  <% } %>
+</div>

@@ -74,6 +74,50 @@
       <button class="btn-primary-inline">Salvar horários</button>
     </div>
   </form>
+
+  <section class="partner-card mt-6">
+    <h2 class="font-bold mb-2">Bloquear horários específicos</h2>
+    <p class="text-xs text-[color:var(--text-dim)] mb-3">Use para feriados, pausas extras ou horários indisponíveis por serviço.</p>
+    <form action="/petshop-panel/agenda/config/bloqueios" method="POST" class="grid md:grid-cols-4 gap-3">
+      <select class="input w-full" name="service_id">
+        <option value="">Todos os serviços</option>
+        <% (services || []).forEach(function(s) { %>
+          <option value="<%= s.id %>"><%= s.nome %></option>
+        <% }) %>
+      </select>
+      <input class="input w-full" type="datetime-local" name="inicio" required>
+      <input class="input w-full" type="datetime-local" name="fim" required>
+      <input class="input w-full" name="motivo" placeholder="Motivo (opcional)">
+      <div class="md:col-span-4">
+        <button class="btn-primary-inline">Adicionar bloqueio</button>
+      </div>
+    </form>
+  </section>
+
+  <section class="partner-card mt-4">
+    <div class="flex items-center justify-between mb-3">
+      <h2 class="font-bold">Próximos bloqueios</h2>
+      <span class="text-xs text-[color:var(--text-dim)]"><%= (bloqueios || []).length %> ativo(s)</span>
+    </div>
+    <% if (!(bloqueios || []).length) { %>
+      <p class="text-sm text-[color:var(--text-dim)]">Sem bloqueios cadastrados.</p>
+    <% } else { %>
+      <div class="space-y-2">
+        <% (bloqueios || []).forEach(function(b) { %>
+          <article class="row-dia flex flex-wrap items-center justify-between gap-3">
+            <div class="text-xs">
+              <p><strong><%= b.servico_nome || 'Todos os serviços' %></strong></p>
+              <p><%= new Date(b.inicio).toLocaleString('pt-BR') %> até <%= new Date(b.fim).toLocaleString('pt-BR') %></p>
+              <p class="text-[color:var(--text-dim)]"><%= b.motivo || 'Sem motivo' %></p>
+            </div>
+            <form method="POST" action="/petshop-panel/agenda/config/bloqueios/<%= b.id %>/remover">
+              <button class="px-3 py-2 rounded-lg border border-red-200 bg-red-50 text-red-600 text-xs font-semibold">Remover</button>
+            </form>
+          </article>
+        <% }) %>
+      </div>
+    <% } %>
+  </section>
 </main>
 
 <%- include('../partials/footer') %>

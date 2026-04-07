@@ -62,6 +62,18 @@ const RegistroSaude = {
     return resultado.rows;
   },
 
+  async buscarPorPets(petIds = []) {
+    if (!Array.isArray(petIds) || !petIds.length) return [];
+    const resultado = await query(
+      `SELECT *
+       FROM registros_saude
+       WHERE pet_id = ANY($1::int[])
+       ORDER BY data_registro DESC`,
+      [petIds]
+    );
+    return resultado.rows;
+  },
+
   async buscarPorIdComUsuarioDono(id) {
     const resultado = await query(
       `SELECT r.*, p.usuario_id FROM registros_saude r JOIN pets p ON p.id = r.pet_id WHERE r.id = $1`,

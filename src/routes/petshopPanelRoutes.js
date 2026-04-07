@@ -15,6 +15,7 @@ const {
   validarPetshopAgendaCriar,
   validarPetshopAgendaStatus,
   validarPetshopAgendaConfig,
+  validarPetshopAgendaBloqueio,
   validarPetshopPost,
   validarAgendaSemBody,
   validarResultado,
@@ -29,6 +30,8 @@ router.use(petshopAuthMiddleware, petshopOwnerMiddleware);
 router.get('/dashboard', petshopPanelController.dashboard);
 router.get('/agenda', petshopPanelController.mostrarAgenda);
 router.get('/agenda/config', petshopPanelController.mostrarConfiguracaoAgenda);
+router.get('/servicos', petshopPanelController.mostrarServicos);
+router.get('/perfil', petshopPanelController.mostrarPerfilPublico);
 router.get('/vinculos/solicitacoes', petshopPanelController.listarSolicitacoesVinculo);
 router.post('/perfil', ...validarPetshopPerfil, validarResultado, petshopPanelController.salvarPerfil);
 router.post('/vinculos/solicitacoes/:id/aprovar', ...validarAgendaSemBody, validarResultado, petshopPanelController.aprovarSolicitacaoVinculo);
@@ -37,6 +40,8 @@ router.post('/servicos', petshopApprovalMiddleware, ...validarPetshopServico, va
 router.post('/agenda', petshopApprovalMiddleware, ...validarPetshopAgendaCriar, validarResultado, petshopPanelController.criarAgendamento);
 router.post('/agenda/:id/status', petshopApprovalMiddleware, ...validarPetshopAgendaStatus, validarResultado, petshopPanelController.atualizarAgendamento);
 router.post('/agenda/config', ...validarPetshopAgendaConfig, validarResultado, petshopPanelController.salvarConfiguracaoAgenda);
+router.post('/agenda/config/bloqueios', ...validarPetshopAgendaBloqueio, validarResultado, petshopPanelController.criarBloqueioAgenda);
+router.post('/agenda/config/bloqueios/:id/remover', ...validarAgendaSemBody, validarResultado, petshopPanelController.removerBloqueioAgenda);
 router.post(
   '/posts',
   petshopApprovalMiddleware,

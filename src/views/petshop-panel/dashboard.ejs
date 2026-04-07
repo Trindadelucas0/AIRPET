@@ -4,52 +4,14 @@
   <link rel="stylesheet" href="/css/partner-ui.css">
   <style>
     .partner-app { max-width: 1200px; }
-    .partner-top {
-      background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 18%, transparent), transparent 45%), var(--ink-2);
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      padding: 18px 20px;
-    }
-    .partner-top h1 { color: var(--text); font-size: 1.65rem; font-weight: 900; letter-spacing: -.02em; }
-    .partner-top p { color: var(--text-dim); }
+    .partner-card { background: var(--ink-2); border:1px solid var(--border); border-radius: 18px; padding: 16px; }
     .partner-kpis { display:grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 12px; }
-    .partner-kpi {
-      background: var(--ink-2); border:1px solid var(--border); border-radius: 16px; padding: 14px;
-      transition: transform .2s ease, border-color .2s ease;
-    }
-    .partner-kpi:hover { transform: translateY(-2px); border-color: var(--border-hover); }
-    .partner-kpi .label { color: var(--text-dim); font-size: 12px; text-transform: uppercase; letter-spacing: .08em; font-weight:700; }
-    .partner-kpi .value { color: var(--text); font-size: 1.6rem; font-weight: 900; margin-top: 4px; }
-    .partner-card {
-      background: var(--ink-2); border:1px solid var(--border); border-radius: 18px; padding: 16px;
-    }
-    .partner-card h2 { color: var(--text); font-weight: 800; }
-    .partner-card .hint { color: var(--text-dim); font-size: 12px; }
-    .partner-card .input { border-radius: 12px; }
-    .partner-card .btn-primary-inline { border-radius: 12px; }
-    .partner-status { border-radius: 16px; padding: 14px; background: var(--ink-2); border:1px solid var(--border); }
-    .partner-status p, .partner-status .text-gray-600, .partner-status .text-gray-500 { color: var(--text-dim) !important; }
+    .partner-kpi { background: var(--ink-3); border:1px solid var(--border); border-radius: 14px; padding: 12px; }
+    .partner-kpi .label { color: var(--text-dim); font-size: 11px; text-transform: uppercase; letter-spacing: .08em; font-weight:700; }
+    .partner-kpi .value { color: var(--text); font-size: 1.4rem; font-weight: 900; margin-top: 4px; }
     .partner-list-item { border: 1px solid var(--border); border-radius: 14px; padding: 12px; background: var(--ink-3); }
-    .partner-quick-nav { display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
-    .partner-quick-nav a {
-      border:1px solid var(--border);
-      background: var(--ink-2);
-      color: var(--text-dim);
-      border-radius: 999px;
-      padding: 7px 12px;
-      font-size: 12px;
-      font-weight: 700;
-      text-decoration: none;
-    }
-    .partner-quick-nav a:hover { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 28%, var(--border)); }
-    @media (max-width: 980px) {
-      .partner-kpis { grid-template-columns: repeat(2, minmax(0,1fr)); }
-    }
-    @media (max-width: 640px) {
-      .partner-kpis { grid-template-columns: 1fr; }
-      .partner-top { padding: 14px; }
-      .partner-top h1 { font-size: 1.35rem; }
-    }
+    @media (max-width: 980px) { .partner-kpis { grid-template-columns: repeat(2, minmax(0,1fr)); } }
+    @media (max-width: 640px) { .partner-kpis { grid-template-columns: 1fr; } }
   </style>
   `;
 %>
@@ -59,90 +21,50 @@
 <main class="flex-1 container mx-auto partner-app px-4 py-8 space-y-6 app-shell">
   <%- include('../partials/petshop-panel-nav', { activeTab: 'dashboard' }) %>
   <% const statusAtual = (solicitacao && solicitacao.status) || (accountStatus === 'ativo' ? 'aprovado' : 'pendente'); %>
-  <% const statusClasses = statusAtual === 'aprovado'
-    ? 'bg-emerald-100 text-emerald-700'
-    : statusAtual === 'rejeitado'
-      ? 'bg-red-100 text-red-700'
-      : statusAtual === 'em_analise'
-        ? 'bg-amber-100 text-amber-700'
-        : 'bg-blue-100 text-blue-700'; %>
   <% const postsComFoto = (posts || []).filter(function(p) { return p && p.foto_url && String(p.foto_url).trim(); }); %>
-  <% const ultimasFotos = postsComFoto.slice(0, 10); %>
-  <div class="partner-top flex items-center justify-between flex-wrap gap-3">
-    <div>
-      <h1>Dashboard do Parceiro</h1>
-      <p class="text-sm mt-1">Layout social premium para gerenciar perfil, vitrine e agenda.</p>
-    </div>
-    <div class="flex items-center gap-3">
-      <% if (typeof usuario !== 'undefined' && usuario) { %>
-      <a href="/feed" class="text-sm font-medium text-primary-600 hover:text-primary-700">
-        <i class="fa-solid fa-paw mr-1"></i> Área do usuário
-      </a>
-      <% } %>
-      <a href="/petshop-panel/auth/logout" class="text-sm text-gray-500 hover:text-gray-800">Sair</a>
-    </div>
-  </div>
-  <div class="partner-quick-nav">
-    <a href="#status-parceria">Status</a>
-    <a href="#vinculos-pendentes">Vinculos</a>
-    <a href="#perfil-publico">Perfil</a>
-    <a href="#novo-servico">Servicos</a>
-    <a href="#nova-postagem">Marketing</a>
-    <a href="#agendamentos">Agenda</a>
-  </div>
+  <% const promocoes = (products || []).filter(function(p) { return p && p.is_promocao; }); %>
 
-  <section id="status-parceria" class="partner-status space-y-3">
-    <div class="flex items-center justify-between">
-      <h2 class="font-bold text-gray-900">Status da parceria</h2>
-      <span class="px-3 py-1 rounded-full text-xs font-semibold uppercase <%= statusClasses %>"><%= statusAtual.replace('_', ' ') %></span>
-    </div>
-    <p class="text-sm text-gray-600">
-      <% if (statusAtual === 'aprovado') { %>
-        Seu perfil está aprovado e os recursos públicos estão liberados.
-      <% } else if (statusAtual === 'rejeitado') { %>
-        Sua solicitação foi rejeitada. Ajuste os dados e envie nova solicitação.
-      <% } else if (statusAtual === 'em_analise') { %>
-        Seu cadastro está em análise pelo time AIRPET.
-      <% } else { %>
-        Cadastro recebido. Você já pode organizar o perfil no painel restrito.
-      <% } %>
-    </p>
-    <% if (solicitacao && solicitacao.motivo_rejeicao) { %>
-      <div class="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-        Motivo informado pela moderação: <strong><%= solicitacao.motivo_rejeicao %></strong>
+  <section class="partner-card">
+    <div class="flex items-start justify-between gap-3">
+      <div>
+        <h1 class="text-2xl font-black text-[color:var(--text)]">Painel profissional do parceiro</h1>
+        <p class="text-sm text-[color:var(--text-dim)] mt-1">Controle agenda, serviços, perfil público e pets vinculados em um só lugar.</p>
       </div>
-    <% } %>
-    <% if (statusAtual !== 'aprovado') { %>
-      <p class="text-xs text-gray-500">Recursos públicos bloqueados até aprovação: posts públicos, promoções e agenda aberta.</p>
-    <% } %>
+      <a href="/petshop-panel/auth/logout" class="text-xs text-[color:var(--text-dim)] hover:text-[color:var(--text)]">Sair</a>
+    </div>
+    <div class="mt-3 text-xs">
+      <span class="px-2 py-1 rounded-full bg-[color:var(--secondary)] text-[color:var(--text-dim)]">Status da parceria: <strong><%= statusAtual %></strong></span>
+    </div>
   </section>
 
   <section class="partner-kpis">
     <div class="partner-kpi"><p class="label">Serviços</p><p class="value"><%= (services || []).length %></p></div>
-    <div class="partner-kpi"><p class="label">Produtos</p><p class="value"><%= (products || []).length %><span class="text-base font-semibold">/15</span></p></div>
-    <div class="partner-kpi"><p class="label">Fotos do feed</p><p class="value"><%= postsComFoto.length %><span class="text-base font-semibold">/10</span></p></div>
     <div class="partner-kpi"><p class="label">Agendamentos</p><p class="value"><%= (appointments || []).length %></p></div>
+    <div class="partner-kpi"><p class="label">Pets vinculados</p><p class="value"><%= (petsVinculadosDetalhados || []).length %></p></div>
+    <div class="partner-kpi"><p class="label">Fotos e promoções</p><p class="value"><%= postsComFoto.length %>/<%= promocoes.length %></p></div>
   </section>
 
-  <section id="vinculos-pendentes" class="partner-card">
+  <section class="grid lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] gap-6">
+    <%- include('../partials/petshop-calendar-card') %>
+    <%- include('../partials/petshop-public-profile-preview', { petshop: petshop || {}, profile: profile || {}, postsComFoto: postsComFoto, promocoes: promocoes, followerCount: followerCount || 0 }) %>
+  </section>
+
+  <section class="partner-card">
     <div class="flex items-center justify-between mb-3">
-      <h2 class="font-bold">Solicitações de vínculo de pets</h2>
-      <span class="text-xs text-gray-500"><%= (solicitacoesVinculo || []).length %> pendentes</span>
+      <h2 class="font-bold">Solicitações de vínculo pendentes</h2>
+      <span class="text-xs text-[color:var(--text-dim)]"><%= (solicitacoesVinculo || []).length %> pendentes</span>
     </div>
     <% if (!(solicitacoesVinculo || []).length) { %>
-      <p class="text-sm text-gray-500">Nenhuma solicitação pendente no momento.</p>
+      <p class="text-sm text-[color:var(--text-dim)]">Nenhuma solicitação pendente no momento.</p>
     <% } else { %>
       <div class="space-y-3">
         <% (solicitacoesVinculo || []).forEach(function(s) { %>
-          <div class="partner-list-item flex flex-col md:flex-row md:items-center gap-3 md:justify-between">
+          <article class="partner-list-item flex flex-col md:flex-row md:items-center md:justify-between gap-3">
             <div>
-              <p class="font-semibold text-gray-900"><%= s.pet_nome %> <span class="text-gray-400">· tutor <%= s.tutor_nome %></span></p>
-              <% if (s.mensagem) { %>
-                <p class="text-sm text-gray-500 mt-1"><%= s.mensagem %></p>
-              <% } %>
-              <p class="text-xs text-gray-400 mt-1">Recebida em <%= new Date(s.created_at).toLocaleString('pt-BR') %></p>
+              <p class="font-semibold"><%= s.pet_nome %> • Tutor: <%= s.tutor_nome %></p>
+              <p class="text-xs text-[color:var(--text-dim)] mt-1"><%= s.mensagem || 'Sem mensagem.' %></p>
             </div>
-            <div class="flex items-center gap-2">
+            <div class="flex gap-2">
               <form action="/petshop-panel/vinculos/solicitacoes/<%= s.id %>/recusar" method="POST">
                 <button class="px-3 py-2 rounded-lg border border-red-200 bg-red-50 text-red-600 text-xs font-semibold">Recusar</button>
               </form>
@@ -150,118 +72,40 @@
                 <button class="btn-primary-inline text-xs !px-3 !py-2">Aprovar vínculo</button>
               </form>
             </div>
-          </div>
+          </article>
         <% }) %>
       </div>
     <% } %>
   </section>
 
-  <section class="grid lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1.2fr)] gap-6">
-    <%- include('../partials/petshop-calendar-card') %>
-
-    <div id="perfil-publico" class="partner-card">
-      <h2 class="font-bold mb-3">Atualizar perfil público</h2>
-      <p class="hint mb-3">Deixe seu perfil com cara de feed: slogan curto, bio e WhatsApp para fechar promoções.</p>
-      <form action="/petshop-panel/perfil" method="POST" class="space-y-3">
-        <input class="input w-full" name="slogan" placeholder="Slogan" value="<%= profile?.slogan || '' %>">
-        <input class="input w-full" name="descricao_curta" placeholder="Descrição curta" value="<%= profile?.descricao_curta || '' %>">
-        <textarea class="input w-full min-h-20" name="descricao_longa" placeholder="Descrição completa"><%= profile?.descricao_longa || '' %></textarea>
-        <input class="input w-full" name="whatsapp_publico" placeholder="WhatsApp público (ex: 11999999999)" value="<%= profile?.whatsapp_publico || '' %>">
-        <input class="input w-full" name="instagram_url" placeholder="Instagram URL" value="<%= profile?.instagram_url || '' %>">
-        <input class="input w-full" name="facebook_url" placeholder="Facebook URL" value="<%= profile?.facebook_url || '' %>">
-        <input class="input w-full" name="website_url" placeholder="Website URL" value="<%= profile?.website_url || '' %>">
-        <p class="hint">O botão de compra das promoções usa este WhatsApp.</p>
-        <button class="btn-primary-inline">Salvar perfil</button>
-      </form>
-    </div>
-
-  </section>
+  <%- include('../partials/petshop-linked-pets-card', { petsVinculadosDetalhados: petsVinculadosDetalhados || [] }) %>
 
   <section class="partner-card">
-    <div class="flex items-center justify-between gap-2 mb-3">
-      <h2 class="font-bold">Últimas fotos do feed</h2>
-      <span class="text-xs text-gray-500"><%= postsComFoto.length %>/10</span>
-    </div>
-    <p class="hint mb-3">Ao publicar a 11ª foto, a mais antiga sai automaticamente.</p>
-    <% if (!ultimasFotos.length) { %>
-      <p class="text-sm text-gray-500">Ainda não há fotos publicadas no feed do parceiro.</p>
-    <% } else { %>
-      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
-        <% ultimasFotos.forEach(function(postFoto) { %>
-          <div class="rounded-xl overflow-hidden border border-gray-200 bg-gray-100">
-            <img src="<%= postFoto.foto_url %>" alt="<%= postFoto.titulo || 'Foto do feed' %>" class="w-full h-24 object-cover">
-          </div>
-        <% }) %>
-      </div>
-    <% } %>
-  </section>
-
-  <section class="grid lg:grid-cols-2 gap-6">
-    <div id="nova-postagem" class="partner-card">
-      <h2 class="font-bold mb-3">Post do dia</h2>
-      <p class="hint mb-3">Mostre rotina, bastidores e pets atendidos. Este post entra no seu grid social.</p>
-      <form action="/petshop-panel/posts" method="POST" enctype="multipart/form-data" class="space-y-3">
-        <input type="hidden" name="post_type" value="normal">
-        <input class="input w-full" name="titulo" placeholder="Título (ex: Banho do Thor)">
-        <textarea class="input w-full min-h-20" name="texto" placeholder="Legenda opcional"></textarea>
-        <input class="input w-full" type="file" name="foto" accept="image/*" required>
-        <button class="btn-primary-inline">Publicar</button>
-      </form>
-    </div>
-
-    <div class="partner-card">
-      <h2 class="font-bold mb-3">Promoção rápida</h2>
-      <p class="hint mb-3">Oferta simples: preço + botão direto para WhatsApp do perfil.</p>
-      <form action="/petshop-panel/posts" method="POST" enctype="multipart/form-data" class="space-y-3">
-        <input type="hidden" name="post_type" value="promocao">
-        <input class="input w-full" name="titulo" placeholder="Título da promoção" required>
-        <input class="input w-full" type="number" step="0.01" name="preco" placeholder="Preço" required>
-        <textarea class="input w-full min-h-20" name="texto" placeholder="Descrição curta (opcional)"></textarea>
-        <input class="input w-full" type="file" name="foto" accept="image/*">
-        <button class="btn-primary-inline">Publicar promoção</button>
-      </form>
-    </div>
-  </section>
-
-  <section class="grid lg:grid-cols-1 gap-6">
-    <div id="novo-servico" class="partner-card">
-      <h2 class="font-bold mb-3">Novo serviço</h2>
-      <form action="/petshop-panel/servicos" method="POST" class="space-y-3">
-        <input class="input w-full" name="nome" placeholder="Nome do serviço" required>
-        <input class="input w-full" type="number" name="duracao_minutos" placeholder="Duração (min)" required>
-        <input class="input w-full" type="number" step="0.01" name="preco_base" placeholder="Preço base">
-        <textarea class="input w-full min-h-20" name="descricao" placeholder="Descrição"></textarea>
-        <button class="btn-primary-inline">Salvar serviço</button>
-      </form>
-    </div>
-  </section>
-
-  <section id="agendamentos" class="partner-card">
-    <div class="flex items-center justify-between gap-3 mb-3">
+    <div class="flex items-center justify-between mb-3">
       <h2 class="font-bold">Agendamentos recebidos</h2>
-      <a href="/petshop-panel/agenda" class="btn-ghost border border-[color:var(--border)] rounded-xl px-3 py-2 text-xs">Ver agenda completa</a>
+      <a href="/petshop-panel/agenda" class="btn-ghost border border-[color:var(--border)] rounded-xl px-3 py-2 text-xs">Abrir agenda completa</a>
     </div>
     <% if (!(appointmentsPreview || []).length) { %>
-      <p class="text-sm text-gray-500">Nenhum agendamento recebido ainda.</p>
+      <p class="text-sm text-[color:var(--text-dim)]">Nenhum agendamento recebido ainda.</p>
     <% } else { %>
-    <div class="space-y-3">
-      <% (appointmentsPreview || []).forEach(function(a) { %>
-        <div class="partner-list-item flex flex-col md:flex-row md:items-center gap-3 md:justify-between">
-          <div>
-            <p class="font-semibold"><%= a.pet_nome %> • <%= a.servico_nome || 'Serviço' %></p>
-            <p class="text-sm text-gray-500"><%= a.usuario_nome %> • <%= new Date(a.data_agendada).toLocaleString('pt-BR') %></p>
-          </div>
-          <form action="/petshop-panel/agenda/<%= a.id %>/status" method="POST" class="flex gap-2">
-            <select name="status" class="input">
-              <option value="aceito">Aceitar</option>
-              <option value="recusado">Recusar</option>
-              <option value="concluido">Concluir</option>
-            </select>
-            <button class="btn-primary-inline">Atualizar</button>
-          </form>
-        </div>
-      <% }) %>
-    </div>
+      <div class="space-y-3">
+        <% (appointmentsPreview || []).forEach(function(a) { %>
+          <article class="partner-list-item flex flex-col md:flex-row md:items-center gap-3 md:justify-between">
+            <div>
+              <p class="font-semibold"><%= a.pet_nome %> • <%= a.servico_nome || 'Serviço' %></p>
+              <p class="text-sm text-[color:var(--text-dim)]"><%= a.usuario_nome %> • <%= new Date(a.data_agendada).toLocaleString('pt-BR') %></p>
+            </div>
+            <form action="/petshop-panel/agenda/<%= a.id %>/status" method="POST" class="flex gap-2">
+              <select name="status" class="input">
+                <option value="aceito" <%= a.status === 'aceito' ? 'selected' : '' %>>Confirmar</option>
+                <option value="recusado" <%= a.status === 'recusado' ? 'selected' : '' %>>Recusar</option>
+                <option value="concluido" <%= a.status === 'concluido' ? 'selected' : '' %>>Concluir</option>
+              </select>
+              <button class="btn-primary-inline">Atualizar</button>
+            </form>
+          </article>
+        <% }) %>
+      </div>
     <% } %>
   </section>
 </main>

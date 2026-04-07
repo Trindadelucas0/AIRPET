@@ -50,6 +50,9 @@ todos:
   - id: promocoes-indicacao
     content: "Programa indicação: código único, crédito (R$ ou dias), anti-abuso; regras pendentes ver seção do plano"
     status: pending
+  - id: frontend-premium-humano
+    content: "Diretrizes de frontend para evitar visual/copy genérico: microcopy humana, estados reais, variação de layout, QA visual em telas chave"
+    status: pending
   - id: wizard-pet-foto
     content: "Pós-pedido: foco em foto/layout para impressão (pet_id já fixo no pedido); upload + confirmar snapshot no servidor"
     status: pending
@@ -104,6 +107,16 @@ Objetivo: usuário entender **o que compra**, **por quanto tempo vale**, **o que
 | **Pós-pagamento** | Estado do pedido + próximos passos (personalização, retirada, ativação) — já previsto no fluxo dashboard. |
 
 Design: reaproveitar Tailwind/partials existentes; hierarquia visual forte (preço, duração do plano, “inclui X dias de serviço”).
+
+### Qualidade de frontend (sem “cara de IA”)
+
+- **Copy real de produto:** evitar frases genéricas/repetitivas; usar tom de marca AIRPET, linguagem natural e contextual por tela (venda, checkout, erro, sucesso, expiração).
+- **Estados completos:** toda página deve ter estados de carregando, vazio, erro, sucesso e bloqueio de plano; sem textos placeholder.
+- **Variação visual intencional:** evitar blocos idênticos em sequência; alternar densidade, hierarquia e ritmo entre cards, seções e CTAs para parecer design editorial/produto.
+- **Componentes consistentes:** botão, input, badge e alertas padronizados no design system já existente; consistência passa sensação de produto maduro.
+- **Microinterações úteis:** feedback imediato em validação, upload, aplicação de cupom, troca de plano e seleção de pet/tag (sem animação gratuita).
+- **Conteúdo local e humano:** usar exemplos reais de contexto pet (nome do pet, status de assinatura, data de renovação), removendo qualquer texto “genérico de template”.
+- **Critério de aceite visual:** antes de produção, revisão manual em desktop/mobile das telas críticas (`/loja-tag`, pricing, checkout, dashboard pedido, ativação, scan intermediário) com checklist de copy, contraste, espaçamento e clareza de ação.
 
 ### Regra de negócio: pet cadastrado na solicitação da tag
 

@@ -1,94 +1,148 @@
 <% locals.titulo = 'Agenda' %>
+<%
+  const statusLabel = {
+    pendente: 'Pendente',
+    aceito: 'Confirmado',
+    recusado: 'Recusado',
+    expirado: 'Expirado',
+    cancelado: 'Cancelado',
+    concluido: 'Concluído',
+  };
+%>
 <%- include('../partials/header') %>
 <%- include('../partials/flash') %>
 
-<main class="flex-1 container mx-auto px-4 py-6 max-w-2xl">
+<main class="flex-1 container mx-auto px-4 py-8 max-w-5xl space-y-6">
+  <section class="card">
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+      <h1 class="text-2xl font-black text-gray-900">Minha agenda de serviços</h1>
+      <span class="text-xs text-gray-500">Solicite um horário e aguarde confirmação do petshop.</span>
+    </div>
 
-  <h1 class="text-2xl font-bold text-gray-900 mb-6">
-    <i class="fa-solid fa-calendar-days mr-2 text-[#ec5a1c]"></i>Agenda
-  </h1>
-
-  <!-- Botao agendar -->
-  <% if (typeof petshops !== 'undefined' && petshops && petshops.length > 0) { %>
-    <div class="card mb-6">
-      <h2 class="text-lg font-bold text-gray-800 mb-4">Novo agendamento</h2>
-      <form action="/agenda" method="POST" class="space-y-3">
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Petshop</label>
-          <select name="petshop_id" required class="input-field">
-            <option value="">Selecione...</option>
-            <% petshops.forEach(function(ps) { %>
-              <option value="<%= ps.id %>"><%= ps.nome %></option>
+    <form action="/agenda" method="GET" class="grid md:grid-cols-5 gap-3">
+      <div>
+        <label class="block text-xs font-semibold text-gray-600 mb-1">Petshop</label>
+        <select name="petshop_id" class="input-field" required>
+          <option value="">Selecione...</option>
+          <% (petshops || []).forEach(function(ps) { %>
+            <option value="<%= ps.id %>" <%= Number(petshopSelecionado) === Number(ps.id) ? 'selected' : '' %>><%= ps.nome %></option>
+          <% }) %>
+        </select>
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-gray-600 mb-1">Serviço</label>
+        <select name="service_id" class="input-field" required>
+          <option value="">Selecione...</option>
+          <% (petshops || []).forEach(function(ps) { %>
+            <% (servicosPorPetshop && servicosPorPetshop[ps.id] ? servicosPorPetshop[ps.id] : []).forEach(function(s) { %>
+              <option value="<%= s.id %>" data-petshop="<%= ps.id %>" <%= Number(serviceSelecionado) === Number(s.id) ? 'selected' : '' %>>
+                <%= ps.nome %> • <%= s.nome %>
+              </option>
             <% }) %>
-          </select>
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Servico</label>
-          <select name="servico" required class="input-field">
-            <option value="banho">Banho</option>
-            <option value="tosa">Tosa</option>
-            <option value="banho_tosa">Banho + Tosa</option>
-            <option value="consulta">Consulta</option>
-            <option value="vacinacao">Vacinacao</option>
-            <option value="outro">Outro</option>
-          </select>
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Data e hora</label>
-          <input type="datetime-local" name="data" required class="input-field">
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Pet</label>
-          <select name="pet_id" class="input-field">
-            <option value="">Nenhum pet especifico</option>
-            <% if (typeof pets !== 'undefined' && pets) { pets.forEach(function(p) { %>
-              <option value="<%= p.id %>"><%= p.nome %></option>
-            <% }) } %>
-          </select>
-        </div>
-        <button type="submit" class="btn-primary w-full">
-          <i class="fa-solid fa-plus mr-2"></i>Agendar
-        </button>
-      </form>
-    </div>
-  <% } %>
+          <% }) %>
+        </select>
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-gray-600 mb-1">Pet</label>
+        <select name="pet_id" class="input-field" required>
+          <option value="">Selecione...</option>
+          <% (pets || []).forEach(function(p) { %>
+            <option value="<%= p.id %>" <%= Number(petSelecionado) === Number(p.id) ? 'selected' : '' %>><%= p.nome %></option>
+          <% }) %>
+        </select>
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-gray-600 mb-1">Dia</label>
+        <input type="date" name="dia" value="<%= diaSelecionado || '' %>" class="input-field" required>
+      </div>
+      <div class="flex items-end">
+        <button type="submit" class="btn-primary w-full">Buscar horários</button>
+      </div>
+    </form>
 
-  <!-- Lista de agendamentos -->
-  <% if (typeof agendamentos !== 'undefined' && agendamentos && agendamentos.length > 0) { %>
-    <div class="space-y-3">
-      <% agendamentos.forEach(function(ag) { %>
-        <div class="card flex items-center gap-3">
-          <div class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0
-            <% if (ag.status === 'agendado') { %>bg-blue-100 text-blue-500
-            <% } else if (ag.status === 'concluido') { %>bg-green-100 text-green-500
-            <% } else { %>bg-gray-100 text-gray-500<% } %>">
-            <i class="fa-solid fa-calendar-check"></i>
-          </div>
-          <div class="flex-1 min-w-0">
-            <p class="text-sm font-semibold text-gray-800 capitalize"><%= ag.servico %></p>
-            <p class="text-xs text-gray-500"><%= ag.petshop_nome || 'Petshop' %></p>
-            <p class="text-xs text-gray-400">
-              <%= new Date(ag.data).toLocaleDateString('pt-BR') %> as
-              <%= new Date(ag.data).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) %>
-            </p>
-          </div>
-          <span class="text-xs font-medium px-2 py-1 rounded-full
-            <% if (ag.status === 'agendado') { %>bg-blue-100 text-blue-600
-            <% } else if (ag.status === 'concluido') { %>bg-green-100 text-green-600
-            <% } else { %>bg-gray-100 text-gray-600<% } %>">
-            <%= ag.status %>
-          </span>
+    <div class="mt-4">
+      <h2 class="text-sm font-bold text-gray-800 mb-2">Horários disponíveis</h2>
+      <% if (!(slotsDisponiveis || []).length) { %>
+        <p class="text-sm text-gray-500">Selecione petshop, serviço e dia para carregar os horários.</p>
+      <% } else { %>
+        <div class="flex flex-wrap gap-2">
+          <% (slotsDisponiveis || []).forEach(function(slot) { %>
+            <form action="/agenda" method="POST" class="inline-flex">
+              <input type="hidden" name="petshop_id" value="<%= petshopSelecionado %>">
+              <input type="hidden" name="service_id" value="<%= serviceSelecionado %>">
+              <input type="hidden" name="data_agendada" value="<%= slot.inicio %>">
+              <input type="hidden" name="pet_id" value="<%= petSelecionado || '' %>">
+              <button class="px-3 py-2 rounded-xl border border-gray-200 text-sm hover:bg-orange-50 transition-colors">
+                <%= new Date(slot.inicio).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) %>
+              </button>
+            </form>
+          <% }) %>
         </div>
-      <% }) %>
+      <% } %>
     </div>
-  <% } else { %>
-    <div class="card text-center py-12">
-      <i class="fa-solid fa-calendar-xmark text-4xl text-gray-300 mb-3"></i>
-      <p class="text-gray-500">Nenhum agendamento ainda.</p>
-      <p class="text-sm text-gray-400 mt-1">Agende banho, tosa ou consultas nos petshops parceiros.</p>
-    </div>
-  <% } %>
+  </section>
 
+  <section class="card">
+    <h2 class="text-lg font-bold text-gray-900 mb-3">Meus agendamentos</h2>
+    <% if (!(agendamentos || []).length) { %>
+      <p class="text-sm text-gray-500">Nenhum agendamento ainda.</p>
+    <% } else { %>
+      <div class="space-y-3">
+        <% (agendamentos || []).forEach(function(ag) { %>
+          <article class="rounded-2xl border border-gray-200 p-4 bg-white">
+            <div class="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p class="font-semibold text-gray-900"><%= ag.servico_nome || 'Serviço' %> • <%= ag.pet_nome %></p>
+                <p class="text-sm text-gray-600"><%= ag.petshop_nome %></p>
+                <p class="text-xs text-gray-500 mt-1">
+                  <%= new Date(ag.data_agendada).toLocaleDateString('pt-BR') %> às
+                  <%= new Date(ag.data_agendada).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) %>
+                </p>
+                <% if (ag.petshop_endereco) { %>
+                  <p class="text-xs text-gray-500 mt-1"><i class="fa-solid fa-location-dot mr-1"></i><%= ag.petshop_endereco %></p>
+                <% } %>
+              </div>
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="px-2 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-700">
+                  <%= statusLabel[ag.status] || ag.status %>
+                </span>
+                <% if (ag.status === 'pendente' || ag.status === 'aceito') { %>
+                  <form action="/agenda/<%= ag.id %>/cancelar" method="POST">
+                    <button class="px-3 py-1.5 rounded-lg border border-red-200 bg-red-50 text-red-600 text-xs font-semibold">Cancelar</button>
+                  </form>
+                <% } %>
+                <% if (ag.petshop_latitude && ag.petshop_longitude) { %>
+                  <a href="https://maps.google.com/?q=<%= ag.petshop_latitude %>,<%= ag.petshop_longitude %>" target="_blank" rel="noopener" class="px-3 py-1.5 rounded-lg border border-orange-200 bg-orange-50 text-orange-700 text-xs font-semibold">
+                    Como chegar
+                  </a>
+                <% } %>
+              </div>
+            </div>
+          </article>
+        <% }) %>
+      </div>
+    <% } %>
+  </section>
 </main>
+
+<script>
+  (function () {
+    var petshopSelect = document.querySelector('select[name="petshop_id"]')
+    var serviceSelect = document.querySelector('select[name="service_id"]')
+    if (!petshopSelect || !serviceSelect) return
+    function filterServices() {
+      var petshopId = petshopSelect.value
+      Array.prototype.forEach.call(serviceSelect.options, function (opt) {
+        if (!opt.value) return
+        var allowed = !petshopId || String(opt.getAttribute('data-petshop')) === String(petshopId)
+        opt.hidden = !allowed
+      })
+      var selected = serviceSelect.options[serviceSelect.selectedIndex]
+      if (selected && selected.hidden) serviceSelect.value = ''
+    }
+    petshopSelect.addEventListener('change', filterServices)
+    filterServices()
+  })()
+</script>
 
 <%- include('../partials/footer') %>

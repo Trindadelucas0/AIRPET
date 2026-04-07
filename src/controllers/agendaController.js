@@ -23,9 +23,12 @@
  *   GET  /agenda      → listar (lista agendamentos do usuário)
  */
 
-const AgendaPetshop = require('../models/AgendaPetshop');
 const Pet = require('../models/Pet');
 const Petshop = require('../models/Petshop');
+const PetshopService = require('../models/PetshopService');
+const PetshopAppointment = require('../models/PetshopAppointment');
+const petshopAppointmentService = require('../services/petshopAppointmentService');
+const petshopDisponibilidadeService = require('../services/petshopDisponibilidadeService');
 const logger = require('../utils/logger');
 
 /**
@@ -48,28 +51,31 @@ const logger = require('../utils/logger');
 async function criar(req, res) {
   try {
     const usuarioId = req.session.usuario.id;
-    const { petshop_id, pet_id, servico, data } = req.body;
+    const { petshop_id, pet_id, service_id, data, data_agendada, observacoes } = req.body || {};
+    const dataFinal = data_agendada || data;
 
-    if (!petshop_id || !servico || !data) {
+    if (!petshop_id || !service_id || !dataFinal) {
       req.session.flash = { tipo: 'erro', mensagem: 'Preencha todos os campos obrigatórios do agendamento.' };
       return res.redirect('/agenda');
     }
 
-    const agendamento = await AgendaPetshop.criar({
-      petshop_id,
+    const agendamento = await petshopAppointmentService.criarAgendamento({
+      petshop_id: Number(petshop_id),
+      service_id: Number(service_id),
       usuario_id: usuarioId,
       pet_id: pet_id || null,
-      servico,
-      data,
+      observacoes: observacoes || null,
+      data_agendada: dataFinal,
+      origem: 'tutor',
     });
 
-    logger.info('AgendaController', `Agendamento criado: ${agendamento.id} (serviço: ${servico})`);
+    logger.info('AgendaController', `Solicitação de agendamento criada: ${agendamento.id}`);
 
-    req.session.flash = { tipo: 'sucesso', mensagem: 'Agendamento criado com sucesso!' };
+    req.session.flash = { tipo: 'sucesso', mensagem: 'Solicitação enviada para confirmação do petshop.' };
     return res.redirect('/agenda');
   } catch (erro) {
     logger.error('AgendaController', 'Erro ao criar agendamento', erro);
-    req.session.flash = { tipo: 'erro', mensagem: 'Erro ao criar o agendamento. Tente novamente.' };
+    req.session.flash = { tipo: 'erro', mensagem: erro.message || 'Erro ao criar o agendamento. Tente novamente.' };
     return res.redirect('/agenda');
   }
 }
@@ -90,18 +96,47 @@ async function criar(req, res) {
 async function listar(req, res) {
   try {
     const usuarioId = req.session.usuario.id;
+    const petshopSelecionado = req.query.petshop_id ? Number(req.query.petshop_id) : null;
+    const serviceSelecionado = req.query.service_id ? Number(req.query.service_id) : null;
+    const petSelecionado = req.query.pet_id ? Number(req.query.pet_id) : null;
+    const diaSelecionado = req.query.dia || new Date().toISOString().slice(0, 10);
 
     const [agendamentos, pets, petshops] = await Promise.all([
-      AgendaPetshop.buscarPorUsuario(usuarioId),
+      PetshopAppointment.listarPorUsuario(usuarioId),
       Pet.buscarPorUsuario(usuarioId),
       Petshop.listarAtivos(),
     ]);
+
+    let servicosPorPetshop = {};
+    await Promise.all(
+      (petshops || []).map(async (ps) => {
+        servicosPorPetshop[ps.id] = await PetshopService.listarAtivos(ps.id);
+      })
+    );
+
+    let slotsDisponiveis = [];
+    if (petshopSelecionado && serviceSelecionado && diaSelecionado) {
+      const servico = (servicosPorPetshop[petshopSelecionado] || []).find((s) => s.id === serviceSelecionado);
+      const disponibilidade = await petshopDisponibilidadeService.listarSlotsDisponiveis({
+        petshopId: petshopSelecionado,
+        serviceId: serviceSelecionado,
+        dia: diaSelecionado,
+        duracaoMinutos: servico && servico.duracao_minutos ? servico.duracao_minutos : 30,
+      });
+      slotsDisponiveis = disponibilidade.slots || [];
+    }
 
     return res.render('agenda/lista', {
       titulo: 'Meus Agendamentos - AIRPET',
       agendamentos,
       pets,
       petshops,
+      servicosPorPetshop,
+      slotsDisponiveis,
+      petshopSelecionado,
+      serviceSelecionado,
+      petSelecionado,
+      diaSelecionado,
     });
   } catch (erro) {
     logger.error('AgendaController', 'Erro ao listar agendamentos', erro);
@@ -123,24 +158,19 @@ async function cancelar(req, res) {
     const usuarioId = req.session.usuario.id;
     const { id } = req.params;
 
-    const agendamento = await AgendaPetshop.buscarPorId(id);
+    const agendamento = await PetshopAppointment.buscarPorIdDoUsuario(id, usuarioId);
 
     if (!agendamento) {
       req.session.flash = { tipo: 'erro', mensagem: 'Agendamento não encontrado.' };
       return res.redirect('/agenda');
     }
 
-    if (agendamento.usuario_id !== usuarioId) {
-      req.session.flash = { tipo: 'erro', mensagem: 'Você não tem permissão para cancelar este agendamento.' };
-      return res.redirect('/agenda');
-    }
-
-    if (agendamento.status === 'cancelado' || agendamento.status === 'concluido') {
+    if (!['pendente', 'aceito'].includes(agendamento.status)) {
       req.session.flash = { tipo: 'erro', mensagem: `Não é possível cancelar um agendamento ${agendamento.status}.` };
       return res.redirect('/agenda');
     }
 
-    await AgendaPetshop.cancelar(id);
+    await petshopAppointmentService.cancelarPorTutor(id, usuarioId);
 
     logger.info('AgendaController', `Agendamento cancelado: ${id} pelo usuário ${usuarioId}`);
 
@@ -170,19 +200,19 @@ async function confirmar(req, res) {
       return res.redirect('/agenda');
     }
 
-    const agendamento = await AgendaPetshop.buscarPorId(id);
+    const agendamento = await PetshopAppointment.buscarPorId(id);
 
     if (!agendamento) {
       req.session.flash = { tipo: 'erro', mensagem: 'Agendamento não encontrado.' };
       return res.redirect((process.env.ADMIN_PATH || '/admin') + '/dashboard');
     }
 
-    if (agendamento.status !== 'agendado') {
+    if (agendamento.status !== 'pendente') {
       req.session.flash = { tipo: 'erro', mensagem: `Não é possível confirmar um agendamento com status "${agendamento.status}".` };
       return res.redirect((process.env.ADMIN_PATH || '/admin') + '/dashboard');
     }
 
-    await AgendaPetshop.confirmar(id);
+    await petshopAppointmentService.atualizarStatus(id, 'aceito');
 
     logger.info('AgendaController', `Agendamento confirmado: ${id} pelo admin`);
 

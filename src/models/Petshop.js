@@ -151,6 +151,37 @@ const Petshop = {
     return resultado.rows[0];
   },
 
+  async atualizarCamposPublicos(id, dados) {
+    const {
+      nome = null,
+      endereco = null,
+      telefone = null,
+      descricao = null,
+      latitude = null,
+      longitude = null,
+    } = dados || {};
+    const resultado = await query(
+      `UPDATE petshops
+       SET nome = COALESCE($2, nome),
+           endereco = COALESCE($3, endereco),
+           telefone = COALESCE($4, telefone),
+           whatsapp = COALESCE($4, whatsapp),
+           descricao = COALESCE($5, descricao),
+           latitude = COALESCE($6, latitude),
+           longitude = COALESCE($7, longitude),
+           localizacao = CASE
+             WHEN COALESCE($6, latitude) IS NOT NULL AND COALESCE($7, longitude) IS NOT NULL
+             THEN ST_SetSRID(ST_MakePoint(COALESCE($7, longitude), COALESCE($6, latitude)), 4326)::geography
+             ELSE localizacao
+           END,
+           data_atualizacao = NOW()
+       WHERE id = $1
+       RETURNING *`,
+      [id, nome, endereco, telefone, descricao, latitude, longitude]
+    );
+    return resultado.rows[0] || null;
+  },
+
   /**
    * Remove um petshop do banco de dados.
    *
