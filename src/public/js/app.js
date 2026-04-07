@@ -18,16 +18,31 @@
     });
   }
 
-  // --- Flash message auto-dismiss (5 seconds) ---
+  // --- Flash message behavior (auto-dismiss + close button) ---
   var flashContainer = document.getElementById('flashContainer');
   if (flashContainer) {
+    var autoCloseMs = parseInt(flashContainer.getAttribute('data-flash-autoclose-ms') || '8000', 10);
+    if (!Number.isFinite(autoCloseMs) || autoCloseMs < 0) autoCloseMs = 8000;
+
+    function dismissFlash(el) {
+      if (!el || el.dataset.closing === '1') return;
+      el.dataset.closing = '1';
+      el.classList.add('fade-out');
+      setTimeout(function () { el.remove(); }, 400);
+    }
+
+    flashContainer.addEventListener('click', function (e) {
+      var closeBtn = e.target.closest('[data-flash-close]');
+      if (!closeBtn) return;
+      dismissFlash(closeBtn.closest('.flash-msg'));
+    });
+
     setTimeout(function () {
       var msgs = flashContainer.querySelectorAll('.flash-msg');
       msgs.forEach(function (el) {
-        el.classList.add('fade-out');
-        setTimeout(function () { el.remove(); }, 400);
+        dismissFlash(el);
       });
-    }, 5000);
+    }, autoCloseMs);
   }
 
   // --- Geolocation helper (com suporte iOS) ---

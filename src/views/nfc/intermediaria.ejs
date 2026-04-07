@@ -7,6 +7,8 @@
   <% var podeChatVisitante = typeof petPerdido !== 'undefined' && petPerdido && petPerdido.id && petPerdido.status === 'aprovado'; %>
   <% var telefone = (dono && dono.telefone) || pet.telefone_contato; %>
   <% var ultimaCidade = (ultimaLocalizacao && ultimaLocalizacao.cidade) || (petPerdido && petPerdido.cidade) || null; %>
+  <% var planoAtivoEfetivo = typeof planoAtivo !== 'undefined' ? !!planoAtivo : false; %>
+  <% var planoExpiraFmt = planoExpiraEm ? new Date(planoExpiraEm).toLocaleDateString('pt-BR') : null; %>
 
   <% if (perdido) { %>
     <div class="bg-red-600 text-white text-center px-4 py-3">
@@ -17,6 +19,20 @@
 
   <div class="max-w-2xl mx-auto px-4 py-6 md:py-8 space-y-4">
     <section class="bg-white rounded-3xl shadow-md border border-slate-200 p-5 md:p-6">
+      <div class="mb-3">
+        <% if (planoAtivoEfetivo) { %>
+          <div class="inline-flex items-center gap-2 rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-700">
+            <i class="fa-solid fa-shield-check"></i>
+            Plano <%= (planoSlug || 'basico').toUpperCase() %> ativo<%= planoExpiraFmt ? (' ate ' + planoExpiraFmt) : '' %>
+            <% if (typeof planoEmGrace !== 'undefined' && planoEmGrace) { %> (grace)<% } %>
+          </div>
+        <% } else { %>
+          <div class="inline-flex items-center gap-2 rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-700">
+            <i class="fa-solid fa-circle-info"></i>
+            Plano premium inativo - modo basico de contato
+          </div>
+        <% } %>
+      </div>
       <div class="flex flex-col sm:flex-row gap-4 items-center sm:items-start">
         <div class="w-28 h-28 rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 shrink-0">
           <% if (pet.foto) { %>
@@ -86,12 +102,12 @@
       <% } %>
     </section>
 
-    <a href="<%= petshopMaisProximo ? ('/petshops/' + (petshopMaisProximo.slug || petshopMaisProximo.id)) : '/petshops?apoio=1' %>"
-       class="flex items-center gap-3 w-full bg-violet-600 hover:bg-violet-700 text-white rounded-2xl px-4 py-4 transition">
+    <a href="<%= planoAtivoEfetivo ? (petshopMaisProximo ? ('/petshops/' + (petshopMaisProximo.slug || petshopMaisProximo.id)) : '/petshops?apoio=1') : '/tags/loja-tag' %>"
+       class="flex items-center gap-3 w-full <%= planoAtivoEfetivo ? 'bg-violet-600 hover:bg-violet-700' : 'bg-slate-600 hover:bg-slate-700' %> text-white rounded-2xl px-4 py-4 transition">
       <i class="fa-solid fa-store text-xl"></i>
       <span class="font-semibold">
-        Levar ao petshop parceiro
-        <% if (petshopMaisProximo && petshopMaisProximo.nome) { %>
+        <%= planoAtivoEfetivo ? 'Levar ao petshop parceiro' : 'Ativar plano para apoio de petshop' %>
+        <% if (planoAtivoEfetivo && petshopMaisProximo && petshopMaisProximo.nome) { %>
           - <%= petshopMaisProximo.nome %>
         <% } %>
       </span>

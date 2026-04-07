@@ -51,6 +51,13 @@ async function iniciar() {
     logger.secao('Database');
     await pool.query('SELECT NOW()');
     logger.info('DB', 'Conectado ao PostgreSQL com sucesso');
+    const schemaTag = await pool.query(`SELECT to_regclass('public.plan_definitions') AS plan_definitions`);
+    if (!schemaTag.rows[0]?.plan_definitions) {
+      logger.warn(
+        'DB',
+        'Schema TAG NFC nao encontrado (plan_definitions ausente). Rode `npm run db:migrate` no ambiente antes de usar /tags/loja-tag.'
+      );
+    }
 
     ensurePublicImageDirs();
 

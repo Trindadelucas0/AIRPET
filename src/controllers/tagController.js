@@ -31,6 +31,7 @@
 
 const NfcTag = require('../models/NfcTag');
 const TagBatch = require('../models/TagBatch');
+const TagOrderUnit = require('../models/TagOrderUnit');
 const Pet = require('../models/Pet');
 const Usuario = require('../models/Usuario');
 const { withTransaction } = require('../config/database');
@@ -325,8 +326,25 @@ async function vincularPet(req, res) {
       return res.redirect(`/tags/${tag_code}/escolher-pet`);
     }
 
-    /* Ativa a tag vinculando ao pet — muda status para 'active' */
-    await NfcTag.ativar(tag.id, pet_id);
+    /* Ativa a tag vinculando ao pet e desativa, se existir, a tag ativa anterior desse mesmo pet */
+    await withTransaction(async (client) => {
+      const anteriorAtiva = await NfcTag.buscarAtivaPorPetId(pet_id, client);
+      const novaTag = await NfcTag.ativar(tag.id, pet_id, client);
+      if (!novaTag) {
+        throw new Error('FALHA_ATIVACAO_TAG');
+      }
+      if (anteriorAtiva && Number(anteriorAtiva.id) !== Number(novaTag.id)) {
+        await NfcTag.desativarPorSubstituicao(anteriorAtiva.id, novaTag.id, client);
+      }
+
+      const unidade = await TagOrderUnit.concluirAtivacaoPorTag(novaTag.id);
+      if (unidade && unidade.print_photo_url) {
+        await client.query(
+          `UPDATE nfc_tags SET display_photo_url = $2 WHERE id = $1`,
+          [novaTag.id, unidade.print_photo_url]
+        );
+      }
+    });
 
     logger.info('TagController', `Tag ${tag_code} vinculada ao pet ${pet.nome} (ID: ${pet_id})`);
 

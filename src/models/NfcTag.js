@@ -365,6 +365,48 @@ const NfcTag = {
     );
     return resultado.rows[0];
   },
+
+  async buscarAtivaPorPetId(petId, client = null) {
+    const executor = client || pool;
+    const resultado = await executor.query(
+      `SELECT * FROM nfc_tags
+       WHERE pet_id = $1
+         AND status = 'active'
+       ORDER BY activated_at DESC NULLS LAST, id DESC
+       LIMIT 1`,
+      [petId]
+    );
+    return resultado.rows[0] || null;
+  },
+
+  async desativarPorSubstituicao(tagIdAntiga, novaTagId, client = null) {
+    const executor = client || pool;
+    const resultado = await executor.query(
+      `UPDATE nfc_tags
+       SET status = 'blocked',
+           desativada_em = NOW(),
+           motivo_desativacao = 'substituicao',
+           substituida_por_tag_id = $2
+       WHERE id = $1
+         AND status = 'active'
+       RETURNING *`,
+      [tagIdAntiga, novaTagId]
+    );
+    return resultado.rows[0] || null;
+  },
+
+  async listarDisponiveisEstoque(limite, client = null) {
+    const executor = client || pool;
+    const resultado = await executor.query(
+      `SELECT *
+       FROM nfc_tags
+       WHERE status IN ('stock', 'manufactured')
+       ORDER BY id ASC
+       LIMIT $1`,
+      [limite]
+    );
+    return resultado.rows;
+  },
 };
 
 module.exports = NfcTag;

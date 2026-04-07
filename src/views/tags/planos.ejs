@@ -1,0 +1,25 @@
+<%- include('../partials/header') %>
+<main class="container mx-auto px-4 py-8">
+  <section class="rounded-3xl border border-slate-200 bg-white p-6 md:p-8">
+    <h1 class="text-3xl font-extrabold text-slate-900">Planos TAG AIRPET</h1>
+    <p class="mt-2 text-sm text-slate-600">Explorar permanece gratuito. Recursos premium ficam vinculados ao plano da TAG.</p>
+  </section>
+
+  <section class="mt-6 grid gap-4 md:grid-cols-3">
+    <% (planos || []).forEach(function(plano) { %>
+      <article class="rounded-2xl border border-slate-200 bg-white p-5">
+        <h2 class="text-xl font-bold text-slate-900"><%= plano.nome_exibicao %></h2>
+        <p class="mt-1 text-2xl font-extrabold text-primary-700">R$ <%= (Number(plano.mensalidade_centavos || 0) / 100).toFixed(2).replace('.', ',') %><span class="text-xs text-slate-500">/30 dias</span></p>
+        <ul class="mt-4 space-y-2 text-sm text-slate-600">
+          <% Object.entries(plano.features_json || {}).forEach(function(entry){ %>
+            <li>
+              <i class="fa-solid <%= entry[1] ? 'fa-circle-check text-emerald-600' : 'fa-circle-xmark text-slate-300' %> mr-2"></i>
+              <%= entry[0] %>
+            </li>
+          <% }) %>
+        </ul>
+      </article>
+    <% }) %>
+  </section>
+</main>
+<%- include('../partials/footer') %>

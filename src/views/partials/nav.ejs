@@ -40,6 +40,9 @@
           <a href="/pets" class="px-3 py-1.5 rounded-full text-[13px] font-semibold transition-all duration-200 <%= currentPath.startsWith('/pets') ? 'bg-primary-100 text-primary-700 shadow-sm' : 'text-gray-500 hover:bg-primary-50 hover:text-primary-600' %>">
             <i class="fa-solid fa-paw mr-1.5"></i>Meus Pets
           </a>
+          <a href="/tags/pedidos" class="px-3 py-1.5 rounded-full text-[13px] font-semibold transition-all duration-200 <%= currentPath.startsWith('/tags') ? 'bg-primary-100 text-primary-700 shadow-sm' : 'text-gray-500 hover:bg-primary-50 hover:text-primary-600' %>">
+            <i class="fa-solid fa-tag mr-1.5"></i>Minhas TAGs
+          </a>
           <a href="/mapa" class="px-3 py-1.5 rounded-full text-[13px] font-semibold transition-all duration-200 <%= currentPath.startsWith('/mapa') ? 'bg-primary-100 text-primary-700 shadow-sm' : 'text-gray-500 hover:bg-primary-50 hover:text-primary-600' %>">
             <i class="fa-solid fa-map-location-dot mr-1.5"></i>Mapa
           </a>
@@ -80,6 +83,9 @@
               </a>
               <a href="/perfil" class="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
                 <i class="fa-solid fa-gear w-4 text-center text-gray-400"></i> Configurações
+              </a>
+              <a href="/tags/pedidos" class="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+                <i class="fa-solid fa-tag w-4 text-center text-gray-400"></i> Minhas TAGs
               </a>
               <% if (typeof petshopAccount !== 'undefined' && petshopAccount) { %>
               <a href="/petshop-panel/dashboard" class="flex items-center gap-3 px-4 py-2.5 text-sm text-emerald-600 hover:bg-emerald-50 transition-colors">
@@ -190,6 +196,10 @@
       <a href="/explorar/busca" role="menuitem" class="bottom-nav-mais-link <%= currentPath && currentPath.startsWith('/explorar/busca') ? 'bottom-nav-mais-link--active' : '' %>">
         <span class="bottom-nav-mais-ic"><i class="fa-solid fa-magnifying-glass"></i></span>
         <span>Buscar</span>
+      </a>
+      <a href="/tags/pedidos" role="menuitem" class="bottom-nav-mais-link <%= currentPath && currentPath.startsWith('/tags') ? 'bottom-nav-mais-link--active' : '' %>">
+        <span class="bottom-nav-mais-ic"><i class="fa-solid fa-tag"></i></span>
+        <span>Minhas TAGs</span>
       </a>
     </div>
   </div>

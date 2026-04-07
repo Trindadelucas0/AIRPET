@@ -54,6 +54,7 @@ Em resumo: não é microserviços no núcleo da aplicação; é um monólito ric
 - **Sem ORM/query builder tradicional**:
   - SQL manual parametrizado centralizado em `src/models`.
 - **Migrações** com **`node-pg-migrate ^8.0.4`** (`migrations/*.mjs`, script `scripts/run-pgm.cjs`).
+- **Pré-start obrigatório**: executar `npm run db:migrate` no mesmo ambiente/.env da API antes de `npm run dev`/`npm start` (inclui schema comercial de TAG NFC, como `plan_definitions`).
 - **Sessão persistente em PG** com `express-session` + `connect-pg-simple` (tabela `user_sessions`).
 
 ## Segurança, autenticação e validação

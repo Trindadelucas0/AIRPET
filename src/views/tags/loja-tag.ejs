@@ -1,0 +1,101 @@
+<%- include('../partials/header') %>
+<%- include('../partials/flash') %>
+<main class="container mx-auto px-4 py-8 space-y-8">
+  <section class="rounded-3xl border border-slate-200 bg-white p-6 md:p-8">
+    <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+      <div>
+        <p class="text-xs font-semibold uppercase tracking-wide text-primary-600">TAG NFC AIRPET</p>
+        <h1 class="mt-1 text-3xl font-extrabold text-slate-900">Compre uma vez a tag. Mantenha o serviço com assinatura.</h1>
+        <p class="mt-3 text-sm text-slate-600">
+          Na compra, cada tag precisa ser vinculada a um pet já cadastrado. Se comprar outra tag para o mesmo pet,
+          a anterior será desativada após ativação da nova.
+        </p>
+      </div>
+      <a href="/tags/pedidos" class="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700">
+        Ver meus pedidos
+      </a>
+    </div>
+  </section>
+
+  <section class="grid gap-4 md:grid-cols-3">
+    <% (planos || []).forEach(function(plano) { %>
+      <article class="rounded-2xl border border-slate-200 bg-white p-5">
+        <h2 class="text-lg font-bold text-slate-900"><%= plano.nome_exibicao %></h2>
+        <p class="mt-1 text-2xl font-extrabold text-primary-700">
+          R$ <%= (Number(plano.mensalidade_centavos || 0) / 100).toFixed(2).replace('.', ',') %>
+          <span class="text-xs font-medium text-slate-500">/ 30 dias</span>
+        </p>
+        <p class="mt-2 text-xs text-slate-500">Renovação adiciona +30 dias ao saldo atual.</p>
+      </article>
+    <% }) %>
+  </section>
+
+  <% if (typeof usuario !== 'undefined' && usuario) { %>
+    <section class="rounded-3xl border border-slate-200 bg-white p-6">
+      <h3 class="text-lg font-bold text-slate-900">Criar pedido</h3>
+      <p class="mt-1 text-sm text-slate-600">Escolha plano, quantidade de tags e pets para cada unidade.</p>
+
+      <form action="/tags/pedidos" method="POST" class="mt-5 space-y-4">
+        <div class="grid gap-4 md:grid-cols-2">
+          <label class="text-sm">
+            <span class="mb-1 block font-semibold text-slate-700">Plano</span>
+            <select name="plan_slug" class="w-full rounded-xl border border-slate-300 px-3 py-2">
+              <% (planos || []).forEach(function(plano) { %>
+                <option value="<%= plano.slug %>"><%= plano.nome_exibicao %></option>
+              <% }) %>
+            </select>
+          </label>
+
+          <label class="text-sm">
+            <span class="mb-1 block font-semibold text-slate-700">Tipo de pedido</span>
+            <select name="order_type" class="w-full rounded-xl border border-slate-300 px-3 py-2">
+              <option value="compra_tag">Primeira compra / comprar nova tag</option>
+              <option value="assinatura_recorrente">Somente renovação da assinatura</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="grid gap-4 md:grid-cols-2">
+          <label class="text-sm">
+            <span class="mb-1 block font-semibold text-slate-700">Quantidade de tags</span>
+            <input type="number" min="0" max="10" value="1" name="quantidade_tags" class="w-full rounded-xl border border-slate-300 px-3 py-2">
+          </label>
+          <label class="text-sm">
+            <span class="mb-1 block font-semibold text-slate-700">Cupom (opcional)</span>
+            <input type="text" name="promo_code" placeholder="EX: AIRPET10" class="w-full rounded-xl border border-slate-300 px-3 py-2 uppercase">
+          </label>
+        </div>
+
+        <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+          <p class="text-sm font-semibold text-slate-700">Pets para vincular às tags</p>
+          <p class="text-xs text-slate-500">Selecione um pet por unidade. Se faltar pet, cadastre em “Meus Pets”.</p>
+          <div class="mt-3 grid gap-2 md:grid-cols-2">
+            <% (pets || []).forEach(function(p) { %>
+              <label class="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm">
+                <input type="checkbox" name="pet_ids" value="<%= p.id %>">
+                <span><%= p.nome %></span>
+              </label>
+            <% }) %>
+          </div>
+        </div>
+
+        <div class="grid gap-4 md:grid-cols-2">
+          <label class="text-sm">
+            <span class="mb-1 block font-semibold text-slate-700">Código de indicação (opcional)</span>
+            <input type="text" name="referral_code" class="w-full rounded-xl border border-slate-300 px-3 py-2 uppercase">
+          </label>
+          <div class="flex items-end">
+            <button type="submit" class="w-full rounded-xl bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary-700">
+              Ir para pagamento
+            </button>
+          </div>
+        </div>
+      </form>
+    </section>
+  <% } else { %>
+    <section class="rounded-2xl border border-primary-200 bg-primary-50 p-5 text-sm text-primary-800">
+      Faça login para comprar e vincular suas tags aos pets.
+    </section>
+  <% } %>
+</main>
+<%- include('../partials/footer') %>

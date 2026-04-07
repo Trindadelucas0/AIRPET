@@ -37,6 +37,7 @@ const Pet = require('../models/Pet');
 const Localizacao = require('../models/Localizacao');
 const Notificacao = require('../models/Notificacao');
 const PetPerdido = require('../models/PetPerdido');
+const TagSubscription = require('../models/TagSubscription');
 const petshopRecoveryIntegrationService = require('./petshopRecoveryIntegrationService');
 const Usuario = require('../models/Usuario');
 const logger = require('../utils/logger');
@@ -133,6 +134,7 @@ const nfcService = {
     let alertaAtivo = null;
     let petshopMaisProximo = null;
     let ultimaLocalizacao = null;
+    let planoInfo = null;
 
     switch (tag.status) {
       /**
@@ -165,6 +167,7 @@ const nfcService = {
 
           if (dadosPet) {
             dadosDono = await Usuario.buscarContatoBasicoPorId(dadosPet.usuario_id);
+            planoInfo = await TagSubscription.estaAtivaComGrace(dadosPet.usuario_id);
           }
         }
 
@@ -217,7 +220,9 @@ const nfcService = {
           ultimaLocalizacao = await Localizacao.buscarUltimaPorPetId(tag.pet_id);
         }
 
-        if (!petshopMaisProximo && alertaAtivo && alertaAtivo.latitude && alertaAtivo.longitude) {
+        const planoPremiumAtivo = Boolean(planoInfo && (planoInfo.ativo || planoInfo.em_grace));
+
+        if (planoPremiumAtivo && !petshopMaisProximo && alertaAtivo && alertaAtivo.latitude && alertaAtivo.longitude) {
           petshopMaisProximo = await petshopRecoveryIntegrationService.sugerirPetshopMaisProximo(
             alertaAtivo.latitude,
             alertaAtivo.longitude
@@ -276,6 +281,10 @@ const nfcService = {
       petPerdidoAlerta: alertaAtivo,
       petshopMaisProximo,
       ultimaLocalizacao,
+      planoAtivo: Boolean(planoInfo && (planoInfo.ativo || planoInfo.em_grace)),
+      planoEmGrace: Boolean(planoInfo && planoInfo.em_grace && !planoInfo.ativo),
+      planoExpiraEm: planoInfo?.valid_until || null,
+      planoSlug: planoInfo?.plan_slug || 'basico',
     };
   },
 };

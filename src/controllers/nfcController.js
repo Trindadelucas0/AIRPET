@@ -132,6 +132,10 @@ const nfcController = {
             petPerdido: resultado.petPerdidoAlerta,
             petshopMaisProximo: resultado.petshopMaisProximo || null,
             ultimaLocalizacao: resultado.ultimaLocalizacao || null,
+            planoAtivo: resultado.planoAtivo || false,
+            planoEmGrace: resultado.planoEmGrace || false,
+            planoExpiraEm: resultado.planoExpiraEm || null,
+            planoSlug: resultado.planoSlug || 'basico',
           });
 
         /*

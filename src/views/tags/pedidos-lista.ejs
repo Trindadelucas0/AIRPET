@@ -1,0 +1,56 @@
+<%- include('../partials/header') %>
+<%- include('../partials/flash') %>
+<main class="container mx-auto px-4 py-8 space-y-6">
+  <header class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+    <div>
+      <h1 class="text-2xl font-extrabold text-slate-900">Meus pedidos TAG</h1>
+      <% if (estadoPlano) { %>
+        <p class="text-sm text-slate-600">
+          Plano atual: <strong><%= estadoPlano.planSlug %></strong>
+          <% if (estadoPlano.validUntil) { %>
+            • válido até <%= new Date(estadoPlano.validUntil).toLocaleDateString('pt-BR') %>
+          <% } %>
+          <% if (estadoPlano.emGrace) { %>
+            • em período de graça
+          <% } %>
+        </p>
+      <% } %>
+    </div>
+    <a href="/tags/loja-tag" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700">
+      Nova compra / renovação
+    </a>
+  </header>
+
+  <% if (!pedidos || pedidos.length === 0) { %>
+    <section class="rounded-2xl border border-slate-200 bg-white p-6 text-sm text-slate-600">
+      Nenhum pedido encontrado ainda.
+    </section>
+  <% } %>
+
+  <section class="grid gap-4">
+    <% (pedidos || []).forEach(function(p) { %>
+      <article class="rounded-2xl border border-slate-200 bg-white p-5">
+        <div class="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h2 class="text-lg font-bold text-slate-900">Pedido #<%= p.id %></h2>
+            <p class="text-sm text-slate-600">
+              <%= p.order_type === 'assinatura_recorrente' ? 'Renovação de assinatura' : 'Compra de tag' %>
+              • Plano <%= p.plan_slug %>
+            </p>
+          </div>
+          <span class="rounded-full px-3 py-1 text-xs font-bold uppercase <%= p.status === 'pago' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700' %>">
+            <%= p.status %>
+          </span>
+        </div>
+        <div class="mt-3 flex items-center justify-between text-sm">
+          <span class="text-slate-500">Total</span>
+          <strong class="text-slate-900">R$ <%= (Number(p.total_centavos || 0) / 100).toFixed(2).replace('.', ',') %></strong>
+        </div>
+        <div class="mt-4">
+          <a href="/tags/pedidos/<%= p.id %>" class="text-sm font-semibold text-primary-700 hover:text-primary-900">Ver detalhes</a>
+        </div>
+      </article>
+    <% }) %>
+  </section>
+</main>
+<%- include('../partials/footer') %>

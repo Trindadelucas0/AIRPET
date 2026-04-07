@@ -1,12 +1,54 @@
 <% if (typeof flash !== 'undefined' && flash) { %>
   <%
     var tipos = {
-      sucesso:  { icon: 'fa-circle-check', color: 'var(--green)' },
-      success:  { icon: 'fa-circle-check', color: 'var(--green)' },
-      erro:     { icon: 'fa-circle-xmark', color: 'var(--red)' },
-      error:    { icon: 'fa-circle-xmark', color: 'var(--red)' },
-      info:     { icon: 'fa-circle-info', color: 'var(--blue)' },
-      aviso:    { icon: 'fa-triangle-exclamation', color: 'var(--yellow)' },
+      sucesso: {
+        icon: 'fa-circle-check',
+        titulo: 'Sucesso',
+        toneClass: 'border-emerald-200 bg-white/95 text-slate-800',
+        iconClass: 'text-emerald-500',
+        role: 'status',
+        live: 'polite'
+      },
+      success: {
+        icon: 'fa-circle-check',
+        titulo: 'Sucesso',
+        toneClass: 'border-emerald-200 bg-white/95 text-slate-800',
+        iconClass: 'text-emerald-500',
+        role: 'status',
+        live: 'polite'
+      },
+      erro: {
+        icon: 'fa-circle-exclamation',
+        titulo: 'Erro',
+        toneClass: 'border-rose-200 bg-white/95 text-slate-800',
+        iconClass: 'text-rose-500',
+        role: 'alert',
+        live: 'assertive'
+      },
+      error: {
+        icon: 'fa-circle-exclamation',
+        titulo: 'Erro',
+        toneClass: 'border-rose-200 bg-white/95 text-slate-800',
+        iconClass: 'text-rose-500',
+        role: 'alert',
+        live: 'assertive'
+      },
+      info: {
+        icon: 'fa-circle-info',
+        titulo: 'Informacao',
+        toneClass: 'border-sky-200 bg-white/95 text-slate-800',
+        iconClass: 'text-sky-500',
+        role: 'status',
+        live: 'polite'
+      },
+      aviso: {
+        icon: 'fa-triangle-exclamation',
+        titulo: 'Aviso',
+        toneClass: 'border-amber-200 bg-white/95 text-slate-800',
+        iconClass: 'text-amber-500',
+        role: 'alert',
+        live: 'assertive'
+      },
     };
 
     var msgs = [];
@@ -19,16 +61,25 @@
   %>
 
   <% if (msgs.length > 0) { %>
-    <div class="max-w-5xl mx-auto px-4 sm:px-6 pt-3 space-y-2" id="flashContainer">
+    <div id="flashContainer"
+         data-flash-autoclose-ms="8000"
+         class="fixed z-[90] top-3 left-3 right-3 sm:left-auto sm:right-4 sm:w-[26rem] space-y-2 pointer-events-none"
+         style="top: calc(env(safe-area-inset-top, 0px) + 0.75rem);">
       <% msgs.forEach(function(msg) { %>
         <% var s = tipos[msg.tipo] || tipos.info; %>
-        <div class="flash-msg flex items-center gap-3 px-4 py-3 rounded-2xl border-l-4 shadow-sm animate-slideUp"
-             style="background: var(--ink-2); border-color: <%= s.color %>; color: var(--text);"
-             role="alert">
-          <i class="fa-solid <%= s.icon %> text-lg flex-shrink-0" style="color: <%= s.color %>;"></i>
-          <span class="text-sm font-medium flex-1"><%= msg.mensagem %></span>
-          <button type="button" onclick="this.parentElement.classList.add('fade-out'); setTimeout(function(){ this.parentElement.remove(); }.bind(this), 400);"
-                  class="ml-auto transition-colors" style="color: var(--text-dim);">
+        <div class="flash-msg pointer-events-auto flex items-start gap-3 rounded-2xl border shadow-lg ring-1 ring-black/5 px-4 py-3 backdrop-blur-sm animate-slideUp <%= s.toneClass %>"
+             role="<%= s.role %>"
+             aria-live="<%= s.live %>"
+             aria-atomic="true">
+          <i class="fa-solid <%= s.icon %> mt-0.5 text-base flex-shrink-0 <%= s.iconClass %>"></i>
+          <div class="min-w-0 flex-1">
+            <p class="text-[11px] uppercase tracking-wide font-semibold text-slate-500"><%= s.titulo %></p>
+            <p class="text-sm leading-relaxed font-medium break-words"><%= msg.mensagem %></p>
+          </div>
+          <button type="button"
+                  data-flash-close
+                  aria-label="Fechar mensagem"
+                  class="ml-2 mt-0.5 text-slate-400 hover:text-slate-700 transition-colors">
             <i class="fa-solid fa-xmark"></i>
           </button>
         </div>
@@ -36,13 +87,6 @@
     </div>
 
     <script>
-      setTimeout(function () {
-        var msgs = document.querySelectorAll('.flash-msg');
-        msgs.forEach(function (el) {
-          el.classList.add('fade-out');
-          setTimeout(function () { el.remove(); }, 400);
-        });
-      }, 5000);
       <% var perfilOk = msgs.some(function (m) { return m.tipo === 'sucesso' && String(m.mensagem || '').indexOf('Perfil atualizado') !== -1; }); %>
       <% if (perfilOk) { %>
       (function () {
