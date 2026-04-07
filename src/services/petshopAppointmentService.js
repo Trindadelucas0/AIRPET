@@ -108,14 +108,15 @@ const petshopAppointmentService = {
   },
 
   async atualizarStatus(appointmentId, status, motivo_recusa = null) {
-    const appointment = await PetshopAppointment.atualizarStatus(appointmentId, status, motivo_recusa);
+    const statusSeguro = String(status || '').trim().toLowerCase();
+    const appointment = await PetshopAppointment.atualizarStatus(appointmentId, statusSeguro, motivo_recusa);
     if (!appointment) return null;
 
     let mensagem = 'Seu agendamento foi atualizado.';
-    if (status === 'aceito') mensagem = 'Seu agendamento foi confirmado pelo petshop.';
-    if (status === 'recusado') mensagem = 'Seu agendamento foi recusado pelo petshop.';
-    if (status === 'expirado') mensagem = 'Sua solicitação expirou por falta de confirmação do petshop.';
-    if (status === 'cancelado') mensagem = 'Seu agendamento foi cancelado.';
+    if (statusSeguro === 'aceito') mensagem = 'Seu agendamento foi confirmado pelo petshop.';
+    if (statusSeguro === 'recusado') mensagem = 'Seu agendamento foi recusado pelo petshop.';
+    if (statusSeguro === 'expirado') mensagem = 'Sua solicitação expirou por falta de confirmação do petshop.';
+    if (statusSeguro === 'cancelado') mensagem = 'Seu agendamento foi cancelado.';
 
     await notificacaoService.criar(appointment.usuario_id, 'sistema', mensagem, '/agenda');
     return appointment;

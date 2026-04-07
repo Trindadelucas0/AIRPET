@@ -28,6 +28,7 @@ const PetshopService = require('../models/PetshopService');
 const Pet = require('../models/Pet');
 const PetPetshopLink = require('../models/PetPetshopLink');
 const PetPetshopLinkRequest = require('../models/PetPetshopLinkRequest');
+const PetshopMetricEvent = require('../models/PetshopMetricEvent');
 const logger = require('../utils/logger');
 const { buildWhatsappUrl } = require('../utils/whatsappPublicUrl');
 
@@ -144,6 +145,11 @@ async function mostrarDetalhes(req, res) {
 
     const uDetalhe = usuarioSessaoOuBearer(req);
     const usuarioId = uDetalhe && uDetalhe.id;
+    await PetshopMetricEvent.registrarEvento({
+      petshop_id: petshop.id,
+      event_type: 'profile_view',
+      usuario_id: usuarioId || null,
+    }).catch(() => null);
     const userSegue = usuarioId ? await PetshopFollower.usuarioSegue(petshop.id, usuarioId) : false;
     let meusPets = [];
     let statusSolicitacoesPorPet = {};

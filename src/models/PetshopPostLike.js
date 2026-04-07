@@ -55,6 +55,25 @@ const PetshopPostLike = {
     );
     return result.rows[0] ? result.rows[0].total : 0;
   },
+
+  async contarPorPetshopDesde(petshopId, inicioPeriodo) {
+    const result = await query(
+      `SELECT COUNT(*)::int AS total
+       FROM petshop_publication_likes l
+       WHERE l.created_em >= $2
+         AND (
+           (l.publication_type = 'petshop_post' AND EXISTS (
+             SELECT 1 FROM petshop_posts pp WHERE pp.id = l.publication_id AND pp.petshop_id = $1
+           ))
+           OR
+           (l.publication_type = 'petshop_product' AND EXISTS (
+             SELECT 1 FROM petshop_products pr WHERE pr.id = l.publication_id AND pr.petshop_id = $1
+           ))
+         )`,
+      [petshopId, inicioPeriodo]
+    );
+    return result.rows[0]?.total || 0;
+  },
 };
 
 module.exports = PetshopPostLike;

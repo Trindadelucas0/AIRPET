@@ -25,6 +25,87 @@ async function buscarWhatsappPorPetshopIds(petshopIds) {
   return map;
 }
 
+async function preencherContagensEngajamento(publicacoes = []) {
+  const postIds = publicacoes
+    .filter((p) => p && p.sourceType === 'petshop_post')
+    .map((p) => Number(p.sourceId))
+    .filter((id) => Number.isInteger(id) && id > 0);
+  const productIds = publicacoes
+    .filter((p) => p && p.sourceType === 'petshop_product')
+    .map((p) => Number(p.sourceId))
+    .filter((id) => Number.isInteger(id) && id > 0);
+
+  const promises = [];
+  if (postIds.length) {
+    promises.push(
+      query(
+        `SELECT publication_id, COUNT(*)::int AS total
+         FROM petshop_publication_likes
+         WHERE publication_type = 'petshop_post'
+           AND publication_id = ANY($1::int[])
+         GROUP BY publication_id`,
+        [postIds]
+      ),
+      query(
+        `SELECT publication_id, COUNT(*)::int AS total
+         FROM petshop_publication_comments
+         WHERE publication_type = 'petshop_post'
+           AND publication_id = ANY($1::int[])
+         GROUP BY publication_id`,
+        [postIds]
+      )
+    );
+  } else {
+    promises.push(Promise.resolve({ rows: [] }), Promise.resolve({ rows: [] }));
+  }
+  if (productIds.length) {
+    promises.push(
+      query(
+        `SELECT publication_id, COUNT(*)::int AS total
+         FROM petshop_publication_likes
+         WHERE publication_type = 'petshop_product'
+           AND publication_id = ANY($1::int[])
+         GROUP BY publication_id`,
+        [productIds]
+      ),
+      query(
+        `SELECT publication_id, COUNT(*)::int AS total
+         FROM petshop_publication_comments
+         WHERE publication_type = 'petshop_product'
+           AND publication_id = ANY($1::int[])
+         GROUP BY publication_id`,
+        [productIds]
+      )
+    );
+  } else {
+    promises.push(Promise.resolve({ rows: [] }), Promise.resolve({ rows: [] }));
+  }
+
+  const [likesPost, commentsPost, likesProduct, commentsProduct] = await Promise.all(promises);
+  const mapLikesPost = new Map((likesPost.rows || []).map((r) => [Number(r.publication_id), Number(r.total)]));
+  const mapCommentsPost = new Map((commentsPost.rows || []).map((r) => [Number(r.publication_id), Number(r.total)]));
+  const mapLikesProduct = new Map((likesProduct.rows || []).map((r) => [Number(r.publication_id), Number(r.total)]));
+  const mapCommentsProduct = new Map((commentsProduct.rows || []).map((r) => [Number(r.publication_id), Number(r.total)]));
+
+  return publicacoes.map((item) => {
+    if (item.sourceType === 'petshop_post') {
+      return {
+        ...item,
+        like_count: mapLikesPost.get(Number(item.sourceId)) || 0,
+        comment_count: mapCommentsPost.get(Number(item.sourceId)) || 0,
+      };
+    }
+    if (item.sourceType === 'petshop_product') {
+      return {
+        ...item,
+        like_count: mapLikesProduct.get(Number(item.sourceId)) || 0,
+        comment_count: mapCommentsProduct.get(Number(item.sourceId)) || 0,
+      };
+    }
+    return item;
+  });
+}
+
 function mapPostToUnified(post, petshopMeta) {
   const publicationKey = `post:${post.id}`;
   return {
@@ -128,7 +209,7 @@ async function listarPublicacoesParaGradePorPetshop(petshopId, opts = {}) {
     if (br !== ar) return br - ar;
     return safeDateToMs(b.created_em) - safeDateToMs(a.created_em);
   });
-  return out;
+  return preencherContagensEngajamento(out);
 }
 
 /**
@@ -346,7 +427,8 @@ async function listarCardsPublicacoesParaExplorar({ usuarioId, lat, lng, limite 
   });
 
   combined.forEach((it) => { delete it.__relRank; });
-  return combined.slice(0, limitSeguro);
+  const paged = combined.slice(0, limitSeguro);
+  return preencherContagensEngajamento(paged);
 }
 
 module.exports = {

@@ -1,104 +1,98 @@
 <% const hoje = new Date(); %>
 <section class="card-elevated overflow-hidden">
-  <div class="grid gap-6 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] items-stretch">
-    <div class="flex flex-col justify-between space-y-4">
-      <div>
-        <h2 class="text-lg md:text-2xl font-semibold tracking-tight text-[color:var(--foreground)]">
+  <div class="grid gap-5 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] items-stretch">
+    <div class="space-y-4">
+      <div class="space-y-2">
+        <p class="text-[11px] uppercase tracking-[0.14em] text-[color:var(--muted-foreground)] font-semibold">Central da agenda</p>
+        <h2 class="text-xl md:text-2xl font-bold tracking-tight text-[color:var(--foreground)]">
           Organize sua agenda em segundos
         </h2>
-        <p class="mt-2 text-sm md:text-base text-[color:var(--muted-foreground)]">
-          Veja rapidamente os dias cheios, bloqueie horários específicos e deixe só
-          os períodos em que realmente atende. Tudo pensado para quem não quer
-          complicação.
+        <p class="text-sm text-[color:var(--muted-foreground)]">
+          Acompanhe ocupação diária, ajuste horários e abra rapidamente a agenda completa.
         </p>
       </div>
 
-      <div class="flex flex-wrap gap-3 items-center">
-        <a href="/petshop-panel/agenda" data-agenda-dia-link class="btn-primary-inline w-auto">
+      <div class="grid sm:grid-cols-2 gap-2.5">
+        <a href="/petshop-panel/agenda" data-agenda-dia-link class="btn-primary-inline w-full justify-center">
           <i class="fa-regular fa-calendar mr-1.5"></i>
           Abrir agenda completa
         </a>
         <a href="/petshop-panel/agenda/config"
-           class="btn-ghost border border-dashed border-[color:var(--border)] rounded-xl px-3 py-2 text-xs md:text-sm">
+           class="btn-ghost border border-[color:var(--border)] rounded-xl px-3 py-2.5 text-sm text-center">
           <i class="fa-solid fa-sliders mr-1.5"></i>
-          Ajustar horários de atendimento
+          Ajustar horários
         </a>
       </div>
 
-      <div class="mt-2 grid grid-cols-3 gap-3 text-xs md:text-sm">
-        <div class="rounded-xl px-3 py-2 bg-[color:var(--secondary)]">
-          <p class="text-[color:var(--muted-foreground)]">Hoje</p>
-          <p class="font-semibold">
+      <div class="grid grid-cols-3 gap-2.5 text-xs">
+        <div class="rounded-xl px-3 py-2.5 border border-[color:var(--border)] bg-[color:var(--secondary)]">
+          <p class="text-[color:var(--muted-foreground)] uppercase tracking-wide">Hoje</p>
+          <p class="font-bold text-[13px] mt-1">
             <%= new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }) %>
           </p>
         </div>
-        <div class="rounded-xl px-3 py-2 bg-[color:var(--accent)] text-[color:var(--accent-foreground)]">
-          <p class="text-xs opacity-80">Horários livres</p>
-          <p class="font-semibold text-sm">
+        <div class="rounded-xl px-3 py-2.5 border border-[color:var(--border)] bg-[color:var(--accent)]/15">
+          <p class="text-[color:var(--muted-foreground)] uppercase tracking-wide">Livres</p>
+          <p class="font-bold text-[15px] mt-1 text-[color:var(--accent)]">
             <%= typeof agendaResumo !== 'undefined' ? agendaResumo.livresHoje : '—' %>
           </p>
         </div>
-        <div class="rounded-xl px-3 py-2 bg-[color:var(--primary)] text-[color:var(--primary-foreground)]">
-          <p class="text-xs opacity-90">Agendamentos hoje</p>
-          <p class="font-semibold text-sm">
+        <div class="rounded-xl px-3 py-2.5 border border-[color:var(--border)] bg-[color:var(--primary)]/10">
+          <p class="text-[color:var(--muted-foreground)] uppercase tracking-wide">Agendados</p>
+          <p class="font-bold text-[15px] mt-1 text-[color:var(--primary)]">
             <%= typeof agendaResumo !== 'undefined' ? agendaResumo.totalHoje : (appointments || []).length %>
           </p>
         </div>
       </div>
     </div>
 
-    <div class="relative">
-      <div class="absolute inset-0 pointer-events-none opacity-40"
-           style="background: radial-gradient(circle at 0% 0%, rgba(224,93,56,0.15), transparent 60%);">
+    <div class="rounded-2xl border border-[color:var(--border)] bg-[color:var(--card)] p-3 md:p-4">
+      <header class="flex items-center justify-between gap-3 mb-3">
+        <div>
+          <p class="text-[11px] uppercase tracking-[0.12em] text-[color:var(--muted-foreground)]">Agenda do petshop</p>
+          <p class="text-sm md:text-base font-bold text-[color:var(--foreground)]">
+            <span data-calendar-current-month>
+              <%= hoje.toLocaleDateString('pt-BR', { month: 'long' }) %>
+            </span>
+            <span class="text-[color:var(--muted-foreground)]">de</span>
+            <span data-calendar-current-year><%= hoje.getFullYear() %></span>
+          </p>
+        </div>
+        <div class="flex items-center gap-1.5">
+          <button type="button"
+                  class="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-[color:var(--border)] text-xs text-[color:var(--muted-foreground)] hover:bg-[color:var(--secondary)] transition-colors"
+                  data-calendar-prev aria-label="Mês anterior">
+            <i class="fa-solid fa-chevron-left"></i>
+          </button>
+          <button type="button"
+                  class="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-[color:var(--border)] text-xs text-[color:var(--muted-foreground)] hover:bg-[color:var(--secondary)] transition-colors"
+                  data-calendar-next aria-label="Próximo mês">
+            <i class="fa-solid fa-chevron-right"></i>
+          </button>
+        </div>
+      </header>
+
+      <div class="grid grid-cols-7 gap-1.5 text-[10px] uppercase tracking-wide text-[color:var(--muted-foreground)] mb-2">
+        <span class="text-center rounded-md py-1 bg-[color:var(--secondary)]">D</span>
+        <span class="text-center rounded-md py-1 bg-[color:var(--secondary)]">S</span>
+        <span class="text-center rounded-md py-1 bg-[color:var(--secondary)]">T</span>
+        <span class="text-center rounded-md py-1 bg-[color:var(--secondary)]">Q</span>
+        <span class="text-center rounded-md py-1 bg-[color:var(--secondary)]">Q</span>
+        <span class="text-center rounded-md py-1 bg-[color:var(--secondary)]">S</span>
+        <span class="text-center rounded-md py-1 bg-[color:var(--secondary)]">S</span>
       </div>
-      <div class="relative rounded-2xl border border-[color:var(--border)] bg-[color:var(--card)]/90 backdrop-blur-sm p-3 md:p-4">
-        <header class="flex items-center justify-between mb-3">
-          <div>
-            <p class="text-xs uppercase tracking-wide text-[color:var(--muted-foreground)]">Agenda do petshop</p>
-            <p class="text-sm md:text-base font-semibold">
-              <span data-calendar-current-month>
-                <%= hoje.toLocaleDateString('pt-BR', { month: 'long' }) %>
-              </span>
-              ,
-              <span data-calendar-current-year><%= hoje.getFullYear() %></span>
-            </p>
-          </div>
-          <div class="flex items-center gap-1">
-            <button type="button"
-                    class="inline-flex h-7 w-7 items-center justify-center rounded-full border border-[color:var(--border)] text-xs text-[color:var(--muted-foreground)] hover:bg-[color:var(--secondary)] transition-colors"
-                    data-calendar-prev>
-              <i class="fa-solid fa-chevron-left"></i>
-            </button>
-            <button type="button"
-                    class="inline-flex h-7 w-7 items-center justify-center rounded-full border border-[color:var(--border)] text-xs text-[color:var(--muted-foreground)] hover:bg-[color:var(--secondary)] transition-colors"
-                    data-calendar-next>
-              <i class="fa-solid fa-chevron-right"></i>
-            </button>
-          </div>
-        </header>
 
-        <div class="grid grid-cols-7 gap-1.5 text-[10px] uppercase tracking-wide text-[color:var(--muted-foreground)] mb-2">
-          <span class="text-center">D</span>
-          <span class="text-center">S</span>
-          <span class="text-center">T</span>
-          <span class="text-center">Q</span>
-          <span class="text-center">Q</span>
-          <span class="text-center">S</span>
-          <span class="text-center">S</span>
+      <div class="grid grid-cols-7 gap-1.5 text-xs" data-calendar-grid>
+      </div>
+
+      <div class="mt-3 grid sm:grid-cols-2 gap-2 text-[11px] text-[color:var(--muted-foreground)]">
+        <div class="inline-flex items-center gap-2 rounded-lg border border-[color:var(--border)] px-2 py-1.5 bg-[color:var(--secondary)]">
+          <span class="inline-flex h-2.5 w-2.5 rounded-full bg-[color:var(--accent)]"></span>
+          <span>Dias com horários livres</span>
         </div>
-
-        <div class="grid grid-cols-7 gap-1.5 text-xs" data-calendar-grid>
-        </div>
-
-        <div class="mt-3 flex items-center justify-between text-[10px] text-[color:var(--muted-foreground)]">
-          <div class="flex items-center gap-2">
-            <span class="inline-flex h-2.5 w-2.5 rounded-full bg-[color:var(--accent)]"></span>
-            <span>Dias com horários livres</span>
-          </div>
-          <div class="flex items-center gap-2">
-            <span class="inline-flex h-2.5 w-2.5 rounded-full bg-[color:var(--primary)]"></span>
-            <span>Dias lotados ou bloqueados</span>
-          </div>
+        <div class="inline-flex items-center gap-2 rounded-lg border border-[color:var(--border)] px-2 py-1.5 bg-[color:var(--secondary)]">
+          <span class="inline-flex h-2.5 w-2.5 rounded-full bg-[color:var(--primary)]"></span>
+          <span>Dias lotados ou bloqueados</span>
         </div>
       </div>
     </div>

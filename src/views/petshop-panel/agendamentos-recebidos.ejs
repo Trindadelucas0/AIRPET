@@ -1,0 +1,57 @@
+<% locals.titulo = 'Agendamentos recebidos' %>
+<%
+  const statusLabel = {
+    pendente: 'Pendente',
+    aceito: 'Confirmado',
+    recusado: 'Recusado',
+    expirado: 'Expirado',
+    cancelado: 'Cancelado',
+    concluido: 'Concluído',
+  };
+  locals.extraHead = `
+  <link rel="stylesheet" href="/css/partner-ui.css">
+  <style>
+    .partner-app { max-width: 1180px; }
+    .partner-card { background: var(--ink-2); border:1px solid var(--border); border-radius: 18px; padding: 16px; }
+    .partner-list-item { border: 1px solid var(--border); border-radius: 14px; padding: 12px; background: var(--ink-3); }
+  </style>
+  `;
+%>
+<%- include('../partials/header') %>
+<%- include('../partials/flash') %>
+
+<main class="flex-1 container mx-auto partner-app px-4 py-8 space-y-5 app-shell">
+  <%- include('../partials/petshop-panel-nav', { activeTab: 'agenda' }) %>
+
+  <section class="partner-card">
+    <div class="flex items-center justify-between gap-3 mb-3">
+      <h1 class="text-xl font-bold text-[color:var(--text)]">Agendamentos recebidos</h1>
+      <a href="/petshop-panel/dashboard" class="text-xs text-[color:var(--accent)]">Voltar ao dashboard</a>
+    </div>
+    <% if (!(appointments || []).length) { %>
+      <p class="text-sm text-[color:var(--text-dim)]">Nenhum agendamento recebido ainda.</p>
+    <% } else { %>
+      <div class="space-y-3">
+        <% (appointments || []).forEach(function(a) { %>
+          <article class="partner-list-item flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+            <div>
+              <p class="font-semibold"><%= a.pet_nome %> • <%= a.servico_nome || 'Serviço' %></p>
+              <p class="text-sm text-[color:var(--text-dim)]"><%= a.usuario_nome %> • <%= new Date(a.data_agendada).toLocaleString('pt-BR') %></p>
+              <p class="text-xs text-[color:var(--text-dim)] mt-1">Status atual: <strong><%= statusLabel[a.status] || a.status %></strong></p>
+            </div>
+            <form action="/petshop-panel/agenda/<%= a.id %>/status" method="POST" class="flex flex-wrap gap-2">
+              <select name="status" class="input">
+                <option value="aceito" <%= a.status === 'aceito' ? 'selected' : '' %>>Confirmar</option>
+                <option value="recusado" <%= a.status === 'recusado' ? 'selected' : '' %>>Recusar</option>
+                <option value="concluido" <%= a.status === 'concluido' ? 'selected' : '' %>>Concluir</option>
+              </select>
+              <button class="btn-primary-inline">Atualizar</button>
+            </form>
+          </article>
+        <% }) %>
+      </div>
+    <% } %>
+  </section>
+</main>
+
+<%- include('../partials/footer') %>

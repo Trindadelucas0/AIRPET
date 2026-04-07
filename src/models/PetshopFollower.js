@@ -36,6 +36,17 @@ const PetshopFollower = {
     return result.rows;
   },
 
+  async contarNovosSeguidoresDesde(petshopId, inicioPeriodo) {
+    const result = await query(
+      `SELECT COUNT(*)::int AS total
+       FROM petshop_followers
+       WHERE petshop_id = $1
+         AND data_criacao >= $2`,
+      [petshopId, inicioPeriodo]
+    );
+    return result.rows[0]?.total || 0;
+  },
+
   async usuarioSegue(petshopId, usuarioId) {
     const result = await query(
       `SELECT 1

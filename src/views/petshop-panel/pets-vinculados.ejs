@@ -1,0 +1,27 @@
+<% locals.titulo = 'Pets vinculados' %>
+<%
+  locals.extraHead = `
+  <link rel="stylesheet" href="/css/partner-ui.css">
+  <style>
+    .partner-app { max-width: 1180px; }
+    .partner-card { background: var(--ink-2); border:1px solid var(--border); border-radius: 18px; padding: 16px; }
+  </style>
+  `;
+%>
+<%- include('../partials/header') %>
+<%- include('../partials/flash') %>
+
+<main class="flex-1 container mx-auto partner-app px-4 py-8 space-y-5 app-shell">
+  <%- include('../partials/petshop-panel-nav', { activeTab: 'dashboard' }) %>
+  <section class="partner-card">
+    <div class="flex items-center justify-between gap-3">
+      <h1 class="text-xl font-bold text-[color:var(--text)]">Pets vinculados</h1>
+      <a href="/petshop-panel/dashboard" class="text-xs text-[color:var(--accent)]">Voltar ao dashboard</a>
+    </div>
+    <p class="text-sm text-[color:var(--text-dim)] mt-1">Lista completa dos pets vinculados ao seu PetParceiro.</p>
+  </section>
+
+  <%- include('../partials/petshop-linked-pets-card', { petsVinculadosDetalhados: petsVinculadosDetalhados || [] }) %>
+</main>
+
+<%- include('../partials/footer') %>

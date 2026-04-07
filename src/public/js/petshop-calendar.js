@@ -46,7 +46,7 @@
 
     for (var i = 0; i < firstDay; i++) {
       var empty = document.createElement('div')
-      empty.className = 'h-7 md:h-8'
+      empty.className = 'h-9 md:h-10'
       grid.appendChild(empty)
     }
 
@@ -61,15 +61,15 @@
       var btn = document.createElement('button')
       btn.type = 'button'
       btn.className =
-        'relative flex items-center justify-center h-7 w-7 md:h-8 md:w-8 rounded-xl text-xs md:text-sm transition-colors duration-150'
+        'relative flex items-center justify-center h-9 w-full md:h-10 rounded-lg text-xs md:text-sm font-semibold transition-colors duration-150'
 
       var isHoje = key === hojeKey
       var baseClasses =
         'bg-[color:var(--card)] border border-[color:var(--border)] text-[color:var(--foreground)] hover:bg-[color:var(--secondary)]'
       var livreClasses =
-        'bg-[color:var(--accent)]/70 text-[color:var(--accent-foreground)] border-none'
+        'bg-[color:var(--accent)]/20 text-[color:var(--foreground)] border border-[color:var(--accent)]/40'
       var cheioClasses =
-        'bg-[color:var(--primary)] text-[color:var(--primary-foreground)] border-none'
+        'bg-[color:var(--primary)]/20 text-[color:var(--foreground)] border border-[color:var(--primary)]/45'
 
       if (resumo && resumo.status === 'lotado') {
         btn.className += ' ' + cheioClasses
@@ -86,6 +86,14 @@
 
       btn.dataset.date = key
       btn.textContent = String(day)
+      var tooltip = key
+      if (resumo && resumo.total != null) {
+        tooltip += ' • ' + String(resumo.total) + ' agendamento(s)'
+      }
+      if (resumo && resumo.capacidade != null) {
+        tooltip += ' • capacidade: ' + String(resumo.capacidade)
+      }
+      btn.title = tooltip
 
       btn.addEventListener('click', function (e) {
         var d = e.currentTarget.dataset.date
@@ -100,6 +108,16 @@
           }
         }
       })
+
+      if (resumo && (resumo.status === 'lotado' || resumo.status === 'parcial')) {
+        var dot = document.createElement('span')
+        dot.className =
+          'absolute bottom-1.5 right-1.5 h-1.5 w-1.5 rounded-full ' +
+          (resumo.status === 'lotado'
+            ? 'bg-[color:var(--primary)]'
+            : 'bg-[color:var(--accent)]')
+        btn.appendChild(dot)
+      }
 
       grid.appendChild(btn)
     }

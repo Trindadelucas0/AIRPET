@@ -20,6 +20,7 @@ const petshopScheduleService = require('../services/petshopScheduleService');
 const petshopAppointmentService = require('../services/petshopAppointmentService');
 const petshopAgendaResumoService = require('../services/petshopAgendaResumoService');
 const petshopDisponibilidadeService = require('../services/petshopDisponibilidadeService');
+const petshopMetricsService = require('../services/petshopMetricsService');
 const logger = require('../utils/logger');
 
 function formatDateKey(date) {
@@ -155,6 +156,7 @@ const petshopPanelController = {
   async dashboard(req, res) {
     try {
       const petshopId = req.petshopAccount.petshop_id;
+      const period = petshopMetricsService.parsePeriodDays(req.query?.period);
       const [services, products, posts, appointments, profile, solicitacoesVinculo, petshop, petsVinculadosDetalhados, followerCount] = await Promise.all([
         PetshopService.listarAtivos(petshopId),
         PetshopProduct.listarAtivosPorPetshop(petshopId),
@@ -171,6 +173,7 @@ const petshopPanelController = {
         petshopAgendaResumoService.gerarResumoMensal(petshopId, new Date()),
         petshopAgendaResumoService.gerarResumoHoje(petshopId, new Date()),
       ]);
+      const metricas = await petshopMetricsService.resumirKPIs(petshopId, period);
 
       return res.render('petshop-panel/dashboard', {
         titulo: 'Painel do Petshop',
@@ -184,6 +187,7 @@ const petshopPanelController = {
         solicitacao,
         agendaResumo,
         agendaDiasResumo,
+        metricas,
         petshop,
         petsVinculadosDetalhados,
         followerCount,
@@ -193,6 +197,36 @@ const petshopPanelController = {
       logger.error('PetshopPanelController', 'Erro no dashboard do parceiro', erro);
       req.session.flash = { tipo: 'erro', mensagem: 'Erro ao carregar dashboard do parceiro.' };
       return res.redirect('/petshop-panel/auth/login');
+    }
+  },
+
+  async mostrarPetsVinculados(req, res) {
+    try {
+      const petshopId = req.petshopAccount.petshop_id;
+      const petsVinculadosDetalhados = await carregarPacotePetsVinculados(petshopId);
+      return res.render('petshop-panel/pets-vinculados', {
+        titulo: 'Pets vinculados',
+        petsVinculadosDetalhados,
+      });
+    } catch (erro) {
+      logger.error('PetshopPanelController', 'Erro ao carregar pets vinculados', erro);
+      req.session.flash = { tipo: 'erro', mensagem: 'Erro ao carregar pets vinculados.' };
+      return res.redirect('/petshop-panel/dashboard');
+    }
+  },
+
+  async mostrarAgendamentosRecebidos(req, res) {
+    try {
+      const petshopId = req.petshopAccount.petshop_id;
+      const appointments = await PetshopAppointment.listarPorPetshop(petshopId);
+      return res.render('petshop-panel/agendamentos-recebidos', {
+        titulo: 'Agendamentos recebidos',
+        appointments,
+      });
+    } catch (erro) {
+      logger.error('PetshopPanelController', 'Erro ao carregar agendamentos recebidos', erro);
+      req.session.flash = { tipo: 'erro', mensagem: 'Erro ao carregar agendamentos recebidos.' };
+      return res.redirect('/petshop-panel/dashboard');
     }
   },
 

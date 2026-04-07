@@ -182,8 +182,8 @@ const PetshopAppointment = {
   async atualizarStatus(id, status, motivo_recusa = null) {
     const result = await query(
       `UPDATE petshop_appointments
-       SET status = $2,
-           motivo_recusa = CASE WHEN $2 = 'recusado' THEN $3 ELSE NULL END,
+       SET status = $2::text,
+           motivo_recusa = CASE WHEN $2::text = 'recusado' THEN $3 ELSE NULL END,
            data_atualizacao = NOW()
        WHERE id = $1
        RETURNING *`,

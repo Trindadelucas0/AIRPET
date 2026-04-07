@@ -43,7 +43,13 @@
     <%- include('../partials/petshop-public-profile-preview', { petshop: petshop, profile: profile, postsComFoto: postsComFoto, promocoes: promocoes, followerCount: followerCount }) %>
   </section>
 
-  <%- include('../partials/petshop-linked-pets-card', { petsVinculadosDetalhados: petsVinculadosDetalhados }) %>
+  <section class="partner-card">
+    <div class="flex items-center justify-between gap-3">
+      <h2 class="font-bold">Pets vinculados</h2>
+      <a href="/petshop-panel/pets-vinculados" class="text-xs text-[color:var(--accent)]">Abrir view completa</a>
+    </div>
+    <p class="text-sm text-[color:var(--text-dim)] mt-1">Você possui <strong><%= (petsVinculadosDetalhados || []).length %></strong> pets vinculados.</p>
+  </section>
 
   <section class="grid lg:grid-cols-2 gap-6">
     <div class="partner-card">
