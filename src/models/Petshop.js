@@ -87,6 +87,29 @@ const Petshop = {
     return resultado.rows;
   },
 
+  async listarAtivosComBuscaServico(termo) {
+    const q = `%${String(termo || '').trim()}%`;
+    const resultado = await query(
+      `SELECT
+         p.*,
+         ARRAY_REMOVE(ARRAY_AGG(DISTINCT s.nome), NULL) AS servicos_encontrados
+       FROM petshops p
+       LEFT JOIN petshop_services s
+         ON s.petshop_id = p.id
+        AND s.ativo = true
+       WHERE p.ativo = true
+         AND (
+           p.nome ILIKE $1
+           OR s.nome ILIKE $1
+           OR COALESCE(s.descricao, '') ILIKE $1
+         )
+       GROUP BY p.id
+       ORDER BY p.nome ASC`,
+      [q]
+    );
+    return resultado.rows;
+  },
+
   /**
    * Campos mínimos para JSON público (ex.: GET /api/petshops/mapa).
    * Não expõe email, email_contato nem outras colunas internas.

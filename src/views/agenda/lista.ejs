@@ -14,14 +14,17 @@
 
 <main class="flex-1 container mx-auto px-4 py-8 max-w-5xl space-y-6">
   <section class="card">
-    <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
-      <h1 class="text-2xl font-black text-gray-900">Minha agenda de serviços</h1>
-      <span class="text-xs text-gray-500">Solicite um horário e aguarde confirmação do petshop.</span>
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
+      <div>
+        <h1 class="text-2xl font-black text-gray-900">Agendar serviço</h1>
+        <p class="text-sm text-gray-500 mt-1">Escolha parceiro, serviço, pet e dia para ver horários livres.</p>
+      </div>
+      <span class="text-xs text-gray-500">Confirmação pelo petshop após envio.</span>
     </div>
 
     <form action="/agenda" method="GET" class="grid md:grid-cols-5 gap-3">
       <div>
-        <label class="block text-xs font-semibold text-gray-600 mb-1">Petshop</label>
+        <label class="block text-xs font-semibold text-gray-600 mb-1">1) Petshop</label>
         <select name="petshop_id" class="input-field" required>
           <option value="">Selecione...</option>
           <% (petshops || []).forEach(function(ps) { %>
@@ -30,7 +33,7 @@
         </select>
       </div>
       <div>
-        <label class="block text-xs font-semibold text-gray-600 mb-1">Serviço</label>
+        <label class="block text-xs font-semibold text-gray-600 mb-1">2) Serviço</label>
         <select name="service_id" class="input-field" required>
           <option value="">Selecione...</option>
           <% (petshops || []).forEach(function(ps) { %>
@@ -43,7 +46,7 @@
         </select>
       </div>
       <div>
-        <label class="block text-xs font-semibold text-gray-600 mb-1">Pet</label>
+        <label class="block text-xs font-semibold text-gray-600 mb-1">3) Pet</label>
         <select name="pet_id" class="input-field" required>
           <option value="">Selecione...</option>
           <% (pets || []).forEach(function(p) { %>
@@ -52,7 +55,7 @@
         </select>
       </div>
       <div>
-        <label class="block text-xs font-semibold text-gray-600 mb-1">Dia</label>
+        <label class="block text-xs font-semibold text-gray-600 mb-1">4) Dia</label>
         <input type="date" name="dia" value="<%= diaSelecionado || '' %>" class="input-field" required>
       </div>
       <div class="flex items-end">
@@ -61,15 +64,20 @@
     </form>
 
     <div class="mt-4">
-      <h2 class="text-sm font-bold text-gray-800 mb-2">Horários disponíveis</h2>
+      <h2 class="text-sm font-bold text-gray-800 mb-2">5) Horários disponíveis</h2>
       <% if (!(slotsDisponiveis || []).length) { %>
-        <p class="text-sm text-gray-500">Selecione petshop, serviço e dia para carregar os horários.</p>
+        <% if (petshopSelecionado && serviceSelecionado && diaSelecionado) { %>
+          <p class="text-sm text-gray-500">Não encontramos horários livres para este dia. Tente outra data.</p>
+        <% } else { %>
+          <p class="text-sm text-gray-500">Selecione petshop, serviço e dia para carregar os horários.</p>
+        <% } %>
       <% } else { %>
         <div class="flex flex-wrap gap-2">
           <% (slotsDisponiveis || []).forEach(function(slot) { %>
             <form action="/agenda" method="POST" class="inline-flex">
               <input type="hidden" name="petshop_id" value="<%= petshopSelecionado %>">
               <input type="hidden" name="service_id" value="<%= serviceSelecionado %>">
+              <input type="hidden" name="dia" value="<%= diaSelecionado || '' %>">
               <input type="hidden" name="data_agendada" value="<%= slot.inicio %>">
               <input type="hidden" name="pet_id" value="<%= petSelecionado || '' %>">
               <button class="px-3 py-2 rounded-xl border border-gray-200 text-sm hover:bg-orange-50 transition-colors">
@@ -129,6 +137,8 @@
   (function () {
     var petshopSelect = document.querySelector('select[name="petshop_id"]')
     var serviceSelect = document.querySelector('select[name="service_id"]')
+    var petSelect = document.querySelector('select[name="pet_id"]')
+    var buttons = document.querySelectorAll('form[action="/agenda"] button')
     if (!petshopSelect || !serviceSelect) return
     function filterServices() {
       var petshopId = petshopSelect.value
@@ -140,8 +150,19 @@
       var selected = serviceSelect.options[serviceSelect.selectedIndex]
       if (selected && selected.hidden) serviceSelect.value = ''
     }
+    function toggleSubmitByPet() {
+      if (!petSelect || !buttons.length) return
+      var hasPet = !!petSelect.value
+      Array.prototype.forEach.call(buttons, function (btn) {
+        if (!btn.closest('form') || btn.closest('form').method !== 'post') return
+        btn.disabled = !hasPet
+        btn.title = hasPet ? '' : 'Selecione um pet antes de agendar'
+      })
+    }
     petshopSelect.addEventListener('change', filterServices)
+    if (petSelect) petSelect.addEventListener('change', toggleSubmitByPet)
     filterServices()
+    toggleSubmitByPet()
   })()
 </script>
 

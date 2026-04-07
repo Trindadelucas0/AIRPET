@@ -40,6 +40,53 @@ const PetshopPost = {
     return result.rows;
   },
 
+  async listarPorPetshop(petshopId, limit = 100) {
+    const result = await query(
+      `SELECT *
+       FROM petshop_posts
+       WHERE petshop_id = $1
+       ORDER BY COALESCE(publicado_em, data_criacao) DESC
+       LIMIT $2`,
+      [petshopId, limit]
+    );
+    return result.rows;
+  },
+
+  async buscarPorId(id, petshopId) {
+    const result = await query(
+      `SELECT *
+       FROM petshop_posts
+       WHERE id = $1 AND petshop_id = $2
+       LIMIT 1`,
+      [id, petshopId]
+    );
+    return result.rows[0] || null;
+  },
+
+  async atualizar(id, petshopId, dados = {}) {
+    const result = await query(
+      `UPDATE petshop_posts
+       SET titulo = COALESCE($3, titulo),
+           texto = COALESCE($4, texto),
+           foto_url = COALESCE($5, foto_url),
+           data_atualizacao = NOW()
+       WHERE id = $1 AND petshop_id = $2
+       RETURNING *`,
+      [id, petshopId, dados.titulo || null, dados.texto || null, dados.foto_url || null]
+    );
+    return result.rows[0] || null;
+  },
+
+  async deletar(id, petshopId) {
+    const result = await query(
+      `DELETE FROM petshop_posts
+       WHERE id = $1 AND petshop_id = $2
+       RETURNING *`,
+      [id, petshopId]
+    );
+    return result.rows[0] || null;
+  },
+
   async contarFotosFeedAtivas(petshopId) {
     const result = await query(
       `SELECT COUNT(*)::int AS total

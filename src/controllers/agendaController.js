@@ -31,6 +31,14 @@ const petshopAppointmentService = require('../services/petshopAppointmentService
 const petshopDisponibilidadeService = require('../services/petshopDisponibilidadeService');
 const logger = require('../utils/logger');
 
+function hojeDiaCivil() {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, '0');
+  const d = String(now.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
 /**
  * criar — Cria um novo agendamento de serviço em um petshop
  *
@@ -51,10 +59,10 @@ const logger = require('../utils/logger');
 async function criar(req, res) {
   try {
     const usuarioId = req.session.usuario.id;
-    const { petshop_id, pet_id, service_id, data, data_agendada, observacoes } = req.body || {};
+    const { petshop_id, pet_id, service_id, data, data_agendada, dia, observacoes } = req.body || {};
     const dataFinal = data_agendada || data;
 
-    if (!petshop_id || !service_id || !dataFinal) {
+    if (!petshop_id || !service_id || !pet_id || !dataFinal) {
       req.session.flash = { tipo: 'erro', mensagem: 'Preencha todos os campos obrigatórios do agendamento.' };
       return res.redirect('/agenda');
     }
@@ -63,9 +71,10 @@ async function criar(req, res) {
       petshop_id: Number(petshop_id),
       service_id: Number(service_id),
       usuario_id: usuarioId,
-      pet_id: pet_id || null,
+      pet_id: Number(pet_id),
       observacoes: observacoes || null,
       data_agendada: dataFinal,
+      dia_selecionado: dia || null,
       origem: 'tutor',
     });
 
@@ -76,7 +85,13 @@ async function criar(req, res) {
   } catch (erro) {
     logger.error('AgendaController', 'Erro ao criar agendamento', erro);
     req.session.flash = { tipo: 'erro', mensagem: erro.message || 'Erro ao criar o agendamento. Tente novamente.' };
-    return res.redirect('/agenda');
+    const query = new URLSearchParams();
+    if (req.body?.petshop_id) query.set('petshop_id', req.body.petshop_id);
+    if (req.body?.service_id) query.set('service_id', req.body.service_id);
+    if (req.body?.pet_id) query.set('pet_id', req.body.pet_id);
+    if (req.body?.dia) query.set('dia', req.body.dia);
+    const suffix = query.toString() ? `?${query.toString()}` : '';
+    return res.redirect(`/agenda${suffix}`);
   }
 }
 
@@ -99,7 +114,7 @@ async function listar(req, res) {
     const petshopSelecionado = req.query.petshop_id ? Number(req.query.petshop_id) : null;
     const serviceSelecionado = req.query.service_id ? Number(req.query.service_id) : null;
     const petSelecionado = req.query.pet_id ? Number(req.query.pet_id) : null;
-    const diaSelecionado = req.query.dia || new Date().toISOString().slice(0, 10);
+    const diaSelecionado = req.query.dia || hojeDiaCivil();
 
     const [agendamentos, pets, petshops] = await Promise.all([
       PetshopAppointment.listarPorUsuario(usuarioId),

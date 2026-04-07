@@ -55,7 +55,10 @@ function usuarioSessaoOuBearer(req) {
  */
 async function listar(req, res) {
   try {
-    let petshops = await Petshop.listarAtivos();
+    const termoBusca = String(req.query.q || '').trim();
+    let petshops = termoBusca
+      ? await Petshop.listarAtivosComBuscaServico(termoBusca)
+      : await Petshop.listarAtivos();
     if (req.query.apoio === '1') {
       petshops = petshops.filter((p) => p.ponto_de_apoio);
     }
@@ -66,6 +69,7 @@ async function listar(req, res) {
     return res.render('petshops/lista', {
       titulo: 'Petshops Parceiros - AIRPET',
       petshops,
+      termoBusca,
     });
   } catch (erro) {
     logger.error('PetshopController', 'Erro ao listar petshops', erro);
@@ -143,6 +147,11 @@ async function mostrarDetalhes(req, res) {
     const userSegue = usuarioId ? await PetshopFollower.usuarioSegue(petshop.id, usuarioId) : false;
     let meusPets = [];
     let statusSolicitacoesPorPet = {};
+    let vinculoResumo = {
+      hasVinculoAprovado: false,
+      hasPendente: false,
+      petsVinculadosCount: 0,
+    };
     if (usuarioId) {
       meusPets = await Pet.buscarPorUsuario(usuarioId);
       const rows = await Promise.all(
@@ -159,6 +168,12 @@ async function mostrarDetalhes(req, res) {
         acc[row.pet_id] = row.status;
         return acc;
       }, {});
+      const totalAprovados = rows.filter((r) => r.status === 'aprovada').length;
+      vinculoResumo = {
+        hasVinculoAprovado: totalAprovados > 0,
+        hasPendente: rows.some((r) => r.status === 'pendente'),
+        petsVinculadosCount: totalAprovados,
+      };
     }
 
     res.removeHeader('Content-Disposition');
@@ -180,6 +195,7 @@ async function mostrarDetalhes(req, res) {
       userSegue,
       meusPets,
       statusSolicitacoesPorPet,
+      vinculoResumo,
     });
   } catch (erro) {
     logger.error('PetshopController', 'Erro ao exibir detalhes do petshop', erro);

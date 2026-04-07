@@ -4,6 +4,28 @@ const PetshopService = require('../models/PetshopService');
 const petshopDisponibilidadeService = require('./petshopDisponibilidadeService');
 const notificacaoService = require('./notificacaoService');
 
+function formatDiaCivil(dateLike) {
+  const d = new Date(dateLike);
+  if (Number.isNaN(d.getTime())) return null;
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function slotMatches(slotInicio, alvo) {
+  const slot = new Date(slotInicio);
+  const dataAlvo = new Date(alvo);
+  if (Number.isNaN(slot.getTime()) || Number.isNaN(dataAlvo.getTime())) return false;
+  return slot.getTime() === dataAlvo.getTime();
+}
+
+function formatHoraBR(dateLike) {
+  const d = new Date(dateLike);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+}
+
 const petshopAppointmentService = {
   async criarAgendamento({
     petshop_id,
@@ -12,16 +34,21 @@ const petshopAppointmentService = {
     pet_id,
     observacoes,
     data_agendada,
+    dia_selecionado = null,
     origem = 'tutor',
     prazoHoras = 6,
   }) {
+    if (!pet_id) {
+      throw new Error('Selecione um pet antes de agendar.');
+    }
+
     if (origem === 'tutor' && service_id && data_agendada) {
       const servicos = await PetshopService.listarAtivos(petshop_id);
       const servico = (servicos || []).find((s) => Number(s.id) === Number(service_id));
       if (!servico) {
         throw new Error('Serviço indisponível para este petshop.');
       }
-      const dia = new Date(data_agendada).toISOString().slice(0, 10);
+      const dia = String(dia_selecionado || '').trim() || formatDiaCivil(data_agendada);
       const disponibilidade = await petshopDisponibilidadeService.listarSlotsDisponiveis({
         petshopId: petshop_id,
         serviceId: service_id,
@@ -29,12 +56,22 @@ const petshopAppointmentService = {
         duracaoMinutos: servico.duracao_minutos || 30,
       });
       const existeSlot = (disponibilidade.slots || []).some((slot) => {
-        const i = new Date(slot.inicio).getTime();
-        const alvo = new Date(data_agendada).getTime();
-        return i === alvo;
+        return slotMatches(slot.inicio, data_agendada);
       });
       if (!existeSlot) {
-        throw new Error('Este horário não está mais disponível.');
+        const sugestoes = (disponibilidade.slots || [])
+          .slice(0, 4)
+          .map((slot) => formatHoraBR(slot.inicio))
+          .filter(Boolean);
+        const erro = new Error(
+          sugestoes.length
+            ? `Este horário não está mais disponível. Tente: ${sugestoes.join(', ')}.`
+            : 'Este horário não está mais disponível. Atualize a busca e escolha outro horário.'
+        );
+        erro.code = 'SLOT_UNAVAILABLE';
+        erro.sugestoes = sugestoes;
+        erro.dia = dia;
+        throw erro;
       }
     }
 

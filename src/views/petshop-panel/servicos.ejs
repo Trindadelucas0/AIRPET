@@ -6,6 +6,8 @@
     .partner-app { max-width: 1080px; }
     .partner-card { background: var(--ink-2); border:1px solid var(--border); border-radius: 18px; padding: 16px; }
     .service-item { border: 1px solid var(--border); border-radius: 14px; padding: 12px; background: var(--ink-3); }
+    .service-grid { display: grid; gap: 10px; }
+    .service-photo { width: 100%; max-width: 160px; aspect-ratio: 16/10; border-radius: 10px; border: 1px solid var(--border); object-fit: cover; }
   </style>
   `;
 %>
@@ -22,10 +24,11 @@
 
   <section class="partner-card">
     <h2 class="font-bold mb-3">Novo serviço</h2>
-    <form action="/petshop-panel/servicos" method="POST" class="grid md:grid-cols-2 gap-3">
+    <form action="/petshop-panel/servicos" method="POST" enctype="multipart/form-data" class="grid md:grid-cols-2 gap-3">
       <input class="input w-full" name="nome" placeholder="Nome do serviço" required>
       <input class="input w-full" type="number" name="duracao_minutos" placeholder="Duração (min)" required>
       <input class="input w-full" type="number" step="0.01" name="preco_base" placeholder="Preço base">
+      <input class="input w-full" type="file" name="foto" accept="image/*">
       <textarea class="input w-full md:col-span-2 min-h-20" name="descricao" placeholder="Descrição"></textarea>
       <div class="md:col-span-2">
         <button class="btn-primary-inline">Salvar serviço</button>
@@ -41,16 +44,35 @@
     <% if (!(services || []).length) { %>
       <p class="text-sm text-[color:var(--text-dim)]">Ainda não há serviços ativos.</p>
     <% } else { %>
-      <div class="space-y-3">
+      <div class="service-grid">
         <% (services || []).forEach(function(s) { %>
           <article class="service-item">
-            <div class="flex flex-wrap items-center justify-between gap-2">
-              <p class="font-semibold"><%= s.nome %></p>
-              <p class="text-xs text-[color:var(--text-dim)]"><%= s.duracao_minutos || 30 %> min • <%= s.preco_base != null ? ('R$ ' + Number(s.preco_base).toFixed(2).replace('.', ',')) : 'Sem preço' %></p>
+            <div class="grid lg:grid-cols-[160px_minmax(0,1fr)] gap-3">
+              <div>
+                <% if (s.foto_url) { %>
+                  <img src="<%= s.foto_url %>" alt="<%= s.nome %>" class="service-photo">
+                <% } else { %>
+                  <div class="service-photo flex items-center justify-center text-xs text-[color:var(--text-dim)]">Sem foto</div>
+                <% } %>
+              </div>
+              <div>
+                <form action="/petshop-panel/servicos/<%= s.id %>/editar" method="POST" enctype="multipart/form-data" class="space-y-2">
+                  <div class="grid md:grid-cols-2 gap-2">
+                    <input class="input w-full" name="nome" value="<%= s.nome %>" required>
+                    <input class="input w-full" type="number" name="duracao_minutos" value="<%= s.duracao_minutos || 30 %>" required>
+                    <input class="input w-full" type="number" step="0.01" name="preco_base" value="<%= s.preco_base != null ? s.preco_base : '' %>">
+                    <input class="input w-full" type="file" name="foto" accept="image/*">
+                  </div>
+                  <textarea class="input w-full min-h-20" name="descricao" placeholder="Descrição"><%= s.descricao || '' %></textarea>
+                  <div class="flex flex-wrap gap-2">
+                    <button class="btn-primary-inline text-sm">Salvar edição</button>
+                  </div>
+                </form>
+                <form action="/petshop-panel/servicos/<%= s.id %>/remover" method="POST" class="mt-2">
+                  <button class="px-3 py-2 rounded-xl border border-red-200 bg-red-50 text-red-600 text-xs font-semibold">Excluir serviço</button>
+                </form>
+              </div>
             </div>
-            <% if (s.descricao) { %>
-              <p class="text-sm text-[color:var(--text-dim)] mt-1"><%= s.descricao %></p>
-            <% } %>
           </article>
         <% }) %>
       </div>

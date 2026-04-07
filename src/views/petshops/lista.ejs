@@ -10,6 +10,11 @@
   .page-sub{font-size:12px;color:var(--text-dim);margin-top:2px;}
   .btn-map{display:inline-flex;align-items:center;gap:8px;padding:9px 18px;background:var(--ink-3);border:1px solid var(--border);border-radius:10px;color:var(--text-dim);font-size:13px;font-weight:600;text-decoration:none;transition:all 0.15s;}
   .btn-map:hover{border-color:var(--accent);color:var(--accent);text-decoration:none;}
+  .search-shell{margin:18px 0 16px;}
+  .search-form{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;}
+  .search-input{width:100%;padding:11px 13px;border-radius:12px;border:1px solid var(--border);background:var(--ink-2);color:var(--text);}
+  .search-btn{padding:0 14px;border-radius:12px;border:1px solid var(--border);background:var(--ink-2);color:var(--text-dim);font-weight:700;}
+  .search-btn:hover{border-color:var(--accent);color:var(--accent);}
   /* Grid */
   .ps-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
   @media(max-width:900px){.ps-grid{grid-template-columns:repeat(2,1fr);}}
@@ -57,6 +62,18 @@
 
 <main class="flex-1">
   <div class="lista-wrap">
+    <div class="search-shell">
+      <form action="/petshops" method="GET" class="search-form">
+        <input
+          type="text"
+          name="q"
+          class="search-input"
+          value="<%= termoBusca || '' %>"
+          placeholder="Buscar por serviço (ex.: banho, tosa, consulta)"
+        >
+        <button class="search-btn" type="submit">Buscar</button>
+      </form>
+    </div>
     <% if (typeof petshops !== 'undefined' && petshops.length > 0) { %>
       <div class="ps-grid">
         <% petshops.forEach(function(ps, idx) { %>
@@ -85,6 +102,9 @@
               <div class="ps-tags">
                 <% if (ps.ponto_de_apoio) { %><span class="ps-tag green">Apoio</span><% } %>
                 <% if (ps.tipo_servico) { %><span class="ps-tag blue"><%= ps.tipo_servico %></span><% } %>
+                <% if (Array.isArray(ps.servicos_encontrados) && ps.servicos_encontrados.length) { %>
+                  <span class="ps-tag purple">Serviço encontrado: <%= ps.servicos_encontrados[0] %></span>
+                <% } %>
               </div>
             </div>
           </a>

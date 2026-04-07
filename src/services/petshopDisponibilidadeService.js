@@ -7,6 +7,16 @@ function parseDate(dateLike) {
   return Number.isNaN(d.getTime()) ? new Date() : d;
 }
 
+function parseCivilDate(input) {
+  const raw = String(input || '').trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+    const [yy, mm, dd] = raw.split('-').map(Number);
+    const date = new Date(yy, mm - 1, dd, 0, 0, 0, 0);
+    return Number.isNaN(date.getTime()) ? null : date;
+  }
+  return null;
+}
+
 function startOfDay(date) {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0);
 }
@@ -31,7 +41,7 @@ function overlaps(aStart, aEnd, bStart, bEnd) {
 
 const petshopDisponibilidadeService = {
   async listarSlotsDisponiveis({ petshopId, serviceId, dia, duracaoMinutos = 30 }) {
-    const target = parseDate(dia);
+    const target = parseCivilDate(dia) || parseDate(dia);
     const dayStart = startOfDay(target);
     const dayEnd = endOfDay(target);
     const weekday = target.getDay();

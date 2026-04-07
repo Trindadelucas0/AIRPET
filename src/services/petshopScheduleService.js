@@ -8,9 +8,25 @@ const petshopScheduleService = {
       petshop_id: petshopId,
       nome: dados.nome,
       descricao: dados.descricao,
+      foto_url: dados.foto_url,
       duracao_minutos: dados.duracao_minutos,
       preco_base: dados.preco_base,
     });
+  },
+
+  async atualizarServico(petshopId, serviceId, dados) {
+    return PetshopService.atualizar(serviceId, petshopId, {
+      nome: dados.nome,
+      descricao: dados.descricao,
+      foto_url: dados.foto_url,
+      duracao_minutos: dados.duracao_minutos,
+      preco_base: dados.preco_base,
+      ativo: true,
+    });
+  },
+
+  async removerServico(petshopId, serviceId) {
+    return PetshopService.deletar(serviceId, petshopId);
   },
 
   async salvarRegraSemanal(petshopId, regra) {

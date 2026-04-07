@@ -37,6 +37,77 @@ const PetshopProduct = {
     return result.rows;
   },
 
+  async listarPorPetshop(petshopId, limit = 100) {
+    const result = await query(
+      `SELECT *
+       FROM petshop_products
+       WHERE petshop_id = $1
+       ORDER BY data_criacao DESC
+       LIMIT $2`,
+      [petshopId, limit]
+    );
+    return result.rows;
+  },
+
+  async buscarPorId(id, petshopId) {
+    const result = await query(
+      `SELECT *
+       FROM petshop_products
+       WHERE id = $1 AND petshop_id = $2
+       LIMIT 1`,
+      [id, petshopId]
+    );
+    return result.rows[0] || null;
+  },
+
+  async atualizar(id, petshopId, dados = {}) {
+    const result = await query(
+      `UPDATE petshop_products
+       SET nome = COALESCE($3, nome),
+           preco = COALESCE($4, preco),
+           descricao = COALESCE($5, descricao),
+           foto_url = COALESCE($6, foto_url),
+           contato_link = COALESCE($7, contato_link),
+           service_id = COALESCE($8, service_id),
+           is_active = COALESCE($9, is_active),
+           data_atualizacao = NOW()
+       WHERE id = $1 AND petshop_id = $2
+       RETURNING *`,
+      [
+        id,
+        petshopId,
+        dados.nome || null,
+        dados.preco != null && dados.preco !== '' ? Number(dados.preco) : null,
+        dados.descricao != null ? dados.descricao : null,
+        dados.foto_url || null,
+        dados.contato_link || null,
+        dados.service_id != null && dados.service_id !== '' ? Number(dados.service_id) : null,
+        dados.is_active == null ? null : !!dados.is_active,
+      ]
+    );
+    return result.rows[0] || null;
+  },
+
+  async deletar(id, petshopId) {
+    const result = await query(
+      `DELETE FROM petshop_products
+       WHERE id = $1 AND petshop_id = $2
+       RETURNING *`,
+      [id, petshopId]
+    );
+    return result.rows[0] || null;
+  },
+
+  async deletarPorPostId(postId, petshopId) {
+    const result = await query(
+      `DELETE FROM petshop_products
+       WHERE post_id = $1 AND petshop_id = $2
+       RETURNING *`,
+      [postId, petshopId]
+    );
+    return result.rows;
+  },
+
   async contarAtivosPorPetshop(petshopId) {
     const result = await query(
       `SELECT COUNT(*)::int AS total

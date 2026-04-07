@@ -1537,12 +1537,21 @@ const migrations = [
     petshop_id INTEGER NOT NULL REFERENCES petshops(id) ON DELETE CASCADE,
     nome VARCHAR(120) NOT NULL,
     descricao TEXT,
+    foto_url TEXT,
     duracao_minutos INTEGER NOT NULL DEFAULT 30,
     preco_base NUMERIC(10,2),
     ativo BOOLEAN DEFAULT true,
     data_criacao TIMESTAMP DEFAULT NOW(),
     UNIQUE (petshop_id, nome)
   );`,
+  `DO $$ BEGIN
+    IF NOT EXISTS (
+      SELECT 1 FROM information_schema.columns
+      WHERE table_name='petshop_services' AND column_name='foto_url'
+    ) THEN
+      ALTER TABLE petshop_services ADD COLUMN foto_url TEXT;
+    END IF;
+  END $$;`,
 
   `CREATE TABLE IF NOT EXISTS petshop_schedule_rules (
     id SERIAL PRIMARY KEY,

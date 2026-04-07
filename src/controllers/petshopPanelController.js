@@ -221,14 +221,16 @@ const petshopPanelController = {
       const [petshop, profile, posts, products, services, followerCount, petsVinculadosDetalhados] = await Promise.all([
         Petshop.buscarPorId(petshopId),
         PetshopProfile.buscarPorPetshopId(petshopId),
-        PetshopPost.listarPublicosPorPetshop(petshopId),
-        PetshopProduct.listarAtivosPorPetshop(petshopId),
+        PetshopPost.listarPorPetshop(petshopId, 120),
+        PetshopProduct.listarPorPetshop(petshopId, 120),
         PetshopService.listarAtivos(petshopId),
         PetshopFollower.contarSeguidores(petshopId).catch(() => 0),
         carregarPacotePetsVinculados(petshopId),
       ]);
-      const postsComFoto = (posts || []).filter((p) => p && p.foto_url && String(p.foto_url).trim());
-      const promocoes = (products || []).filter((p) => p && p.is_promocao);
+      const postsComFoto = (posts || []).filter((p) => p && p.ativo !== false && p.foto_url && String(p.foto_url).trim());
+      const promocoes = (products || []).filter((p) => p && p.is_active !== false && p.is_promocao);
+      const produtos = (products || []).filter((p) => p && p.is_active !== false && !p.is_promocao);
+      const postsNormais = (posts || []).filter((p) => p && p.post_type === 'normal');
 
       return res.render('petshop-panel/perfil', {
         titulo: 'Meu perfil público',
@@ -236,7 +238,9 @@ const petshopPanelController = {
         profile,
         services,
         postsComFoto,
+        postsNormais,
         promocoes,
+        produtos,
         followerCount,
         petsVinculadosDetalhados,
       });
@@ -256,21 +260,172 @@ const petshopPanelController = {
         { ...req.body, foto_url: foto }
       );
       req.session.flash = { tipo: 'sucesso', mensagem: 'Postagem criada com sucesso.' };
-      return res.redirect('/petshop-panel/dashboard');
+      return res.redirect('/petshop-panel/perfil');
     } catch (erro) {
       req.session.flash = { tipo: 'erro', mensagem: erro.message || 'Erro ao criar postagem.' };
-      return res.redirect('/petshop-panel/dashboard');
+      return res.redirect('/petshop-panel/perfil');
     }
   },
 
   async criarServico(req, res) {
     try {
-      await petshopScheduleService.salvarServico(req.petshopAccount.petshop_id, req.body || {});
+      const foto = multerPublicUrl(req.file, 'petshops');
+      await petshopScheduleService.salvarServico(req.petshopAccount.petshop_id, {
+        ...(req.body || {}),
+        foto_url: foto || null,
+      });
       req.session.flash = { tipo: 'sucesso', mensagem: 'Serviço salvo com sucesso.' };
-      return res.redirect('/petshop-panel/dashboard');
+      return res.redirect('/petshop-panel/servicos');
     } catch (erro) {
       req.session.flash = { tipo: 'erro', mensagem: 'Erro ao salvar serviço.' };
-      return res.redirect('/petshop-panel/dashboard');
+      return res.redirect('/petshop-panel/servicos');
+    }
+  },
+
+  async atualizarServico(req, res) {
+    try {
+      const petshopId = req.petshopAccount.petshop_id;
+      const serviceId = Number(req.params.id);
+      if (!serviceId) {
+        req.session.flash = { tipo: 'erro', mensagem: 'Serviço inválido.' };
+        return res.redirect('/petshop-panel/servicos');
+      }
+      const foto = multerPublicUrl(req.file, 'petshops');
+      const atualizado = await petshopScheduleService.atualizarServico(petshopId, serviceId, {
+        ...(req.body || {}),
+        foto_url: foto || null,
+      });
+      if (!atualizado) {
+        req.session.flash = { tipo: 'erro', mensagem: 'Serviço não encontrado.' };
+        return res.redirect('/petshop-panel/servicos');
+      }
+      req.session.flash = { tipo: 'sucesso', mensagem: 'Serviço atualizado.' };
+      return res.redirect('/petshop-panel/servicos');
+    } catch (erro) {
+      req.session.flash = { tipo: 'erro', mensagem: 'Erro ao atualizar serviço.' };
+      return res.redirect('/petshop-panel/servicos');
+    }
+  },
+
+  async removerServico(req, res) {
+    try {
+      const petshopId = req.petshopAccount.petshop_id;
+      const serviceId = Number(req.params.id);
+      if (!serviceId) {
+        req.session.flash = { tipo: 'erro', mensagem: 'Serviço inválido.' };
+        return res.redirect('/petshop-panel/servicos');
+      }
+      const removido = await petshopScheduleService.removerServico(petshopId, serviceId);
+      if (!removido) {
+        req.session.flash = { tipo: 'erro', mensagem: 'Serviço não encontrado.' };
+        return res.redirect('/petshop-panel/servicos');
+      }
+      req.session.flash = { tipo: 'sucesso', mensagem: 'Serviço removido.' };
+      return res.redirect('/petshop-panel/servicos');
+    } catch (erro) {
+      req.session.flash = { tipo: 'erro', mensagem: 'Erro ao remover serviço.' };
+      return res.redirect('/petshop-panel/servicos');
+    }
+  },
+
+  async atualizarPost(req, res) {
+    try {
+      const petshopId = req.petshopAccount.petshop_id;
+      const postId = Number(req.params.id);
+      if (!postId) {
+        req.session.flash = { tipo: 'erro', mensagem: 'Post inválido.' };
+        return res.redirect('/petshop-panel/perfil');
+      }
+      const foto = multerPublicUrl(req.file, 'petshops');
+      const post = await PetshopPost.atualizar(postId, petshopId, {
+        titulo: req.body?.titulo,
+        texto: req.body?.texto,
+        foto_url: foto || null,
+      });
+      if (!post) {
+        req.session.flash = { tipo: 'erro', mensagem: 'Post não encontrado.' };
+        return res.redirect('/petshop-panel/perfil');
+      }
+      req.session.flash = { tipo: 'sucesso', mensagem: 'Post atualizado.' };
+      return res.redirect('/petshop-panel/perfil');
+    } catch (erro) {
+      req.session.flash = { tipo: 'erro', mensagem: 'Erro ao atualizar post.' };
+      return res.redirect('/petshop-panel/perfil');
+    }
+  },
+
+  async removerPost(req, res) {
+    try {
+      const petshopId = req.petshopAccount.petshop_id;
+      const postId = Number(req.params.id);
+      if (!postId) {
+        req.session.flash = { tipo: 'erro', mensagem: 'Post inválido.' };
+        return res.redirect('/petshop-panel/perfil');
+      }
+      await PetshopProduct.deletarPorPostId(postId, petshopId);
+      const post = await PetshopPost.deletar(postId, petshopId);
+      if (!post) {
+        req.session.flash = { tipo: 'erro', mensagem: 'Post não encontrado.' };
+        return res.redirect('/petshop-panel/perfil');
+      }
+      req.session.flash = { tipo: 'sucesso', mensagem: 'Post removido.' };
+      return res.redirect('/petshop-panel/perfil');
+    } catch (erro) {
+      req.session.flash = { tipo: 'erro', mensagem: 'Erro ao remover post.' };
+      return res.redirect('/petshop-panel/perfil');
+    }
+  },
+
+  async atualizarProduto(req, res) {
+    try {
+      const petshopId = req.petshopAccount.petshop_id;
+      const productId = Number(req.params.id);
+      if (!productId) {
+        req.session.flash = { tipo: 'erro', mensagem: 'Item inválido.' };
+        return res.redirect('/petshop-panel/perfil');
+      }
+      const foto = multerPublicUrl(req.file, 'petshops');
+      const produto = await PetshopProduct.atualizar(productId, petshopId, {
+        nome: req.body?.nome,
+        preco: req.body?.preco,
+        descricao: req.body?.descricao,
+        contato_link: req.body?.contato_link,
+        service_id: req.body?.service_id,
+        foto_url: foto || null,
+      });
+      if (!produto) {
+        req.session.flash = { tipo: 'erro', mensagem: 'Item não encontrado.' };
+        return res.redirect('/petshop-panel/perfil');
+      }
+      req.session.flash = { tipo: 'sucesso', mensagem: 'Item atualizado.' };
+      return res.redirect('/petshop-panel/perfil');
+    } catch (erro) {
+      req.session.flash = { tipo: 'erro', mensagem: 'Erro ao atualizar item.' };
+      return res.redirect('/petshop-panel/perfil');
+    }
+  },
+
+  async removerProduto(req, res) {
+    try {
+      const petshopId = req.petshopAccount.petshop_id;
+      const productId = Number(req.params.id);
+      if (!productId) {
+        req.session.flash = { tipo: 'erro', mensagem: 'Item inválido.' };
+        return res.redirect('/petshop-panel/perfil');
+      }
+      const produto = await PetshopProduct.deletar(productId, petshopId);
+      if (!produto) {
+        req.session.flash = { tipo: 'erro', mensagem: 'Item não encontrado.' };
+        return res.redirect('/petshop-panel/perfil');
+      }
+      if (produto.post_id) {
+        await PetshopPost.deletar(produto.post_id, petshopId).catch(() => null);
+      }
+      req.session.flash = { tipo: 'sucesso', mensagem: 'Item removido.' };
+      return res.redirect('/petshop-panel/perfil');
+    } catch (erro) {
+      req.session.flash = { tipo: 'erro', mensagem: 'Erro ao remover item.' };
+      return res.redirect('/petshop-panel/perfil');
     }
   },
 

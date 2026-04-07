@@ -36,7 +36,25 @@ router.get('/vinculos/solicitacoes', petshopPanelController.listarSolicitacoesVi
 router.post('/perfil', ...validarPetshopPerfil, validarResultado, petshopPanelController.salvarPerfil);
 router.post('/vinculos/solicitacoes/:id/aprovar', ...validarAgendaSemBody, validarResultado, petshopPanelController.aprovarSolicitacaoVinculo);
 router.post('/vinculos/solicitacoes/:id/recusar', ...validarAgendaSemBody, validarResultado, petshopPanelController.recusarSolicitacaoVinculo);
-router.post('/servicos', petshopApprovalMiddleware, ...validarPetshopServico, validarResultado, petshopPanelController.criarServico);
+router.post(
+  '/servicos',
+  petshopApprovalMiddleware,
+  uploadPetshopMediaMiddleware.single('foto'),
+  persistSingle('petshops'),
+  ...validarPetshopServico,
+  validarResultado,
+  petshopPanelController.criarServico
+);
+router.post(
+  '/servicos/:id/editar',
+  petshopApprovalMiddleware,
+  uploadPetshopMediaMiddleware.single('foto'),
+  persistSingle('petshops'),
+  ...validarPetshopServico,
+  validarResultado,
+  petshopPanelController.atualizarServico
+);
+router.post('/servicos/:id/remover', petshopApprovalMiddleware, ...validarAgendaSemBody, validarResultado, petshopPanelController.removerServico);
 router.post('/agenda', petshopApprovalMiddleware, ...validarPetshopAgendaCriar, validarResultado, petshopPanelController.criarAgendamento);
 router.post('/agenda/:id/status', petshopApprovalMiddleware, ...validarPetshopAgendaStatus, validarResultado, petshopPanelController.atualizarAgendamento);
 router.post('/agenda/config', ...validarPetshopAgendaConfig, validarResultado, petshopPanelController.salvarConfiguracaoAgenda);
@@ -52,5 +70,25 @@ router.post(
   promotionModerationMiddleware,
   petshopPanelController.criarPost
 );
+router.post(
+  '/posts/:id/editar',
+  petshopApprovalMiddleware,
+  uploadPetshopMediaMiddleware.single('foto'),
+  persistSingle('petshops'),
+  ...validarPetshopPost,
+  validarResultado,
+  petshopPanelController.atualizarPost
+);
+router.post('/posts/:id/remover', petshopApprovalMiddleware, ...validarAgendaSemBody, validarResultado, petshopPanelController.removerPost);
+router.post(
+  '/produtos/:id/editar',
+  petshopApprovalMiddleware,
+  uploadPetshopMediaMiddleware.single('foto'),
+  persistSingle('petshops'),
+  ...validarPetshopPost,
+  validarResultado,
+  petshopPanelController.atualizarProduto
+);
+router.post('/produtos/:id/remover', petshopApprovalMiddleware, ...validarAgendaSemBody, validarResultado, petshopPanelController.removerProduto);
 
 module.exports = router;

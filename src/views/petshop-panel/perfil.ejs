@@ -68,6 +68,83 @@
       </form>
     </div>
   </section>
+
+  <section class="partner-card">
+    <h2 class="font-bold mb-3">Publicar serviço marketplace</h2>
+    <form action="/petshop-panel/posts" method="POST" enctype="multipart/form-data" class="grid lg:grid-cols-2 gap-3">
+      <input type="hidden" name="post_type" value="produto">
+      <input class="input w-full" name="nome_produto" placeholder="Nome da oferta/serviço" required>
+      <input class="input w-full" type="number" step="0.01" name="preco" placeholder="Preço" required>
+      <select class="input w-full" name="service_id">
+        <option value="">Vincular a serviço cadastrado (opcional)</option>
+        <% (services || []).forEach(function(s) { %>
+          <option value="<%= s.id %>"><%= s.nome %></option>
+        <% }) %>
+      </select>
+      <input class="input w-full" name="contato_link" placeholder="Link de contato (opcional)">
+      <textarea class="input w-full lg:col-span-2 min-h-20" name="descricao_produto" placeholder="Descrição completa da oferta"></textarea>
+      <input class="input w-full lg:col-span-2" type="file" name="foto" accept="image/*">
+      <div class="lg:col-span-2">
+        <button class="btn-primary-inline">Publicar serviço no marketplace</button>
+      </div>
+    </form>
+  </section>
+
+  <section class="grid lg:grid-cols-2 gap-6">
+    <div class="partner-card">
+      <h2 class="font-bold mb-3">Gerenciar posts</h2>
+      <% if (!(postsNormais || []).length) { %>
+        <p class="text-sm text-[color:var(--text-dim)]">Sem posts para editar.</p>
+      <% } else { %>
+        <div class="space-y-3">
+          <% (postsNormais || []).forEach(function(post) { %>
+            <article class="partner-list-item">
+              <form action="/petshop-panel/posts/<%= post.id %>/editar" method="POST" enctype="multipart/form-data" class="space-y-2">
+                <input class="input w-full" name="titulo" value="<%= post.titulo || '' %>" placeholder="Título">
+                <textarea class="input w-full min-h-20" name="texto" placeholder="Legenda"><%= post.texto || '' %></textarea>
+                <input class="input w-full" type="file" name="foto" accept="image/*">
+                <button class="btn-primary-inline text-sm">Salvar post</button>
+              </form>
+              <form action="/petshop-panel/posts/<%= post.id %>/remover" method="POST" class="mt-2">
+                <button class="px-3 py-2 rounded-xl border border-red-200 bg-red-50 text-red-600 text-xs font-semibold">Excluir post</button>
+              </form>
+            </article>
+          <% }) %>
+        </div>
+      <% } %>
+    </div>
+
+    <div class="partner-card">
+      <h2 class="font-bold mb-3">Gerenciar promoções e serviços</h2>
+      <% if (!((promocoes || []).length || (produtos || []).length)) { %>
+        <p class="text-sm text-[color:var(--text-dim)]">Sem itens comerciais para editar.</p>
+      <% } else { %>
+        <div class="space-y-3">
+          <% (promocoes || []).concat(produtos || []).forEach(function(item) { %>
+            <article class="partner-list-item">
+              <form action="/petshop-panel/produtos/<%= item.id %>/editar" method="POST" enctype="multipart/form-data" class="space-y-2">
+                <input class="input w-full" name="nome" value="<%= item.nome || '' %>" placeholder="Nome" required>
+                <input class="input w-full" type="number" step="0.01" name="preco" value="<%= item.preco != null ? item.preco : '' %>" placeholder="Preço">
+                <textarea class="input w-full min-h-20" name="descricao" placeholder="Descrição"><%= item.descricao || '' %></textarea>
+                <input class="input w-full" name="contato_link" value="<%= item.contato_link || '' %>" placeholder="Link de contato">
+                <select class="input w-full" name="service_id">
+                  <option value="">Sem vínculo com serviço</option>
+                  <% (services || []).forEach(function(s) { %>
+                    <option value="<%= s.id %>" <%= Number(item.service_id) === Number(s.id) ? 'selected' : '' %>><%= s.nome %></option>
+                  <% }) %>
+                </select>
+                <input class="input w-full" type="file" name="foto" accept="image/*">
+                <button class="btn-primary-inline text-sm">Salvar item</button>
+              </form>
+              <form action="/petshop-panel/produtos/<%= item.id %>/remover" method="POST" class="mt-2">
+                <button class="px-3 py-2 rounded-xl border border-red-200 bg-red-50 text-red-600 text-xs font-semibold">Excluir item</button>
+              </form>
+            </article>
+          <% }) %>
+        </div>
+      <% } %>
+    </div>
+  </section>
 </main>
 
 <%- include('../partials/footer') %>

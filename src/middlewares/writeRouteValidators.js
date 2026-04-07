@@ -138,9 +138,11 @@ const validarSaudeRegistro = [
 ];
 
 const validarAgendaCriar = [
-  camposPermitidos(['petshop_id', 'pet_id', 'service_id', 'data', 'data_agendada', 'observacoes', '_method']),
+  camposPermitidos(['petshop_id', 'pet_id', 'service_id', 'dia', 'data', 'data_agendada', 'observacoes', '_method']),
   body('petshop_id').notEmpty().withMessage('Petshop e obrigatorio.'),
   body('service_id').notEmpty().withMessage('Servico e obrigatorio.'),
+  body('pet_id').notEmpty().withMessage('Pet e obrigatorio.'),
+  body('dia').optional({ checkFalsy: true }).trim().isLength({ max: 20 }),
   body('data').optional({ checkFalsy: true }).trim().isLength({ max: 64 }),
   body('data_agendada').optional({ checkFalsy: true }).trim().isLength({ max: 64 }),
   body('pet_id').optional({ checkFalsy: true }).trim().isLength({ max: 20 }),
@@ -272,6 +274,7 @@ const validarPetshopAgendaCriar = [
   camposPermitidos(['service_id', 'usuario_id', 'pet_id', 'observacoes', 'data_agendada', '_method']),
   body('service_id').notEmpty(),
   body('usuario_id').notEmpty(),
+  body('pet_id').notEmpty().withMessage('Pet e obrigatorio.'),
   body('data_agendada').trim().notEmpty().withMessage('Data e obrigatoria.').isLength({ max: 64 }),
   body('pet_id').optional({ checkFalsy: true }),
   body('observacoes').optional({ checkFalsy: true }).trim().isLength({ max: 2000 }),
@@ -306,7 +309,7 @@ const validarPetshopAgendaBloqueio = [
 
 const validarPetshopPost = [
   camposPermitidos([
-    'post_type', 'titulo', 'texto', 'nome_produto', 'descricao_produto', 'preco', 'contato_link',
+    'post_type', 'titulo', 'texto', 'nome_produto', 'descricao_produto', 'nome', 'descricao', 'preco', 'contato_link',
     'service_id', 'highlight_rank', 'is_highlighted', 'relevante', '_method',
   ]),
   body('post_type').optional({ checkFalsy: true }).trim().isIn(['normal', 'produto', 'promocao', 'evento']),
@@ -314,6 +317,8 @@ const validarPetshopPost = [
   body('texto').optional({ checkFalsy: true }).trim().isLength({ max: 8000 }),
   body('nome_produto').optional({ checkFalsy: true }).trim().isLength({ max: 200 }),
   body('descricao_produto').optional({ checkFalsy: true }).trim().isLength({ max: 4000 }),
+  body('nome').optional({ checkFalsy: true }).trim().isLength({ max: 200 }),
+  body('descricao').optional({ checkFalsy: true }).trim().isLength({ max: 4000 }),
   body('preco').optional({ checkFalsy: true }).trim().isLength({ max: 40 }),
   body('contato_link').optional({ checkFalsy: true }).trim().isLength({ max: 500 }),
   body('service_id').optional({ checkFalsy: true }).trim().isLength({ max: 20 }),
