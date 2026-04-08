@@ -15,15 +15,24 @@
 <main class="flex-1 container mx-auto partner-app px-4 py-8 space-y-6 app-shell">
   <%- include('../partials/petshop-panel-nav', { activeTab: 'perfil' }) %>
 
-  <section class="partner-card">
-    <h1 class="text-xl font-bold text-[color:var(--text)]">Controle do perfil público</h1>
-    <p class="text-sm text-[color:var(--text-dim)] mt-1">Tudo que você editar aqui é refletido na página pública do seu petshop.</p>
-  </section>
+  <%- include('../partials/mobile-screen-header', {
+    badge: 'Painel parceiro',
+    title: 'Controle do perfil público',
+    subtitle: 'Fluxo reorganizado por contexto: dados, publicação e gestão.',
+    slotHtml: `
+      <div class="grid grid-cols-3 gap-2 text-xs">
+        <a href="#dadosPublicos" class="px-3 py-2 rounded-xl bg-[color:var(--ink-3)] text-center font-semibold">Dados</a>
+        <a href="#publicacoes" class="px-3 py-2 rounded-xl bg-[color:var(--ink-3)] text-center font-semibold">Publicar</a>
+        <a href="#gerenciar" class="px-3 py-2 rounded-xl bg-[color:var(--ink-3)] text-center font-semibold">Gerenciar</a>
+      </div>
+    `
+  }) %>
 
-  <section class="grid lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] gap-6">
+  <section id="dadosPublicos" class="grid lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] gap-6">
     <div class="partner-card">
       <h2 class="font-bold mb-3">Dados públicos</h2>
       <form action="/petshop-panel/perfil" method="POST" class="space-y-3">
+        <p class="text-xs text-[color:var(--text-dim)]">Atualize os dados essenciais primeiro para manter a página clara.</p>
         <input class="input w-full" name="petshop_nome" placeholder="Nome público do petshop" value="<%= petshop?.nome || '' %>">
         <input class="input w-full" name="petshop_telefone" placeholder="Telefone público" value="<%= petshop?.telefone || '' %>">
         <input class="input w-full" name="petshop_endereco" placeholder="Endereço público" value="<%= petshop?.endereco || '' %>">
@@ -51,7 +60,7 @@
     <p class="text-sm text-[color:var(--text-dim)] mt-1">Você possui <strong><%= (petsVinculadosDetalhados || []).length %></strong> pets vinculados.</p>
   </section>
 
-  <section class="grid lg:grid-cols-2 gap-6">
+  <section id="publicacoes" class="grid lg:grid-cols-2 gap-6">
     <div class="partner-card">
       <h2 class="font-bold mb-3">Publicar foto no feed</h2>
       <form action="/petshop-panel/posts" method="POST" enctype="multipart/form-data" class="space-y-3">
@@ -96,7 +105,7 @@
     </form>
   </section>
 
-  <section class="grid lg:grid-cols-2 gap-6">
+  <section id="gerenciar" class="grid lg:grid-cols-2 gap-6">
     <div class="partner-card">
       <h2 class="font-bold mb-3">Gerenciar posts</h2>
       <% if (!(postsNormais || []).length) { %>

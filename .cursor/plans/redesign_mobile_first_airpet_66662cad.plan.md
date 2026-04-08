@@ -4,22 +4,22 @@ overview: Reformular todas as views (exceto Home/Landing) para um padrão de app
 todos:
   - id: inventario_views
     content: Catalogar todas as views por domínio e mapear componentes/estilos repetidos para orientar refatoração em lote.
-    status: pending
+    status: completed
   - id: fundacao_design_system
     content: Consolidar tokens, tipografia, grid e componentes base mobile-first removendo inconsistências globais.
-    status: pending
+    status: completed
   - id: refatorar_navegacao_mobile
     content: Redesenhar app shell e bottom navigation para reduzir carga cognitiva e melhorar thumb ergonomics.
-    status: pending
+    status: completed
   - id: refatorar_fluxos_criticos
     content: Reestruturar auth, feed, pets/nfc e painel parceiro com foco em clareza, CTA e feedback de estado.
-    status: pending
+    status: completed
   - id: componentizar_e_escalar
     content: Extrair partials e módulos JS reutilizáveis, reduzindo duplicação e facilitando manutenção.
-    status: pending
+    status: completed
   - id: qa_regressao_ux_ui
     content: Executar checklist de usabilidade mobile, consistência visual e regressão funcional antes da entrega final.
-    status: pending
+    status: completed
 isProject: false
 ---
 

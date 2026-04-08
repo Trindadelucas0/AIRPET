@@ -1,0 +1,14 @@
+<section class="air-card">
+  <% if (typeof badge !== 'undefined' && badge) { %>
+    <p class="text-xs font-semibold uppercase tracking-wide text-[color:var(--accent)]"><%= badge %></p>
+  <% } %>
+  <h1 class="air-screen-title <%= (typeof badge !== 'undefined' && badge) ? 'mt-1' : '' %>"><%= title %></h1>
+  <% if (typeof subtitle !== 'undefined' && subtitle) { %>
+    <p class="air-screen-subtitle"><%= subtitle %></p>
+  <% } %>
+  <% if (typeof slotHtml !== 'undefined' && slotHtml) { %>
+    <div class="mt-4">
+      <%- slotHtml %>
+    </div>
+  <% } %>
+</section>

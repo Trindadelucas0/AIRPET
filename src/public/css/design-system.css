@@ -18,11 +18,19 @@
   --purple: var(--color-purple, #a78bfa);
   --blue: var(--color-blue, #60a5fa);
   --yellow: var(--color-yellow, #facc15);
-  --radius: 20px;
-  --radius-sm: 14px;
-  --radius-xs: 10px;
-  --font-brand: "Rubik Doodle Shadow", cursive;
-  --font-display: "Rubik Doodle Shadow", "Syne", sans-serif;
+  --radius: 16px;
+  --radius-sm: 12px;
+  --radius-xs: 8px;
+  --font-brand: "Syne", "DM Sans", sans-serif;
+  --font-display: "Syne", "DM Sans", sans-serif;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 32px;
+  --touch-target: 44px;
 }
 
 .font-brand {
@@ -35,14 +43,13 @@
   letter-spacing: 0.02em;
 }
 
-* {
-  font-family: "DM Sans", sans-serif;
-}
+* { font-family: "DM Sans", sans-serif; }
 
 body {
   background: var(--ink) !important;
   color: var(--text) !important;
   color-scheme: light;
+  line-height: 1.45;
 }
 
 main {
@@ -52,7 +59,7 @@ main {
 .air-page-container {
   width: min(100%, 1120px);
   margin: 0 auto;
-  padding: 24px 20px 88px;
+  padding: var(--space-6) var(--space-4) calc(84px + env(safe-area-inset-bottom, 0px));
 }
 
 a {
@@ -111,6 +118,8 @@ a.btn-primary-inline {
   border: none !important;
   border-radius: var(--radius-sm) !important;
   font-weight: 700 !important;
+  min-height: var(--touch-target);
+  padding: 0 16px;
 }
 
 .btn-primary:hover,
@@ -128,6 +137,8 @@ a.btn-primary-inline:hover {
   border: 1px solid var(--border) !important;
   color: var(--text-dim) !important;
   border-radius: var(--radius-sm) !important;
+  min-height: var(--touch-target);
+  padding: 0 14px;
 }
 
 .btn-ghost:hover {
@@ -156,8 +167,8 @@ nav.sticky {
 .air-section-card {
   background: var(--ink-2);
   border: 1px solid var(--border);
-  border-radius: 18px;
-  padding: 22px;
+  border-radius: var(--radius);
+  padding: var(--space-5);
 }
 
 .air-field-group {
@@ -185,6 +196,72 @@ nav.sticky {
   opacity: 0.15;
   margin-bottom: 16px;
 }
+
+.air-mobile-screen {
+  width: min(100%, 640px);
+  margin: 0 auto;
+  padding: var(--space-4) var(--space-4) calc(90px + env(safe-area-inset-bottom, 0px));
+}
+
+.air-screen-title {
+  font-size: clamp(1.125rem, 2vw, 1.45rem);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--text);
+}
+
+.air-screen-subtitle {
+  margin-top: 6px;
+  font-size: 0.9rem;
+  color: var(--text-dim);
+}
+
+.air-card {
+  background: var(--ink-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--space-4);
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.06);
+}
+
+.air-card + .air-card {
+  margin-top: var(--space-4);
+}
+
+.air-form-label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.air-form-stack {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.air-form-row {
+  display: grid;
+  gap: var(--space-3);
+}
+
+@media (min-width: 640px) {
+  .air-form-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.air-feedback-inline {
+  margin-top: 6px;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.air-feedback-inline--error { color: var(--red); }
+.air-feedback-inline--ok { color: var(--green); }
 
 .badge-accent {
   background: color-mix(in srgb, var(--accent) 12%, transparent);

@@ -8,7 +8,9 @@
 <% var isPerfilSettings = currentPath === '/perfil' || (currentPath && String(currentPath).indexOf('/perfil/') === 0); %>
 <% var isMaisDestaque = isLogado && currentPath && (
   currentPath.startsWith('/pets') ||
-  currentPath.startsWith('/explorar/busca')
+  currentPath.startsWith('/explorar/busca') ||
+  currentPath.startsWith('/tags') ||
+  currentPath.startsWith('/perfil')
 ); %>
 
 <!-- Top Nav — estilo Instagram: nome no topo centralizado no mobile -->
@@ -139,7 +141,7 @@
 <nav id="bottomNav" class="md:hidden fixed bottom-0 left-0 right-0 z-50 safe-bottom">
   <!-- Mantido no DOM para explorar.ejs / tour / CTAs que chamam .click() — sem botão visual no centro -->
   <button type="button" id="fabNewPost" class="fab-new-post-hidden" tabindex="-1" aria-hidden="true"></button>
-  <div class="bottom-nav-grid h-[56px] px-1 max-w-lg mx-auto w-full">
+  <div class="bottom-nav-grid h-[60px] px-2 max-w-lg mx-auto w-full">
     <a href="/feed" id="bottomNavFeedTab" class="bottom-tab bottom-tab-cell <%= currentPath === '/feed' ? 'bottom-tab--active' : '' %>">
       <span class="bottom-tab-iconwrap"><i class="fa-solid fa-house text-[1.125rem] leading-none"></i></span>
       <span class="bottom-tab-label">Feed</span>
@@ -148,37 +150,19 @@
       <span class="bottom-tab-iconwrap"><i class="fa-solid fa-compass text-[1.125rem] leading-none"></i></span>
       <span class="bottom-tab-label">Explorar</span>
     </a>
-    <a href="/mapa" class="bottom-tab bottom-tab-cell <%= currentPath.startsWith('/mapa') ? 'bottom-tab--active' : '' %>">
+    <a href="/pets" class="bottom-tab bottom-tab-cell <%= currentPath && currentPath.startsWith('/pets') ? 'bottom-tab--active' : '' %>">
+      <span class="bottom-tab-iconwrap"><i class="fa-solid fa-paw text-[1.125rem] leading-none"></i></span>
+      <span class="bottom-tab-label">Pets</span>
+    </a>
+    <a href="/mapa" class="bottom-tab bottom-tab-cell <%= currentPath.startsWith('/mapa') || currentPath.startsWith('/petshops') ? 'bottom-tab--active' : '' %>">
       <span class="bottom-tab-iconwrap"><i class="fa-solid fa-map-location-dot text-[1.125rem] leading-none"></i></span>
       <span class="bottom-tab-label">Mapa</span>
     </a>
-    <a href="/petshops" class="bottom-tab bottom-tab-cell <%= currentPath.startsWith('/petshops') ? 'bottom-tab--active' : '' %>">
-      <span class="bottom-tab-iconwrap"><i class="fa-solid fa-store text-[1.125rem] leading-none"></i></span>
-      <span class="bottom-tab-label">Petshops</span>
-    </a>
-    <a href="/notificacoes" class="bottom-tab bottom-tab-cell relative <%= currentPath.startsWith('/notificacoes') ? 'bottom-tab--active' : '' %>">
+    <a href="/chat" class="bottom-tab bottom-tab-cell <%= currentPath.startsWith('/chat') ? 'bottom-tab--active' : '' %>">
       <span class="bottom-tab-iconwrap relative">
-        <i class="fa-solid fa-bell text-[1.125rem] leading-none"></i>
-        <span data-notif-badge class="absolute -top-1 -right-2 min-w-[16px] h-[16px] px-0.5 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center <%= notifCount > 0 ? '' : 'hidden' %>">
-          <%= notifCount > 9 ? '9+' : notifCount %>
-        </span>
+        <i class="fa-solid fa-comments text-[1.125rem] leading-none"></i>
       </span>
-      <span class="bottom-tab-label">Alertas</span>
-    </a>
-    <a href="/explorar/perfil/<%= usuario.id %>" class="bottom-tab bottom-tab-cell <%= isMeuPerfilPublico ? 'bottom-tab--active' : '' %>">
-      <span class="bottom-tab-iconwrap bottom-tab-iconwrap--avatar">
-        <% if (usuario.foto_perfil) { %>
-          <img src="<%= usuario.foto_perfil %>" alt="" class="w-[1.375rem] h-[1.375rem] rounded-full object-cover" style="box-shadow: 0 0 0 2px <%= navCor || usuario.cor_perfil || '#ec5a1c' %>">
-        <% } else { %>
-          <span class="w-[1.375rem] h-[1.375rem] rounded-full flex items-center justify-center text-[9px] font-bold text-white bg-gray-400 leading-none"
-                style="box-shadow: 0 0 0 2px <%= navCor || usuario.cor_perfil || '#ec5a1c' %>"><%= usuario.nome ? usuario.nome.charAt(0).toUpperCase() : 'U' %></span>
-        <% } %>
-      </span>
-      <span class="bottom-tab-label">Perfil</span>
-    </a>
-    <a href="/perfil" class="bottom-tab bottom-tab-cell <%= isPerfilSettings ? 'bottom-tab--active' : '' %>" title="Configurações">
-      <span class="bottom-tab-iconwrap"><i class="fa-solid fa-gear text-[1.125rem] leading-none"></i></span>
-      <span class="bottom-tab-label">Config</span>
+      <span class="bottom-tab-label">Chat</span>
     </a>
     <button type="button" id="bottomNavMaisBtn" class="bottom-tab bottom-tab-cell bottom-nav-mais-btn <%= isMaisDestaque ? 'bottom-tab--active' : '' %>"
             aria-expanded="false" aria-controls="bottomNavMaisPanel" aria-label="Mais opções">
@@ -193,6 +177,10 @@
         <span class="bottom-nav-mais-ic"><i class="fa-solid fa-paw"></i></span>
         <span>Meus Pets</span>
       </a>
+      <a href="/notificacoes" role="menuitem" class="bottom-nav-mais-link <%= currentPath && currentPath.startsWith('/notificacoes') ? 'bottom-nav-mais-link--active' : '' %>">
+        <span class="bottom-nav-mais-ic"><i class="fa-solid fa-bell"></i></span>
+        <span>Notificações</span>
+      </a>
       <a href="/explorar/busca" role="menuitem" class="bottom-nav-mais-link <%= currentPath && currentPath.startsWith('/explorar/busca') ? 'bottom-nav-mais-link--active' : '' %>">
         <span class="bottom-nav-mais-ic"><i class="fa-solid fa-magnifying-glass"></i></span>
         <span>Buscar</span>
@@ -200,6 +188,14 @@
       <a href="/tags/pedidos" role="menuitem" class="bottom-nav-mais-link <%= currentPath && currentPath.startsWith('/tags') ? 'bottom-nav-mais-link--active' : '' %>">
         <span class="bottom-nav-mais-ic"><i class="fa-solid fa-tag"></i></span>
         <span>Minhas TAGs</span>
+      </a>
+      <a href="/perfil" role="menuitem" class="bottom-nav-mais-link <%= isPerfilSettings ? 'bottom-nav-mais-link--active' : '' %>">
+        <span class="bottom-nav-mais-ic"><i class="fa-solid fa-gear"></i></span>
+        <span>Configurações</span>
+      </a>
+      <a href="/explorar/perfil/<%= usuario.id %>" role="menuitem" class="bottom-nav-mais-link <%= isMeuPerfilPublico ? 'bottom-nav-mais-link--active' : '' %>">
+        <span class="bottom-nav-mais-ic"><i class="fa-solid fa-user"></i></span>
+        <span>Meu perfil</span>
       </a>
     </div>
   </div>
