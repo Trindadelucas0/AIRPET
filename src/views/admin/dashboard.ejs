@@ -10,7 +10,7 @@
     </div>
 
     <!-- Stat Cards -->
-    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-10">
+    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4 mb-10">
 
       <a href="<%= adminPath %>/usuarios" class="card hover:shadow-md hover:border-blue-200 transition-all block">
         <div class="flex items-center justify-center w-10 h-10 rounded-lg bg-blue-50 text-blue-500 mb-3">
@@ -62,6 +62,33 @@
         <p class="text-xs font-medium text-gray-500 mt-1">Alertas pendentes</p>
       </a>
 
+      <a href="<%= adminPath %>/pedidos" class="card hover:shadow-md hover:border-indigo-200 transition-all block">
+        <div class="flex items-center justify-center w-10 h-10 rounded-lg bg-indigo-50 text-indigo-500 mb-3">
+          <i class="fa-solid fa-cart-shopping text-lg"></i>
+        </div>
+        <p class="text-2xl font-bold text-gray-900"><%= Number(stats.tagsVendidas || 0) %></p>
+        <p class="text-xs font-medium text-gray-500 mt-1">Tags vendidas</p>
+      </a>
+
+      <a href="<%= adminPath %>/tags" class="card hover:shadow-md hover:border-emerald-200 transition-all block">
+        <div class="flex items-center justify-center w-10 h-10 rounded-lg bg-emerald-50 text-emerald-500 mb-3">
+          <i class="fa-solid fa-tag text-lg"></i>
+        </div>
+        <p class="text-2xl font-bold text-gray-900"><%= Number(stats.tagsAtivas || 0) %></p>
+        <p class="text-xs font-medium text-gray-500 mt-1">Tags ativas</p>
+      </a>
+
+    </div>
+
+    <div class="card mb-10">
+      <h2 class="text-lg font-semibold text-gray-900 mb-1">Taxa de conversão (usuário → compra)</h2>
+      <p class="text-sm text-gray-500 mb-3">Base: usuários com pedido pago, enviado ou entregue.</p>
+      <div class="flex items-center gap-4">
+        <span class="text-3xl font-bold text-gray-900"><%= Number(stats.taxaConversaoCompra || 0).toFixed(2) %>%</span>
+        <div class="flex-1 h-3 rounded-full bg-gray-100 overflow-hidden">
+          <div class="h-3 bg-primary-500 rounded-full" style="width:<%= Math.max(0, Math.min(100, Number(stats.taxaConversaoCompra || 0))) %>%"></div>
+        </div>
+      </div>
     </div>
 
     <!-- Usuários: por região e últimos cadastros -->
@@ -119,6 +146,33 @@
       </div>
     </div>
 
+    <div class="card mb-10">
+      <h2 class="text-lg font-semibold text-gray-900 mb-4">Evolução diária (14 dias)</h2>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="text-left text-gray-500 border-b border-gray-100">
+              <th class="pb-2 font-medium">Dia</th>
+              <th class="pb-2 font-medium">Novos usuários</th>
+              <th class="pb-2 font-medium">Pedidos pagos</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% if (!(serieDashboard || []).length) { %>
+              <tr><td colspan="3" class="py-3 text-gray-400">Sem dados de evolução para o período.</td></tr>
+            <% } %>
+            <% (serieDashboard || []).forEach(function(item) { %>
+              <tr class="border-b border-gray-50">
+                <td class="py-2 text-gray-600"><%= item.dia ? new Date(item.dia).toLocaleDateString('pt-BR') : '-' %></td>
+                <td class="py-2 font-medium text-gray-900"><%= item.novos_usuarios %></td>
+                <td class="py-2 font-medium text-indigo-700"><%= item.pedidos_pagos %></td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
     <!-- Quick Links -->
     <div class="card">
       <h2 class="text-lg font-semibold text-gray-900 mb-4">Acesso Rápido</h2>
@@ -160,10 +214,16 @@
           <span class="text-sm font-medium text-gray-700 group-hover:text-yellow-700">Moderar Mensagens</span>
         </a>
 
-        <a href="/tags/admin/lista"
+        <a href="<%= adminPath %>/tags"
            class="flex items-center gap-3 px-4 py-3 rounded-lg border border-gray-200 hover:border-purple-300 hover:bg-purple-50 transition-all group">
           <i class="fa-solid fa-tag text-purple-400 group-hover:text-purple-500"></i>
           <span class="text-sm font-medium text-gray-700 group-hover:text-purple-700">Gerenciar Tags</span>
+        </a>
+
+        <a href="<%= adminPath %>/pedidos"
+           class="flex items-center gap-3 px-4 py-3 rounded-lg border border-gray-200 hover:border-indigo-300 hover:bg-indigo-50 transition-all group">
+          <i class="fa-solid fa-cart-shopping text-indigo-400 group-hover:text-indigo-500"></i>
+          <span class="text-sm font-medium text-gray-700 group-hover:text-indigo-700">Gerenciar Pedidos</span>
         </a>
 
         <a href="<%= adminPath %>/gerenciar-mapa"

@@ -196,7 +196,9 @@ const PetPerdido = {
     const resultado = await query(
       `UPDATE pets_perdidos
        SET status = 'aprovado',
-           nivel_alerta = 1
+           nivel_alerta = 1,
+           ciclo_alerta = COALESCE(ciclo_alerta, 1),
+           last_level_changed_at = NOW()
        WHERE id = $1
        RETURNING *`,
       [id]
@@ -244,7 +246,8 @@ const PetPerdido = {
   async atualizarNivel(id, nivel) {
     const resultado = await query(
       `UPDATE pets_perdidos
-       SET nivel_alerta = $2
+       SET nivel_alerta = $2,
+           last_level_changed_at = NOW()
        WHERE id = $1
        RETURNING *`,
       [id, nivel]
@@ -300,13 +303,47 @@ const PetPerdido = {
 
   async listarAprovadosComCoordenadasOrdenadosPorData() {
     const resultado = await query(
-      `SELECT pp.id, pp.pet_id, pp.nivel_alerta, pp.data,
+      `SELECT pp.id, pp.pet_id, pp.nivel_alerta, pp.ciclo_alerta, pp.last_broadcast_at, pp.data,
               pp.ultima_lat AS latitude, pp.ultima_lng AS longitude
        FROM pets_perdidos pp
        WHERE pp.status = 'aprovado'
        ORDER BY pp.data ASC`
     );
     return resultado.rows;
+  },
+
+  async atualizarEscalonamento(id, payload = {}, client = null) {
+    const executor = client || pool;
+    const sets = [];
+    const params = [];
+
+    if (payload.nivel_alerta != null) {
+      params.push(payload.nivel_alerta);
+      sets.push(`nivel_alerta = $${params.length}`);
+    }
+    if (payload.ciclo_alerta != null) {
+      params.push(payload.ciclo_alerta);
+      sets.push(`ciclo_alerta = $${params.length}`);
+    }
+    if (payload.last_broadcast_at) {
+      params.push(payload.last_broadcast_at);
+      sets.push(`last_broadcast_at = $${params.length}::timestamptz`);
+    }
+    if (payload.atualizar_level_changed_at !== false) {
+      sets.push('last_level_changed_at = NOW()');
+    }
+
+    if (!sets.length) return this.buscarPorId(id);
+
+    params.push(id);
+    const resultado = await executor.query(
+      `UPDATE pets_perdidos
+       SET ${sets.join(', ')}
+       WHERE id = $${params.length}
+       RETURNING *`,
+      params
+    );
+    return resultado.rows[0];
   },
 
   async listarPinsParaMapaBBox(swLat, swLng, neLat, neLng) {

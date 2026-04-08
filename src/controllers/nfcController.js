@@ -136,6 +136,11 @@ const nfcController = {
             planoEmGrace: resultado.planoEmGrace || false,
             planoExpiraEm: resultado.planoExpiraEm || null,
             planoSlug: resultado.planoSlug || 'basico',
+            planoNome: resultado.planoNome || 'AIRPET Essencial',
+            recursosPlano: resultado.recursosPlano || {},
+            petPerdidoMapaHabilitado: resultado.petPerdidoMapaHabilitado || false,
+            petshopProximoHabilitado: resultado.petshopProximoHabilitado || false,
+            notificacoesMulticanalHabilitado: resultado.notificacoesMulticanalHabilitado || false,
           });
 
         /*

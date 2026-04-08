@@ -96,9 +96,9 @@ const migrations = [
   );`,
   `INSERT INTO plan_definitions (slug, nome_exibicao, mensalidade_centavos, ordem, ativo, features_json)
    VALUES
-    ('basico', 'Basico', 1990, 1, true, '{"scan_publico_basico": true, "explorar_busca": true}'::jsonb),
-    ('plus', 'Plus', 2990, 2, true, '{"scan_publico_basico": true, "scan_rico": true, "pet_perdido_mapa": true, "explorar_busca": true}'::jsonb),
-    ('familia', 'Familia', 3990, 3, true, '{"scan_publico_basico": true, "scan_rico": true, "pet_perdido_mapa": true, "petshop_proximo": true, "notificacoes_multicanal": true, "explorar_busca": true}'::jsonb)
+    ('basico', 'AIRPET Essencial', 1990, 1, true, '{"scan_publico_basico": true, "explorar_busca": true}'::jsonb),
+    ('plus', 'AIRPET Protecao', 2990, 2, true, '{"scan_publico_basico": true, "scan_rico": true, "pet_perdido_mapa": true, "explorar_busca": true}'::jsonb),
+    ('familia', 'AIRPET Rede', 3990, 3, true, '{"scan_publico_basico": true, "scan_rico": true, "pet_perdido_mapa": true, "petshop_proximo": true, "notificacoes_multicanal": true, "explorar_busca": true}'::jsonb)
    ON CONFLICT (slug) DO NOTHING;`,
 
   `CREATE TABLE IF NOT EXISTS tag_subscriptions (
@@ -160,6 +160,17 @@ const migrations = [
   `CREATE UNIQUE INDEX IF NOT EXISTS uq_tag_order_units_nfc_tag
    ON tag_order_units (nfc_tag_id)
    WHERE nfc_tag_id IS NOT NULL;`,
+  `CREATE TABLE IF NOT EXISTS tag_product_order_events (
+    id BIGSERIAL PRIMARY KEY,
+    order_id BIGINT NOT NULL REFERENCES tag_product_orders(id) ON DELETE CASCADE,
+    from_status VARCHAR(30),
+    to_status VARCHAR(30) NOT NULL,
+    actor_admin_id INTEGER REFERENCES usuarios(id) ON DELETE SET NULL,
+    nota TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  );`,
+  `CREATE INDEX IF NOT EXISTS idx_tag_product_order_events_lookup
+   ON tag_product_order_events (order_id, created_at DESC);`,
 
   `CREATE TABLE IF NOT EXISTS payment_events (
     id BIGSERIAL PRIMARY KEY,
@@ -288,10 +299,46 @@ const migrations = [
     recompensa VARCHAR(50),
     status VARCHAR(30) DEFAULT 'pendente',
     nivel_alerta INTEGER DEFAULT 0,
+    ciclo_alerta INTEGER NOT NULL DEFAULT 1,
+    last_level_changed_at TIMESTAMPTZ,
+    last_broadcast_at TIMESTAMPTZ,
     data_hora_desaparecimento TIMESTAMP,
     cidade VARCHAR(100),
     data TIMESTAMP DEFAULT NOW()
   );`,
+  `DO $$ BEGIN
+    IF NOT EXISTS (
+      SELECT 1 FROM information_schema.columns
+      WHERE table_name='pets_perdidos' AND column_name='ciclo_alerta'
+    ) THEN
+      ALTER TABLE pets_perdidos ADD COLUMN ciclo_alerta INTEGER NOT NULL DEFAULT 1;
+    END IF;
+    IF NOT EXISTS (
+      SELECT 1 FROM information_schema.columns
+      WHERE table_name='pets_perdidos' AND column_name='last_level_changed_at'
+    ) THEN
+      ALTER TABLE pets_perdidos ADD COLUMN last_level_changed_at TIMESTAMPTZ;
+    END IF;
+    IF NOT EXISTS (
+      SELECT 1 FROM information_schema.columns
+      WHERE table_name='pets_perdidos' AND column_name='last_broadcast_at'
+    ) THEN
+      ALTER TABLE pets_perdidos ADD COLUMN last_broadcast_at TIMESTAMPTZ;
+    END IF;
+  END $$;`,
+  `CREATE TABLE IF NOT EXISTS pets_perdidos_alert_events (
+    id BIGSERIAL PRIMARY KEY,
+    pet_perdido_id INTEGER NOT NULL REFERENCES pets_perdidos(id) ON DELETE CASCADE,
+    tipo VARCHAR(40) NOT NULL,
+    nivel_antes INTEGER,
+    nivel_depois INTEGER,
+    ciclo_alerta INTEGER NOT NULL DEFAULT 1,
+    origem VARCHAR(30) NOT NULL DEFAULT 'sistema',
+    metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  );`,
+  `CREATE INDEX IF NOT EXISTS idx_pets_perdidos_alert_events_lookup
+   ON pets_perdidos_alert_events (pet_perdido_id, created_at DESC);`,
 
   `CREATE INDEX IF NOT EXISTS idx_pets_perdidos_loc ON pets_perdidos USING GIST (ultima_localizacao);`,
   `CREATE INDEX IF NOT EXISTS idx_pets_perdidos_aprovado_data ON pets_perdidos (data ASC) WHERE status = 'aprovado';`,

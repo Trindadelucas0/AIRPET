@@ -1,0 +1,14 @@
+<%
+  var legend = typeof legend === 'string' ? legend : '';
+  var description = typeof description === 'string' ? description : '';
+  var className = typeof className === 'string' ? className : '';
+%>
+<fieldset class="space-y-3 <%= className %>">
+  <% if (legend) { %>
+    <legend class="mb-2 text-sm font-bold text-[color:var(--text)]"><%= legend %></legend>
+  <% } %>
+  <% if (description) { %>
+    <p class="mb-3 text-xs text-[color:var(--text-dim)]"><%= description %></p>
+  <% } %>
+  <%- body || '' %>
+</fieldset>

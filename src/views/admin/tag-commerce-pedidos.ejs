@@ -76,6 +76,8 @@
             <option value="">Todos</option>
             <option value="aguardando_pagamento" <%= filtros.status === 'aguardando_pagamento' ? 'selected' : '' %>>Aguardando pagamento</option>
             <option value="pago" <%= filtros.status === 'pago' ? 'selected' : '' %>>Pago</option>
+            <option value="enviado" <%= filtros.status === 'enviado' ? 'selected' : '' %>>Enviado</option>
+            <option value="entregue" <%= filtros.status === 'entregue' ? 'selected' : '' %>>Entregue</option>
           </select>
         </label>
         <label class="text-sm">
@@ -128,7 +130,7 @@
                 <td class="py-2"><%= pedido.plan_slug %></td>
                 <td class="py-2"><%= pedido.order_type %></td>
                 <td class="py-2">
-                  <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold <%= pedido.status === 'pago' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700' %>"><%= pedido.status %></span>
+                  <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold <%= pedido.status === 'pago' ? 'bg-emerald-100 text-emerald-700' : (pedido.status === 'enviado' ? 'bg-blue-100 text-blue-700' : (pedido.status === 'entregue' ? 'bg-purple-100 text-purple-700' : 'bg-amber-100 text-amber-700')) %>"><%= (statusLabels && statusLabels[pedido.status]) || pedido.status %></span>
                 </td>
                 <td class="py-2 font-medium"><%= brl(pedido.total_centavos) %></td>
                 <td class="py-2 text-gray-500"><%= pedido.data_criacao ? new Date(pedido.data_criacao).toLocaleString('pt-BR') : '-' %></td>
@@ -143,3 +145,4 @@
     </section>
   </div>
 </main>
+<%- include('../partials/admin-footer') %>

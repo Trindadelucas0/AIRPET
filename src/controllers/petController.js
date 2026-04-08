@@ -28,6 +28,7 @@ const RegistroSaude = require('../models/RegistroSaude');
 const TagScan = require('../models/TagScan');
 const NfcTag = require('../models/NfcTag');
 const Localizacao = require('../models/Localizacao');
+const tagEntitlementService = require('../services/tagEntitlementService');
 const { withTransaction } = require('../config/database');
 const logger = require('../utils/logger');
 const { multerPublicUrl } = require('../middlewares/persistUploadMiddleware');
@@ -420,12 +421,15 @@ const petController = {
         Vacina.buscarPorPet(id),
         RegistroSaude.buscarPorPet(id),
       ]);
+      const plano = await tagEntitlementService.obterEstadoPlano(req.session.usuario.id);
 
       res.render('pets/saude', {
         titulo: `Saúde de ${pet.nome}`,
         pet,
         vacinas,
         registros,
+        planoAtivo: Boolean(plano && plano.planoAtivo),
+        planoSlug: plano?.planSlug || 'basico',
       });
     } catch (erro) {
       logger.error('PET_CTRL', 'Erro ao exibir dados de saúde do pet', erro);

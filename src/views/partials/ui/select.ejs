@@ -1,0 +1,19 @@
+<%
+  var id = typeof id === 'string' ? id : name;
+  var nameAttr = typeof name === 'string' ? name : '';
+  var labelText = typeof label === 'string' ? label : '';
+  var optionsList = Array.isArray(options) ? options : [];
+  var selectedValue = typeof value !== 'undefined' && value !== null ? String(value) : '';
+  var className = typeof className === 'string' ? className : '';
+%>
+<label class="block text-sm">
+  <% if (labelText) { %>
+    <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-[color:var(--text-dim)]"><%= labelText %></span>
+  <% } %>
+  <select id="<%= id %>" name="<%= nameAttr %>" class="input <%= className %>">
+    <% optionsList.forEach(function(opt) { %>
+      <% var optValue = String(opt.value); %>
+      <option value="<%= optValue %>" <%= selectedValue === optValue ? 'selected' : '' %>><%= opt.label %></option>
+    <% }) %>
+  </select>
+</label>

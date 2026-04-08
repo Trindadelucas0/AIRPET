@@ -9,6 +9,10 @@
   <% var ultimaCidade = (ultimaLocalizacao && ultimaLocalizacao.cidade) || (petPerdido && petPerdido.cidade) || null; %>
   <% var planoAtivoEfetivo = typeof planoAtivo !== 'undefined' ? !!planoAtivo : false; %>
   <% var planoExpiraFmt = planoExpiraEm ? new Date(planoExpiraEm).toLocaleDateString('pt-BR') : null; %>
+  <% var planoNomeExibicao = planoNome || 'AIRPET Essencial'; %>
+  <% var temMapaPerdido = typeof petPerdidoMapaHabilitado !== 'undefined' ? !!petPerdidoMapaHabilitado : false; %>
+  <% var temPetshopProximo = typeof petshopProximoHabilitado !== 'undefined' ? !!petshopProximoHabilitado : false; %>
+  <% var temMulticanal = typeof notificacoesMulticanalHabilitado !== 'undefined' ? !!notificacoesMulticanalHabilitado : false; %>
 
   <% if (perdido) { %>
     <div class="bg-red-600 text-white text-center px-4 py-3">
@@ -23,13 +27,13 @@
         <% if (planoAtivoEfetivo) { %>
           <div class="inline-flex items-center gap-2 rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-700">
             <i class="fa-solid fa-shield-check"></i>
-            Plano <%= (planoSlug || 'basico').toUpperCase() %> ativo<%= planoExpiraFmt ? (' ate ' + planoExpiraFmt) : '' %>
+            <%= planoNomeExibicao %> ativo<%= planoExpiraFmt ? (' ate ' + planoExpiraFmt) : '' %>
             <% if (typeof planoEmGrace !== 'undefined' && planoEmGrace) { %> (grace)<% } %>
           </div>
         <% } else { %>
           <div class="inline-flex items-center gap-2 rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-700">
             <i class="fa-solid fa-circle-info"></i>
-            Plano premium inativo - modo basico de contato
+            AIRPET Essencial ativo - recursos avancados indisponiveis
           </div>
         <% } %>
       </div>
@@ -92,7 +96,12 @@
         <div class="rounded-xl bg-slate-50 p-3"><strong class="block text-slate-700">Saude</strong><span class="text-slate-600"><%= pet.alergias_medicacoes || 'Sem informacoes de alergias/medicacoes' %></span></div>
         <div class="rounded-xl bg-slate-50 p-3"><strong class="block text-slate-700">Comportamento</strong><span class="text-slate-600"><%= pet.observacoes || pet.descricao_emocional || 'Sem observacoes comportamentais' %></span></div>
         <div class="rounded-xl bg-slate-50 p-3"><strong class="block text-slate-700">Contato alternativo</strong><span class="text-slate-600"><%= pet.telefone_contato || (dono && dono.telefone) || 'Nao informado' %></span></div>
-        <div class="rounded-xl bg-slate-50 p-3"><strong class="block text-slate-700">Ultima localizacao</strong><span class="text-slate-600"><%= ultimaCidade || 'Nao informada' %></span></div>
+        <div class="rounded-xl bg-slate-50 p-3">
+          <strong class="block text-slate-700">Ultima localizacao</strong>
+          <span class="text-slate-600">
+            <%= temMapaPerdido ? (ultimaCidade || 'Nao informada') : 'Disponivel no AIRPET Protecao' %>
+          </span>
+        </div>
       </div>
       <% if (petPerdido && petPerdido.descricao) { %>
         <div class="rounded-xl bg-red-50 border border-red-100 p-3 mt-3 text-sm text-red-700">
@@ -102,16 +111,22 @@
       <% } %>
     </section>
 
-    <a href="<%= planoAtivoEfetivo ? (petshopMaisProximo ? ('/petshops/' + (petshopMaisProximo.slug || petshopMaisProximo.id)) : '/petshops?apoio=1') : '/tags/loja-tag' %>"
-       class="flex items-center gap-3 w-full <%= planoAtivoEfetivo ? 'bg-violet-600 hover:bg-violet-700' : 'bg-slate-600 hover:bg-slate-700' %> text-white rounded-2xl px-4 py-4 transition">
+    <a href="<%= (planoAtivoEfetivo && temPetshopProximo) ? (petshopMaisProximo ? ('/petshops/' + (petshopMaisProximo.slug || petshopMaisProximo.id)) : '/petshops?apoio=1') : '/tags/planos' %>"
+       class="flex items-center gap-3 w-full <%= (planoAtivoEfetivo && temPetshopProximo) ? 'bg-violet-600 hover:bg-violet-700' : 'bg-slate-600 hover:bg-slate-700' %> text-white rounded-2xl px-4 py-4 transition">
       <i class="fa-solid fa-store text-xl"></i>
       <span class="font-semibold">
-        <%= planoAtivoEfetivo ? 'Levar ao petshop parceiro' : 'Ativar plano para apoio de petshop' %>
-        <% if (planoAtivoEfetivo && petshopMaisProximo && petshopMaisProximo.nome) { %>
+        <%= (planoAtivoEfetivo && temPetshopProximo) ? 'Levar ao petshop parceiro' : 'Ver o que inclui o AIRPET Protecao' %>
+        <% if (planoAtivoEfetivo && temPetshopProximo && petshopMaisProximo && petshopMaisProximo.nome) { %>
           - <%= petshopMaisProximo.nome %>
         <% } %>
       </span>
     </a>
+
+    <% if (temMulticanal && planoAtivoEfetivo) { %>
+      <p class="text-center text-xs text-emerald-700 font-semibold">
+        Alertas em mais canais ativos para acelerar o contato com voce.
+      </p>
+    <% } %>
 
     <% if (perdido) { %>
       <section class="bg-white rounded-3xl shadow-sm border border-slate-200 p-5 space-y-3">

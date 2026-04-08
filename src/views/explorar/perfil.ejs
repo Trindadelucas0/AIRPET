@@ -229,11 +229,18 @@
                     </div>
                   </a>
                   <% if (eMeuPerfil) { %>
-                    <a href="/pets/<%= pet.id %>"
-                       class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full border border-primary-200 bg-primary-50 text-[11px] font-semibold text-primary-700 hover:bg-primary-100 hover:border-primary-300 transition-all whitespace-nowrap">
-                      <i class="fa-solid fa-up-right-from-square text-[10px]"></i>
-                      Abrir painel
-                    </a>
+                    <div class="flex items-center gap-2 flex-shrink-0">
+                      <a href="/explorar/pet/<%= pet.id %>"
+                         class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full border border-gray-200 bg-gray-50 text-[11px] font-semibold text-gray-700 hover:bg-gray-100 hover:border-gray-300 transition-all whitespace-nowrap">
+                        <i class="fa-solid fa-id-card text-[10px]"></i>
+                        Perfil oficial
+                      </a>
+                      <a href="/pets/<%= pet.id %>"
+                         class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full border border-primary-200 bg-primary-50 text-[11px] font-semibold text-primary-700 hover:bg-primary-100 hover:border-primary-300 transition-all whitespace-nowrap">
+                        <i class="fa-solid fa-up-right-from-square text-[10px]"></i>
+                        Abrir painel
+                      </a>
+                    </div>
                   <% } %>
                 </div>
               <% }); %>

@@ -131,6 +131,19 @@ const TagProductOrder = {
     return r.rows;
   },
 
+  async listarSlugsPagosPorUsuario(usuarioId) {
+    await ensureTagCommerceSchema();
+    const r = await query(
+      `SELECT DISTINCT plan_slug
+       FROM tag_product_orders
+       WHERE usuario_id = $1
+         AND status = 'pago'
+         AND plan_slug IS NOT NULL`,
+      [usuarioId]
+    );
+    return r.rows.map((row) => String(row.plan_slug || '').trim()).filter(Boolean);
+  },
+
   async listarAdmin(filtros = {}) {
     await ensureTagCommerceSchema();
     const valores = [];

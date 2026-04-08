@@ -13,6 +13,7 @@ const infinitePayService = require('./infinitePayService');
 const tagEntitlementService = require('./tagEntitlementService');
 const logger = require('../utils/logger');
 const { ensureTagCommerceSchema } = require('../models/tagCommerceSchema');
+const UPGRADE_DISCOUNT_CENTS = 1000;
 
 function normalizarPlano(slug) {
   const valor = String(slug || 'basico').toLowerCase();
@@ -175,6 +176,38 @@ function extrairValorCentavosComFallback(payload) {
   return null;
 }
 
+function toPlanOrderMap(planos = []) {
+  const map = new Map();
+  (planos || []).forEach((plano, idx) => {
+    const slug = String(plano.slug || '').trim().toLowerCase();
+    if (!slug) return;
+    const ordemNum = Number(plano.ordem);
+    map.set(slug, Number.isFinite(ordemNum) ? ordemNum : (idx + 1));
+  });
+  PLANOS_PADRAO.forEach((plano, idx) => {
+    const slug = String(plano.slug || '').trim().toLowerCase();
+    if (!slug || map.has(slug)) return;
+    const ordemNum = Number(plano.ordem);
+    map.set(slug, Number.isFinite(ordemNum) ? ordemNum : (idx + 1));
+  });
+  return map;
+}
+
+function highestPlanSlug(slugs = [], orderMap = new Map()) {
+  let best = null;
+  let bestOrder = -Infinity;
+  (slugs || []).forEach((slugRaw) => {
+    const slug = String(slugRaw || '').trim().toLowerCase();
+    if (!slug) return;
+    const ordem = Number(orderMap.get(slug));
+    if (Number.isFinite(ordem) && ordem > bestOrder) {
+      bestOrder = ordem;
+      best = slug;
+    }
+  });
+  return best;
+}
+
 function normalizarBaseUrlPublica() {
   const raw = String(process.env.BASE_URL || '').trim();
   if (!raw) {
@@ -261,13 +294,26 @@ const tagCommerceService = {
       if (!petSet.has(petId)) throw new Error('Pet selecionado não pertence ao usuário.');
     }
 
-    const planoDef = (await this.carregarPlanos()).find((p) => p.slug === plano) || PLANOS_PADRAO[0];
+    const planosDisponiveis = await this.carregarPlanos();
+    const planoDef = planosDisponiveis.find((p) => p.slug === plano) || PLANOS_PADRAO[0];
     const mensalidade = Number(planoDef.mensalidade_centavos || 0);
     const precoTags = orderType === 'compra_tag' ? precoHardwarePorQuantidade(quantidadeTags) : 0;
     const subtotal = precoTags + mensalidade;
 
+    const contextoUpgrade = await this.obterContextoUpgrade(usuarioId, planosDisponiveis);
+    const ordemDestino = Number(contextoUpgrade.orderMap.get(plano));
+    const ordemReferencia = Number(contextoUpgrade.orderMap.get(contextoUpgrade.referencePlanSlug || ''));
+    const isUpgrade = Boolean(
+      contextoUpgrade.hasPaidOrder
+      && contextoUpgrade.referencePlanSlug
+      && Number.isFinite(ordemDestino)
+      && Number.isFinite(ordemReferencia)
+      && ordemDestino > ordemReferencia
+    );
+    const descontoUpgrade = isUpgrade ? Math.min(UPGRADE_DISCOUNT_CENTS, Math.max(0, mensalidade)) : 0;
+
     let promo = null;
-    let desconto = 0;
+    let descontoPromo = 0;
     const promoCode = payload.promo_code ? String(payload.promo_code).trim().toUpperCase() : null;
     if (promoCode) {
       promo = await PromoCode.buscarPorCodigo(promoCode);
@@ -280,8 +326,9 @@ const tagCommerceService = {
       const usos = await PromoCode.contarUsos(promo.id, usuarioId);
       if (promo.max_usos_global && usos.usos_total >= promo.max_usos_global) throw new Error('Cupom sem saldo de uso.');
       if (promo.max_usos_por_usuario && usos.usos_usuario >= promo.max_usos_por_usuario) throw new Error('Você já atingiu o limite deste cupom.');
-      desconto = calcularDescontoPromo(promo, subtotal);
+      descontoPromo = calcularDescontoPromo(promo, subtotal);
     }
+    const descontoTotal = Math.min(subtotal, descontoUpgrade + descontoPromo);
 
     return {
       plano,
@@ -291,11 +338,43 @@ const tagCommerceService = {
       mensalidade_centavos: mensalidade,
       preco_tags_centavos: precoTags,
       subtotal_centavos: subtotal,
-      desconto_centavos: desconto,
-      total_centavos: Math.max(0, subtotal - desconto),
+      desconto_centavos: descontoTotal,
+      desconto_upgrade_centavos: descontoUpgrade,
+      desconto_promo_centavos: descontoPromo,
+      auto_discount_centavos: descontoUpgrade,
+      auto_discount_reason: isUpgrade ? 'upgrade_cliente_pago' : null,
+      upgrade_detectado: isUpgrade,
+      plano_referencia_upgrade: contextoUpgrade.referencePlanSlug || null,
+      total_centavos: Math.max(0, subtotal - descontoTotal),
       promo_code: promoCode,
       promo,
       billing,
+    };
+  },
+
+  async obterContextoUpgrade(usuarioId, planosDisponiveis = null) {
+    await ensureTagCommerceSchema();
+    const planos = Array.isArray(planosDisponiveis) && planosDisponiveis.length
+      ? planosDisponiveis
+      : await this.carregarPlanos();
+    const orderMap = toPlanOrderMap(planos);
+    const paidPlanSlugs = await TagProductOrder.listarSlugsPagosPorUsuario(usuarioId);
+    const hasPaidOrder = paidPlanSlugs.length > 0;
+    const estadoPlano = await tagEntitlementService.obterEstadoPlano(usuarioId).catch(() => null);
+
+    let referencePlanSlug = null;
+    if (estadoPlano && estadoPlano.planoAtivo && estadoPlano.planSlug) {
+      referencePlanSlug = String(estadoPlano.planSlug).trim().toLowerCase();
+    }
+    if (!referencePlanSlug && hasPaidOrder) {
+      referencePlanSlug = highestPlanSlug(paidPlanSlugs, orderMap);
+    }
+
+    return {
+      hasPaidOrder,
+      paidPlanSlugs,
+      referencePlanSlug: referencePlanSlug || null,
+      orderMap,
     };
   },
 
@@ -305,6 +384,12 @@ const tagCommerceService = {
     const snapshot = {
       carrinho,
       billing: carrinho.billing,
+      desconto_automatico: {
+        centavos: carrinho.auto_discount_centavos || 0,
+        motivo: carrinho.auto_discount_reason || null,
+        upgrade_detectado: Boolean(carrinho.upgrade_detectado),
+        plano_referencia: carrinho.plano_referencia_upgrade || null,
+      },
       regra_renovacao: 'valid_until_novo = max(valid_until_atual, pago_em) + 30 dias',
       grace_hours: tagEntitlementService.graceHours(),
       created_at: new Date().toISOString(),

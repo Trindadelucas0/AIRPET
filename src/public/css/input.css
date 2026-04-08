@@ -4,6 +4,7 @@
 
 @layer base {
   :root {
+    /* Fonte única e tokens centrais para reduzir conflito entre temas antigos */
     --card: #ffffff;
     --ring: #e05d38;
     --input: #f4f5f7;
@@ -46,6 +47,23 @@
     --destructive-foreground: #ffffff;
     --sidebar-accent-foreground: #1e3a8a;
     --sidebar-primary-foreground: #ffffff;
+    --surface-0: #f8fafc;
+    --surface-1: #ffffff;
+    --surface-2: #f8fafc;
+    --surface-muted: #f1f5f9;
+    --text-strong: #0f172a;
+    --text-soft: #64748b;
+
+    /* Compatibilidade legada com design-system.css */
+    --ink: var(--surface-0);
+    --ink-2: var(--surface-1);
+    --ink-3: var(--surface-2);
+    --ink-4: var(--surface-muted);
+    --text: var(--text-strong);
+    --text-dim: var(--text-soft);
+    --text-muted: #94a3b8;
+    --accent: #ec5a1c;
+    --accent-light: #f17a42;
   }
 
   .dark {
@@ -81,6 +99,25 @@
     --destructive-foreground: #ffffff;
     --sidebar-accent-foreground: #bfdbfe;
     --sidebar-primary-foreground: #ffffff;
+    --surface-0: #111827;
+    --surface-1: #1f2937;
+    --surface-2: #273449;
+    --surface-muted: #334155;
+    --text-strong: #e5e7eb;
+    --text-soft: #94a3b8;
+    --ink: var(--surface-0);
+    --ink-2: var(--surface-1);
+    --ink-3: var(--surface-2);
+    --ink-4: var(--surface-muted);
+    --text: var(--text-strong);
+    --text-dim: var(--text-soft);
+    --text-muted: #94a3b8;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    background-color: var(--surface-0);
+    color: var(--text-strong);
   }
 }
 
@@ -130,6 +167,58 @@
   .app-shell {
     @apply min-h-screen bg-[color:var(--background)] text-[color:var(--foreground)];
     font-family: var(--font-sans);
+  }
+
+  .app-top-nav {
+    @apply sticky top-0 z-50 border-b backdrop-blur-xl;
+    border-color: color-mix(in srgb, var(--border) 90%, transparent);
+    background: color-mix(in srgb, var(--surface-1) 86%, transparent);
+  }
+
+  .app-footer {
+    @apply mt-auto border-t;
+    border-color: var(--border);
+    background: var(--surface-1);
+  }
+
+  .app-page-header {
+    @apply border-b backdrop-blur-xl;
+    border-color: color-mix(in srgb, var(--border) 90%, transparent);
+    background: color-mix(in srgb, var(--surface-1) 90%, transparent);
+  }
+
+  .surface-card {
+    @apply rounded-2xl border bg-white shadow-soft;
+    border-color: var(--border);
+    background: var(--surface-1);
+    color: var(--text-strong);
+  }
+
+  .surface-subtle {
+    @apply rounded-xl border;
+    border-color: var(--border);
+    background: var(--surface-2);
+    color: var(--text-strong);
+  }
+
+  .kpi-grid {
+    @apply grid gap-3 md:grid-cols-2 xl:grid-cols-4;
+  }
+
+  .kpi-card {
+    @apply rounded-xl border p-4;
+    border-color: var(--border);
+    background: var(--surface-2);
+  }
+
+  .kpi-label {
+    @apply text-[11px] font-semibold uppercase tracking-[0.08em];
+    color: var(--text-soft);
+  }
+
+  .kpi-value {
+    @apply mt-1 text-2xl font-extrabold;
+    color: var(--text-strong);
   }
 
   .card-elevated {

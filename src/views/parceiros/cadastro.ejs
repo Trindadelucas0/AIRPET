@@ -166,6 +166,15 @@
   var estadoInput = document.getElementById('estadoInput');
   var cepInput = document.getElementById('cepInput');
   var telefoneInput = document.getElementById('telefoneInput');
+  var submitBtn = document.getElementById('submitBtn');
+
+  if (form && submitBtn) {
+    form.addEventListener('submit', function () {
+      submitBtn.disabled = true;
+      submitBtn.classList.add('opacity-60', 'cursor-not-allowed');
+      submitBtn.textContent = 'Enviando solicitação...';
+    });
+  }
 
   var initialLat = parseFloat(latitudeInput.value || '');
   var initialLng = parseFloat(longitudeInput.value || '');

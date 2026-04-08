@@ -18,9 +18,9 @@ export async function up(pgm) {
   pgm.sql(`
     INSERT INTO plan_definitions (slug, nome_exibicao, mensalidade_centavos, ordem, ativo, features_json)
     VALUES
-      ('basico', 'Basico', 1990, 1, true, '{"scan_publico_basico": true, "explorar_busca": true}'::jsonb),
-      ('plus', 'Plus', 2990, 2, true, '{"scan_publico_basico": true, "scan_rico": true, "pet_perdido_mapa": true, "explorar_busca": true}'::jsonb),
-      ('familia', 'Familia', 3990, 3, true, '{"scan_publico_basico": true, "scan_rico": true, "pet_perdido_mapa": true, "petshop_proximo": true, "notificacoes_multicanal": true, "explorar_busca": true}'::jsonb)
+      ('basico', 'AIRPET Essencial', 1990, 1, true, '{"scan_publico_basico": true, "explorar_busca": true}'::jsonb),
+      ('plus', 'AIRPET Protecao', 2990, 2, true, '{"scan_publico_basico": true, "scan_rico": true, "pet_perdido_mapa": true, "explorar_busca": true}'::jsonb),
+      ('familia', 'AIRPET Rede', 3990, 3, true, '{"scan_publico_basico": true, "scan_rico": true, "pet_perdido_mapa": true, "petshop_proximo": true, "notificacoes_multicanal": true, "explorar_busca": true}'::jsonb)
     ON CONFLICT (slug) DO NOTHING;
   `);
 

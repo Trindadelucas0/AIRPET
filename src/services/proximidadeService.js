@@ -19,9 +19,7 @@
  */
 
 const Usuario = require('../models/Usuario');
-const PetPerdido = require('../models/PetPerdido');
-const ConfigSistema = require('../models/ConfigSistema');
-const Notificacao = require('../models/Notificacao');
+const petLostAlertService = require('../domain/alerts/petLostAlertService');
 const logger = require('../utils/logger');
 
 /**
@@ -34,12 +32,6 @@ const logger = require('../utils/logger');
  *   - 'raio_alerta_nivel2_km': raio em km para nível 2 (padrão: 5)
  *   - 'raio_alerta_nivel3_km': raio em km para nível 3 (padrão: 15)
  */
-const RAIOS_PADRAO = {
-  1: 2,
-  2: 5,
-  3: 15,
-};
-
 const proximidadeService = {
 
   /**
@@ -134,91 +126,11 @@ const proximidadeService = {
    * // }
    */
   async escalarAlerta(petPerdidoId) {
-    logger.info('ProximidadeService', `Escalando alerta: ${petPerdidoId}`);
-
-    /* Busca o alerta com dados completos (JOINs com pet e dono) */
-    const alerta = await PetPerdido.buscarPorId(petPerdidoId);
-
-    if (!alerta) {
-      throw new Error('Alerta de pet perdido não encontrado');
-    }
-
-    /**
-     * Verifica o nível atual e calcula o próximo.
-     * Se o alerta já está no nível máximo (3), não escala mais.
-     */
-    const nivelAtual = alerta.nivel_alerta || 1;
-    const proximoNivel = nivelAtual + 1;
-
-    if (proximoNivel > 3) {
-      logger.info('ProximidadeService', `Alerta ${petPerdidoId} já está no nível máximo (3)`);
-      return {
-        escalado: false,
-        nivelAnterior: nivelAtual,
-        nivelAtual: nivelAtual,
-        raioKm: 0,
-        usuariosNotificados: 0,
-      };
-    }
-
-    /**
-     * Busca o raio configurado para o próximo nível.
-     * Primeiro tenta buscar da tabela config_sistema (configurável pelo admin).
-     * Se não encontrar, usa o valor padrão definido em RAIOS_PADRAO.
-     */
-    const chaveConfig = `raio_alerta_nivel${proximoNivel}_km`;
-    const raioConfigurado = await ConfigSistema.buscarPorChave(chaveConfig);
-    const raioKm = raioConfigurado ? parseFloat(raioConfigurado) : RAIOS_PADRAO[proximoNivel];
-
-    logger.info('ProximidadeService', `Escalando para nível ${proximoNivel} — raio: ${raioKm}km`);
-
-    /**
-     * Busca todos os usuários dentro do novo raio expandido.
-     * A busca é feita a partir da última localização conhecida do pet perdido.
-     */
-    const usuarioIds = await this.buscarUsuariosProximos(
-      alerta.latitude,
-      alerta.longitude,
-      raioKm
-    );
-
-    /**
-     * Filtra o dono do pet — ele não precisa receber notificação
-     * sobre seu próprio pet perdido (ele já sabe).
-     */
-    const usuariosParaNotificar = usuarioIds.filter(id => id !== alerta.usuario_id);
-
-    logger.info('ProximidadeService', `${usuariosParaNotificar.length} usuário(s) para notificar no raio de ${raioKm}km`);
-
-    /* Cria notificações em massa se houver usuários no raio */
-    if (usuariosParaNotificar.length > 0) {
-      const mensagem = `🚨 Alerta nível ${proximoNivel}! ${alerta.pet_nome} (${alerta.pet_tipo || 'pet'}) está perdido na sua região. Última vez visto próximo de você.`;
-      const link = `/pets/${alerta.pet_id}`;
-
-      await Notificacao.criarParaMultiplos(
-        usuariosParaNotificar,
-        'alerta',
-        mensagem,
-        link
-      );
-    }
-
-    /**
-     * Atualiza o nível de alerta no banco de dados.
-     * Isso registra que a escalação foi realizada e impede
-     * que o mesmo nível seja escalado novamente.
-     */
-    await PetPerdido.atualizarNivel(petPerdidoId, proximoNivel);
-
-    logger.info('ProximidadeService', `Alerta ${petPerdidoId} escalado: nível ${nivelAtual} → ${proximoNivel}`);
-
-    return {
-      escalado: true,
-      nivelAnterior: nivelAtual,
-      nivelAtual: proximoNivel,
-      raioKm,
-      usuariosNotificados: usuariosParaNotificar.length,
-    };
+    logger.info('ProximidadeService', `Escalonamento centralizado do alerta ${petPerdidoId}`);
+    return petLostAlertService.escalarOuReiniciarCiclo(petPerdidoId, {
+      origem: 'proximidade_service',
+      ignorarIntervaloMinimo: true,
+    });
   },
 };
 

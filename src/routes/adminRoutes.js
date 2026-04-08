@@ -4,6 +4,8 @@ const bcrypt = require('bcrypt');
 const multer = require('multer');
 
 const adminController = require('../controllers/adminController');
+const adminDashboardController = require('../controllers/admin/adminDashboardController');
+const adminAlertsController = require('../controllers/admin/adminAlertsController');
 const adminMonitoramentoController = require('../controllers/adminMonitoramentoController');
 const pontoMapaController = require('../controllers/pontoMapaController');
 const { apenasAdmin } = require('../middlewares/adminMiddleware');
@@ -93,15 +95,18 @@ router.get('/logout', (req, res) => {
   res.redirect(BASE + '/login');
 });
 
-router.get('/', apenasAdmin, adminController.dashboard);
-router.get('/analytics', apenasAdmin, adminController.mostrarAnalyticsAvancado);
+router.get('/', apenasAdmin, adminDashboardController.dashboard);
+router.get('/tags', apenasAdmin, (req, res) => res.redirect('/tags/admin/lista'));
+router.get('/pedidos', apenasAdmin, (req, res) => res.redirect('/tags/admin/commerce/pedidos'));
+router.get('/cupons', apenasAdmin, (req, res) => res.redirect('/tags/admin/commerce/cupons'));
+router.get('/analytics', apenasAdmin, adminDashboardController.mostrarAnalyticsAvancado);
 router.get('/monitoramento', apenasAdmin, adminMonitoramentoController.pagina);
 router.get('/api/monitoramento', apenasAdmin, adminMonitoramentoController.apiJson);
-router.get('/boosts', apenasAdmin, adminController.listarBoosts);
-router.get('/boosts/buscar-usuarios', apenasAdmin, adminController.buscarUsuariosParaBoost);
-router.get('/boosts/buscar-pets', apenasAdmin, adminController.buscarPetsParaBoost);
-router.post('/boosts', apenasAdmin, ...validarAdminBoost, validarResultado, adminController.criarBoost);
-router.post('/boosts/:id/cancelar', apenasAdmin, ...validarBodyVazioJson, validarResultado, adminController.cancelarBoost);
+router.get('/boosts', apenasAdmin, adminDashboardController.listarBoosts);
+router.get('/boosts/buscar-usuarios', apenasAdmin, adminDashboardController.buscarUsuariosParaBoost);
+router.get('/boosts/buscar-pets', apenasAdmin, adminDashboardController.buscarPetsParaBoost);
+router.post('/boosts', apenasAdmin, ...validarAdminBoost, validarResultado, adminDashboardController.criarBoost);
+router.post('/boosts/:id/cancelar', apenasAdmin, ...validarBodyVazioJson, validarResultado, adminDashboardController.cancelarBoost);
 
 router.get('/usuarios', apenasAdmin, adminController.listarUsuarios);
 router.get('/pets', apenasAdmin, adminController.listarPets);
@@ -115,10 +120,10 @@ router.post('/petshops/promocoes/:id/aprovar', apenasAdmin, ...validarBodyVazioJ
 router.post('/petshops/promocoes/:id/rejeitar', apenasAdmin, ...validarAdminRejeitarPetshop, validarResultado, adminController.rejeitarPromocaoPetshop);
 router.post('/petshops/:id/excluir', apenasAdmin, ...validarBodyVazioJson, validarResultado, adminController.excluirPetshop);
 
-router.get('/pets-perdidos', apenasAdmin, adminController.listarPerdidos);
-router.post('/pets-perdidos/:id/aprovar', apenasAdmin, ...validarBodyVazioJson, validarResultado, adminController.aprovarPerdido);
-router.post('/pets-perdidos/:id/rejeitar', apenasAdmin, ...validarAdminRejeitarPetshop, validarResultado, adminController.rejeitarPerdido);
-router.post('/pets-perdidos/:id/escalar', apenasAdmin, ...validarAdminEscalar, validarResultado, adminController.escalarAlerta);
+router.get('/pets-perdidos', apenasAdmin, adminAlertsController.listarPerdidos);
+router.post('/pets-perdidos/:id/aprovar', apenasAdmin, ...validarBodyVazioJson, validarResultado, adminAlertsController.aprovarPerdido);
+router.post('/pets-perdidos/:id/rejeitar', apenasAdmin, ...validarAdminRejeitarPetshop, validarResultado, adminAlertsController.rejeitarPerdido);
+router.post('/pets-perdidos/:id/escalar', apenasAdmin, ...validarAdminEscalar, validarResultado, adminAlertsController.escalarAlerta);
 
 router.get('/moderacao', apenasAdmin, adminController.mostrarModeracao);
 router.post('/moderacao/:id/aprovar', apenasAdmin, ...validarBodyVazioJson, validarResultado, adminController.aprovarMensagem);

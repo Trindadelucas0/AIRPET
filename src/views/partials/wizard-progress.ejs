@@ -1,0 +1,16 @@
+<%
+  const wizardCurrent = Number(currentStep || 1);
+  const wizardTotal = Number(totalSteps || 1);
+  const wizardSafeTotal = wizardTotal > 0 ? wizardTotal : 1;
+  const wizardPct = Math.max(1, Math.round((wizardCurrent / wizardSafeTotal) * 100));
+  const wizardLabelText = `Passo ${wizardCurrent} de ${wizardSafeTotal}`;
+%>
+<div class="air-wizard-progress" data-wizard-progress data-total-steps="<%= wizardSafeTotal %>">
+  <div class="air-wizard-progress-meta">
+    <span id="<%= stepLabelId %>"><%= wizardLabelText %></span>
+    <span id="<%= stepPercentId %>"><%= wizardPct %>%</span>
+  </div>
+  <div class="air-wizard-progress-track">
+    <div id="<%= progressBarId %>" class="air-wizard-progress-fill" style="width:<%= wizardPct %>%"></div>
+  </div>
+</div>

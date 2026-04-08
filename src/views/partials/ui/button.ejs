@@ -1,0 +1,20 @@
+<%
+  var variant = typeof variant === 'string' ? variant : 'primary';
+  var type = typeof type === 'string' ? type : 'button';
+  var label = typeof label === 'string' ? label : '';
+  var href = typeof href === 'string' ? href : '';
+  var disabledAttr = typeof disabled !== 'undefined' && disabled ? 'disabled' : '';
+  var className = typeof className === 'string' ? className : '';
+  var classesByVariant = {
+    primary: 'btn-primary-inline',
+    secondary: 'btn-secondary',
+    ghost: 'btn-ghost',
+    danger: 'btn-danger'
+  };
+  var variantClass = classesByVariant[variant] || classesByVariant.primary;
+%>
+<% if (href) { %>
+  <a href="<%= href %>" class="<%= variantClass %> <%= className %>" <%= disabledAttr %>><%= label %></a>
+<% } else { %>
+  <button type="<%= type %>" class="<%= variantClass %> <%= className %>" <%= disabledAttr %>><%= label %></button>
+<% } %>

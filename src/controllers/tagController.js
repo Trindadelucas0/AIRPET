@@ -38,6 +38,7 @@ const { withTransaction } = require('../config/database');
 const { gerarTagCode, gerarActivationCode } = require('../utils/helpers');
 const logger = require('../utils/logger');
 const emailService = require('../services/emailService');
+const tagInventoryService = require('../domain/tags/tagInventoryService');
 
 /* =========================================================================
  * ROTAS DO TUTOR — Ativação e vinculação de tags
@@ -454,15 +455,21 @@ async function listarTags(req, res) {
     const tags = await NfcTag.listarTodas(status || null);
 
     /* Busca contagens por status para exibir resumo no topo */
-    const contagens = await NfcTag.contarPorStatus();
+    const [contagens, inventoryResumo, ultimosScans] = await Promise.all([
+      NfcTag.contarPorStatus(),
+      tagInventoryService.resumoEstoque(),
+      tagInventoryService.listarUltimosScans(12),
+    ]);
 
     return res.render('admin/tags', {
       titulo: 'Gerenciar Tags NFC - AIRPET',
       tags,
       contagens,
+      inventoryResumo,
+      ultimosScans,
       filtroAtual: status || 'todos',
       adminPath: process.env.ADMIN_PATH || '/admin',
-      currentPath: 'tags',
+      currentPath: '/tags',
     });
   } catch (erro) {
     logger.error('TagController', 'Erro ao listar tags', erro);
@@ -492,7 +499,7 @@ async function listarLotes(req, res) {
       titulo: 'Lotes de Tags - AIRPET',
       lotes,
       adminPath: process.env.ADMIN_PATH || '/admin',
-      currentPath: 'tags',
+      currentPath: '/tags',
     });
   } catch (erro) {
     logger.error('TagController', 'Erro ao listar lotes', erro);
@@ -531,7 +538,7 @@ async function mostrarLote(req, res) {
       lote,
       tags,
       adminPath: process.env.ADMIN_PATH || '/admin',
-      currentPath: 'tags',
+      currentPath: '/tags',
     });
   } catch (erro) {
     logger.error('TagController', 'Erro ao exibir detalhes do lote', erro);

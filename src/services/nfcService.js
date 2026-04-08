@@ -37,8 +37,10 @@ const Pet = require('../models/Pet');
 const Localizacao = require('../models/Localizacao');
 const Notificacao = require('../models/Notificacao');
 const PetPerdido = require('../models/PetPerdido');
-const TagSubscription = require('../models/TagSubscription');
 const petshopRecoveryIntegrationService = require('./petshopRecoveryIntegrationService');
+const tagEntitlementService = require('./tagEntitlementService');
+const pushService = require('./pushService');
+const emailService = require('./emailService');
 const Usuario = require('../models/Usuario');
 const logger = require('../utils/logger');
 
@@ -135,6 +137,10 @@ const nfcService = {
     let petshopMaisProximo = null;
     let ultimaLocalizacao = null;
     let planoInfo = null;
+    let recursosPlano = {};
+    let petPerdidoMapaHabilitado = false;
+    let petshopProximoHabilitado = false;
+    let notificacoesMulticanalHabilitado = false;
 
     switch (tag.status) {
       /**
@@ -167,7 +173,11 @@ const nfcService = {
 
           if (dadosPet) {
             dadosDono = await Usuario.buscarContatoBasicoPorId(dadosPet.usuario_id);
-            planoInfo = await TagSubscription.estaAtivaComGrace(dadosPet.usuario_id);
+            planoInfo = await tagEntitlementService.obterEstadoPlano(dadosPet.usuario_id);
+            recursosPlano = Object.assign({}, planoInfo?.recursos || {});
+            petPerdidoMapaHabilitado = Boolean(recursosPlano.pet_perdido_mapa);
+            petshopProximoHabilitado = Boolean(recursosPlano.petshop_proximo);
+            notificacoesMulticanalHabilitado = Boolean(recursosPlano.notificacoes_multicanal);
           }
         }
 
@@ -188,10 +198,12 @@ const nfcService = {
 
           logger.info('NfcService', `Localização registrada para pet: ${tag.pet_id}`);
 
-          petshopMaisProximo = await petshopRecoveryIntegrationService.sugerirPetshopMaisProximo(
-            dadosScan.latitude,
-            dadosScan.longitude
-          );
+          if (petshopProximoHabilitado) {
+            petshopMaisProximo = await petshopRecoveryIntegrationService.sugerirPetshopMaisProximo(
+              dadosScan.latitude,
+              dadosScan.longitude
+            );
+          }
         }
 
         /**
@@ -216,13 +228,20 @@ const nfcService = {
           }
         }
 
-        if (tag.pet_id) {
+        if (tag.pet_id && petPerdidoMapaHabilitado) {
           ultimaLocalizacao = await Localizacao.buscarUltimaPorPetId(tag.pet_id);
         }
 
-        const planoPremiumAtivo = Boolean(planoInfo && (planoInfo.ativo || planoInfo.em_grace));
+        const planoPremiumAtivo = Boolean(planoInfo && planoInfo.planoAtivo);
 
-        if (planoPremiumAtivo && !petshopMaisProximo && alertaAtivo && alertaAtivo.latitude && alertaAtivo.longitude) {
+        if (
+          planoPremiumAtivo
+          && petshopProximoHabilitado
+          && !petshopMaisProximo
+          && alertaAtivo
+          && alertaAtivo.latitude
+          && alertaAtivo.longitude
+        ) {
           petshopMaisProximo = await petshopRecoveryIntegrationService.sugerirPetshopMaisProximo(
             alertaAtivo.latitude,
             alertaAtivo.longitude
@@ -238,13 +257,37 @@ const nfcService = {
           const cidadeTexto = dadosScan.cidade ? ` em ${dadosScan.cidade}` : '';
           const nomeDoAnimal = tag.pet_nome || 'seu pet';
           const linkPet = `/pets/${tag.pet_id}`;
+          const mensagem = `A tag de ${nomeDoAnimal} foi escaneada${cidadeTexto}.`;
 
           await Notificacao.criar({
             usuario_id: tag.user_id,
             tipo: 'scan',
-            mensagem: `A tag de ${nomeDoAnimal} foi escaneada${cidadeTexto}.`,
+            mensagem,
             link: linkPet,
           });
+
+          if (notificacoesMulticanalHabilitado) {
+            pushService.enviarParaUsuario(tag.user_id, {
+              titulo: 'Tag Escaneada',
+              corpo: mensagem,
+              url: linkPet,
+              tipo: 'scan',
+            }).catch((err) => {
+              logger.error('NfcService', 'Falha ao enviar push multicanal', err);
+            });
+
+            if (dadosDono && dadosDono.email) {
+              emailService.enviarTagEscaneada({
+                to: dadosDono.email,
+                nome: dadosDono.nome,
+                petNome: nomeDoAnimal,
+                cidade: dadosScan.cidade || null,
+                linkPet,
+              }).catch((err) => {
+                logger.error('NfcService', 'Falha ao enviar e-mail multicanal', err);
+              });
+            }
+          }
 
           logger.info('NfcService', `Notificação de scan enviada ao dono: ${tag.user_id}`);
         }
@@ -281,10 +324,15 @@ const nfcService = {
       petPerdidoAlerta: alertaAtivo,
       petshopMaisProximo,
       ultimaLocalizacao,
-      planoAtivo: Boolean(planoInfo && (planoInfo.ativo || planoInfo.em_grace)),
-      planoEmGrace: Boolean(planoInfo && planoInfo.em_grace && !planoInfo.ativo),
-      planoExpiraEm: planoInfo?.valid_until || null,
-      planoSlug: planoInfo?.plan_slug || 'basico',
+      recursosPlano,
+      petPerdidoMapaHabilitado,
+      petshopProximoHabilitado,
+      notificacoesMulticanalHabilitado,
+      planoAtivo: Boolean(planoInfo && planoInfo.planoAtivo),
+      planoEmGrace: Boolean(planoInfo && planoInfo.emGrace),
+      planoExpiraEm: planoInfo?.validUntil || null,
+      planoSlug: planoInfo?.planSlug || 'basico',
+      planoNome: planoInfo?.nomePlano || 'AIRPET Essencial',
     };
   },
 };

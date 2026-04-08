@@ -172,16 +172,17 @@
 <main class="flex-1">
   <div class="wizard-wrap">
 
-    <!-- Progress -->
-    <div class="progress-section">
-      <div class="progress-meta">
-        <span id="stepLabel">Passo 1 de 9</span>
-        <span id="stepPercent">11%</span>
-      </div>
-      <div class="progress-track">
-        <div id="progressBar" class="progress-fill" style="width:11%"></div>
-      </div>
-    </div>
+    <%- include('../partials/wizard-shell', {
+      shellId: 'pet-cadastro-shell',
+      badge: 'Cadastro guiado',
+      title: 'Novo pet',
+      subtitle: 'Preencha os dados essenciais para ativar a proteção.',
+      currentStep: 1,
+      totalSteps: 9,
+      stepLabelId: 'stepLabel',
+      stepPercentId: 'stepPercent',
+      progressBarId: 'progressBar'
+    }) %>
 
     <form action="/pets/cadastro" method="POST" enctype="multipart/form-data" id="formCadastro">
 

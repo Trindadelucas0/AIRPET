@@ -1,7 +1,7 @@
 const PLANOS_PADRAO = [
   {
     slug: 'basico',
-    nome: 'Basico',
+    nome: 'AIRPET Essencial',
     mensalidade_centavos: 1990,
     ordem: 1,
     features: {
@@ -15,7 +15,7 @@ const PLANOS_PADRAO = [
   },
   {
     slug: 'plus',
-    nome: 'Plus',
+    nome: 'AIRPET Protecao',
     mensalidade_centavos: 2990,
     ordem: 2,
     features: {
@@ -29,7 +29,7 @@ const PLANOS_PADRAO = [
   },
   {
     slug: 'familia',
-    nome: 'Familia',
+    nome: 'AIRPET Rede',
     mensalidade_centavos: 3990,
     ordem: 3,
     features: {

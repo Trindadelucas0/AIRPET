@@ -174,6 +174,17 @@ const petshopPanelController = {
         petshopAgendaResumoService.gerarResumoHoje(petshopId, new Date()),
       ]);
       const metricas = await petshopMetricsService.resumirKPIs(petshopId, period);
+      const statusAtual = (solicitacao && solicitacao.status) || (req.petshopAccount.status === 'ativo' ? 'aprovado' : 'pendente');
+      const postsComFoto = (posts || []).filter((p) => p && p.foto_url && String(p.foto_url).trim());
+      const promocoes = (products || []).filter((p) => p && p.is_promocao);
+      const periodAtivo = Number(metricas && metricas.periodDays) || 7;
+      const dashboardResumo = {
+        totalServicos: (services || []).length,
+        totalAgendamentos: (appointments || []).length,
+        totalPetsVinculados: (petsVinculadosDetalhados || []).length,
+        totalPostsComFoto: postsComFoto.length,
+        totalPromocoes: promocoes.length,
+      };
 
       return res.render('petshop-panel/dashboard', {
         titulo: 'Painel do Petshop',
@@ -185,11 +196,16 @@ const petshopPanelController = {
         profile,
         solicitacoesVinculo,
         solicitacao,
+        statusAtual,
         agendaResumo,
         agendaDiasResumo,
         metricas,
+        periodAtivo,
         petshop,
         petsVinculadosDetalhados,
+        postsComFoto,
+        promocoes,
+        dashboardResumo,
         followerCount,
         accountStatus: req.petshopAccount.status,
       });

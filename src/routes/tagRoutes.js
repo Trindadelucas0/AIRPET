@@ -30,24 +30,27 @@ const uploadTagPrint = multer({
 });
 
 // --- Rotas administrativas (devem vir antes das rotas com parâmetro dinâmico) ---
-router.get('/admin/lista', estaAutenticado, apenasAdmin, tagController.listarTags);
-router.get('/admin/lotes', estaAutenticado, apenasAdmin, tagController.listarLotes);
-router.get('/admin/lote/:id', estaAutenticado, apenasAdmin, tagController.mostrarLote);
-router.post('/admin/gerar', estaAutenticado, apenasAdmin, ...validarTagGerarLote, validarResultado, tagController.gerarLote);
-router.post('/admin/:id/reservar', estaAutenticado, apenasAdmin, ...validarTagReservar, validarResultado, tagController.reservar);
-router.post('/admin/:id/enviar', estaAutenticado, apenasAdmin, ...validarTagEnviarBloquear, validarResultado, tagController.enviar);
-router.post('/admin/:id/bloquear', estaAutenticado, apenasAdmin, ...validarTagEnviarBloquear, validarResultado, tagController.bloquear);
-router.post('/admin/:id/desbloquear', estaAutenticado, apenasAdmin, ...validarTagEnviarBloquear, validarResultado, tagController.desbloquear);
-router.get('/admin/commerce/pedidos', estaAutenticado, apenasAdmin, tagCommerceController.adminListarPedidos);
-router.get('/admin/commerce/pedidos/:id', estaAutenticado, apenasAdmin, tagCommerceController.adminDetalhePedido);
-router.post('/admin/commerce/pedidos/:id/nf', estaAutenticado, apenasAdmin, tagCommerceController.adminSalvarNotaFiscal);
-router.get('/admin/commerce/cupons', estaAutenticado, apenasAdmin, tagCommerceController.adminListarCupons);
-router.post('/admin/commerce/cupons', estaAutenticado, apenasAdmin, tagCommerceController.adminCriarCupom);
-router.post('/admin/commerce/cupons/:id', estaAutenticado, apenasAdmin, tagCommerceController.adminAtualizarCupom);
+router.get('/admin/lista', apenasAdmin, tagController.listarTags);
+router.get('/admin/lotes', apenasAdmin, tagController.listarLotes);
+router.get('/admin/lote/:id', apenasAdmin, tagController.mostrarLote);
+router.post('/admin/gerar', apenasAdmin, ...validarTagGerarLote, validarResultado, tagController.gerarLote);
+router.post('/admin/:id/reservar', apenasAdmin, ...validarTagReservar, validarResultado, tagController.reservar);
+router.post('/admin/:id/enviar', apenasAdmin, ...validarTagEnviarBloquear, validarResultado, tagController.enviar);
+router.post('/admin/:id/bloquear', apenasAdmin, ...validarTagEnviarBloquear, validarResultado, tagController.bloquear);
+router.post('/admin/:id/desbloquear', apenasAdmin, ...validarTagEnviarBloquear, validarResultado, tagController.desbloquear);
+router.get('/admin/commerce/pedidos', apenasAdmin, tagCommerceController.adminListarPedidos);
+router.get('/admin/commerce/pedidos/:id', apenasAdmin, tagCommerceController.adminDetalhePedido);
+router.post('/admin/commerce/pedidos/:id/status', apenasAdmin, tagCommerceController.adminAtualizarStatusPedido);
+router.post('/admin/commerce/pedidos/:id/nf', apenasAdmin, tagCommerceController.adminSalvarNotaFiscal);
+router.get('/admin/commerce/cupons', apenasAdmin, tagCommerceController.adminListarCupons);
+router.post('/admin/commerce/cupons', apenasAdmin, tagCommerceController.adminCriarCupom);
+router.post('/admin/commerce/cupons/:id', apenasAdmin, tagCommerceController.adminAtualizarCupom);
 
 // --- Rotas comerciais TAG (venda, pedidos, assinatura) ---
 router.get('/loja-tag', tagCommerceController.mostrarLoja);
 router.get('/planos', tagCommerceController.mostrarPlanos);
+/** Corrige typo comum /tags/plano → /tags/planos */
+router.get('/plano', (req, res) => res.redirect(302, '/tags/planos'));
 router.post('/pedidos', estaAutenticado, tagCommerceController.criarPedido);
 router.get('/pedidos', estaAutenticado, tagCommerceController.listarPedidos);
 router.get('/pedidos/:id', estaAutenticado, tagCommerceController.detalhePedido);

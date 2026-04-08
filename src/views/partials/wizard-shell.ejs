@@ -1,0 +1,19 @@
+<section class="air-wizard-shell" id="<%= shellId %>" data-wizard-shell>
+  <header class="air-wizard-shell-header">
+    <% if (typeof badge !== 'undefined' && badge) { %>
+      <span class="air-wizard-badge"><%= badge %></span>
+    <% } %>
+    <h2 class="air-wizard-title"><%= title %></h2>
+    <% if (typeof subtitle !== 'undefined' && subtitle) { %>
+      <p class="air-wizard-subtitle"><%= subtitle %></p>
+    <% } %>
+  </header>
+
+  <%- include('./wizard-progress', {
+    currentStep: currentStep || 1,
+    totalSteps: totalSteps || 1,
+    stepLabelId,
+    stepPercentId,
+    progressBarId
+  }) %>
+</section>

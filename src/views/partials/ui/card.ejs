@@ -1,0 +1,14 @@
+<%
+  var title = typeof title === 'string' ? title : '';
+  var subtitle = typeof subtitle === 'string' ? subtitle : '';
+  var className = typeof className === 'string' ? className : '';
+%>
+<section class="surface-card p-6 <%= className %>">
+  <% if (title || subtitle) { %>
+    <header class="mb-4">
+      <% if (title) { %><h2 class="text-lg font-bold text-[color:var(--text)]"><%= title %></h2><% } %>
+      <% if (subtitle) { %><p class="mt-1 text-sm text-[color:var(--text-dim)]"><%= subtitle %></p><% } %>
+    </header>
+  <% } %>
+  <%- body || '' %>
+</section>

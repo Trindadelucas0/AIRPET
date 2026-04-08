@@ -13,23 +13,15 @@
     if (!rule || !rule[field]) return fallback;
     return String(rule[field]).slice(0, 5);
   }
-  locals.extraHead = `
-  <link rel="stylesheet" href="/css/partner-ui.css">
-  <style>
-    .partner-app { max-width: 1080px; }
-    .partner-card { background: var(--ink-2); border:1px solid var(--border); border-radius: 18px; padding: 16px; }
-    .row-dia { border: 1px solid var(--border); border-radius: 14px; padding: 12px; background: var(--ink-3); }
-    .label-col { color: var(--text); font-weight: 700; }
-  </style>
-  `;
+  locals.extraHead = '<link rel="stylesheet" href="/css/partner-ui.css">';
 %>
 <%- include('../partials/header') %>
 <%- include('../partials/flash') %>
 
-<main class="flex-1 container mx-auto partner-app px-4 py-8 space-y-5 app-shell">
+<main class="flex-1 container mx-auto max-w-6xl px-4 py-8 space-y-5 app-shell">
   <%- include('../partials/petshop-panel-nav', { activeTab: 'horarios' }) %>
 
-  <section class="partner-card">
+  <section class="surface-card p-5">
     <h1 class="text-xl font-bold text-[color:var(--text)]">Configuração semanal</h1>
     <p class="text-sm text-[color:var(--text-dim)] mt-1">
       Defina apenas os períodos em que você atende. Dias desmarcados ficam bloqueados.
@@ -40,9 +32,9 @@
     <% dias.forEach(function(dia) { %>
       <% const regra = (regrasMap && regrasMap[String(dia.id)]) || null; %>
       <% const ativo = regra ? regra.ativo !== false : false; %>
-      <div class="row-dia">
+      <div class="surface-subtle p-3">
         <div class="flex flex-wrap items-center justify-between gap-3">
-          <label class="inline-flex items-center gap-2 label-col">
+          <label class="inline-flex items-center gap-2 font-bold text-[color:var(--text)]">
             <input type="checkbox" name="dia_<%= dia.id %>_ativo" value="1" <%= ativo ? 'checked' : '' %>>
             <span><%= dia.label %></span>
           </label>
@@ -75,7 +67,7 @@
     </div>
   </form>
 
-  <section class="partner-card mt-6">
+  <section class="surface-card p-5 mt-6">
     <h2 class="font-bold mb-2">Bloquear horários específicos</h2>
     <p class="text-xs text-[color:var(--text-dim)] mb-3">Use para feriados, pausas extras ou horários indisponíveis por serviço.</p>
     <form action="/petshop-panel/agenda/config/bloqueios" method="POST" class="grid md:grid-cols-4 gap-3">
@@ -94,7 +86,7 @@
     </form>
   </section>
 
-  <section class="partner-card mt-4">
+  <section class="surface-card p-5 mt-4">
     <div class="flex items-center justify-between mb-3">
       <h2 class="font-bold">Próximos bloqueios</h2>
       <span class="text-xs text-[color:var(--text-dim)]"><%= (bloqueios || []).length %> ativo(s)</span>
@@ -104,7 +96,7 @@
     <% } else { %>
       <div class="space-y-2">
         <% (bloqueios || []).forEach(function(b) { %>
-          <article class="row-dia flex flex-wrap items-center justify-between gap-3">
+          <article class="surface-subtle p-3 flex flex-wrap items-center justify-between gap-3">
             <div class="text-xs">
               <p><strong><%= b.servico_nome || 'Todos os serviços' %></strong></p>
               <p><%= new Date(b.inicio).toLocaleString('pt-BR') %> até <%= new Date(b.fim).toLocaleString('pt-BR') %></p>

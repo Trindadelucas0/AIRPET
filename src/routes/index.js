@@ -79,6 +79,9 @@ router.get('/', async (req, res) => {
 router.get('/termos', (req, res) => res.render('termos', { titulo: 'Termos de Uso' }));
 router.get('/privacidade', (req, res) => res.render('privacidade', { titulo: 'Política de Privacidade' }));
 
+/** Atalho: quem acessa /planos cai na página real em /tags/planos */
+router.get('/planos', (req, res) => res.redirect(302, '/tags/planos'));
+
 // Rotas públicas
 router.use('/auth', authRoutes);
 router.use('/tag', nfcRoutes);

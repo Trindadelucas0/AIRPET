@@ -9,6 +9,20 @@ module.exports = {
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
+        display: ['Inter', 'system-ui', 'sans-serif'],
+      },
+      borderRadius: {
+        control: '0.75rem',
+        card: '1rem',
+        panel: '1.25rem',
+      },
+      boxShadow: {
+        soft: '0 1px 2px rgba(15, 23, 42, 0.08)',
+        card: '0 10px 24px -12px rgba(15, 23, 42, 0.2)',
+        panel: '0 18px 40px -20px rgba(15, 23, 42, 0.26)',
+      },
+      spacing: {
+        shell: '1.5rem',
       },
     },
   },

@@ -16,6 +16,16 @@
       </div>
     </div>
 
+    <% const inv = inventoryResumo || {}; const s = inv.porStatus || {}; %>
+    <section class="grid grid-cols-2 md:grid-cols-6 gap-3 mb-6">
+      <article class="card"><p class="text-xs text-gray-500">Stock</p><p class="text-xl font-bold"><%= Number(s.stock || 0) %></p></article>
+      <article class="card"><p class="text-xs text-gray-500">Reserved</p><p class="text-xl font-bold text-blue-600"><%= Number(s.reserved || 0) %></p></article>
+      <article class="card"><p class="text-xs text-gray-500">Sent</p><p class="text-xl font-bold text-yellow-600"><%= Number(s.sent || 0) %></p></article>
+      <article class="card"><p class="text-xs text-gray-500">Active</p><p class="text-xl font-bold text-emerald-600"><%= Number(s.active || 0) %></p></article>
+      <article class="card"><p class="text-xs text-gray-500">Blocked</p><p class="text-xl font-bold text-red-600"><%= Number(s.blocked || 0) %></p></article>
+      <article class="card"><p class="text-xs text-gray-500">Vendidas</p><p class="text-xl font-bold"><%= Number(inv.vendidas || 0) %></p></article>
+    </section>
+
     <!-- Guia Passo a Passo para o Funcionário -->
     <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border border-blue-200 p-6 mb-6" id="guia-fluxo">
       <div class="flex items-center justify-between mb-4">
@@ -162,6 +172,37 @@
         </button>
       </form>
     </div>
+
+    <section class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6">
+      <h2 class="text-sm font-semibold text-gray-900 mb-3">Últimos scans de tag</h2>
+      <div class="overflow-x-auto">
+        <table class="w-full text-xs">
+          <thead>
+            <tr class="border-b border-gray-100 text-gray-500">
+              <th class="text-left py-2">Tag</th>
+              <th class="text-left py-2">Pet</th>
+              <th class="text-left py-2">Usuário</th>
+              <th class="text-left py-2">Cidade</th>
+              <th class="text-left py-2">Data</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% if (!(ultimosScans || []).length) { %>
+              <tr><td colspan="5" class="py-3 text-gray-400">Nenhum scan recente.</td></tr>
+            <% } %>
+            <% (ultimosScans || []).forEach(function(scan) { %>
+              <tr class="border-b border-gray-50">
+                <td class="py-2 font-mono"><%= scan.tag_code %></td>
+                <td class="py-2"><%= scan.pet_nome || '-' %></td>
+                <td class="py-2"><%= scan.usuario_nome || '-' %></td>
+                <td class="py-2"><%= scan.cidade || '-' %></td>
+                <td class="py-2"><%= scan.data ? new Date(scan.data).toLocaleString('pt-BR') : '-' %></td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </section>
 
     <!-- Filter Tabs -->
     <div class="flex flex-wrap gap-2 mb-6">

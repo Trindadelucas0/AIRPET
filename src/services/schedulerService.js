@@ -3,6 +3,7 @@ const PetPerdido = require('../models/PetPerdido');
 const Vacina = require('../models/Vacina');
 const CronExecucao = require('../models/CronExecucao');
 const petshopAppointmentService = require('./petshopAppointmentService');
+const petLostAlertService = require('../domain/alerts/petLostAlertService');
 const logger = require('../utils/logger');
 
 let notificacaoService = null;
@@ -27,35 +28,29 @@ async function escalarAlertasAutomaticamente() {
 
     const horasNivel2 = getConfig('horas_para_nivel2', 6);
     const horasNivel3 = getConfig('horas_para_nivel3', 24);
-    const raioNivel2 = getConfig('raio_alerta_nivel2_km', 3);
-    const raioNivel3 = getConfig('raio_alerta_nivel3_km', 0);
-
     const alertasAprovados = await PetPerdido.listarAprovadosComCoordenadasOrdenadosPorData();
 
     for (const alerta of alertasAprovados) {
       const horasDesde = (Date.now() - new Date(alerta.data).getTime()) / (1000 * 60 * 60);
 
-      if (alerta.nivel_alerta < 3 && horasDesde >= horasNivel3) {
-        await PetPerdido.atualizarNivel(alerta.id, 3);
-        metricas.alertas_escalados++;
-        if (notificacaoService && alerta.latitude) {
-          const raio = raioNivel3 === 0 ? 999 : raioNivel3;
-          try {
-            const notifs = await notificacaoService.notificarProximos(alerta.id, raio);
-            metricas.notificacoes_enviadas += (notifs && notifs.length) ? notifs.length : 0;
-          } catch (e) {}
+      if (horasDesde >= horasNivel3) {
+        const resultado = await petLostAlertService.escalarOuReiniciarCiclo(alerta.id, { origem: 'scheduler' });
+        if (resultado.escalado) {
+          metricas.alertas_escalados++;
+          metricas.notificacoes_enviadas += resultado.usuariosNotificados || 0;
+          logger.info('Scheduler', `Alerta ${alerta.id} processado (nivel ${resultado.nivelAtual}, ciclo ${resultado.cicloAtual})`);
         }
-        logger.info('Scheduler', `Alerta ${alerta.id} escalado para nível 3`);
       } else if (alerta.nivel_alerta < 2 && horasDesde >= horasNivel2) {
-        await PetPerdido.atualizarNivel(alerta.id, 2);
-        metricas.alertas_escalados++;
-        if (notificacaoService && alerta.latitude) {
-          try {
-            const notifs = await notificacaoService.notificarProximos(alerta.id, raioNivel2);
-            metricas.notificacoes_enviadas += (notifs && notifs.length) ? notifs.length : 0;
-          } catch (e) {}
+        const resultado = await petLostAlertService.escalarOuReiniciarCiclo(alerta.id, {
+          origem: 'scheduler',
+          nivelDesejado: 2,
+          ignorarIntervaloMinimo: true,
+        });
+        if (resultado.escalado) {
+          metricas.alertas_escalados++;
+          metricas.notificacoes_enviadas += resultado.usuariosNotificados || 0;
+          logger.info('Scheduler', `Alerta ${alerta.id} escalado para nível ${resultado.nivelAtual}`);
         }
-        logger.info('Scheduler', `Alerta ${alerta.id} escalado para nível 2`);
       }
     }
 

@@ -1,0 +1,31 @@
+<%
+  var id = typeof id === 'string' ? id : name;
+  var nameAttr = typeof name === 'string' ? name : '';
+  var typeAttr = typeof type === 'string' ? type : 'text';
+  var labelText = typeof label === 'string' ? label : '';
+  var valueAttr = typeof value !== 'undefined' && value !== null ? String(value) : '';
+  var placeholderAttr = typeof placeholder === 'string' ? placeholder : '';
+  var hintText = typeof hint === 'string' ? hint : '';
+  var errorText = typeof error === 'string' ? error : '';
+  var requiredAttr = required ? 'required' : '';
+  var autocompleteAttr = typeof autocomplete === 'string' ? autocomplete : '';
+  var className = typeof className === 'string' ? className : '';
+%>
+<label class="block text-sm">
+  <% if (labelText) { %>
+    <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-[color:var(--text-dim)]"><%= labelText %></span>
+  <% } %>
+  <input
+    id="<%= id %>"
+    name="<%= nameAttr %>"
+    type="<%= typeAttr %>"
+    value="<%= valueAttr %>"
+    placeholder="<%= placeholderAttr %>"
+    autocomplete="<%= autocompleteAttr %>"
+    class="input-field <%= className %> <%= errorText ? '!border-red-300 !ring-red-200/70' : '' %>"
+    <%= requiredAttr %>
+    <%= errorText ? 'aria-invalid=true' : '' %>
+  >
+  <% if (hintText && !errorText) { %><small class="mt-1 block text-xs text-[color:var(--text-dim)]"><%= hintText %></small><% } %>
+  <% if (errorText) { %><small class="mt-1 block text-xs font-semibold text-red-600"><%= errorText %></small><% } %>
+</label>

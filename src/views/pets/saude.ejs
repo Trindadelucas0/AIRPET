@@ -1,36 +1,26 @@
 <% locals.titulo = 'Saúde de ' + pet.nome %>
 <% locals.extraHead = `
-<link href="https://fonts.googleapis.com/css2?family=Rubik+Doodle+Shadow&family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-  /* Layout do fluxo de pets deve seguir o design system (tema claro no PC). */
-  body{font-family:'DM Sans',sans-serif;}
   .saude-wrap{max-width:680px;margin:0 auto;padding:24px 20px 80px;}
-  .page-topbar{position:sticky;top:56px;z-index:40;background:rgba(255,255,255,0.88);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:12px 0;}
-  .topbar-inner{max-width:680px;margin:0 auto;padding:0 20px;display:flex;align-items:center;justify-content:space-between;}
+  .topbar-inner{max-width:680px;margin:0 auto;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;}
   .back-link{color:var(--text-dim);font-size:13px;text-decoration:none;display:flex;align-items:center;gap:6px;transition:color 0.15s;}
   .back-link:hover{color:var(--accent);text-decoration:none;}
   .page-title-row{display:flex;align-items:center;gap:10px;}
   .page-title{font-family:var(--font-display);font-size:18px;font-weight:800;color:var(--text);}
   .pet-mini-avatar{width:32px;height:32px;border-radius:50%;object-fit:cover;}
-  /* Pet hero strip */
   .saude-hero{background:var(--ink-2);border:1px solid var(--border);border-radius:18px;padding:20px;margin-bottom:16px;display:flex;align-items:center;gap:14px;}
   .saude-hero-avatar{width:56px;height:56px;border-radius:16px;object-fit:cover;flex-shrink:0;}
   .saude-hero-init{width:56px;height:56px;border-radius:16px;background:var(--ink-3);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;}
   .saude-hero-name{font-family:var(--font-display);font-size:18px;font-weight:800;color:var(--text);}
   .saude-hero-sub{font-size:12px;color:var(--text-dim);}
-  /* Section */
   .health-section{background:var(--ink-2);border:1px solid var(--border);border-radius:18px;margin-bottom:14px;overflow:hidden;}
   .health-section-header{display:flex;align-items:center;justify-content:space-between;padding:18px 20px;border-bottom:1px solid var(--border);}
   .health-section-title{display:flex;align-items:center;gap:10px;font-family:var(--font-display);font-size:14px;font-weight:700;color:var(--text);}
   .health-icon{width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;}
   .health-icon.green{background:rgba(34,197,94,0.1);color:var(--green);}
   .health-icon.blue{background:rgba(96,165,250,0.1);color:var(--blue);}
-  .health-icon.purple{background:rgba(167,139,250,0.1);color:var(--purple);}
-  .health-icon.yellow{background:rgba(250,204,21,0.1);color:var(--yellow);}
-  .health-icon.red{background:rgba(239,68,68,0.1);color:var(--red);}
   .btn-add-health{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;background:var(--accent-glow);border:1px solid rgba(242,96,32,0.2);border-radius:8px;font-size:12px;font-weight:700;color:var(--accent);cursor:pointer;transition:all 0.15s;}
   .btn-add-health:hover{background:var(--accent);border-color:var(--accent);color:#fff;}
-  /* Item */
   .health-item{display:flex;align-items:flex-start;gap:12px;padding:14px 20px;border-bottom:1px solid var(--border);}
   .health-item:last-child{border-bottom:none;}
   .health-item-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px;}
@@ -39,26 +29,15 @@
   .health-item-meta span{display:flex;align-items:center;gap:4px;}
   .health-item-delete{margin-left:auto;padding:0;background:transparent;border:none;color:var(--text-muted);cursor:pointer;font-size:13px;transition:color 0.15s;flex-shrink:0;}
   .health-item-delete:hover{color:var(--red);}
-  /* Empty */
   .health-empty{padding:28px 20px;text-align:center;color:var(--text-dim);}
   .health-empty-icon{font-size:32px;opacity:0.2;display:block;margin-bottom:8px;}
   .health-empty-text{font-size:13px;}
-  /* Modal */
-  .modal-overlay{position:fixed;inset:0;z-index:60;display:none;}
+  .modal-overlay{position:fixed;inset:0;z-index:60;display:none;padding:16px;}
   .modal-overlay.open{display:flex;}
   .modal-bg{position:absolute;inset:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(4px);}
-  .modal-box{position:relative;z-index:1;margin:auto;width:calc(100% - 40px);max-width:440px;background:var(--ink-2);border:1px solid var(--border);border-radius:20px;padding:28px;box-shadow:0 24px 60px rgba(0,0,0,0.5);}
-  .modal-title{font-family:var(--font-display);font-size:18px;font-weight:800;color:var(--text);margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;}
+  .modal-box{position:relative;z-index:1;margin:auto;background:var(--ink-2);border:1px solid var(--border);box-shadow:0 24px 60px rgba(0,0,0,0.35);padding:22px;}
   .modal-close{background:transparent;border:none;color:var(--text-dim);font-size:18px;cursor:pointer;transition:color 0.15s;}
   .modal-close:hover{color:var(--text);}
-  .ds-label{display:block;font-size:11px;font-weight:700;color:var(--text-dim);letter-spacing:0.07em;text-transform:uppercase;margin-bottom:6px;}
-  .ds-input{width:100%;background:var(--ink-3);border:1px solid var(--border);border-radius:10px;padding:11px 14px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;outline:none;transition:border-color 0.2s,box-shadow 0.2s;}
-  .ds-input::placeholder{color:var(--text-muted);}
-  .ds-input:focus{border-color:rgba(242,96,32,0.5);box-shadow:0 0 0 3px rgba(242,96,32,0.06);}
-  .field-group{margin-bottom:14px;}
-  .field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
-  .btn-modal-save{width:100%;padding:13px;background:var(--accent);color:#fff;border:none;border-radius:11px;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:700;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:8px;}
-  .btn-modal-save:hover{background:var(--accent-light);}
   .vacina-status{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:100px;font-size:10px;font-weight:700;margin-left:auto;}
   .vacina-status.ok{background:rgba(34,197,94,0.1);color:var(--green);}
   .vacina-status.vencida{background:rgba(239,68,68,0.1);color:var(--red);}
@@ -68,7 +47,7 @@
 <%- include('../partials/header') %>
 <%- include('../partials/flash') %>
 
-<div class="page-topbar">
+<div class="air-sticky-topbar">
   <div class="topbar-inner">
     <a href="/pets/<%= pet.id %>" class="back-link"><i class="fa-solid fa-arrow-left"></i> <%= pet.nome %></a>
     <div class="page-title-row">
@@ -97,6 +76,9 @@
         </div>
       </div>
     </div>
+
+    <% const mostrarUpsellPlano = !planoAtivo; %>
+    <% const rotaPlano = planoSlug && planoSlug !== 'basico' ? '/tags/planos' : '/tags/loja-tag'; %>
 
     <!-- VACINAS -->
     <div class="health-section">
@@ -145,7 +127,13 @@
       <% } else { %>
         <div class="health-empty">
           <span class="health-empty-icon">💉</span>
-          <p class="health-empty-text">Nenhuma vacina registrada</p>
+          <p class="health-empty-text">Nenhuma vacina registrada.</p>
+          <% if (mostrarUpsellPlano) { %>
+            <p class="health-empty-text">
+              Quem tem TAG premium centraliza histórico e lembretes em um só lugar.
+              <a href="<%= rotaPlano %>" class="font-semibold" style="color:var(--accent);">Ver planos</a>
+            </p>
+          <% } %>
         </div>
       <% } %>
     </div>
@@ -196,7 +184,7 @@
       <% } else { %>
         <div class="health-empty">
           <span class="health-empty-icon">📋</span>
-          <p class="health-empty-text">Nenhum registro de saúde</p>
+          <p class="health-empty-text">Nenhum registro de saúde.</p>
         </div>
       <% } %>
     </div>
@@ -205,92 +193,378 @@
 </main>
 
 <!-- MODAL VACINA -->
-<div class="modal-overlay" id="modalVacina">
-  <div class="modal-bg" onclick="closeModal('modalVacina')"></div>
-  <div class="modal-box">
-    <div class="modal-title">
-      Adicionar Vacina
-      <button class="modal-close" onclick="closeModal('modalVacina')"><i class="fa-solid fa-xmark"></i></button>
-    </div>
-    <form action="/saude/<%= pet.id %>/vacinas" method="POST">
-      <div class="field-group">
-        <label class="ds-label">Nome da vacina *</label>
-        <input type="text" name="nome_vacina" required placeholder="Ex: V10, Antirrábica" class="ds-input">
+<div class="modal-overlay air-wizard-modal" id="modalVacina" aria-hidden="true">
+  <div class="modal-bg" data-close-modal="modalVacina"></div>
+  <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="wizardVacinaTitle">
+    <button type="button" class="modal-close" data-close-modal="modalVacina" style="margin-left:auto;display:block;">
+      <i class="fa-solid fa-xmark"></i>
+    </button>
+
+    <form action="/saude/<%= pet.id %>/vacinas" method="POST" id="wizardVacinaForm">
+      <div id="wizardVacinaRoot" data-wizard-root>
+        <%- include('../partials/wizard-shell', {
+          shellId: 'wizardVacinaShell',
+          badge: 'Carteira de saúde',
+          title: 'Vamos registrar em poucos toques',
+          subtitle: 'Ajuda a manter a carteira em dia.',
+          totalSteps: 5,
+          currentStep: 1,
+          stepLabelId: 'wizardVacinaStepLabel',
+          stepPercentId: 'wizardVacinaStepPercent',
+          progressBarId: 'wizardVacinaProgressBar'
+        }) %>
+
+        <section class="air-wizard-step-card" data-wizard-step data-step="1">
+          <div class="air-wizard-step-grid">
+            <h3 class="air-wizard-step-title" id="wizardVacinaTitle">1) Qual vacina foi aplicada?</h3>
+            <p class="air-wizard-step-helper">Escolha uma opção rápida ou escreva o nome.</p>
+            <div class="air-wizard-chip-group">
+              <button type="button" class="air-wizard-chip" data-preset-vacina="V10">V10</button>
+              <button type="button" class="air-wizard-chip" data-preset-vacina="Antirrábica">Antirrábica</button>
+              <button type="button" class="air-wizard-chip" data-preset-vacina="V8">V8</button>
+              <button type="button" class="air-wizard-chip" data-preset-vacina="Gripe Canina">Gripe Canina</button>
+            </div>
+            <div class="air-field-group">
+              <label class="air-field-label">Nome da vacina *</label>
+              <input type="text" name="nome_vacina" required maxlength="200" placeholder="Ex: V10, Antirrábica" class="input-field w-full">
+            </div>
+          </div>
+          <div class="air-wizard-nav">
+            <button type="button" class="btn-primary" data-wizard-next>Continuar</button>
+          </div>
+        </section>
+
+        <section class="air-wizard-step-card hidden" data-wizard-step data-step="2">
+          <div class="air-wizard-step-grid">
+            <h3 class="air-wizard-step-title">2) Quando foi aplicada?</h3>
+            <p class="air-wizard-step-helper">Data oficial da aplicação.</p>
+            <div class="air-field-group">
+              <label class="air-field-label">Data de aplicação *</label>
+              <input type="date" name="data_aplicacao" required class="input-field w-full">
+            </div>
+          </div>
+          <div class="air-wizard-nav">
+            <button type="button" class="btn-primary" data-wizard-next>Continuar</button>
+            <button type="button" class="btn-ghost" data-wizard-prev>Voltar</button>
+          </div>
+        </section>
+
+        <section class="air-wizard-step-card hidden" data-wizard-step data-step="3">
+          <div class="air-wizard-step-grid">
+            <h3 class="air-wizard-step-title">3) Próxima dose (opcional)</h3>
+            <p class="air-wizard-step-helper">Se quiser, a gente lembra você antes.</p>
+            <div class="air-field-group">
+              <label class="air-field-label">Data da próxima dose</label>
+              <input type="date" name="data_proxima" class="input-field w-full">
+              <p class="air-wizard-inline-error hidden" id="vacinaDateError">A próxima dose deve ser igual ou posterior à aplicação.</p>
+            </div>
+            <button type="button" class="btn-ghost" id="btnSugestaoProximaDose">Sugerir +1 ano</button>
+          </div>
+          <div class="air-wizard-nav">
+            <button type="button" class="btn-primary" data-wizard-next>Continuar</button>
+            <button type="button" class="btn-ghost" data-wizard-prev>Voltar</button>
+            <button type="button" class="air-wizard-link-btn" data-wizard-next>Pular esta etapa</button>
+          </div>
+        </section>
+
+        <section class="air-wizard-step-card hidden" data-wizard-step data-step="4">
+          <div class="air-wizard-step-grid">
+            <h3 class="air-wizard-step-title">4) Onde foi aplicada?</h3>
+            <p class="air-wizard-step-helper">Dados opcionais para enriquecer o histórico.</p>
+            <div class="air-form-row">
+              <div class="air-field-group">
+                <label class="air-field-label">Veterinário</label>
+                <input type="text" name="veterinario" maxlength="120" placeholder="Nome do veterinário" class="input-field w-full">
+              </div>
+              <div class="air-field-group">
+                <label class="air-field-label">Clínica</label>
+                <input type="text" name="clinica" maxlength="200" placeholder="Nome da clínica/petshop" class="input-field w-full">
+              </div>
+            </div>
+            <% if (mostrarUpsellPlano) { %>
+              <aside class="air-wizard-upsell">
+                <p>Com a TAG premium você recebe lembretes automáticos e histórico completo da saúde do pet.</p>
+                <a href="<%= rotaPlano %>">Ver planos</a>
+              </aside>
+            <% } %>
+          </div>
+          <div class="air-wizard-nav">
+            <button type="button" class="btn-primary" data-wizard-next>Continuar</button>
+            <button type="button" class="btn-ghost" data-wizard-prev>Voltar</button>
+          </div>
+        </section>
+
+        <section class="air-wizard-step-card hidden" data-wizard-step data-step="5">
+          <div class="air-wizard-step-grid">
+            <h3 class="air-wizard-step-title">5) Revisão e observações</h3>
+            <p class="air-wizard-step-helper">Só mais um passo: confira e salve.</p>
+            <div class="air-field-group">
+              <label class="air-field-label">Observações</label>
+              <textarea name="observacoes" rows="3" maxlength="2000" class="input-field w-full resize-none" placeholder="Anotações da aplicação (opcional)"></textarea>
+            </div>
+            <div class="air-section-card">
+              <p class="text-xs font-semibold mb-2" style="color:var(--text-dim);">Resumo</p>
+              <p class="text-sm" id="vacinaResumo"></p>
+            </div>
+          </div>
+          <div class="air-wizard-nav">
+            <button type="submit" class="btn-primary"><i class="fa-solid fa-check"></i> Registrar na carteira</button>
+            <button type="button" class="btn-ghost" data-wizard-prev>Voltar</button>
+          </div>
+        </section>
       </div>
-      <div class="field-row">
-        <div class="field-group" style="margin-bottom:0">
-          <label class="ds-label">Data de aplicação *</label>
-          <input type="date" name="data_aplicacao" required class="ds-input">
-        </div>
-        <div class="field-group" style="margin-bottom:0">
-          <label class="ds-label">Próxima dose</label>
-          <input type="date" name="data_proxima" class="ds-input">
-        </div>
-      </div>
-      <div class="field-group" style="margin-top:14px;">
-        <label class="ds-label">Veterinário</label>
-        <input type="text" name="veterinario" placeholder="Nome do veterinário" class="ds-input">
-      </div>
-      <div class="field-group">
-        <label class="ds-label">Clínica</label>
-        <input type="text" name="clinica" placeholder="Nome da clínica/petshop" class="ds-input">
-      </div>
-      <div class="field-group">
-        <label class="ds-label">Observações</label>
-        <textarea name="observacoes" rows="3" class="ds-input" style="resize:none;" placeholder="Anotações da aplicação (opcional)"></textarea>
-      </div>
-      <button type="submit" class="btn-modal-save"><i class="fa-solid fa-check"></i> Salvar Vacina</button>
     </form>
   </div>
 </div>
 
 <!-- MODAL REGISTRO -->
-<div class="modal-overlay" id="modalRegistro">
-  <div class="modal-bg" onclick="closeModal('modalRegistro')"></div>
-  <div class="modal-box">
-    <div class="modal-title">
-      Adicionar Registro
-      <button class="modal-close" onclick="closeModal('modalRegistro')"><i class="fa-solid fa-xmark"></i></button>
-    </div>
-    <form action="/saude/<%= pet.id %>/registros" method="POST">
-      <div class="field-group">
-        <label class="ds-label">Tipo *</label>
-        <select name="tipo" required class="ds-input">
-          <option value="consulta">🩺 Consulta</option>
-          <option value="exame">🔬 Exame</option>
-          <option value="vermifugo">💊 Vermífugo</option>
-          <option value="cirurgia">🏥 Cirurgia</option>
-          <option value="outro">📄 Outro</option>
-        </select>
+<div class="modal-overlay air-wizard-modal" id="modalRegistro" aria-hidden="true">
+  <div class="modal-bg" data-close-modal="modalRegistro"></div>
+  <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="wizardRegistroTitle">
+    <button type="button" class="modal-close" data-close-modal="modalRegistro" style="margin-left:auto;display:block;">
+      <i class="fa-solid fa-xmark"></i>
+    </button>
+
+    <form action="/saude/<%= pet.id %>/registros" method="POST" id="wizardRegistroForm">
+      <input type="hidden" name="tipo" required id="registroTipoInput">
+      <div id="wizardRegistroRoot" data-wizard-root>
+        <%- include('../partials/wizard-shell', {
+          shellId: 'wizardRegistroShell',
+          badge: 'Registro rápido',
+          title: 'Vamos registrar em poucos toques',
+          subtitle: 'Tipo, data e detalhes em 3 passos.',
+          totalSteps: 3,
+          currentStep: 1,
+          stepLabelId: 'wizardRegistroStepLabel',
+          stepPercentId: 'wizardRegistroStepPercent',
+          progressBarId: 'wizardRegistroProgressBar'
+        }) %>
+
+        <section class="air-wizard-step-card" data-wizard-step data-step="1">
+          <div class="air-wizard-step-grid">
+            <h3 class="air-wizard-step-title" id="wizardRegistroTitle">1) Qual tipo de registro?</h3>
+            <div class="air-wizard-choice-grid">
+              <button type="button" class="air-wizard-choice" data-registro-tipo="consulta">🩺 Consulta</button>
+              <button type="button" class="air-wizard-choice" data-registro-tipo="exame">🔬 Exame</button>
+              <button type="button" class="air-wizard-choice" data-registro-tipo="vermifugo">💊 Vermífugo</button>
+              <button type="button" class="air-wizard-choice" data-registro-tipo="cirurgia">🏥 Cirurgia</button>
+              <button type="button" class="air-wizard-choice" data-registro-tipo="outro">📄 Outro</button>
+            </div>
+          </div>
+          <div class="air-wizard-nav">
+            <button type="button" class="btn-primary" data-wizard-next>Continuar</button>
+          </div>
+        </section>
+
+        <section class="air-wizard-step-card hidden" data-wizard-step data-step="2">
+          <div class="air-wizard-step-grid">
+            <h3 class="air-wizard-step-title">2) Quando aconteceu?</h3>
+            <div class="air-field-group">
+              <label class="air-field-label">Data do registro *</label>
+              <input type="date" name="data_registro" required class="input-field w-full">
+            </div>
+          </div>
+          <div class="air-wizard-nav">
+            <button type="button" class="btn-primary" data-wizard-next>Continuar</button>
+            <button type="button" class="btn-ghost" data-wizard-prev>Voltar</button>
+          </div>
+        </section>
+
+        <section class="air-wizard-step-card hidden" data-wizard-step data-step="3">
+          <div class="air-wizard-step-grid">
+            <h3 class="air-wizard-step-title">3) Detalhes</h3>
+            <div class="air-field-group">
+              <label class="air-field-label">Descrição</label>
+              <input type="text" name="descricao" maxlength="2000" placeholder="Ex: Check-up anual" class="input-field w-full">
+            </div>
+            <div class="air-form-row">
+              <div class="air-field-group">
+                <label class="air-field-label">Veterinário</label>
+                <input type="text" name="veterinario" maxlength="120" placeholder="Nome do veterinário" class="input-field w-full">
+              </div>
+              <div class="air-field-group">
+                <label class="air-field-label">Clínica</label>
+                <input type="text" name="clinica" maxlength="200" placeholder="Nome da clínica/petshop" class="input-field w-full">
+              </div>
+            </div>
+            <div class="air-field-group">
+              <label class="air-field-label">Observações</label>
+              <textarea name="observacoes" rows="3" maxlength="2000" class="input-field w-full resize-none" placeholder="Detalhes do atendimento..."></textarea>
+            </div>
+          </div>
+          <div class="air-wizard-nav">
+            <button type="submit" class="btn-primary"><i class="fa-solid fa-check"></i> Salvar registro</button>
+            <button type="button" class="btn-ghost" data-wizard-prev>Voltar</button>
+          </div>
+        </section>
       </div>
-      <div class="field-group">
-        <label class="ds-label">Descrição</label>
-        <input type="text" name="descricao" placeholder="Ex: Check-up anual" class="ds-input">
-      </div>
-      <div class="field-group">
-        <label class="ds-label">Data *</label>
-        <input type="date" name="data_registro" required class="ds-input">
-      </div>
-      <div class="field-group">
-        <label class="ds-label">Veterinário</label>
-        <input type="text" name="veterinario" placeholder="Nome do veterinário" class="ds-input">
-      </div>
-      <div class="field-group">
-        <label class="ds-label">Clínica</label>
-        <input type="text" name="clinica" placeholder="Nome da clínica/petshop" class="ds-input">
-      </div>
-      <div class="field-group">
-        <label class="ds-label">Observações</label>
-        <textarea name="observacoes" rows="3" class="ds-input" style="resize:none;" placeholder="Detalhes do atendimento..."></textarea>
-      </div>
-      <button type="submit" class="btn-modal-save"><i class="fa-solid fa-check"></i> Salvar Registro</button>
     </form>
   </div>
 </div>
 
+<script src="/js/airpet-wizard.js"></script>
 <script>
-function openModal(id)  { document.getElementById(id).classList.add('open'); document.body.style.overflow='hidden'; }
-function closeModal(id) { document.getElementById(id).classList.remove('open'); document.body.style.overflow=''; }
+(function () {
+  var activeModal = null;
+  var restoreFocusEl = null;
+
+  function getFocusable(container) {
+    if (!container) return [];
+    return Array.prototype.slice.call(
+      container.querySelectorAll('a[href],button:not([disabled]),textarea:not([disabled]),input:not([disabled]),select:not([disabled]),[tabindex]:not([tabindex="-1"])')
+    ).filter(function (el) {
+      return el.offsetParent !== null;
+    });
+  }
+
+  function closeModal(id) {
+    var modal = document.getElementById(id);
+    if (!modal) return;
+    modal.classList.remove('open');
+    modal.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
+    activeModal = null;
+    if (restoreFocusEl && typeof restoreFocusEl.focus === 'function') restoreFocusEl.focus();
+  }
+
+  function openModal(id, trigger) {
+    var modal = document.getElementById(id);
+    if (!modal) return;
+    restoreFocusEl = trigger || null;
+    modal.classList.add('open');
+    modal.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+    activeModal = modal;
+    var focusables = getFocusable(modal);
+    if (focusables.length) focusables[0].focus();
+  }
+
+  function trapFocus(event) {
+    if (!activeModal || event.key !== 'Tab') return;
+    var items = getFocusable(activeModal);
+    if (!items.length) return;
+    var first = items[0];
+    var last = items[items.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  }
+
+  window.openModal = function (id, trigger) { openModal(id, trigger); };
+  window.closeModal = closeModal;
+
+  document.addEventListener('click', function (event) {
+    var addBtn = event.target.closest('.btn-add-health');
+    if (addBtn && addBtn.getAttribute('onclick')) return;
+    var closeBtn = event.target.closest('[data-close-modal]');
+    if (closeBtn) {
+      event.preventDefault();
+      closeModal(closeBtn.getAttribute('data-close-modal'));
+    }
+  });
+
+  document.addEventListener('keydown', function (event) {
+    trapFocus(event);
+    if (event.key === 'Escape' && activeModal) {
+      event.preventDefault();
+      closeModal(activeModal.id);
+    }
+  });
+
+  var vacinaNomeInput = document.querySelector('#wizardVacinaForm [name="nome_vacina"]');
+  Array.prototype.forEach.call(document.querySelectorAll('[data-preset-vacina]'), function (btn) {
+    btn.addEventListener('click', function () {
+      if (!vacinaNomeInput) return;
+      vacinaNomeInput.value = btn.getAttribute('data-preset-vacina') || '';
+      vacinaNomeInput.focus();
+    });
+  });
+
+  var dataAplicacaoInput = document.querySelector('#wizardVacinaForm [name="data_aplicacao"]');
+  var dataProximaInput = document.querySelector('#wizardVacinaForm [name="data_proxima"]');
+  var dataError = document.getElementById('vacinaDateError');
+  var resumoVacina = document.getElementById('vacinaResumo');
+
+  function vacinaDateValid() {
+    if (!dataAplicacaoInput || !dataProximaInput || !dataProximaInput.value) {
+      if (dataError) dataError.classList.add('hidden');
+      return true;
+    }
+    var aplicacao = new Date(dataAplicacaoInput.value + 'T00:00:00');
+    var proxima = new Date(dataProximaInput.value + 'T00:00:00');
+    var ok = proxima >= aplicacao;
+    if (dataError) dataError.classList.toggle('hidden', ok);
+    return ok;
+  }
+
+  function montarResumoVacina() {
+    if (!resumoVacina) return;
+    var nome = vacinaNomeInput && vacinaNomeInput.value ? vacinaNomeInput.value : '-';
+    var aplicacao = dataAplicacaoInput && dataAplicacaoInput.value ? dataAplicacaoInput.value : '-';
+    var proxima = dataProximaInput && dataProximaInput.value ? dataProximaInput.value : 'Não informada';
+    resumoVacina.textContent = nome + ' • aplicação: ' + aplicacao + ' • próxima dose: ' + proxima;
+  }
+
+  var btnSugestao = document.getElementById('btnSugestaoProximaDose');
+  if (btnSugestao) {
+    btnSugestao.addEventListener('click', function () {
+      if (!dataAplicacaoInput || !dataAplicacaoInput.value || !dataProximaInput) return;
+      var base = new Date(dataAplicacaoInput.value + 'T00:00:00');
+      base.setFullYear(base.getFullYear() + 1);
+      var month = String(base.getMonth() + 1).padStart(2, '0');
+      var day = String(base.getDate()).padStart(2, '0');
+      dataProximaInput.value = base.getFullYear() + '-' + month + '-' + day;
+      vacinaDateValid();
+    });
+  }
+
+  if (dataAplicacaoInput) dataAplicacaoInput.addEventListener('change', vacinaDateValid);
+  if (dataProximaInput) dataProximaInput.addEventListener('change', vacinaDateValid);
+
+  var wizardVacina = new window.AirpetWizard(document.getElementById('wizardVacinaRoot'), {
+    stepLabel: document.getElementById('wizardVacinaStepLabel'),
+    stepPercent: document.getElementById('wizardVacinaStepPercent'),
+    progressBar: document.getElementById('wizardVacinaProgressBar'),
+    customValidator: function (step) {
+      if (step === 3) return vacinaDateValid();
+      return true;
+    },
+    onStepChange: function (step) {
+      if (step === 5) montarResumoVacina();
+    }
+  });
+
+  var registroTipoInput = document.getElementById('registroTipoInput');
+  Array.prototype.forEach.call(document.querySelectorAll('[data-registro-tipo]'), function (btn) {
+    btn.addEventListener('click', function () {
+      Array.prototype.forEach.call(document.querySelectorAll('[data-registro-tipo]'), function (el) {
+        el.classList.remove('is-selected');
+      });
+      btn.classList.add('is-selected');
+      registroTipoInput.value = btn.getAttribute('data-registro-tipo') || '';
+    });
+  });
+
+  var wizardRegistro = new window.AirpetWizard(document.getElementById('wizardRegistroRoot'), {
+    stepLabel: document.getElementById('wizardRegistroStepLabel'),
+    stepPercent: document.getElementById('wizardRegistroStepPercent'),
+    progressBar: document.getElementById('wizardRegistroProgressBar'),
+    customValidator: function (step) {
+      if (step === 1 && !registroTipoInput.value) {
+        var firstTipo = document.querySelector('[data-registro-tipo]');
+        if (firstTipo) firstTipo.focus();
+        return false;
+      }
+      return true;
+    }
+  });
+
+  window.__airpetWizards = { vacina: wizardVacina, registro: wizardRegistro };
+})();
 </script>
 
 <%- include('../partials/footer') %>

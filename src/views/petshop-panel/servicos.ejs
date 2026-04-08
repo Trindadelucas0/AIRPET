@@ -1,28 +1,19 @@
 <% locals.titulo = 'Serviços do Petshop' %>
 <%
-  locals.extraHead = `
-  <link rel="stylesheet" href="/css/partner-ui.css">
-  <style>
-    .partner-app { max-width: 1080px; }
-    .partner-card { background: var(--ink-2); border:1px solid var(--border); border-radius: 18px; padding: 16px; }
-    .service-item { border: 1px solid var(--border); border-radius: 14px; padding: 12px; background: var(--ink-3); }
-    .service-grid { display: grid; gap: 10px; }
-    .service-photo { width: 100%; max-width: 160px; aspect-ratio: 16/10; border-radius: 10px; border: 1px solid var(--border); object-fit: cover; }
-  </style>
-  `;
+  locals.extraHead = '<link rel="stylesheet" href="/css/partner-ui.css">';
 %>
 <%- include('../partials/header') %>
 <%- include('../partials/flash') %>
 
-<main class="flex-1 container mx-auto partner-app px-4 py-8 space-y-5 app-shell">
+<main class="flex-1 container mx-auto max-w-6xl px-4 py-8 space-y-5 app-shell">
   <%- include('../partials/petshop-panel-nav', { activeTab: 'servicos' }) %>
 
-  <section class="partner-card">
+  <section class="surface-card p-5">
     <h1 class="text-xl font-bold text-[color:var(--text)]">Serviços e capacidade</h1>
     <p class="text-sm text-[color:var(--text-dim)] mt-1">Cadastre seus serviços com duração e preço para liberar agendamentos consistentes.</p>
   </section>
 
-  <section class="partner-card">
+  <section class="surface-card p-5">
     <h2 class="font-bold mb-3">Novo serviço</h2>
     <form action="/petshop-panel/servicos" method="POST" enctype="multipart/form-data" class="grid md:grid-cols-2 gap-3">
       <input class="input w-full" name="nome" placeholder="Nome do serviço" required>
@@ -36,7 +27,7 @@
     </form>
   </section>
 
-  <section class="partner-card">
+  <section class="surface-card p-5">
     <div class="flex items-center justify-between mb-3">
       <h2 class="font-bold">Serviços cadastrados</h2>
       <span class="text-xs text-[color:var(--text-dim)]"><%= (services || []).length %> serviço(s)</span>
@@ -44,15 +35,15 @@
     <% if (!(services || []).length) { %>
       <p class="text-sm text-[color:var(--text-dim)]">Ainda não há serviços ativos.</p>
     <% } else { %>
-      <div class="service-grid">
+      <div class="grid gap-3">
         <% (services || []).forEach(function(s) { %>
-          <article class="service-item">
+          <article class="surface-subtle p-3">
             <div class="grid lg:grid-cols-[160px_minmax(0,1fr)] gap-3">
               <div>
                 <% if (s.foto_url) { %>
-                  <img src="<%= s.foto_url %>" alt="<%= s.nome %>" class="service-photo">
+                  <img src="<%= s.foto_url %>" alt="<%= s.nome %>" class="w-full max-w-[160px] aspect-[16/10] rounded-lg border border-[color:var(--border)] object-cover">
                 <% } else { %>
-                  <div class="service-photo flex items-center justify-center text-xs text-[color:var(--text-dim)]">Sem foto</div>
+                  <div class="w-full max-w-[160px] aspect-[16/10] rounded-lg border border-[color:var(--border)] flex items-center justify-center text-xs text-[color:var(--text-dim)]">Sem foto</div>
                 <% } %>
               </div>
               <div>

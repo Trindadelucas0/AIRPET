@@ -144,6 +144,7 @@
                 <div class="flex items-center gap-1.5 mb-3">
                   <span class="text-xs text-gray-500">Nível de alerta:</span>
                   <span class="text-xs font-bold text-red-600"><%= p.nivel_alerta %></span>
+                  <span class="text-xs text-gray-400">• ciclo <%= Number(p.ciclo_alerta || 1) %></span>
                 </div>
               <% } %>
 
@@ -162,7 +163,7 @@
                 <form action="<%= adminPath %>/pets-perdidos/<%= p.id %>/escalar" method="POST">
                   <button type="submit"
                     class="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white bg-primary-500 hover:bg-primary-600 transition-colors">
-                    <i class="fa-solid fa-arrow-up-right-dots"></i> Escalar Alerta
+                    <i class="fa-solid fa-arrow-up-right-dots"></i> Escalar / Reiniciar ciclo
                   </button>
                 </form>
               <% } else if (p.status === 'resolvido') { %>

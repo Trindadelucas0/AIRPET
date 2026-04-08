@@ -1,68 +1,68 @@
 <% locals.titulo = 'Dashboard do Petshop' %>
-<%
-  locals.extraHead = `
-  <link rel="stylesheet" href="/css/partner-ui.css">
-  <style>
-    .partner-app { max-width: 1200px; }
-    .partner-card { background: var(--ink-2); border:1px solid var(--border); border-radius: 18px; padding: 16px; }
-    .partner-kpis { display:grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 12px; }
-    .partner-kpi { background: var(--ink-3); border:1px solid var(--border); border-radius: 14px; padding: 12px; }
-    .partner-kpi .label { color: var(--text-dim); font-size: 11px; text-transform: uppercase; letter-spacing: .08em; font-weight:700; }
-    .partner-kpi .value { color: var(--text); font-size: 1.4rem; font-weight: 900; margin-top: 4px; }
-    .partner-list-item { border: 1px solid var(--border); border-radius: 14px; padding: 12px; background: var(--ink-3); }
-    .metrics-filter a { border: 1px solid var(--border); border-radius: 999px; padding: 6px 10px; font-size: 12px; color: var(--text-dim); text-decoration: none; }
-    .metrics-filter a.active { background: rgba(242,96,32,.14); color: var(--accent); border-color: rgba(242,96,32,.3); font-weight: 700; }
-    @media (max-width: 980px) { .partner-kpis { grid-template-columns: repeat(2, minmax(0,1fr)); } }
-    @media (max-width: 640px) { .partner-kpis { grid-template-columns: 1fr; } }
-  </style>
-  `;
-%>
+<% locals.extraHead = '<link rel="stylesheet" href="/css/partner-ui.css">'; %>
 <%- include('../partials/header') %>
 <%- include('../partials/flash') %>
 
-<main class="flex-1 container mx-auto partner-app px-4 py-8 space-y-6 app-shell">
+<main class="flex-1 container mx-auto max-w-7xl px-4 py-8 space-y-6 app-shell">
   <%- include('../partials/petshop-panel-nav', { activeTab: 'dashboard' }) %>
-  <% const statusAtual = (solicitacao && solicitacao.status) || (accountStatus === 'ativo' ? 'aprovado' : 'pendente'); %>
-  <% const postsComFoto = (posts || []).filter(function(p) { return p && p.foto_url && String(p.foto_url).trim(); }); %>
-  <% const promocoes = (products || []).filter(function(p) { return p && p.is_promocao; }); %>
-  <% const periodAtivo = Number(metricas && metricas.periodDays) || 7; %>
 
-  <section class="partner-card">
-    <div class="flex items-start justify-between gap-3">
+  <section class="surface-card p-6 md:p-7">
+    <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
       <div>
-        <h1 class="text-2xl font-black text-[color:var(--text)]">Painel profissional do parceiro</h1>
-        <p class="text-sm text-[color:var(--text-dim)] mt-1">Controle agenda, serviços, perfil público e pets vinculados em um só lugar.</p>
+        <p class="text-xs font-bold uppercase tracking-[0.08em] text-primary-600">PetParceiro AIRPET</p>
+        <h1 class="mt-1 text-2xl md:text-3xl font-black text-[color:var(--text)]">Painel profissional do parceiro</h1>
+        <p class="mt-2 text-sm text-[color:var(--text-dim)]">Controle agenda, serviços, perfil público e pets vinculados em um só lugar.</p>
+        <div class="mt-4 inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700">
+          <i class="fa-solid fa-badge-check"></i>
+          Status da parceria: <%= statusAtual %>
+        </div>
       </div>
-      <a href="/petshop-panel/auth/logout" class="text-xs text-[color:var(--text-dim)] hover:text-[color:var(--text)]">Sair</a>
+      <div class="flex items-center gap-2">
+        <a href="/petshop-panel/perfil" class="btn-ghost !px-3 !py-2 !text-xs">
+          <i class="fa-solid fa-pen-to-square"></i> Editar perfil
+        </a>
+        <a href="/petshop-panel/auth/logout" class="btn-ghost !px-3 !py-2 !text-xs">
+          <i class="fa-solid fa-right-from-bracket"></i> Sair
+        </a>
+      </div>
     </div>
-    <div class="mt-3 text-xs">
-      <span class="px-2 py-1 rounded-full bg-[color:var(--secondary)] text-[color:var(--text-dim)]">Status da parceria: <strong><%= statusAtual %></strong></span>
+
+    <div class="mt-6 kpi-grid">
+      <article class="kpi-card">
+        <p class="kpi-label">Serviços ativos</p>
+        <p class="kpi-value"><%= dashboardResumo.totalServicos %></p>
+      </article>
+      <article class="kpi-card">
+        <p class="kpi-label">Agendamentos</p>
+        <p class="kpi-value"><%= dashboardResumo.totalAgendamentos %></p>
+      </article>
+      <article class="kpi-card">
+        <p class="kpi-label">Pets vinculados</p>
+        <p class="kpi-value"><%= dashboardResumo.totalPetsVinculados %></p>
+      </article>
+      <article class="kpi-card">
+        <p class="kpi-label">Fotos / Promoções</p>
+        <p class="kpi-value"><%= dashboardResumo.totalPostsComFoto %>/<%= dashboardResumo.totalPromocoes %></p>
+      </article>
     </div>
   </section>
 
-  <section class="partner-kpis">
-    <div class="partner-kpi"><p class="label">Serviços</p><p class="value"><%= (services || []).length %></p></div>
-    <div class="partner-kpi"><p class="label">Agendamentos</p><p class="value"><%= (appointments || []).length %></p></div>
-    <div class="partner-kpi"><p class="label">Pets vinculados</p><p class="value"><%= (petsVinculadosDetalhados || []).length %></p></div>
-    <div class="partner-kpi"><p class="label">Fotos e promoções</p><p class="value"><%= postsComFoto.length %>/<%= promocoes.length %></p></div>
-  </section>
-
-  <section class="partner-card">
+  <section class="surface-card p-6">
     <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
-      <h2 class="font-bold">Métricas do PetParceiro</h2>
-      <div class="metrics-filter flex items-center gap-2">
-        <a href="/petshop-panel/dashboard?period=7" class="<%= periodAtivo === 7 ? 'active' : '' %>">7 dias</a>
-        <a href="/petshop-panel/dashboard?period=30" class="<%= periodAtivo === 30 ? 'active' : '' %>">30 dias</a>
-        <a href="/petshop-panel/dashboard?period=90" class="<%= periodAtivo === 90 ? 'active' : '' %>">90 dias</a>
+      <h2 class="text-lg font-bold text-[color:var(--text)]">Métricas do PetParceiro</h2>
+      <div class="flex items-center gap-2">
+        <a href="/petshop-panel/dashboard?period=7" class="rounded-full border px-3 py-1.5 text-xs font-semibold <%= periodAtivo === 7 ? 'border-primary-300 bg-primary-100 text-primary-700' : 'border-[color:var(--border)] text-[color:var(--text-dim)] hover:bg-[color:var(--ink-3)]' %>">7 dias</a>
+        <a href="/petshop-panel/dashboard?period=30" class="rounded-full border px-3 py-1.5 text-xs font-semibold <%= periodAtivo === 30 ? 'border-primary-300 bg-primary-100 text-primary-700' : 'border-[color:var(--border)] text-[color:var(--text-dim)] hover:bg-[color:var(--ink-3)]' %>">30 dias</a>
+        <a href="/petshop-panel/dashboard?period=90" class="rounded-full border px-3 py-1.5 text-xs font-semibold <%= periodAtivo === 90 ? 'border-primary-300 bg-primary-100 text-primary-700' : 'border-[color:var(--border)] text-[color:var(--text-dim)] hover:bg-[color:var(--ink-3)]' %>">90 dias</a>
       </div>
     </div>
-    <section class="partner-kpis">
-      <div class="partner-kpi"><p class="label">Views</p><p class="value"><%= (metricas && metricas.views) || 0 %></p></div>
-      <div class="partner-kpi"><p class="label">Curtidas</p><p class="value"><%= (metricas && metricas.likes) || 0 %></p></div>
-      <div class="partner-kpi"><p class="label">Novos seguidores</p><p class="value"><%= (metricas && metricas.novosSeguidores) || 0 %></p></div>
-      <div class="partner-kpi"><p class="label">Engajamento</p><p class="value"><%= (metricas && metricas.engajamentoTotal) || 0 %></p></div>
+    <section class="kpi-grid">
+      <div class="kpi-card"><p class="kpi-label">Views</p><p class="kpi-value"><%= (metricas && metricas.views) || 0 %></p></div>
+      <div class="kpi-card"><p class="kpi-label">Curtidas</p><p class="kpi-value"><%= (metricas && metricas.likes) || 0 %></p></div>
+      <div class="kpi-card"><p class="kpi-label">Novos seguidores</p><p class="kpi-value"><%= (metricas && metricas.novosSeguidores) || 0 %></p></div>
+      <div class="kpi-card"><p class="kpi-label">Engajamento total</p><p class="kpi-value"><%= (metricas && metricas.engajamentoTotal) || 0 %></p></div>
     </section>
-    <p class="text-xs text-[color:var(--text-dim)] mt-3">
+    <p class="text-xs text-[color:var(--text-dim)] mt-4">
       Taxa de engajamento no período: <strong><%= ((metricas && metricas.taxaEngajamento) || 0).toFixed(1).replace('.', ',') %>%</strong>
       · Comentários: <strong><%= (metricas && metricas.comments) || 0 %></strong>
     </p>
@@ -73,7 +73,7 @@
     <%- include('../partials/petshop-public-profile-preview', { petshop: petshop || {}, profile: profile || {}, postsComFoto: postsComFoto, promocoes: promocoes, followerCount: followerCount || 0 }) %>
   </section>
 
-  <section class="partner-card">
+  <section class="surface-card p-6">
     <div class="flex items-center justify-between mb-3">
       <h2 class="font-bold">Solicitações de vínculo pendentes</h2>
       <span class="text-xs text-[color:var(--text-dim)]"><%= (solicitacoesVinculo || []).length %> pendentes</span>
@@ -83,7 +83,7 @@
     <% } else { %>
       <div class="space-y-3">
         <% (solicitacoesVinculo || []).forEach(function(s) { %>
-          <article class="partner-list-item flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+          <article class="surface-subtle p-3 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
             <div>
               <p class="font-semibold"><%= s.pet_nome %> • Tutor: <%= s.tutor_nome %></p>
               <p class="text-xs text-[color:var(--text-dim)] mt-1"><%= s.mensagem || 'Sem mensagem.' %></p>
@@ -102,7 +102,7 @@
     <% } %>
   </section>
 
-  <section class="partner-card">
+  <section class="surface-card p-6">
     <div class="flex items-center justify-between mb-3">
       <h2 class="font-bold">Pets vinculados</h2>
       <a href="/petshop-panel/pets-vinculados" class="btn-ghost border border-[color:var(--border)] rounded-xl px-3 py-2 text-xs">Ver lista completa</a>
@@ -110,7 +110,7 @@
     <p class="text-sm text-[color:var(--text-dim)]">Total de pets vinculados: <strong><%= (petsVinculadosDetalhados || []).length %></strong>.</p>
   </section>
 
-  <section class="partner-card">
+  <section class="surface-card p-6">
     <div class="flex items-center justify-between mb-3">
       <h2 class="font-bold">Agendamentos recebidos</h2>
       <a href="/petshop-panel/agendamentos-recebidos" class="btn-ghost border border-[color:var(--border)] rounded-xl px-3 py-2 text-xs">Ver todos</a>
@@ -120,7 +120,7 @@
     <% } else { %>
       <div class="space-y-3">
         <% (appointmentsPreview || []).forEach(function(a) { %>
-          <article class="partner-list-item flex flex-col md:flex-row md:items-center gap-3 md:justify-between">
+          <article class="surface-subtle p-3 flex flex-col md:flex-row md:items-center gap-3 md:justify-between">
             <div>
               <p class="font-semibold"><%= a.pet_nome %> • <%= a.servico_nome || 'Serviço' %></p>
               <p class="text-sm text-[color:var(--text-dim)]"><%= a.usuario_nome %> • <%= new Date(a.data_agendada).toLocaleString('pt-BR') %></p>
@@ -144,7 +144,7 @@
 </main>
 
 <script>
-  window.__agendaDiasResumo = <%- JSON.stringify(typeof agendaDiasResumo !== 'undefined' ? agendaDiasResumo : {}) %>;
+  window.__agendaDiasResumo = <%- safeJson(typeof agendaDiasResumo !== 'undefined' ? agendaDiasResumo : {}) %>;
 </script>
 <script src="/js/petshop-calendar.js" defer></script>
 

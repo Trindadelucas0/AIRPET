@@ -14,62 +14,101 @@
 
 <main class="flex-1 container mx-auto px-4 py-8 max-w-5xl space-y-6">
   <section class="card">
-    <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
-      <div>
-        <h1 class="text-2xl font-black text-gray-900">Agendar serviço</h1>
-        <p class="text-sm text-gray-500 mt-1">Escolha parceiro, serviço, pet e dia para ver horários livres.</p>
-      </div>
-      <span class="text-xs text-gray-500">Confirmação pelo petshop após envio.</span>
+    <div id="agendaWizardRoot" data-wizard-root>
+      <%- include('../partials/wizard-shell', {
+        shellId: 'agendaWizardShell',
+        badge: 'Agendamento guiado',
+        title: 'Agendar serviço',
+        subtitle: 'Escolha parceiro, serviço, pet e dia para ver os horários livres.',
+        totalSteps: 5,
+        currentStep: 1,
+        stepLabelId: 'agendaStepLabel',
+        stepPercentId: 'agendaStepPercent',
+        progressBarId: 'agendaProgressBar'
+      }) %>
+
+      <form action="/agenda" method="GET" id="agendaWizardSearch">
+        <section class="air-wizard-step-card" data-wizard-step data-step="1">
+          <div class="air-wizard-step-grid">
+            <h3 class="air-wizard-step-title">1) Qual petshop?</h3>
+            <select name="petshop_id" class="input-field w-full" required>
+              <option value="">Selecione...</option>
+              <% (petshops || []).forEach(function(ps) { %>
+                <option value="<%= ps.id %>" <%= Number(petshopSelecionado) === Number(ps.id) ? 'selected' : '' %>><%= ps.nome %></option>
+              <% }) %>
+            </select>
+          </div>
+          <div class="air-wizard-nav">
+            <button type="button" class="btn-primary" data-wizard-next>Continuar</button>
+          </div>
+        </section>
+
+        <section class="air-wizard-step-card hidden" data-wizard-step data-step="2">
+          <div class="air-wizard-step-grid">
+            <h3 class="air-wizard-step-title">2) Qual serviço?</h3>
+            <select name="service_id" class="input-field w-full" required>
+              <option value="">Selecione...</option>
+              <% (petshops || []).forEach(function(ps) { %>
+                <% (servicosPorPetshop && servicosPorPetshop[ps.id] ? servicosPorPetshop[ps.id] : []).forEach(function(s) { %>
+                  <option value="<%= s.id %>" data-petshop="<%= ps.id %>" <%= Number(serviceSelecionado) === Number(s.id) ? 'selected' : '' %>>
+                    <%= ps.nome %> • <%= s.nome %>
+                  </option>
+                <% }) %>
+              <% }) %>
+            </select>
+          </div>
+          <div class="air-wizard-nav">
+            <button type="button" class="btn-primary" data-wizard-next>Continuar</button>
+            <button type="button" class="btn-ghost" data-wizard-prev>Voltar</button>
+          </div>
+        </section>
+
+        <section class="air-wizard-step-card hidden" data-wizard-step data-step="3">
+          <div class="air-wizard-step-grid">
+            <h3 class="air-wizard-step-title">3) Qual pet?</h3>
+            <select name="pet_id" class="input-field w-full" required>
+              <option value="">Selecione...</option>
+              <% (pets || []).forEach(function(p) { %>
+                <option value="<%= p.id %>" <%= Number(petSelecionado) === Number(p.id) ? 'selected' : '' %>><%= p.nome %></option>
+              <% }) %>
+            </select>
+          </div>
+          <div class="air-wizard-nav">
+            <button type="button" class="btn-primary" data-wizard-next>Continuar</button>
+            <button type="button" class="btn-ghost" data-wizard-prev>Voltar</button>
+          </div>
+        </section>
+
+        <section class="air-wizard-step-card hidden" data-wizard-step data-step="4">
+          <div class="air-wizard-step-grid">
+            <h3 class="air-wizard-step-title">4) Em qual dia?</h3>
+            <input type="date" name="dia" value="<%= diaSelecionado || '' %>" class="input-field w-full" required>
+          </div>
+          <div class="air-wizard-nav">
+            <button type="button" class="btn-primary" data-wizard-next>Ir para horários</button>
+            <button type="button" class="btn-ghost" data-wizard-prev>Voltar</button>
+          </div>
+        </section>
+
+        <section class="air-wizard-step-card hidden" data-wizard-step data-step="5">
+          <div class="air-wizard-step-grid">
+            <h3 class="air-wizard-step-title">5) Horários disponíveis</h3>
+            <p class="air-wizard-step-helper">Busque os horários do dia e toque em um horário para enviar a solicitação.</p>
+            <button type="submit" class="btn-primary w-full">Buscar horários</button>
+          </div>
+          <div class="air-wizard-nav">
+            <button type="button" class="btn-ghost" data-wizard-prev>Voltar</button>
+          </div>
+        </section>
+      </form>
     </div>
 
-    <form action="/agenda" method="GET" class="grid md:grid-cols-5 gap-3">
-      <div>
-        <label class="block text-xs font-semibold text-gray-600 mb-1">1) Petshop</label>
-        <select name="petshop_id" class="input-field" required>
-          <option value="">Selecione...</option>
-          <% (petshops || []).forEach(function(ps) { %>
-            <option value="<%= ps.id %>" <%= Number(petshopSelecionado) === Number(ps.id) ? 'selected' : '' %>><%= ps.nome %></option>
-          <% }) %>
-        </select>
-      </div>
-      <div>
-        <label class="block text-xs font-semibold text-gray-600 mb-1">2) Serviço</label>
-        <select name="service_id" class="input-field" required>
-          <option value="">Selecione...</option>
-          <% (petshops || []).forEach(function(ps) { %>
-            <% (servicosPorPetshop && servicosPorPetshop[ps.id] ? servicosPorPetshop[ps.id] : []).forEach(function(s) { %>
-              <option value="<%= s.id %>" data-petshop="<%= ps.id %>" <%= Number(serviceSelecionado) === Number(s.id) ? 'selected' : '' %>>
-                <%= ps.nome %> • <%= s.nome %>
-              </option>
-            <% }) %>
-          <% }) %>
-        </select>
-      </div>
-      <div>
-        <label class="block text-xs font-semibold text-gray-600 mb-1">3) Pet</label>
-        <select name="pet_id" class="input-field" required>
-          <option value="">Selecione...</option>
-          <% (pets || []).forEach(function(p) { %>
-            <option value="<%= p.id %>" <%= Number(petSelecionado) === Number(p.id) ? 'selected' : '' %>><%= p.nome %></option>
-          <% }) %>
-        </select>
-      </div>
-      <div>
-        <label class="block text-xs font-semibold text-gray-600 mb-1">4) Dia</label>
-        <input type="date" name="dia" value="<%= diaSelecionado || '' %>" class="input-field" required>
-      </div>
-      <div class="flex items-end">
-        <button type="submit" class="btn-primary w-full">Buscar horários</button>
-      </div>
-    </form>
-
     <div class="mt-4">
-      <h2 class="text-sm font-bold text-gray-800 mb-2">5) Horários disponíveis</h2>
       <% if (!(slotsDisponiveis || []).length) { %>
         <% if (petshopSelecionado && serviceSelecionado && diaSelecionado) { %>
           <p class="text-sm text-gray-500">Não encontramos horários livres para este dia. Tente outra data.</p>
         <% } else { %>
-          <p class="text-sm text-gray-500">Selecione petshop, serviço e dia para carregar os horários.</p>
+          <p class="text-sm text-gray-500">Avance até o passo 5 e clique em “Buscar horários”.</p>
         <% } %>
       <% } else { %>
         <div class="flex flex-wrap gap-2">
@@ -80,7 +119,7 @@
               <input type="hidden" name="dia" value="<%= diaSelecionado || '' %>">
               <input type="hidden" name="data_agendada" value="<%= slot.inicio %>">
               <input type="hidden" name="pet_id" value="<%= petSelecionado || '' %>">
-              <button class="px-3 py-2 rounded-xl border border-gray-200 text-sm hover:bg-orange-50 transition-colors">
+              <button class="agenda-slot-btn px-3 py-2 rounded-xl border border-gray-200 text-sm hover:bg-orange-50 transition-colors">
                 <%= new Date(slot.inicio).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) %>
               </button>
             </form>
@@ -133,13 +172,16 @@
   </section>
 </main>
 
+<script src="/js/airpet-wizard.js"></script>
 <script>
   (function () {
-    var petshopSelect = document.querySelector('select[name="petshop_id"]')
-    var serviceSelect = document.querySelector('select[name="service_id"]')
-    var petSelect = document.querySelector('select[name="pet_id"]')
-    var buttons = document.querySelectorAll('form[action="/agenda"] button')
-    if (!petshopSelect || !serviceSelect) return
+    var root = document.getElementById('agendaWizardRoot')
+    var petshopSelect = document.querySelector('#agendaWizardSearch select[name="petshop_id"]')
+    var serviceSelect = document.querySelector('#agendaWizardSearch select[name="service_id"]')
+    var petSelect = document.querySelector('#agendaWizardSearch select[name="pet_id"]')
+    var slotButtons = document.querySelectorAll('.agenda-slot-btn')
+    if (!root || !petshopSelect || !serviceSelect) return
+
     function filterServices() {
       var petshopId = petshopSelect.value
       Array.prototype.forEach.call(serviceSelect.options, function (opt) {
@@ -150,16 +192,30 @@
       var selected = serviceSelect.options[serviceSelect.selectedIndex]
       if (selected && selected.hidden) serviceSelect.value = ''
     }
+
     function toggleSubmitByPet() {
-      if (!petSelect || !buttons.length) return
+      if (!petSelect || !slotButtons.length) return
       var hasPet = !!petSelect.value
-      Array.prototype.forEach.call(buttons, function (btn) {
-        if (!btn.closest('form') || btn.closest('form').method !== 'post') return
+      Array.prototype.forEach.call(slotButtons, function (btn) {
         btn.disabled = !hasPet
         btn.title = hasPet ? '' : 'Selecione um pet antes de agendar'
       })
     }
-    petshopSelect.addEventListener('change', filterServices)
+
+    var wizard = new window.AirpetWizard(root, {
+      stepLabel: document.getElementById('agendaStepLabel'),
+      stepPercent: document.getElementById('agendaStepPercent'),
+      progressBar: document.getElementById('agendaProgressBar')
+    })
+
+    var temPesquisa = Boolean(petshopSelect.value && serviceSelect.value && document.querySelector('#agendaWizardSearch input[name="dia"]').value)
+    wizard.goTo(temPesquisa ? 5 : 1)
+
+    petshopSelect.addEventListener('change', function () {
+      filterServices()
+      wizard.goTo(2)
+    })
+
     if (petSelect) petSelect.addEventListener('change', toggleSubmitByPet)
     filterServices()
     toggleSubmitByPet()

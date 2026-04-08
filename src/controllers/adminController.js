@@ -51,6 +51,8 @@ const adminAnalyticsService = require('../services/adminAnalyticsService');
 const petshopModerationService = require('../services/petshopModerationService');
 const petshopPublishingService = require('../services/petshopPublishingService');
 const petshopRecoveryIntegrationService = require('../services/petshopRecoveryIntegrationService');
+const petLostAlertService = require('../domain/alerts/petLostAlertService');
+const adminMetricsService = require('../domain/admin/adminMetricsService');
 const logger = require('../utils/logger');
 
 const getAdminPath = () => process.env.ADMIN_PATH || '/admin';
@@ -94,36 +96,38 @@ async function dashboard(req, res) {
     const maxUsuarios = parseInt(process.env.MAX_USUARIOS || '0', 10);
 
     const [
-      totalUsuarios,
-      pets,
-      perdidos,
+      cards,
       petshops,
       mensagens,
       alertasPendentes,
       usuariosPorEstado,
       ultimosUsuarios,
+      serieDashboard,
     ] = await Promise.all([
-      Usuario.contarTotal(),
-      Pet.contarTotal(),
-      PetPerdido.contarAtivos(),
+      adminMetricsService.carregarCardsDashboard(),
       Petshop.contarTotal(),
       MensagemChat.contarPendentes(),
       PetPerdido.listarPendentes().then(lista => lista.length),
       Usuario.contarPorEstado(),
       Usuario.listarRecentes(8),
+      adminMetricsService.carregarSerieDashboard(14),
     ]);
 
     return res.render('admin/dashboard', {
       titulo: 'Painel Administrativo - AIRPET',
       stats: {
-        usuarios: totalUsuarios,
+        usuarios: cards.usuarios,
         maxUsuarios: maxUsuarios > 0 ? maxUsuarios : null,
-        pets,
-        perdidos,
+        pets: cards.pets,
+        perdidos: cards.alertasAtivos,
         petshops,
         mensagens,
         alertasPendentes,
+        tagsVendidas: cards.tagsVendidas,
+        tagsAtivas: cards.tagsAtivas,
+        taxaConversaoCompra: cards.taxaConversaoCompra,
       },
+      serieDashboard,
       usuariosPorEstado,
       ultimosUsuarios,
     });
@@ -597,35 +601,31 @@ async function escalarAlerta(req, res) {
       return res.redirect(adminPath + '/pets-perdidos');
     }
 
-    /* Nível: se vier no body (1–3), usa; senão sobe um nível (1→2→3) como no botão "Escalar Alerta" */
-    let nivelNumero = parseInt(nivel, 10);
-    if (!nivelNumero || nivelNumero < 1 || nivelNumero > 3) {
-      const atual = alerta.nivel_alerta || 1;
-      nivelNumero = Math.min(atual + 1, 3);
-      if (nivelNumero === atual) {
-        req.session.flash = { tipo: 'erro', mensagem: 'Alerta já está no nível máximo (3).' };
-        return res.redirect(adminPath + '/pets-perdidos');
-      }
-    }
-
-    await PetPerdido.atualizarNivel(id, nivelNumero);
+    const nivelNumero = parseInt(nivel, 10);
+    const resultado = await petLostAlertService.escalarOuReiniciarCiclo(id, {
+      origem: 'admin',
+      nivelDesejado: Number.isFinite(nivelNumero) ? nivelNumero : null,
+      ignorarIntervaloMinimo: true,
+    });
 
     try {
-      await notificacaoService.notificarTodos(id);
       if (alerta.latitude && alerta.longitude) {
         await petshopRecoveryIntegrationService.notificarPetshopsProximos({
           pet_perdido_id: id,
           latitude: alerta.latitude,
           longitude: alerta.longitude,
-          raioMetros: 12000,
-          origem: 'escalacao_admin',
+          raioMetros: Math.max(1000, (resultado.raioKm || 12) * 1000),
+          origem: resultado.cicloReiniciado ? 'escalacao_admin_novo_ciclo' : 'escalacao_admin',
         });
       }
     } catch (e) { logger.error('AdminController', 'Erro notificação escalar', e); }
 
-    logger.info('AdminController', `Alerta ${id} escalado para nível ${nivelNumero}`);
+    logger.info('AdminController', `Alerta ${id} processado para nível ${resultado.nivelAtual} (ciclo ${resultado.cicloAtual})`);
 
-    req.session.flash = { tipo: 'sucesso', mensagem: `Nível de alerta atualizado para ${nivelNumero}. Notificações enviadas.` };
+    const mensagem = resultado.cicloReiniciado
+      ? `Alerta reiniciado para novo ciclo (ciclo ${resultado.cicloAtual}, nível ${resultado.nivelAtual}).`
+      : `Nível de alerta atualizado para ${resultado.nivelAtual}.`;
+    req.session.flash = { tipo: 'sucesso', mensagem: `${mensagem} Notificações enviadas: ${resultado.usuariosNotificados}.` };
     return res.redirect(adminPath + '/pets-perdidos');
   } catch (erro) {
     logger.error('AdminController', 'Erro ao escalar alerta', erro);

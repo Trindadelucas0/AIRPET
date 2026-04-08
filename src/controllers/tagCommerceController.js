@@ -6,6 +6,8 @@ const Pet = require('../models/Pet');
 const Usuario = require('../models/Usuario');
 const tagCommerceService = require('../services/tagCommerceService');
 const tagEntitlementService = require('../services/tagEntitlementService');
+const tagOrderService = require('../domain/orders/tagOrderService');
+const TagProductOrderEvent = require('../models/TagProductOrderEvent');
 const logger = require('../utils/logger');
 const { multerPublicUrl } = require('../middlewares/persistUploadMiddleware');
 const { isSchemaMissingError } = require('../models/tagCommerceSchema');
@@ -109,20 +111,81 @@ async function tentarConfirmarNoRetorno(req, pedido) {
   }
 }
 
+const PLAN_COPY_MAP = {
+  basico: {
+    titulo: 'AIRPET Essencial',
+    resumo: 'Contato direto para quem encontrar seu pet.',
+    subtitulo: 'Para quem quer a tag funcionando com contato direto.',
+    cta: 'Começar com o Essencial',
+    badge: '',
+    destaque: false,
+    bullets: [
+      'Perfil público com contato rápido.',
+      'Ligar, enviar localização e "encontrei".',
+      'Renovação soma +30 dias ao saldo.',
+    ],
+  },
+  plus: {
+    titulo: 'AIRPET Proteção',
+    resumo: 'Visibilidade e apoio quando o pet sumir.',
+    subtitulo: 'Para quem quer visibilidade e apoio quando o pet sumir.',
+    cta: 'Proteger meu pet agora',
+    badge: 'Mais escolhido',
+    destaque: true,
+    bullets: [
+      'Tudo do Essencial.',
+      'Alerta de pet perdido no mapa.',
+      'Prioridade no momento crítico.',
+    ],
+  },
+  familia: {
+    titulo: 'AIRPET Rede',
+    resumo: 'Rede de apoio completa com parceiros e multicanal.',
+    subtitulo: 'Máxima rede de ajuda com parceiros e alertas em mais canais.',
+    cta: 'Quero a rede completa',
+    badge: '',
+    destaque: false,
+    bullets: [
+      'Tudo do Proteção.',
+      'Petshop parceiro sugerido.',
+      'Notificações em mais canais.',
+    ],
+  },
+};
+
+function montarResumoUpgrade(contextoUpgrade, planos = []) {
+  if (!contextoUpgrade || !contextoUpgrade.hasPaidOrder) return null;
+  const referencia = (planos || []).find((p) => p.slug === contextoUpgrade.referencePlanSlug) || null;
+  return {
+    elegivel: true,
+    descontoCentavos: 1000,
+    descontoLabel: 'R$ 10,00',
+    planoReferenciaSlug: contextoUpgrade.referencePlanSlug || null,
+    planoReferenciaNome: referencia?.nome_exibicao || referencia?.slug || contextoUpgrade.referencePlanSlug || null,
+  };
+}
+
 const tagCommerceController = {
   async mostrarLoja(req, res) {
     try {
       await tagCommerceService.ensurePedidosSchema();
       const planos = await tagCommerceService.carregarPlanos();
+      const planQuery = String(req.query?.plan || '').trim().toLowerCase();
+      const selectedPlanSlug = (planos || []).some((p) => p.slug === planQuery) ? planQuery : '';
       const usuario = req.session?.usuario || null;
       const pets = usuario ? await Pet.buscarPorUsuario(usuario.id) : [];
       const estadoPlano = usuario ? await tagEntitlementService.obterEstadoPlano(usuario.id) : null;
+      const contextoUpgrade = usuario ? await tagCommerceService.obterContextoUpgrade(usuario.id, planos) : null;
+      const upgradeResumo = montarResumoUpgrade(contextoUpgrade, planos);
 
       return res.render('tags/loja-tag', {
         titulo: 'Loja TAG AIRPET',
         planos,
+        planCopyMap: PLAN_COPY_MAP,
+        selectedPlanSlug,
         pets,
         estadoPlano,
+        upgradeResumo,
       });
     } catch (err) {
       if (isSchemaMissingError(err)) {
@@ -355,7 +418,15 @@ const tagCommerceController = {
 
   async mostrarPlanos(req, res) {
     const planos = await tagCommerceService.carregarPlanos();
-    return res.render('tags/planos', { titulo: 'Planos TAG', planos });
+    const usuario = req.session?.usuario || null;
+    const contextoUpgrade = usuario ? await tagCommerceService.obterContextoUpgrade(usuario.id, planos) : null;
+    const upgradeResumo = montarResumoUpgrade(contextoUpgrade, planos);
+    return res.render('tags/planos', {
+      titulo: 'Planos TAG',
+      planos,
+      planCopyMap: PLAN_COPY_MAP,
+      upgradeResumo,
+    });
   },
 
   async adminListarPedidos(req, res) {
@@ -386,6 +457,7 @@ const tagCommerceController = {
         },
         adminPath: process.env.ADMIN_PATH || '/admin',
         currentPath: '/tags-commerce',
+        statusLabels: tagOrderService.STATUS_LABELS,
       });
     } catch (err) {
       logger.error('TagCommerceController', 'Erro ao listar pedidos admin TAG', err);
@@ -404,10 +476,13 @@ const tagCommerceController = {
         return res.redirect('/tags/admin/commerce/pedidos');
       }
       const unidades = await TagOrderUnit.listarPorPedido(pedido.id);
+      const eventos = await TagProductOrderEvent.listarPorPedido(pedido.id);
       return res.render('admin/tag-commerce-pedido-detalhe', {
         titulo: `Pedido TAG #${pedido.id}`,
         pedido,
         unidades,
+        eventos,
+        statusLabels: tagOrderService.STATUS_LABELS,
         adminPath: process.env.ADMIN_PATH || '/admin',
         currentPath: '/tags-commerce',
       });
@@ -438,6 +513,30 @@ const tagCommerceController = {
     } catch (err) {
       logger.error('TagCommerceController', 'Erro ao salvar NF do pedido TAG', err);
       req.session.flash = { tipo: 'erro', mensagem: err.message || 'Não foi possível salvar a nota fiscal.' };
+      return res.redirect(`/tags/admin/commerce/pedidos/${req.params.id}`);
+    }
+  },
+
+  async adminAtualizarStatusPedido(req, res) {
+    try {
+      await tagCommerceService.ensurePedidosSchema();
+      const pedidoId = Number(req.params.id);
+      const proximoStatus = limparTexto(req.body.status, 30);
+      const nota = limparTexto(req.body.nota_status, 500);
+      const atualizado = await tagOrderService.atualizarStatus(
+        pedidoId,
+        proximoStatus,
+        null,
+        nota || null
+      );
+      req.session.flash = {
+        tipo: 'sucesso',
+        mensagem: `Pedido #${atualizado.id} atualizado para ${tagOrderService.toLabel(atualizado.status)}.`,
+      };
+      return res.redirect(`/tags/admin/commerce/pedidos/${pedidoId}`);
+    } catch (err) {
+      logger.error('TagCommerceController', 'Erro ao atualizar status do pedido TAG', err);
+      req.session.flash = { tipo: 'erro', mensagem: err.message || 'Não foi possível atualizar o status do pedido.' };
       return res.redirect(`/tags/admin/commerce/pedidos/${req.params.id}`);
     }
   },

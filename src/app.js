@@ -91,6 +91,12 @@ function createApplication() {
     res.locals.verificarPermissoes = session.verificarPermissoes || false;
     res.locals.vapidPublicKey = process.env.VAPID_PUBLIC_KEY || '';
     res.locals.BASE_URL = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
+    res.locals.safeJson = (value) => JSON.stringify(value)
+      .replace(/</g, '\\u003c')
+      .replace(/>/g, '\\u003e')
+      .replace(/&/g, '\\u0026')
+      .replace(/\u2028/g, '\\u2028')
+      .replace(/\u2029/g, '\\u2029');
     if (req.session) {
       req.session.flash = null;
       req.session.verificarPermissoes = false;

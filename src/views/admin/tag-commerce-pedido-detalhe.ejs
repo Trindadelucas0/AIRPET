@@ -16,10 +16,36 @@
     </header>
 
     <section class="grid grid-cols-1 md:grid-cols-4 gap-4">
-      <article class="card"><p class="text-xs text-gray-500">Status</p><p class="mt-1 text-lg font-bold"><%= pedido.status %></p></article>
+      <article class="card"><p class="text-xs text-gray-500">Status</p><p class="mt-1 text-lg font-bold"><%= (statusLabels && statusLabels[pedido.status]) || pedido.status %></p></article>
       <article class="card"><p class="text-xs text-gray-500">Plano</p><p class="mt-1 text-lg font-bold"><%= pedido.plan_slug %></p></article>
       <article class="card"><p class="text-xs text-gray-500">Tipo</p><p class="mt-1 text-lg font-bold"><%= pedido.order_type %></p></article>
       <article class="card"><p class="text-xs text-gray-500">Total</p><p class="mt-1 text-lg font-bold"><%= brl(pedido.total_centavos) %></p></article>
+    </section>
+
+    <section class="card">
+      <h2 class="text-base font-semibold text-gray-900 mb-3">Fluxo operacional do pedido</h2>
+      <form method="POST" action="/tags/admin/commerce/pedidos/<%= pedido.id %>/status" class="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
+        <label class="text-sm">
+          <span class="block text-gray-600 mb-1">Novo status</span>
+          <select name="status" class="w-full rounded-lg border border-gray-300 px-3 py-2">
+            <option value="">Selecione</option>
+            <% if (pedido.status === 'aguardando_pagamento') { %>
+              <option value="pago">Pago</option>
+            <% } %>
+            <% if (pedido.status === 'pago') { %>
+              <option value="enviado">Enviado</option>
+            <% } %>
+            <% if (pedido.status === 'enviado') { %>
+              <option value="entregue">Entregue</option>
+            <% } %>
+          </select>
+        </label>
+        <label class="text-sm md:col-span-2">
+          <span class="block text-gray-600 mb-1">Observação (opcional)</span>
+          <input type="text" name="nota_status" placeholder="Ex.: código de rastreio, data de entrega" class="w-full rounded-lg border border-gray-300 px-3 py-2">
+        </label>
+        <button type="submit" class="rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white hover:bg-gray-700">Atualizar status</button>
+      </form>
     </section>
 
     <section class="card">
@@ -97,5 +123,36 @@
         </div>
       </section>
     <% } %>
+
+    <section class="card">
+      <h2 class="text-base font-semibold text-gray-900 mb-3">Histórico de status</h2>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="border-b border-gray-100 text-gray-500">
+              <th class="pb-2 text-left font-medium">Quando</th>
+              <th class="pb-2 text-left font-medium">Transição</th>
+              <th class="pb-2 text-left font-medium">Observação</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% if (!(eventos || []).length) { %>
+              <tr><td colspan="3" class="py-3 text-gray-400">Sem eventos de status para este pedido.</td></tr>
+            <% } %>
+            <% (eventos || []).forEach(function(evento) { %>
+              <tr class="border-b border-gray-50">
+                <td class="py-2 text-gray-600"><%= evento.created_at ? new Date(evento.created_at).toLocaleString('pt-BR') : '-' %></td>
+                <td class="py-2 font-medium text-gray-800">
+                  <%= ((statusLabels && statusLabels[evento.from_status]) || evento.from_status || 'inicial') %> →
+                  <%= ((statusLabels && statusLabels[evento.to_status]) || evento.to_status || '-') %>
+                </td>
+                <td class="py-2 text-gray-600"><%= evento.nota || '-' %></td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </section>
   </div>
 </main>
+<%- include('../partials/admin-footer') %>

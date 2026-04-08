@@ -4,44 +4,70 @@
   function brl(cents) {
     return `R$ ${(Number(cents || 0) / 100).toFixed(2).replace('.', ',')}`;
   }
+  function custoDia(cents) {
+    return `~R$ ${(Number(cents || 0) / 3000).toFixed(2).replace('.', ',')}/dia`;
+  }
+  var planoUi = planCopyMap || {};
+  var planoSelecionado = selectedPlanSlug || '';
 %>
-<main class="container mx-auto px-4 py-8 space-y-8">
-  <section class="relative overflow-hidden rounded-3xl border border-slate-200 bg-white p-6 md:p-8">
-    <div class="pointer-events-none absolute right-0 top-0 h-28 w-28 rounded-full bg-primary-100 blur-2xl"></div>
-    <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between relative">
+
+<main class="container mx-auto max-w-7xl px-4 py-8 space-y-8">
+  <section class="relative overflow-hidden rounded-3xl border border-slate-200 bg-white p-6 md:p-8 shadow-sm">
+    <div class="pointer-events-none absolute -right-8 -top-10 h-40 w-40 rounded-full bg-primary-100 blur-3xl"></div>
+    <div class="pointer-events-none absolute -left-8 -bottom-12 h-32 w-32 rounded-full bg-blue-100 blur-3xl"></div>
+
+    <div class="relative flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
       <div>
-        <p class="text-xs font-semibold uppercase tracking-wide text-primary-600">TAG NFC AIRPET</p>
-        <h1 class="mt-1 text-3xl font-extrabold text-slate-900">Compre uma vez a tag e mantenha tudo ativo com assinatura.</h1>
-        <p class="mt-3 max-w-2xl text-sm text-slate-600">
-          Na compra, cada tag precisa ser vinculada a um pet já cadastrado. Se comprar outra tag para o mesmo pet,
-          a anterior será desativada após ativação da nova.
+        <p class="text-xs font-bold uppercase tracking-[0.09em] text-primary-600">TAG NFC AIRPET</p>
+        <h1 class="mt-2 max-w-3xl text-3xl font-black tracking-tight text-slate-900 md:text-4xl">
+          Compre uma vez a tag e escolha o nível de proteção ideal para o seu pet.
+        </h1>
+        <p class="mt-3 max-w-2xl text-sm leading-relaxed text-slate-600">
+          Cada tag comprada deve ser vinculada a um pet cadastrado. Ao ativar uma nova tag para o mesmo pet,
+          a tag anterior é desativada automaticamente.
         </p>
         <div class="mt-4 flex flex-wrap gap-2">
-          <span class="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">Pagamento seguro</span>
-          <span class="rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700">Renovação soma +30 dias</span>
-          <span class="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700">Até 10 pets por conta</span>
+          <span class="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">Pagamento seguro</span>
+          <span class="rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">Renovação soma +30 dias</span>
+          <span class="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">Sem fidelidade</span>
         </div>
+        <% if (typeof upgradeResumo !== 'undefined' && upgradeResumo && upgradeResumo.elegivel) { %>
+          <div class="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
+            Benefício de cliente ativo: upgrades de plano recebem <strong><%= upgradeResumo.descontoLabel %></strong> de desconto automático na mensalidade (acumulável com cupom).
+          </div>
+        <% } %>
       </div>
-      <a href="/tags/pedidos" class="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700">
-        Ver meus pedidos
+
+      <a href="/tags/pedidos" class="btn-primary-inline !rounded-xl !px-4 !py-2.5 !text-sm">
+        <i class="fa-solid fa-box-archive"></i> Ver meus pedidos
       </a>
     </div>
   </section>
 
   <section class="grid gap-4 md:grid-cols-3">
     <% (planos || []).forEach(function(plano) { %>
-      <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <h2 class="text-lg font-bold text-slate-900"><%= plano.nome_exibicao %></h2>
-        <p class="mt-1 text-2xl font-extrabold text-primary-700">
+      <% var ui = planoUi[plano.slug] || { titulo: plano.nome || 'Plano', resumo: 'Plano AIRPET', badge: '', bullets: [] }; %>
+      <% var destaque = planoSelecionado ? plano.slug === planoSelecionado : plano.slug === 'plus'; %>
+      <article class="relative overflow-hidden rounded-2xl border bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md <%= destaque ? 'border-primary-300 ring-2 ring-primary-100' : 'border-slate-200' %>">
+        <div class="flex items-center justify-between gap-3">
+          <h2 class="text-lg font-bold text-slate-900"><%= ui.titulo %></h2>
+          <% if (ui.badge) { %>
+            <span class="rounded-full bg-primary-100 px-3 py-1 text-xs font-semibold text-primary-700"><%= ui.badge %></span>
+          <% } %>
+        </div>
+        <p class="mt-3 text-2xl font-black text-primary-700">
           <%= brl(plano.mensalidade_centavos) %>
-          <span class="text-xs font-medium text-slate-500">/ 30 dias</span>
+          <span class="text-xs font-semibold text-slate-500">/ 30 dias</span>
         </p>
+        <p class="text-xs font-semibold text-slate-500"><%= custoDia(plano.mensalidade_centavos) %></p>
+        <p class="mt-2 text-sm text-slate-600"><%= ui.resumo %></p>
         <p class="mt-2 text-xs text-slate-500">Renovação adiciona +30 dias ao saldo atual.</p>
-        <ul class="mt-4 space-y-1 text-xs text-slate-600">
-          <% Object.entries(plano.features_json || {}).slice(0, 4).forEach(function(entry) { %>
-            <% if (entry[1]) { %>
-              <li><i class="fa-solid fa-circle-check text-emerald-600 mr-1"></i><%= entry[0] %></li>
-            <% } %>
+        <ul class="mt-4 space-y-1.5 text-xs text-slate-600">
+          <% ui.bullets.forEach(function(item) { %>
+            <li class="flex items-start gap-2">
+              <i class="fa-solid fa-circle-check mt-0.5 text-emerald-600"></i>
+              <span><%= item %></span>
+            </li>
           <% }) %>
         </ul>
       </article>
@@ -49,115 +75,158 @@
   </section>
 
   <% if (typeof usuario !== 'undefined' && usuario) { %>
-    <section class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-      <h3 class="text-lg font-bold text-slate-900">Criar pedido</h3>
-      <p class="mt-1 text-sm text-slate-600">Escolha plano, quantidade e informe os dados para emissão da nota fiscal.</p>
-
-      <form action="/tags/pedidos" method="POST" class="mt-5 space-y-5" id="form-tag-order">
-        <div class="grid gap-4 md:grid-cols-3">
-          <label class="text-sm">
-            <span class="mb-1 block font-semibold text-slate-700">Plano</span>
-            <select name="plan_slug" class="w-full rounded-xl border border-slate-300 px-3 py-2">
-              <% (planos || []).forEach(function(plano) { %>
-                <option value="<%= plano.slug %>"><%= plano.nome_exibicao %></option>
-              <% }) %>
-            </select>
-          </label>
-
-          <label class="text-sm">
-            <span class="mb-1 block font-semibold text-slate-700">Tipo de pedido</span>
-            <select name="order_type" id="order_type" class="w-full rounded-xl border border-slate-300 px-3 py-2">
-              <option value="compra_tag">Primeira compra / comprar nova tag</option>
-              <option value="assinatura_recorrente">Somente renovação da assinatura</option>
-            </select>
-          </label>
-          <label class="text-sm">
-            <span class="mb-1 block font-semibold text-slate-700">Quantidade de tags</span>
-            <input type="number" min="1" max="10" value="1" id="quantidade_tags" name="quantidade_tags" class="w-full rounded-xl border border-slate-300 px-3 py-2">
-          </label>
+    <section id="comprar" class="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
+      <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div class="mb-5 flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
+          <div>
+            <h3 class="text-xl font-black text-slate-900">Criar pedido</h3>
+            <p class="mt-1 text-sm text-slate-600">
+              Escolha plano, quantidade e preencha os dados para emissão fiscal.
+            </p>
+          </div>
+          <div class="rounded-xl border border-primary-200 bg-primary-50 px-3 py-2 text-xs font-semibold text-primary-700">
+            Checkout em ambiente seguro
+          </div>
         </div>
 
-        <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
-          <div class="flex items-start justify-between gap-3">
-            <div>
-              <p class="text-sm font-semibold text-slate-700">Pets por unidade da compra</p>
-              <p class="text-xs text-slate-500">A quantidade de seletores abaixo acompanha a quantidade de tags.</p>
+        <form action="/tags/pedidos" method="POST" class="space-y-5" id="form-tag-order">
+          <section class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+            <h4 class="text-sm font-bold text-slate-900">Configuração do pedido</h4>
+            <div class="mt-3 grid gap-4 md:grid-cols-3">
+              <label class="text-sm">
+                <span class="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-600">Plano</span>
+                <select name="plan_slug" class="input !bg-white">
+                  <% (planos || []).forEach(function(plano) { %>
+                    <option value="<%= plano.slug %>" <%= planoSelecionado === plano.slug ? 'selected' : '' %>><%= plano.nome_exibicao %></option>
+                  <% }) %>
+                </select>
+              </label>
+
+              <label class="text-sm">
+                <span class="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-600">Tipo de pedido</span>
+                <select name="order_type" id="order_type" class="input !bg-white">
+                  <option value="compra_tag">Primeira compra / nova tag</option>
+                  <option value="assinatura_recorrente">Somente renovação da assinatura</option>
+                </select>
+              </label>
+
+              <label class="text-sm">
+                <span class="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-600">Quantidade de tags</span>
+                <input type="number" min="1" max="10" value="1" id="quantidade_tags" name="quantidade_tags" class="input !bg-white">
+              </label>
             </div>
-            <a href="/pets" class="text-xs font-semibold text-primary-700 hover:text-primary-900">Cadastrar pet</a>
+          </section>
+
+          <section class="rounded-2xl border border-slate-200 bg-white p-4">
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <h4 class="text-sm font-bold text-slate-900">Pets por unidade da compra</h4>
+                <p class="mt-1 text-xs text-slate-500">
+                  A quantidade de seletores acompanha a quantidade de tags.
+                </p>
+              </div>
+              <a href="/pets" class="text-xs font-bold text-primary-700 hover:text-primary-900">Cadastrar pet</a>
+            </div>
+            <div class="mt-3 grid gap-3 md:grid-cols-2" id="pet-selectors" data-has-pets="<%= (pets || []).length ? '1' : '0' %>"></div>
+          </section>
+
+          <section class="rounded-2xl border border-slate-200 bg-white p-4">
+            <h4 class="text-sm font-bold text-slate-900">Dados para nota fiscal</h4>
+            <p class="mt-1 text-xs text-slate-500">Preencha os dados reais para emissão fiscal do pedido.</p>
+
+            <div class="mt-3 grid gap-4 md:grid-cols-2">
+              <label class="text-sm">
+                <span class="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-600">Nome completo / Razão social</span>
+                <input type="text" name="billing_name" required maxlength="150" class="input">
+              </label>
+              <label class="text-sm">
+                <span class="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-600">CPF ou CNPJ</span>
+                <input type="text" name="billing_cpf_cnpj" required maxlength="18" class="input" placeholder="Somente números ou formatado">
+              </label>
+              <label class="text-sm">
+                <span class="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-600">Telefone</span>
+                <input type="text" name="billing_phone" required maxlength="30" class="input">
+              </label>
+              <label class="text-sm">
+                <span class="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-600">CEP</span>
+                <input type="text" name="billing_cep" required maxlength="9" class="input">
+              </label>
+              <label class="text-sm md:col-span-2">
+                <span class="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-600">Logradouro</span>
+                <input type="text" name="billing_logradouro" required maxlength="160" class="input">
+              </label>
+              <label class="text-sm">
+                <span class="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-600">Número</span>
+                <input type="text" name="billing_numero" required maxlength="20" class="input">
+              </label>
+              <label class="text-sm">
+                <span class="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-600">Complemento (opcional)</span>
+                <input type="text" name="billing_complemento" maxlength="100" class="input">
+              </label>
+              <label class="text-sm">
+                <span class="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-600">Bairro</span>
+                <input type="text" name="billing_bairro" required maxlength="100" class="input">
+              </label>
+              <label class="text-sm">
+                <span class="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-600">Cidade</span>
+                <input type="text" name="billing_cidade" required maxlength="100" class="input">
+              </label>
+              <label class="text-sm">
+                <span class="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-600">UF</span>
+                <input type="text" name="billing_uf" required maxlength="2" class="input uppercase">
+              </label>
+            </div>
+          </section>
+
+          <section class="rounded-2xl border border-slate-200 bg-white p-4">
+            <h4 class="text-sm font-bold text-slate-900">Benefícios opcionais</h4>
+            <div class="mt-3 grid gap-4 md:grid-cols-2">
+              <label class="text-sm">
+                <span class="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-600">Cupom (opcional)</span>
+                <input type="text" name="promo_code" placeholder="Ex: AIRPET10" class="input uppercase">
+              </label>
+              <label class="text-sm">
+                <span class="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-600">Código de indicação (opcional)</span>
+                <input type="text" name="referral_code" class="input uppercase">
+              </label>
+            </div>
+          </section>
+
+          <div class="rounded-xl border border-primary-100 bg-primary-50 p-4 text-xs text-primary-800">
+            Você será redirecionado para o checkout seguro. O pedido só muda para <strong>pago</strong> após confirmação do webhook.
           </div>
-          <div class="mt-3 grid gap-3 md:grid-cols-2" id="pet-selectors" data-has-pets="<%= (pets || []).length ? '1' : '0' %>">
-            <!-- preenchido por JS -->
+
+          <div class="flex justify-end">
+            <button type="submit" id="submit-order-btn" class="btn-primary-inline !rounded-xl !px-6 !py-3 !text-sm">
+              <i class="fa-solid fa-shield-check"></i>
+              <span id="submit-order-label">Ir para pagamento</span>
+            </button>
           </div>
-        </div>
+        </form>
+      </div>
 
-        <div class="rounded-xl border border-slate-200 bg-white p-4">
-          <h4 class="text-sm font-bold text-slate-900">Dados para nota fiscal</h4>
-          <p class="mt-1 text-xs text-slate-500">Preencha os dados reais para emissão fiscal do pedido.</p>
-          <div class="mt-3 grid gap-4 md:grid-cols-2">
-            <label class="text-sm">
-              <span class="mb-1 block font-semibold text-slate-700">Nome completo / Razão social</span>
-              <input type="text" name="billing_name" required maxlength="150" class="w-full rounded-xl border border-slate-300 px-3 py-2">
-            </label>
-            <label class="text-sm">
-              <span class="mb-1 block font-semibold text-slate-700">CPF ou CNPJ</span>
-              <input type="text" name="billing_cpf_cnpj" required maxlength="18" class="w-full rounded-xl border border-slate-300 px-3 py-2" placeholder="Somente números ou formatado">
-            </label>
-            <label class="text-sm">
-              <span class="mb-1 block font-semibold text-slate-700">Telefone</span>
-              <input type="text" name="billing_phone" required maxlength="30" class="w-full rounded-xl border border-slate-300 px-3 py-2">
-            </label>
-            <label class="text-sm">
-              <span class="mb-1 block font-semibold text-slate-700">CEP</span>
-              <input type="text" name="billing_cep" required maxlength="9" class="w-full rounded-xl border border-slate-300 px-3 py-2">
-            </label>
-            <label class="text-sm md:col-span-2">
-              <span class="mb-1 block font-semibold text-slate-700">Logradouro</span>
-              <input type="text" name="billing_logradouro" required maxlength="160" class="w-full rounded-xl border border-slate-300 px-3 py-2">
-            </label>
-            <label class="text-sm">
-              <span class="mb-1 block font-semibold text-slate-700">Número</span>
-              <input type="text" name="billing_numero" required maxlength="20" class="w-full rounded-xl border border-slate-300 px-3 py-2">
-            </label>
-            <label class="text-sm">
-              <span class="mb-1 block font-semibold text-slate-700">Complemento (opcional)</span>
-              <input type="text" name="billing_complemento" maxlength="100" class="w-full rounded-xl border border-slate-300 px-3 py-2">
-            </label>
-            <label class="text-sm">
-              <span class="mb-1 block font-semibold text-slate-700">Bairro</span>
-              <input type="text" name="billing_bairro" required maxlength="100" class="w-full rounded-xl border border-slate-300 px-3 py-2">
-            </label>
-            <label class="text-sm">
-              <span class="mb-1 block font-semibold text-slate-700">Cidade</span>
-              <input type="text" name="billing_cidade" required maxlength="100" class="w-full rounded-xl border border-slate-300 px-3 py-2">
-            </label>
-            <label class="text-sm">
-              <span class="mb-1 block font-semibold text-slate-700">UF</span>
-              <input type="text" name="billing_uf" required maxlength="2" class="w-full rounded-xl border border-slate-300 px-3 py-2 uppercase">
-            </label>
+      <aside class="space-y-4 lg:sticky lg:top-24">
+        <section class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <h4 class="text-sm font-black text-slate-900">Resumo da compra</h4>
+          <p class="mt-1 text-xs text-slate-500">Seu pedido é validado no servidor antes de gerar o checkout.</p>
+          <ul class="mt-3 space-y-2 text-xs text-slate-600">
+            <li class="flex items-start gap-2"><i class="fa-solid fa-circle-check mt-0.5 text-emerald-600"></i> Regras críticas protegidas no backend</li>
+            <li class="flex items-start gap-2"><i class="fa-solid fa-circle-check mt-0.5 text-emerald-600"></i> Validação de pet por usuário</li>
+            <li class="flex items-start gap-2"><i class="fa-solid fa-circle-check mt-0.5 text-emerald-600"></i> Revalidação de cupom e total no servidor</li>
+            <% if (typeof upgradeResumo !== 'undefined' && upgradeResumo && upgradeResumo.elegivel) { %>
+              <li class="flex items-start gap-2"><i class="fa-solid fa-circle-check mt-0.5 text-emerald-600"></i> Upgrade elegível: <strong><%= upgradeResumo.descontoLabel %></strong> de desconto automático</li>
+            <% } %>
+          </ul>
+        </section>
+
+        <section class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <h4 class="text-sm font-black text-slate-900">Dúvidas rápidas</h4>
+          <div class="mt-3 space-y-3 text-xs text-slate-600">
+            <p><strong class="text-slate-800">Posso renovar sem comprar nova tag?</strong><br>Sim. Selecione "Somente renovação da assinatura".</p>
+            <p><strong class="text-slate-800">Posso comprar mais de uma tag?</strong><br>Sim. Defina a quantidade e vincule cada unidade a um pet.</p>
           </div>
-        </div>
-
-        <div class="grid gap-4 md:grid-cols-2">
-          <label class="text-sm">
-            <span class="mb-1 block font-semibold text-slate-700">Cupom (opcional)</span>
-            <input type="text" name="promo_code" placeholder="EX: AIRPET10" class="w-full rounded-xl border border-slate-300 px-3 py-2 uppercase">
-          </label>
-          <label class="text-sm">
-            <span class="mb-1 block font-semibold text-slate-700">Código de indicação (opcional)</span>
-            <input type="text" name="referral_code" class="w-full rounded-xl border border-slate-300 px-3 py-2 uppercase">
-          </label>
-        </div>
-
-        <div class="rounded-xl border border-primary-100 bg-primary-50 p-4 text-xs text-primary-800">
-          Você será redirecionado para o checkout seguro. O pedido só muda para <strong>pago</strong> após confirmação do webhook.
-        </div>
-
-        <div class="flex justify-end">
-          <button type="submit" class="rounded-xl bg-primary-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-primary-700">
-            Ir para pagamento
-          </button>
-        </div>
-      </form>
+        </section>
+      </aside>
     </section>
   <% } else { %>
     <section class="rounded-2xl border border-primary-200 bg-primary-50 p-5 text-sm text-primary-800">
@@ -165,12 +234,16 @@
     </section>
   <% } %>
 </main>
+
 <script>
   (function () {
-    const pets = <%- JSON.stringify((pets || []).map(function (p) { return { id: p.id, nome: p.nome }; })) %>;
+    const pets = <%- safeJson((pets || []).map(function (p) { return { id: p.id, nome: p.nome }; })) %>;
     const qtdInput = document.getElementById('quantidade_tags');
     const orderTypeSelect = document.getElementById('order_type');
     const selectorsRoot = document.getElementById('pet-selectors');
+    const form = document.getElementById('form-tag-order');
+    const submitBtn = document.getElementById('submit-order-btn');
+    const submitLabel = document.getElementById('submit-order-label');
 
     if (!qtdInput || !orderTypeSelect || !selectorsRoot) return;
 
@@ -190,24 +263,34 @@
       });
 
       if (!pets.length && !isAssinatura) {
-        selectorsRoot.innerHTML = '<p class="text-sm text-red-600">Você precisa cadastrar ao menos 1 pet para continuar.</p>';
+        selectorsRoot.innerHTML = '<p class="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-600">Você precisa cadastrar ao menos 1 pet para continuar.</p>';
         return;
       }
 
       let html = '';
       for (let i = 0; i < qtd; i += 1) {
         const options = pets.map(function (pet) { return buildOption(pet, selected[i]); }).join('');
-        html += '<label class="text-sm">' +
-          '<span class="mb-1 block font-semibold text-slate-700">Tag #' + (i + 1) + '</span>' +
-          '<select name="pet_ids" required class="w-full rounded-xl border border-slate-300 px-3 py-2">' +
+        html += '<label class="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm">' +
+          '<span class="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-600">Tag #' + (i + 1) + '</span>' +
+          '<select name="pet_ids" required class="input !bg-white !py-2.5">' +
           options +
           '</select>' +
           '</label>';
       }
+
       if (isAssinatura) {
-        html = '<p class="text-sm text-slate-600">Renovação sem compra de hardware. Nenhum pet precisa ser selecionado.</p>';
+        html = '<p class="rounded-xl border border-blue-200 bg-blue-50 p-3 text-sm text-blue-700">Renovação sem compra de hardware. Nenhum pet precisa ser selecionado.</p>';
       }
+
       selectorsRoot.innerHTML = html;
+    }
+
+    if (form && submitBtn && submitLabel) {
+      form.addEventListener('submit', function () {
+        submitBtn.disabled = true;
+        submitBtn.classList.add('opacity-70', 'cursor-not-allowed');
+        submitLabel.textContent = 'Redirecionando...';
+      });
     }
 
     qtdInput.addEventListener('change', renderSelectors);
@@ -215,4 +298,5 @@
     renderSelectors();
   })();
 </script>
+
 <%- include('../partials/footer') %>

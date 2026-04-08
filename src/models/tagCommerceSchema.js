@@ -31,10 +31,21 @@ async function ensureTagCommerceSchema() {
       await query(`
         INSERT INTO plan_definitions (slug, nome_exibicao, mensalidade_centavos, ordem, ativo, features_json)
         VALUES
-          ('basico', 'Basico', 1990, 1, true, '{"scan_publico_basico": true, "explorar_busca": true}'::jsonb),
-          ('plus', 'Plus', 2990, 2, true, '{"scan_publico_basico": true, "scan_rico": true, "pet_perdido_mapa": true, "explorar_busca": true}'::jsonb),
-          ('familia', 'Familia', 3990, 3, true, '{"scan_publico_basico": true, "scan_rico": true, "pet_perdido_mapa": true, "petshop_proximo": true, "notificacoes_multicanal": true, "explorar_busca": true}'::jsonb)
+          ('basico', 'AIRPET Essencial', 1990, 1, true, '{"scan_publico_basico": true, "explorar_busca": true}'::jsonb),
+          ('plus', 'AIRPET Protecao', 2990, 2, true, '{"scan_publico_basico": true, "scan_rico": true, "pet_perdido_mapa": true, "explorar_busca": true}'::jsonb),
+          ('familia', 'AIRPET Rede', 3990, 3, true, '{"scan_publico_basico": true, "scan_rico": true, "pet_perdido_mapa": true, "petshop_proximo": true, "notificacoes_multicanal": true, "explorar_busca": true}'::jsonb)
         ON CONFLICT (slug) DO NOTHING
+      `);
+      await query(`
+        UPDATE plan_definitions
+        SET nome_exibicao = CASE slug
+          WHEN 'basico' THEN 'AIRPET Essencial'
+          WHEN 'plus' THEN 'AIRPET Protecao'
+          WHEN 'familia' THEN 'AIRPET Rede'
+          ELSE nome_exibicao
+        END,
+        data_atualizacao = NOW()
+        WHERE slug IN ('basico', 'plus', 'familia')
       `);
 
       await query(`
