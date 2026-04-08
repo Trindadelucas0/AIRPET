@@ -1,6 +1,7 @@
 const TagProductOrder = require('../models/TagProductOrder');
 const TagOrderUnit = require('../models/TagOrderUnit');
 const PlanDefinition = require('../models/PlanDefinition');
+const PromoCode = require('../models/PromoCode');
 const Pet = require('../models/Pet');
 const Usuario = require('../models/Usuario');
 const tagCommerceService = require('../services/tagCommerceService');
@@ -8,6 +9,7 @@ const tagEntitlementService = require('../services/tagEntitlementService');
 const logger = require('../utils/logger');
 const { multerPublicUrl } = require('../middlewares/persistUploadMiddleware');
 const { isSchemaMissingError } = require('../models/tagCommerceSchema');
+const crypto = require('crypto');
 
 function toArray(value) {
   if (Array.isArray(value)) return value;
@@ -21,6 +23,42 @@ function redirecionarComFallbackSchema(req, res, redirectPath) {
     mensagem: 'A área de pedidos TAG está em atualização no momento. Tente novamente em instantes.',
   };
   return res.redirect(redirectPath);
+}
+
+function limparTexto(value, max = 255) {
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+  return raw.slice(0, max);
+}
+
+function parseIsoFimDoDia(yyyyMmDd) {
+  if (!yyyyMmDd) return null;
+  const base = new Date(`${yyyyMmDd}T23:59:59.999Z`);
+  return Number.isNaN(base.getTime()) ? null : base.toISOString();
+}
+
+function parseIsoInicioDoDia(yyyyMmDd) {
+  if (!yyyyMmDd) return null;
+  const base = new Date(`${yyyyMmDd}T00:00:00.000Z`);
+  return Number.isNaN(base.getTime()) ? null : base.toISOString();
+}
+
+function assinaturaConfere(req, secret) {
+  const assinatura = String(
+    req.get('x-infinitepay-signature')
+    || req.get('x-infinitypay-signature')
+    || req.get('x-signature')
+    || ''
+  );
+  if (!assinatura) return false;
+  try {
+    const a = Buffer.from(assinatura);
+    const b = Buffer.from(secret);
+    if (a.length !== b.length) return false;
+    return crypto.timingSafeEqual(a, b);
+  } catch {
+    return false;
+  }
 }
 
 const tagCommerceController = {
@@ -67,6 +105,18 @@ const tagCommerceController = {
         quantidade_tags: Number(req.body.quantidade_tags || 0),
         pet_ids: petIds,
         promo_code: req.body.promo_code,
+        billing: {
+          billing_name: req.body.billing_name,
+          billing_cpf_cnpj: req.body.billing_cpf_cnpj,
+          billing_phone: req.body.billing_phone,
+          billing_cep: req.body.billing_cep,
+          billing_logradouro: req.body.billing_logradouro,
+          billing_numero: req.body.billing_numero,
+          billing_complemento: req.body.billing_complemento,
+          billing_bairro: req.body.billing_bairro,
+          billing_cidade: req.body.billing_cidade,
+          billing_uf: req.body.billing_uf,
+        },
       };
 
       const { pedido } = await tagCommerceService.criarPedido(usuarioId, payload);
@@ -190,7 +240,7 @@ const tagCommerceController = {
   async webhookInfinitePay(req, res) {
     try {
       const secret = process.env.INFINITEPAY_WEBHOOK_SECRET;
-      if (secret && req.get('x-infinitepay-signature') !== secret) {
+      if (secret && !assinaturaConfere(req, secret)) {
         return res.status(401).json({ ok: false, message: 'assinatura inválida' });
       }
       const out = await tagCommerceService.processarPagamentoWebhook(req.body || {});
@@ -223,6 +273,149 @@ const tagCommerceController = {
   async mostrarPlanos(req, res) {
     const planos = await tagCommerceService.carregarPlanos();
     return res.render('tags/planos', { titulo: 'Planos TAG', planos });
+  },
+
+  async adminListarPedidos(req, res) {
+    try {
+      await tagCommerceService.ensurePedidosSchema();
+      const filtros = {
+        status: limparTexto(req.query.status, 30),
+        plan_slug: limparTexto(req.query.plan_slug, 50),
+        data_inicio: parseIsoInicioDoDia(req.query.data_inicio),
+        data_fim: parseIsoFimDoDia(req.query.data_fim),
+      };
+      const [pedidos, resumo, planos] = await Promise.all([
+        TagProductOrder.listarAdmin(filtros),
+        TagProductOrder.obterResumoAdmin(filtros),
+        PlanDefinition.listarAtivos(),
+      ]);
+
+      return res.render('admin/tag-commerce-pedidos', {
+        titulo: 'Comércio TAG - Pedidos',
+        pedidos,
+        resumo,
+        planos,
+        filtros: {
+          status: filtros.status || '',
+          plan_slug: filtros.plan_slug || '',
+          data_inicio: limparTexto(req.query.data_inicio, 20),
+          data_fim: limparTexto(req.query.data_fim, 20),
+        },
+        adminPath: process.env.ADMIN_PATH || '/admin',
+        currentPath: '/tags-commerce',
+      });
+    } catch (err) {
+      logger.error('TagCommerceController', 'Erro ao listar pedidos admin TAG', err);
+      req.session.flash = { tipo: 'erro', mensagem: 'Erro ao carregar painel de pedidos TAG.' };
+      return res.redirect('/tags/admin/lista');
+    }
+  },
+
+  async adminDetalhePedido(req, res) {
+    try {
+      await tagCommerceService.ensurePedidosSchema();
+      const pedidoId = Number(req.params.id);
+      const pedido = await TagProductOrder.buscarPorIdAdmin(pedidoId);
+      if (!pedido) {
+        req.session.flash = { tipo: 'erro', mensagem: 'Pedido não encontrado.' };
+        return res.redirect('/tags/admin/commerce/pedidos');
+      }
+      const unidades = await TagOrderUnit.listarPorPedido(pedido.id);
+      return res.render('admin/tag-commerce-pedido-detalhe', {
+        titulo: `Pedido TAG #${pedido.id}`,
+        pedido,
+        unidades,
+        adminPath: process.env.ADMIN_PATH || '/admin',
+        currentPath: '/tags-commerce',
+      });
+    } catch (err) {
+      logger.error('TagCommerceController', 'Erro ao abrir detalhe do pedido admin TAG', err);
+      req.session.flash = { tipo: 'erro', mensagem: 'Erro ao carregar detalhe do pedido TAG.' };
+      return res.redirect('/tags/admin/commerce/pedidos');
+    }
+  },
+
+  async adminSalvarNotaFiscal(req, res) {
+    try {
+      await tagCommerceService.ensurePedidosSchema();
+      const pedidoId = Number(req.params.id);
+      const emitidaEm = req.body.nfe_emitida_em ? new Date(req.body.nfe_emitida_em) : null;
+      if (emitidaEm && Number.isNaN(emitidaEm.getTime())) {
+        throw new Error('Data de emissão da nota fiscal inválida.');
+      }
+      await TagProductOrder.atualizarNotaFiscal(pedidoId, {
+        nfe_numero: limparTexto(req.body.nfe_numero, 40),
+        nfe_chave: limparTexto(req.body.nfe_chave, 64),
+        nfe_url_pdf: limparTexto(req.body.nfe_url_pdf, 500),
+        nfe_emitida_em: emitidaEm ? emitidaEm.toISOString() : null,
+        admin_nf_obs: limparTexto(req.body.admin_nf_obs, 2000),
+      });
+      req.session.flash = { tipo: 'sucesso', mensagem: 'Dados de nota fiscal atualizados.' };
+      return res.redirect(`/tags/admin/commerce/pedidos/${pedidoId}`);
+    } catch (err) {
+      logger.error('TagCommerceController', 'Erro ao salvar NF do pedido TAG', err);
+      req.session.flash = { tipo: 'erro', mensagem: err.message || 'Não foi possível salvar a nota fiscal.' };
+      return res.redirect(`/tags/admin/commerce/pedidos/${req.params.id}`);
+    }
+  },
+
+  async adminListarCupons(req, res) {
+    try {
+      await tagCommerceService.ensurePedidosSchema();
+      const cupons = await PromoCode.listarAdmin();
+      return res.render('admin/tag-commerce-cupons', {
+        titulo: 'Comércio TAG - Cupons',
+        cupons,
+        adminPath: process.env.ADMIN_PATH || '/admin',
+        currentPath: '/tags-commerce-coupons',
+      });
+    } catch (err) {
+      logger.error('TagCommerceController', 'Erro ao listar cupons TAG', err);
+      req.session.flash = { tipo: 'erro', mensagem: 'Erro ao carregar cupons.' };
+      return res.redirect('/tags/admin/commerce/pedidos');
+    }
+  },
+
+  async adminCriarCupom(req, res) {
+    try {
+      await tagCommerceService.ensurePedidosSchema();
+      await PromoCode.criarAdmin({
+        codigo: limparTexto(req.body.codigo, 40).toUpperCase(),
+        tipo: limparTexto(req.body.tipo, 20) === 'fixo' ? 'fixo' : 'percentual',
+        valor: Number(req.body.valor || 0),
+        ativo: req.body.ativo === 'on',
+        valid_from: req.body.valid_from ? new Date(req.body.valid_from).toISOString() : null,
+        valid_until: req.body.valid_until ? new Date(req.body.valid_until).toISOString() : null,
+        max_usos_global: req.body.max_usos_global ? Number(req.body.max_usos_global) : null,
+        max_usos_por_usuario: req.body.max_usos_por_usuario ? Number(req.body.max_usos_por_usuario) : null,
+      });
+      req.session.flash = { tipo: 'sucesso', mensagem: 'Cupom criado com sucesso.' };
+      return res.redirect('/tags/admin/commerce/cupons');
+    } catch (err) {
+      logger.error('TagCommerceController', 'Erro ao criar cupom TAG', err);
+      req.session.flash = { tipo: 'erro', mensagem: err.message || 'Erro ao criar cupom.' };
+      return res.redirect('/tags/admin/commerce/cupons');
+    }
+  },
+
+  async adminAtualizarCupom(req, res) {
+    try {
+      await tagCommerceService.ensurePedidosSchema();
+      const cupomId = Number(req.params.id);
+      await PromoCode.atualizarAdmin(cupomId, {
+        ativo: req.body.ativo === 'on',
+        valid_from: req.body.valid_from ? new Date(req.body.valid_from).toISOString() : null,
+        valid_until: req.body.valid_until ? new Date(req.body.valid_until).toISOString() : null,
+        max_usos_global: req.body.max_usos_global ? Number(req.body.max_usos_global) : null,
+        max_usos_por_usuario: req.body.max_usos_por_usuario ? Number(req.body.max_usos_por_usuario) : null,
+      });
+      req.session.flash = { tipo: 'sucesso', mensagem: 'Cupom atualizado.' };
+      return res.redirect('/tags/admin/commerce/cupons');
+    } catch (err) {
+      logger.error('TagCommerceController', 'Erro ao atualizar cupom TAG', err);
+      req.session.flash = { tipo: 'erro', mensagem: err.message || 'Erro ao atualizar cupom.' };
+      return res.redirect('/tags/admin/commerce/cupons');
+    }
   },
 };
 

@@ -272,10 +272,33 @@ Base em `src/public/css/design-system.css`.
 ## 11) Variáveis de Ambiente Relevantes
 
 - `BASE_URL`
-- `INFINITEPAY_TOKEN`
+- `INFINITEPAY_HANDLE`
 - `INFINITEPAY_API_BASE` (opcional)
 - `INFINITEPAY_WEBHOOK_SECRET` (recomendado)
+- `INFINITEPAY_TOKEN` (opcional/compatibilidade)
 - `TAG_SUBSCRIPTION_GRACE_HOURS` (default 72)
+
+### Como configurar em produção
+
+1. **`INFINITEPAY_HANDLE`**  
+   Use a InfiniteTag da conta vendedora sem o símbolo `$` (ex.: `lucas-rodrigues-740`) no `.env`.
+2. **`BASE_URL`**  
+   Use a URL pública HTTPS do AIRPET (sem `/` no final), pois ela é usada para:
+   - retorno do checkout: `/tags/pagamentos/retorno`
+   - webhook: `/tags/pagamentos/webhook/infinitepay`
+3. **`INFINITEPAY_WEBHOOK_SECRET`**  
+   Defina um segredo forte e use o mesmo valor enviado no cabeçalho de assinatura do webhook.
+4. **`INFINITEPAY_API_BASE`**  
+   Mantenha o padrão `https://api.infinitepay.io`, a menos que o suporte da InfinitePay oriente outra URL.
+5. **`INFINITEPAY_TOKEN`** (opcional)  
+   Pode ser mantido apenas para cenários em que a conta/API exija `Authorization: Bearer ...`.
+
+### Observações importantes
+
+- Sem `INFINITEPAY_HANDLE`, o sistema entra em modo mock para desenvolvimento e retorna checkout simulado.
+- O webhook deve estar em endpoint público com HTTPS válido para confirmação assíncrona de pagamento.
+- Após retorno no `redirect_url`, é possível confirmar o status com `POST /invoices/public/checkout/payment_check` antes de atualizar telas.
+- Sempre reinicie a aplicação após atualizar variáveis de ambiente.
 
 ## 12) Segurança e Antifraude
 

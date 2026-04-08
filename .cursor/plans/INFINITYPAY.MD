@@ -14,8 +14,9 @@ Padronizar a integração de pagamento para:
 
 ## Campos críticos
 
+- `handle`: InfiniteTag da conta vendedora (sem `$`), obrigatória no payload
 - `order_nsu`: identificador único do pedido no AIRPET (ex.: `tag-<timestamp>-<rand>`)
-- `items[]`: preços em centavos
+- `itens[]`: preços em centavos (chave conforme documentação pública)
 - `redirect_url`: URL de retorno para o app
 - `webhook_url`: endpoint público para confirmação assíncrona
 - `transaction_nsu`: id da transação aprovada no webhook
@@ -41,6 +42,9 @@ Padronizar a integração de pagamento para:
    - Marcar pedido como `pago`
    - Renovar assinatura (`valid_until = max(valid_until, now) + 30 dias`)
    - Alocar tag(s) se `order_type` for compra de hardware
+7. (Opcional) Após `redirect_url`, confirmar estado via:
+   - `POST /invoices/public/checkout/payment_check`
+   - payload mínimo: `handle`, `order_nsu`, `transaction_nsu`, `slug`
 
 ## Regras AIRPET acopladas ao pagamento
 
@@ -52,10 +56,11 @@ Padronizar a integração de pagamento para:
 
 ## Variáveis de ambiente
 
-- `INFINITEPAY_TOKEN`
+- `INFINITEPAY_HANDLE` (obrigatória)
 - `INFINITEPAY_API_BASE` (opcional, default API oficial)
 - `INFINITEPAY_WEBHOOK_SECRET` (recomendado)
 - `BASE_URL` (necessário para `redirect_url` / `webhook_url`)
+- `INFINITEPAY_TOKEN` (opcional/compatibilidade quando conta exigir Bearer)
 
 ## Runbook rápido de incidentes
 

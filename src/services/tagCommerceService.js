@@ -26,6 +26,155 @@ function calcularDescontoPromo(promo, subtotal) {
   return Math.max(0, Math.floor((subtotal * percentual) / 100));
 }
 
+function somenteDigitos(value) {
+  return String(value || '').replace(/\D/g, '');
+}
+
+function normalizarTexto(value, maxLen = 255) {
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+  return raw.slice(0, maxLen);
+}
+
+function validarCpf(cpfRaw) {
+  const cpf = somenteDigitos(cpfRaw);
+  if (!cpf || cpf.length !== 11 || /^(\d)\1{10}$/.test(cpf)) return false;
+  let soma = 0;
+  for (let i = 0; i < 9; i += 1) soma += Number(cpf[i]) * (10 - i);
+  let resto = (soma * 10) % 11;
+  if (resto === 10) resto = 0;
+  if (resto !== Number(cpf[9])) return false;
+  soma = 0;
+  for (let i = 0; i < 10; i += 1) soma += Number(cpf[i]) * (11 - i);
+  resto = (soma * 10) % 11;
+  if (resto === 10) resto = 0;
+  return resto === Number(cpf[10]);
+}
+
+function validarCnpj(cnpjRaw) {
+  const cnpj = somenteDigitos(cnpjRaw);
+  if (!cnpj || cnpj.length !== 14 || /^(\d)\1{13}$/.test(cnpj)) return false;
+  const pesos1 = [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
+  const pesos2 = [6, ...pesos1];
+  let soma = 0;
+  for (let i = 0; i < 12; i += 1) soma += Number(cnpj[i]) * pesos1[i];
+  let resto = soma % 11;
+  const dig1 = resto < 2 ? 0 : 11 - resto;
+  if (dig1 !== Number(cnpj[12])) return false;
+  soma = 0;
+  for (let i = 0; i < 13; i += 1) soma += Number(cnpj[i]) * pesos2[i];
+  resto = soma % 11;
+  const dig2 = resto < 2 ? 0 : 11 - resto;
+  return dig2 === Number(cnpj[13]);
+}
+
+function validarCpfOuCnpj(documento) {
+  const digits = somenteDigitos(documento);
+  if (digits.length === 11) return validarCpf(digits);
+  if (digits.length === 14) return validarCnpj(digits);
+  return false;
+}
+
+function normalizarBilling(payload = {}) {
+  const billing = {
+    billing_name: normalizarTexto(payload.billing_name, 150),
+    billing_cpf_cnpj: somenteDigitos(payload.billing_cpf_cnpj).slice(0, 14),
+    billing_phone: normalizarTexto(payload.billing_phone, 30),
+    billing_cep: somenteDigitos(payload.billing_cep).slice(0, 8),
+    billing_logradouro: normalizarTexto(payload.billing_logradouro, 160),
+    billing_numero: normalizarTexto(payload.billing_numero, 20),
+    billing_complemento: normalizarTexto(payload.billing_complemento, 100),
+    billing_bairro: normalizarTexto(payload.billing_bairro, 100),
+    billing_cidade: normalizarTexto(payload.billing_cidade, 100),
+    billing_uf: normalizarTexto(payload.billing_uf, 2).toUpperCase(),
+  };
+
+  if (!billing.billing_name) throw new Error('Informe o nome completo para nota fiscal.');
+  if (!validarCpfOuCnpj(billing.billing_cpf_cnpj)) throw new Error('CPF/CNPJ inválido para nota fiscal.');
+  if (billing.billing_cep.length !== 8) throw new Error('CEP inválido para nota fiscal.');
+  if (!billing.billing_logradouro || !billing.billing_numero || !billing.billing_bairro || !billing.billing_cidade || billing.billing_uf.length !== 2) {
+    throw new Error('Preencha o endereço completo para emissão da nota fiscal.');
+  }
+
+  return billing;
+}
+
+function normalizarPhoneNumber(rawPhone) {
+  const digits = somenteDigitos(rawPhone);
+  if (!digits) return undefined;
+  if (digits.length === 13 && digits.startsWith('55')) return `+${digits}`;
+  if (digits.length === 11 || digits.length === 10) return `+55${digits}`;
+  if (digits.length >= 12 && digits.length <= 15) return `+${digits}`;
+  return undefined;
+}
+
+function parseValorCentavos(valor) {
+  if (valor === undefined || valor === null || valor === '') return null;
+  const n = Number(valor);
+  if (!Number.isFinite(n)) return null;
+  if (n > 0 && n < 1000 && Number.isInteger(n) === false) {
+    return Math.round(n * 100);
+  }
+  return Math.round(n);
+}
+
+function extrairValoresWebhook(payload) {
+  const amount = parseValorCentavos(payload?.amount ?? payload?.payment?.amount ?? payload?.data?.amount);
+  const paidAmount = parseValorCentavos(payload?.paid_amount ?? payload?.payment?.paid_amount ?? payload?.data?.paid_amount);
+
+  const candidatos = [
+    amount,
+    parseValorCentavos(payload?.total),
+    parseValorCentavos(payload?.total_amount),
+    parseValorCentavos(payload?.amount_cents),
+    parseValorCentavos(payload?.payment?.total),
+    parseValorCentavos(payload?.payment?.amount_cents),
+    parseValorCentavos(payload?.data?.total),
+    parseValorCentavos(payload?.data?.amount_cents),
+    paidAmount,
+  ];
+
+  let valorPedido = null;
+  for (const valor of candidatos) {
+    if (Number.isFinite(valor)) {
+      valorPedido = Number(valor);
+      break;
+    }
+  }
+
+  return {
+    valorPedidoCentavos: valorPedido,
+    paidAmountCentavos: Number.isFinite(paidAmount) ? Number(paidAmount) : null,
+  };
+}
+
+function extrairValorCentavosComFallback(payload) {
+  const candidatos = [
+    payload?.amount,
+    payload?.total,
+    payload?.total_amount,
+    payload?.amount_cents,
+    payload?.paid_amount,
+    payload?.payment?.amount,
+    payload?.payment?.total,
+    payload?.payment?.amount_cents,
+    payload?.data?.amount,
+    payload?.data?.total,
+    payload?.data?.amount_cents,
+  ];
+
+  for (const valor of candidatos) {
+    if (valor === undefined || valor === null || valor === '') continue;
+    const n = Number(valor);
+    if (!Number.isFinite(n)) continue;
+    if (n > 0 && n < 1000 && Number.isInteger(n) === false) {
+      return Math.round(n * 100);
+    }
+    return Math.round(n);
+  }
+  return null;
+}
+
 const tagCommerceService = {
   async ensurePedidosSchema() {
     await ensureTagCommerceSchema();
@@ -47,6 +196,7 @@ const tagCommerceService = {
 
   async validarCarrinho(usuarioId, payload) {
     await ensureTagCommerceSchema();
+    const billing = normalizarBilling(payload.billing || {});
     const plano = normalizarPlano(payload.plan_slug);
     const orderType = payload.order_type === 'assinatura_recorrente' ? 'assinatura_recorrente' : 'compra_tag';
     const quantidadeTagsBase = Math.max(0, Number(payload.quantidade_tags || 0));
@@ -100,6 +250,7 @@ const tagCommerceService = {
       total_centavos: Math.max(0, subtotal - desconto),
       promo_code: promoCode,
       promo,
+      billing,
     };
   },
 
@@ -108,6 +259,7 @@ const tagCommerceService = {
     const carrinho = await this.validarCarrinho(usuarioId, payload);
     const snapshot = {
       carrinho,
+      billing: carrinho.billing,
       regra_renovacao: 'valid_until_novo = max(valid_until_atual, pago_em) + 30 dias',
       grace_hours: tagEntitlementService.graceHours(),
       created_at: new Date().toISOString(),
@@ -128,6 +280,16 @@ const tagCommerceService = {
         desconto_centavos: carrinho.desconto_centavos,
         total_centavos: carrinho.total_centavos,
         promo_code: carrinho.promo_code,
+        billing_name: carrinho.billing.billing_name,
+        billing_cpf_cnpj: carrinho.billing.billing_cpf_cnpj,
+        billing_phone: carrinho.billing.billing_phone,
+        billing_cep: carrinho.billing.billing_cep,
+        billing_logradouro: carrinho.billing.billing_logradouro,
+        billing_numero: carrinho.billing.billing_numero,
+        billing_complemento: carrinho.billing.billing_complemento,
+        billing_bairro: carrinho.billing.billing_bairro,
+        billing_cidade: carrinho.billing.billing_cidade,
+        billing_uf: carrinho.billing.billing_uf,
         snapshot_json: snapshot,
       },
       unidades
@@ -151,7 +313,11 @@ const tagCommerceService = {
     const checkout = await infinitePayService.criarCheckoutLink({
       orderNsu,
       itens: [{ description: descricao, quantity: 1, price: pedido.total_centavos }],
-      customer: { name: usuario.nome, email: usuario.email },
+      customer: {
+        name: pedido.billing_name || usuario.nome,
+        email: usuario.email,
+        phone_number: normalizarPhoneNumber(pedido.billing_phone),
+      },
       redirectUrl: retornoUrl,
       webhookUrl,
     });
@@ -172,6 +338,10 @@ const tagCommerceService = {
 
     const pedido = await TagProductOrder.buscarPorOrderNsu(orderNsu);
     if (!pedido) throw new Error('Pedido não encontrado para order_nsu informado.');
+    const { valorPedidoCentavos, paidAmountCentavos } = extrairValoresWebhook(payload);
+    const valorWebhook = Number.isFinite(valorPedidoCentavos)
+      ? valorPedidoCentavos
+      : extrairValorCentavosComFallback(payload);
 
     await PaymentEvent.registrar({
       order_id: pedido.id,
@@ -186,6 +356,13 @@ const tagCommerceService = {
 
     if (pedido.status === 'pago') {
       return { pedido, jaProcessado: true };
+    }
+
+    if (Number.isFinite(valorWebhook) && Number(valorWebhook) !== Number(pedido.total_centavos)) {
+      throw new Error('Valor recebido no webhook diverge do total do pedido.');
+    }
+    if (!Number.isFinite(valorWebhook) && Number.isFinite(paidAmountCentavos)) {
+      logger.warn('INFINITEPAY', `Webhook sem amount base comparável para order_nsu=${orderNsu}; paid_amount=${paidAmountCentavos}`);
     }
 
     const atualizado = await TagProductOrder.marcarPago(pedido.id, transactionNsu);

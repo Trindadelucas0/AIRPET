@@ -1,23 +1,42 @@
 <%- include('../partials/header') %>
+<%
+  function brl(cents) {
+    return `R$ ${(Number(cents || 0) / 100).toFixed(2).replace('.', ',')}`;
+  }
+  function featureLabel(key) {
+    return String(key || '')
+      .replace(/_/g, ' ')
+      .replace(/\b\w/g, function (l) { return l.toUpperCase(); });
+  }
+%>
 <main class="container mx-auto px-4 py-8">
-  <section class="rounded-3xl border border-slate-200 bg-white p-6 md:p-8">
+  <section class="rounded-3xl border border-slate-200 bg-white p-6 md:p-8 shadow-sm">
     <h1 class="text-3xl font-extrabold text-slate-900">Planos TAG AIRPET</h1>
-    <p class="mt-2 text-sm text-slate-600">Explorar permanece gratuito. Recursos premium ficam vinculados ao plano da TAG.</p>
+    <p class="mt-2 max-w-2xl text-sm text-slate-600">Escolha o plano ideal para o seu fluxo. O valor é recorrente a cada 30 dias e cada renovação soma prazo ao saldo atual.</p>
+    <div class="mt-4 flex flex-wrap gap-2">
+      <span class="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">Sem fidelidade</span>
+      <span class="rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700">Recursos premium por plano</span>
+      <span class="rounded-full bg-purple-100 px-3 py-1 text-xs font-semibold text-purple-700">Cobrança segura no checkout</span>
+    </div>
   </section>
 
   <section class="mt-6 grid gap-4 md:grid-cols-3">
     <% (planos || []).forEach(function(plano) { %>
-      <article class="rounded-2xl border border-slate-200 bg-white p-5">
-        <h2 class="text-xl font-bold text-slate-900"><%= plano.nome_exibicao %></h2>
-        <p class="mt-1 text-2xl font-extrabold text-primary-700">R$ <%= (Number(plano.mensalidade_centavos || 0) / 100).toFixed(2).replace('.', ',') %><span class="text-xs text-slate-500">/30 dias</span></p>
+      <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div class="flex items-center justify-between">
+          <h2 class="text-xl font-bold text-slate-900"><%= plano.nome_exibicao %></h2>
+          <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">30 dias</span>
+        </div>
+        <p class="mt-2 text-2xl font-extrabold text-primary-700"><%= brl(plano.mensalidade_centavos) %><span class="text-xs text-slate-500">/30 dias</span></p>
         <ul class="mt-4 space-y-2 text-sm text-slate-600">
           <% Object.entries(plano.features_json || {}).forEach(function(entry){ %>
             <li>
               <i class="fa-solid <%= entry[1] ? 'fa-circle-check text-emerald-600' : 'fa-circle-xmark text-slate-300' %> mr-2"></i>
-              <%= entry[0] %>
+              <%= featureLabel(entry[0]) %>
             </li>
           <% }) %>
         </ul>
+        <a href="/tags/loja-tag" class="mt-5 inline-flex rounded-lg bg-primary-600 px-4 py-2 text-xs font-semibold text-white hover:bg-primary-700">Escolher este plano</a>
       </article>
     <% }) %>
   </section>

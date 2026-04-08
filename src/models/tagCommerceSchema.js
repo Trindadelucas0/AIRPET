@@ -70,11 +70,44 @@ async function ensureTagCommerceSchema() {
           transaction_nsu VARCHAR(120),
           checkout_url TEXT,
           invoice_slug VARCHAR(160),
+          billing_name VARCHAR(150),
+          billing_cpf_cnpj VARCHAR(20),
+          billing_phone VARCHAR(30),
+          billing_cep VARCHAR(12),
+          billing_logradouro VARCHAR(160),
+          billing_numero VARCHAR(20),
+          billing_complemento VARCHAR(100),
+          billing_bairro VARCHAR(100),
+          billing_cidade VARCHAR(100),
+          billing_uf VARCHAR(2),
+          nfe_numero VARCHAR(40),
+          nfe_chave VARCHAR(64),
+          nfe_url_pdf TEXT,
+          nfe_emitida_em TIMESTAMPTZ,
+          admin_nf_obs TEXT,
           snapshot_json JSONB NOT NULL DEFAULT '{}'::jsonb,
           paid_at TIMESTAMPTZ,
           data_criacao TIMESTAMPTZ NOT NULL DEFAULT NOW(),
           data_atualizacao TIMESTAMPTZ
         )
+      `);
+      await query(`
+        ALTER TABLE tag_product_orders
+          ADD COLUMN IF NOT EXISTS billing_name VARCHAR(150),
+          ADD COLUMN IF NOT EXISTS billing_cpf_cnpj VARCHAR(20),
+          ADD COLUMN IF NOT EXISTS billing_phone VARCHAR(30),
+          ADD COLUMN IF NOT EXISTS billing_cep VARCHAR(12),
+          ADD COLUMN IF NOT EXISTS billing_logradouro VARCHAR(160),
+          ADD COLUMN IF NOT EXISTS billing_numero VARCHAR(20),
+          ADD COLUMN IF NOT EXISTS billing_complemento VARCHAR(100),
+          ADD COLUMN IF NOT EXISTS billing_bairro VARCHAR(100),
+          ADD COLUMN IF NOT EXISTS billing_cidade VARCHAR(100),
+          ADD COLUMN IF NOT EXISTS billing_uf VARCHAR(2),
+          ADD COLUMN IF NOT EXISTS nfe_numero VARCHAR(40),
+          ADD COLUMN IF NOT EXISTS nfe_chave VARCHAR(64),
+          ADD COLUMN IF NOT EXISTS nfe_url_pdf TEXT,
+          ADD COLUMN IF NOT EXISTS nfe_emitida_em TIMESTAMPTZ,
+          ADD COLUMN IF NOT EXISTS admin_nf_obs TEXT
       `);
       await query(`
         CREATE UNIQUE INDEX IF NOT EXISTS uq_tag_orders_order_nsu
@@ -84,6 +117,10 @@ async function ensureTagCommerceSchema() {
       await query(`
         CREATE INDEX IF NOT EXISTS idx_tag_orders_usuario_status
         ON tag_product_orders (usuario_id, status, data_criacao DESC)
+      `);
+      await query(`
+        CREATE INDEX IF NOT EXISTS idx_tag_orders_billing_document
+        ON tag_product_orders (billing_cpf_cnpj)
       `);
 
       await query(`

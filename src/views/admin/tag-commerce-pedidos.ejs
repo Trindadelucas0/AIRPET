@@ -1,0 +1,145 @@
+<% locals.titulo = 'Comércio TAG - Pedidos' %>
+<%- include('../partials/admin-layout') %>
+<%
+  const kpis = (resumo && resumo.kpis) || {};
+  const porPlano = (resumo && resumo.porPlano) || [];
+  const pendencias = (resumo && resumo.pendencias) || {};
+  function brl(cents) {
+    return `R$ ${(Number(cents || 0) / 100).toFixed(2).replace('.', ',')}`;
+  }
+%>
+<main class="flex-1 app-shell">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+    <header class="flex items-start justify-between gap-3">
+      <div>
+        <h1 class="text-2xl font-bold text-gray-900">Comércio TAG</h1>
+        <p class="text-sm text-gray-500 mt-1">Controle completo de pedidos, faturamento e alocação de tags.</p>
+      </div>
+      <a href="/tags/admin/commerce/cupons" class="inline-flex items-center gap-2 rounded-lg bg-primary-500 px-3 py-2 text-sm font-semibold text-white hover:bg-primary-600">
+        <i class="fa-solid fa-ticket"></i> Gerenciar cupons
+      </a>
+    </header>
+
+    <section class="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <article class="card">
+        <p class="text-xs text-gray-500 uppercase tracking-wide">Receita paga</p>
+        <p class="mt-2 text-2xl font-bold text-gray-900"><%= brl(kpis.receita_centavos) %></p>
+      </article>
+      <article class="card">
+        <p class="text-xs text-gray-500 uppercase tracking-wide">Pedidos</p>
+        <p class="mt-2 text-2xl font-bold text-gray-900"><%= Number(kpis.total_pedidos || 0) %></p>
+      </article>
+      <article class="card">
+        <p class="text-xs text-gray-500 uppercase tracking-wide">Aguardando pagamento</p>
+        <p class="mt-2 text-2xl font-bold text-amber-600"><%= Number(kpis.aguardando_pagamento || 0) %></p>
+      </article>
+      <article class="card">
+        <p class="text-xs text-gray-500 uppercase tracking-wide">Tags pendentes</p>
+        <p class="mt-2 text-2xl font-bold text-red-600"><%= Number(pendencias.tags_pendentes_alocacao || 0) %></p>
+      </article>
+    </section>
+
+    <section class="card">
+      <h2 class="text-base font-semibold text-gray-900 mb-3">Desempenho por plano</h2>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="border-b border-gray-100 text-gray-500">
+              <th class="pb-2 text-left font-medium">Plano</th>
+              <th class="pb-2 text-left font-medium">Pedidos</th>
+              <th class="pb-2 text-left font-medium">Pagos</th>
+              <th class="pb-2 text-left font-medium">Receita</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% if (!porPlano.length) { %>
+              <tr><td colspan="4" class="py-3 text-gray-400">Sem dados para o período.</td></tr>
+            <% } %>
+            <% porPlano.forEach(function(item) { %>
+              <tr class="border-b border-gray-50">
+                <td class="py-2 font-medium text-gray-800"><%= item.plan_slug %></td>
+                <td class="py-2"><%= item.pedidos %></td>
+                <td class="py-2"><%= item.pagos %></td>
+                <td class="py-2"><%= brl(item.receita_centavos) %></td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card">
+      <form method="GET" action="/tags/admin/commerce/pedidos" class="grid grid-cols-1 md:grid-cols-5 gap-3 items-end">
+        <label class="text-sm">
+          <span class="block text-gray-600 mb-1">Status</span>
+          <select name="status" class="w-full rounded-lg border border-gray-300 px-3 py-2">
+            <option value="">Todos</option>
+            <option value="aguardando_pagamento" <%= filtros.status === 'aguardando_pagamento' ? 'selected' : '' %>>Aguardando pagamento</option>
+            <option value="pago" <%= filtros.status === 'pago' ? 'selected' : '' %>>Pago</option>
+          </select>
+        </label>
+        <label class="text-sm">
+          <span class="block text-gray-600 mb-1">Plano</span>
+          <select name="plan_slug" class="w-full rounded-lg border border-gray-300 px-3 py-2">
+            <option value="">Todos</option>
+            <% (planos || []).forEach(function(plano) { %>
+              <option value="<%= plano.slug %>" <%= filtros.plan_slug === plano.slug ? 'selected' : '' %>><%= plano.nome_exibicao %></option>
+            <% }) %>
+          </select>
+        </label>
+        <label class="text-sm">
+          <span class="block text-gray-600 mb-1">Data inicial</span>
+          <input type="date" name="data_inicio" value="<%= filtros.data_inicio %>" class="w-full rounded-lg border border-gray-300 px-3 py-2">
+        </label>
+        <label class="text-sm">
+          <span class="block text-gray-600 mb-1">Data final</span>
+          <input type="date" name="data_fim" value="<%= filtros.data_fim %>" class="w-full rounded-lg border border-gray-300 px-3 py-2">
+        </label>
+        <button type="submit" class="rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white hover:bg-gray-700">Filtrar</button>
+      </form>
+    </section>
+
+    <section class="card">
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="border-b border-gray-100 text-gray-500">
+              <th class="pb-2 text-left font-medium">Pedido</th>
+              <th class="pb-2 text-left font-medium">Cliente</th>
+              <th class="pb-2 text-left font-medium">Plano</th>
+              <th class="pb-2 text-left font-medium">Tipo</th>
+              <th class="pb-2 text-left font-medium">Status</th>
+              <th class="pb-2 text-left font-medium">Total</th>
+              <th class="pb-2 text-left font-medium">Criado em</th>
+              <th class="pb-2 text-left font-medium"></th>
+            </tr>
+          </thead>
+          <tbody>
+            <% if (!(pedidos || []).length) { %>
+              <tr><td colspan="8" class="py-5 text-gray-400">Nenhum pedido encontrado para os filtros informados.</td></tr>
+            <% } %>
+            <% (pedidos || []).forEach(function(pedido) { %>
+              <tr class="border-b border-gray-50 hover:bg-gray-50/70">
+                <td class="py-2 font-semibold text-gray-900">#<%= pedido.id %></td>
+                <td class="py-2">
+                  <div class="font-medium text-gray-800"><%= pedido.usuario_nome %></div>
+                  <div class="text-xs text-gray-500"><%= pedido.usuario_email %></div>
+                </td>
+                <td class="py-2"><%= pedido.plan_slug %></td>
+                <td class="py-2"><%= pedido.order_type %></td>
+                <td class="py-2">
+                  <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold <%= pedido.status === 'pago' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700' %>"><%= pedido.status %></span>
+                </td>
+                <td class="py-2 font-medium"><%= brl(pedido.total_centavos) %></td>
+                <td class="py-2 text-gray-500"><%= pedido.data_criacao ? new Date(pedido.data_criacao).toLocaleString('pt-BR') : '-' %></td>
+                <td class="py-2">
+                  <a class="text-primary-600 hover:text-primary-800 font-medium" href="/tags/admin/commerce/pedidos/<%= pedido.id %>">Detalhes</a>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+</main>

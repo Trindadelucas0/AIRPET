@@ -1,0 +1,101 @@
+<% locals.titulo = 'Comércio TAG - Cupons' %>
+<%- include('../partials/admin-layout') %>
+<main class="flex-1 app-shell">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+    <header class="flex items-start justify-between">
+      <div>
+        <h1 class="text-2xl font-bold text-gray-900">Cupons de desconto</h1>
+        <p class="text-sm text-gray-500 mt-1">Crie campanhas e controle limites de uso por usuário e no total.</p>
+      </div>
+      <a href="/tags/admin/commerce/pedidos" class="text-sm font-semibold text-primary-600 hover:text-primary-800">Voltar para pedidos</a>
+    </header>
+
+    <section class="card">
+      <h2 class="text-base font-semibold text-gray-900 mb-3">Novo cupom</h2>
+      <form method="POST" action="/tags/admin/commerce/cupons" class="grid grid-cols-1 md:grid-cols-4 gap-3">
+        <label class="text-sm">
+          <span class="block text-gray-600 mb-1">Código</span>
+          <input type="text" name="codigo" maxlength="40" required class="w-full rounded-lg border border-gray-300 px-3 py-2 uppercase" placeholder="AIRPET10">
+        </label>
+        <label class="text-sm">
+          <span class="block text-gray-600 mb-1">Tipo</span>
+          <select name="tipo" class="w-full rounded-lg border border-gray-300 px-3 py-2">
+            <option value="percentual">% percentual</option>
+            <option value="fixo">Valor fixo (centavos)</option>
+          </select>
+        </label>
+        <label class="text-sm">
+          <span class="block text-gray-600 mb-1">Valor</span>
+          <input type="number" min="1" name="valor" required class="w-full rounded-lg border border-gray-300 px-3 py-2">
+        </label>
+        <label class="text-sm flex items-center gap-2 mt-6">
+          <input type="checkbox" name="ativo" checked>
+          <span>Ativo</span>
+        </label>
+        <label class="text-sm">
+          <span class="block text-gray-600 mb-1">Início</span>
+          <input type="datetime-local" name="valid_from" class="w-full rounded-lg border border-gray-300 px-3 py-2">
+        </label>
+        <label class="text-sm">
+          <span class="block text-gray-600 mb-1">Fim</span>
+          <input type="datetime-local" name="valid_until" class="w-full rounded-lg border border-gray-300 px-3 py-2">
+        </label>
+        <label class="text-sm">
+          <span class="block text-gray-600 mb-1">Máx. usos global</span>
+          <input type="number" min="1" name="max_usos_global" class="w-full rounded-lg border border-gray-300 px-3 py-2">
+        </label>
+        <label class="text-sm">
+          <span class="block text-gray-600 mb-1">Máx. usos por usuário</span>
+          <input type="number" min="1" name="max_usos_por_usuario" class="w-full rounded-lg border border-gray-300 px-3 py-2">
+        </label>
+        <div class="md:col-span-4">
+          <button type="submit" class="rounded-lg bg-primary-500 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-600">Criar cupom</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="card">
+      <h2 class="text-base font-semibold text-gray-900 mb-3">Cupons existentes</h2>
+      <div class="space-y-4">
+        <% if (!(cupons || []).length) { %>
+          <p class="text-sm text-gray-400">Nenhum cupom cadastrado.</p>
+        <% } %>
+        <% (cupons || []).forEach(function(cupom) { %>
+          <form method="POST" action="/tags/admin/commerce/cupons/<%= cupom.id %>" class="rounded-xl border border-gray-200 p-4">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <p class="text-sm font-bold text-gray-900"><%= cupom.codigo %></p>
+                <p class="text-xs text-gray-500"><%= cupom.tipo %> • valor <%= cupom.valor %></p>
+              </div>
+              <label class="text-sm flex items-center gap-2">
+                <input type="checkbox" name="ativo" <%= cupom.ativo ? 'checked' : '' %>>
+                <span>Ativo</span>
+              </label>
+            </div>
+            <div class="mt-3 grid grid-cols-1 md:grid-cols-4 gap-3">
+              <label class="text-sm">
+                <span class="block text-gray-600 mb-1">Início</span>
+                <input type="datetime-local" name="valid_from" value="<%= cupom.valid_from ? new Date(cupom.valid_from).toISOString().slice(0, 16) : '' %>" class="w-full rounded-lg border border-gray-300 px-3 py-2">
+              </label>
+              <label class="text-sm">
+                <span class="block text-gray-600 mb-1">Fim</span>
+                <input type="datetime-local" name="valid_until" value="<%= cupom.valid_until ? new Date(cupom.valid_until).toISOString().slice(0, 16) : '' %>" class="w-full rounded-lg border border-gray-300 px-3 py-2">
+              </label>
+              <label class="text-sm">
+                <span class="block text-gray-600 mb-1">Máx. global</span>
+                <input type="number" min="1" name="max_usos_global" value="<%= cupom.max_usos_global || '' %>" class="w-full rounded-lg border border-gray-300 px-3 py-2">
+              </label>
+              <label class="text-sm">
+                <span class="block text-gray-600 mb-1">Máx. por usuário</span>
+                <input type="number" min="1" name="max_usos_por_usuario" value="<%= cupom.max_usos_por_usuario || '' %>" class="w-full rounded-lg border border-gray-300 px-3 py-2">
+              </label>
+            </div>
+            <div class="mt-3">
+              <button type="submit" class="rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white hover:bg-gray-700">Salvar alterações</button>
+            </div>
+          </form>
+        <% }) %>
+      </div>
+    </section>
+  </div>
+</main>

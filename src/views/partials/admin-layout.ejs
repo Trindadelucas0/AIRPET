@@ -67,8 +67,14 @@
       <a href="<%= adminPath %>/moderacao" class="px-3 py-2 rounded-lg text-sm font-medium transition-colors <%= p === '/moderacao' ? 'active' : 'text-gray-600' %>">
         <i class="fa-solid fa-comment-dots mr-1.5 w-4"></i>Moderação
       </a>
-      <a href="/tags/admin/lista" class="px-3 py-2 rounded-lg text-sm font-medium transition-colors <%= p.includes('/tags') ? 'active' : 'text-gray-600 hover:bg-gray-50' %>">
+      <a href="/tags/admin/lista" class="px-3 py-2 rounded-lg text-sm font-medium transition-colors <%= p === 'tags' ? 'active' : 'text-gray-600 hover:bg-gray-50' %>">
         <i class="fa-solid fa-tag mr-1.5 w-4"></i>Tags
+      </a>
+      <a href="/tags/admin/commerce/pedidos" class="px-3 py-2 rounded-lg text-sm font-medium transition-colors <%= p === '/tags-commerce' ? 'active' : 'text-gray-600 hover:bg-gray-50' %>">
+        <i class="fa-solid fa-cart-shopping mr-1.5 w-4"></i>Pedidos TAG
+      </a>
+      <a href="/tags/admin/commerce/cupons" class="px-3 py-2 rounded-lg text-sm font-medium transition-colors <%= p === '/tags-commerce-coupons' ? 'active' : 'text-gray-600 hover:bg-gray-50' %>">
+        <i class="fa-solid fa-ticket mr-1.5 w-4"></i>Cupons TAG
       </a>
       <a href="<%= adminPath %>/gerenciar-mapa" class="px-3 py-2 rounded-lg text-sm font-medium transition-colors <%= p === '/gerenciar-mapa' ? 'active' : 'text-gray-600' %>">
         <i class="fa-solid fa-map-location-dot mr-1.5 w-4"></i>Mapa

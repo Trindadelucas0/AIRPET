@@ -38,6 +38,12 @@ router.post('/admin/:id/reservar', estaAutenticado, apenasAdmin, ...validarTagRe
 router.post('/admin/:id/enviar', estaAutenticado, apenasAdmin, ...validarTagEnviarBloquear, validarResultado, tagController.enviar);
 router.post('/admin/:id/bloquear', estaAutenticado, apenasAdmin, ...validarTagEnviarBloquear, validarResultado, tagController.bloquear);
 router.post('/admin/:id/desbloquear', estaAutenticado, apenasAdmin, ...validarTagEnviarBloquear, validarResultado, tagController.desbloquear);
+router.get('/admin/commerce/pedidos', estaAutenticado, apenasAdmin, tagCommerceController.adminListarPedidos);
+router.get('/admin/commerce/pedidos/:id', estaAutenticado, apenasAdmin, tagCommerceController.adminDetalhePedido);
+router.post('/admin/commerce/pedidos/:id/nf', estaAutenticado, apenasAdmin, tagCommerceController.adminSalvarNotaFiscal);
+router.get('/admin/commerce/cupons', estaAutenticado, apenasAdmin, tagCommerceController.adminListarCupons);
+router.post('/admin/commerce/cupons', estaAutenticado, apenasAdmin, tagCommerceController.adminCriarCupom);
+router.post('/admin/commerce/cupons/:id', estaAutenticado, apenasAdmin, tagCommerceController.adminAtualizarCupom);
 
 // --- Rotas comerciais TAG (venda, pedidos, assinatura) ---
 router.get('/loja-tag', tagCommerceController.mostrarLoja);

@@ -1,0 +1,101 @@
+<% locals.titulo = `Pedido TAG #${pedido.id}` %>
+<%- include('../partials/admin-layout') %>
+<%
+  function brl(cents) {
+    return `R$ ${(Number(cents || 0) / 100).toFixed(2).replace('.', ',')}`;
+  }
+%>
+<main class="flex-1 app-shell">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+    <header class="flex items-center justify-between">
+      <div>
+        <h1 class="text-2xl font-bold text-gray-900">Pedido #<%= pedido.id %></h1>
+        <p class="text-sm text-gray-500 mt-1"><%= pedido.usuario_nome %> • <%= pedido.usuario_email %></p>
+      </div>
+      <a href="/tags/admin/commerce/pedidos" class="text-sm font-semibold text-primary-600 hover:text-primary-800">Voltar para pedidos</a>
+    </header>
+
+    <section class="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <article class="card"><p class="text-xs text-gray-500">Status</p><p class="mt-1 text-lg font-bold"><%= pedido.status %></p></article>
+      <article class="card"><p class="text-xs text-gray-500">Plano</p><p class="mt-1 text-lg font-bold"><%= pedido.plan_slug %></p></article>
+      <article class="card"><p class="text-xs text-gray-500">Tipo</p><p class="mt-1 text-lg font-bold"><%= pedido.order_type %></p></article>
+      <article class="card"><p class="text-xs text-gray-500">Total</p><p class="mt-1 text-lg font-bold"><%= brl(pedido.total_centavos) %></p></article>
+    </section>
+
+    <section class="card">
+      <h2 class="text-base font-semibold text-gray-900 mb-3">Dados fiscais do comprador</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+        <p><span class="text-gray-500">Nome:</span> <span class="font-medium text-gray-800"><%= pedido.billing_name || '-' %></span></p>
+        <p><span class="text-gray-500">CPF/CNPJ:</span> <span class="font-medium text-gray-800"><%= pedido.billing_cpf_cnpj || '-' %></span></p>
+        <p><span class="text-gray-500">Telefone:</span> <span class="font-medium text-gray-800"><%= pedido.billing_phone || '-' %></span></p>
+        <p><span class="text-gray-500">CEP:</span> <span class="font-medium text-gray-800"><%= pedido.billing_cep || '-' %></span></p>
+        <p class="md:col-span-2">
+          <span class="text-gray-500">Endereço:</span>
+          <span class="font-medium text-gray-800">
+            <%= [pedido.billing_logradouro, pedido.billing_numero, pedido.billing_complemento, pedido.billing_bairro, pedido.billing_cidade, pedido.billing_uf].filter(Boolean).join(', ') || '-' %>
+          </span>
+        </p>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2 class="text-base font-semibold text-gray-900 mb-3">Nota fiscal</h2>
+      <form method="POST" action="/tags/admin/commerce/pedidos/<%= pedido.id %>/nf" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <label class="text-sm">
+          <span class="block text-gray-600 mb-1">Número NF</span>
+          <input type="text" name="nfe_numero" value="<%= pedido.nfe_numero || '' %>" class="w-full rounded-lg border border-gray-300 px-3 py-2">
+        </label>
+        <label class="text-sm">
+          <span class="block text-gray-600 mb-1">Chave de acesso</span>
+          <input type="text" name="nfe_chave" value="<%= pedido.nfe_chave || '' %>" class="w-full rounded-lg border border-gray-300 px-3 py-2">
+        </label>
+        <label class="text-sm">
+          <span class="block text-gray-600 mb-1">URL PDF da NF</span>
+          <input type="url" name="nfe_url_pdf" value="<%= pedido.nfe_url_pdf || '' %>" class="w-full rounded-lg border border-gray-300 px-3 py-2">
+        </label>
+        <label class="text-sm">
+          <span class="block text-gray-600 mb-1">Emitida em</span>
+          <input type="datetime-local" name="nfe_emitida_em" value="<%= pedido.nfe_emitida_em ? new Date(pedido.nfe_emitida_em).toISOString().slice(0, 16) : '' %>" class="w-full rounded-lg border border-gray-300 px-3 py-2">
+        </label>
+        <label class="text-sm md:col-span-2">
+          <span class="block text-gray-600 mb-1">Observações internas</span>
+          <textarea name="admin_nf_obs" rows="3" class="w-full rounded-lg border border-gray-300 px-3 py-2"><%= pedido.admin_nf_obs || '' %></textarea>
+        </label>
+        <div class="md:col-span-2">
+          <button type="submit" class="rounded-lg bg-primary-500 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-600">Salvar dados fiscais</button>
+        </div>
+      </form>
+    </section>
+
+    <% if (pedido.order_type !== 'assinatura_recorrente') { %>
+      <section class="card">
+        <h2 class="text-base font-semibold text-gray-900 mb-3">Unidades e alocação de tags</h2>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="border-b border-gray-100 text-gray-500">
+                <th class="pb-2 text-left font-medium">Unidade</th>
+                <th class="pb-2 text-left font-medium">Pet</th>
+                <th class="pb-2 text-left font-medium">Status personalização</th>
+                <th class="pb-2 text-left font-medium">Tag física</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% (unidades || []).forEach(function(u) { %>
+                <tr class="border-b border-gray-50">
+                  <td class="py-2">#<%= u.sequencia %></td>
+                  <td class="py-2"><%= u.pet_nome || '-' %></td>
+                  <td class="py-2"><%= u.personalization_status || '-' %></td>
+                  <td class="py-2"><%= u.tag_code ? `${u.tag_code} (${u.nfc_status})` : 'Não alocada' %></td>
+                </tr>
+              <% }) %>
+              <% if (!(unidades || []).length) { %>
+                <tr><td colspan="4" class="py-3 text-gray-400">Sem unidades neste pedido.</td></tr>
+              <% } %>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    <% } %>
+  </div>
+</main>
