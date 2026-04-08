@@ -59,7 +59,7 @@ router.post(
   tagCommerceController.personalizarUnidade
 );
 router.post('/pagamentos/webhook/infinitepay', tagCommerceController.webhookInfinitePay);
-router.get('/pagamentos/retorno', estaAutenticado, tagCommerceController.retornoPagamento);
+router.get('/pagamentos/retorno', tagCommerceController.retornoPagamento);
 router.get('/premium/estado', estaAutenticado, tagEntitlementService.requirePlanoAtivo.bind(tagEntitlementService), (req, res) => {
   return res.json({ ok: true, entitlement: req.tagEntitlement });
 });

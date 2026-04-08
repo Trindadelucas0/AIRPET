@@ -44,20 +44,68 @@ function parseIsoInicioDoDia(yyyyMmDd) {
 }
 
 function assinaturaConfere(req, secret) {
-  const assinatura = String(
+  const assinaturaRaw = String(
     req.get('x-infinitepay-signature')
     || req.get('x-infinitypay-signature')
+    || req.get('x-signature-hmac-sha256')
     || req.get('x-signature')
     || ''
   );
-  if (!assinatura) return false;
+  if (!assinaturaRaw) return false;
+
+  const rawBody = Buffer.isBuffer(req.rawBody)
+    ? req.rawBody
+    : Buffer.from(typeof req.rawBody === 'string' ? req.rawBody : JSON.stringify(req.body || {}));
+
+  const assinatura = assinaturaRaw.replace(/^sha256=/i, '').trim();
+  const secretBuffer = Buffer.from(String(secret));
+
+  // Compatibilidade com configuração legada: assinatura igual ao segredo.
   try {
-    const a = Buffer.from(assinatura);
-    const b = Buffer.from(secret);
-    if (a.length !== b.length) return false;
-    return crypto.timingSafeEqual(a, b);
+    const assinaturaBuffer = Buffer.from(assinatura);
+    if (assinaturaBuffer.length === secretBuffer.length && crypto.timingSafeEqual(assinaturaBuffer, secretBuffer)) {
+      return true;
+    }
   } catch {
-    return false;
+    // segue para a validação por HMAC
+  }
+
+  const hmacHex = crypto.createHmac('sha256', String(secret)).update(rawBody).digest('hex');
+  const hmacB64 = crypto.createHmac('sha256', String(secret)).update(rawBody).digest('base64');
+  const candidatos = [hmacHex, hmacB64, `sha256=${hmacHex}`, `sha256=${hmacB64}`];
+  return candidatos.some((expected) => {
+    try {
+      const a = Buffer.from(assinaturaRaw.trim());
+      const b = Buffer.from(expected);
+      return a.length === b.length && crypto.timingSafeEqual(a, b);
+    } catch {
+      return false;
+    }
+  });
+}
+
+function clientIp(req) {
+  return req.get('x-forwarded-for') || req.ip || req.socket?.remoteAddress || 'desconhecido';
+}
+
+function toReturnUrl(path, fallback = '/tags/pedidos') {
+  if (typeof path !== 'string') return fallback;
+  const clean = path.trim();
+  if (clean.startsWith('/') && !clean.startsWith('//')) return clean;
+  return fallback;
+}
+
+async function tentarConfirmarNoRetorno(req, pedido) {
+  try {
+    const confirmed = await tagCommerceService.confirmarPagamentoNoRetorno({
+      pedido,
+      transactionNsu: req.query.transaction_nsu || req.query.transactionNsu || null,
+      slug: req.query.slug || req.query.invoice_slug || null,
+    });
+    return confirmed;
+  } catch (err) {
+    logger.warn('INFINITEPAY', `payment_check falhou pedido_id=${pedido.id} motivo=${err.message}`);
+    return { confirmado: false, motivo: 'erro_payment_check' };
   }
 }
 
@@ -238,14 +286,24 @@ const tagCommerceController = {
   },
 
   async webhookInfinitePay(req, res) {
+    const ip = clientIp(req);
     try {
       const secret = process.env.INFINITEPAY_WEBHOOK_SECRET;
       if (secret && !assinaturaConfere(req, secret)) {
+        logger.warn('INFINITEPAY', `Webhook rejeitado por assinatura inválida ip=${ip}`);
         return res.status(401).json({ ok: false, message: 'assinatura inválida' });
       }
       const out = await tagCommerceService.processarPagamentoWebhook(req.body || {});
+      logger.info(
+        'INFINITEPAY',
+        `Webhook processado com sucesso ip=${ip} pedido_id=${out.pedido?.id || 'n/a'} ja_processado=${out.jaProcessado ? '1' : '0'}`
+      );
       return res.json({ ok: true, pedido_id: out.pedido?.id, ja_processado: out.jaProcessado });
     } catch (err) {
+      logger.warn(
+        'INFINITEPAY',
+        `Webhook falhou ip=${ip} status=500 detalhe=${String(err.message || 'erro_desconhecido').slice(0, 240)}`
+      );
       logger.error('TagCommerceController', 'Erro no webhook InfinitePay', err);
       return res.status(500).json({ ok: false, message: err.message || 'Erro no webhook.' });
     }
@@ -258,11 +316,36 @@ const tagCommerceController = {
         req.session.flash = { tipo: 'erro', mensagem: 'Pagamento retornou sem pedido válido.' };
         return res.redirect('/tags/pedidos');
       }
+      const returnUrl = toReturnUrl(req.query.returnUrl, `/tags/pedidos/${pedidoId}`);
+      const hasUser = Boolean(req.session?.usuario?.id);
+
+      if (!hasUser) {
+        const nextUrl = toReturnUrl(req.originalUrl, `/tags/pagamentos/retorno?pedido_id=${pedidoId}`);
+        return res.redirect(`/auth/login?returnUrl=${encodeURIComponent(nextUrl)}`);
+      }
+
+      const pedido = await TagProductOrder.buscarPorIdEUsuario(pedidoId, req.session.usuario.id);
+      if (!pedido) {
+        req.session.flash = { tipo: 'erro', mensagem: 'Pedido não encontrado para esta conta.' };
+        return res.redirect('/tags/pedidos');
+      }
+
+      if (pedido.status !== 'pago') {
+        const confirmacao = await tentarConfirmarNoRetorno(req, pedido);
+        if (confirmacao.confirmado) {
+          req.session.flash = {
+            tipo: 'sucesso',
+            mensagem: 'Pagamento confirmado e pedido atualizado com sucesso.',
+          };
+          return res.redirect(returnUrl);
+        }
+      }
+
       req.session.flash = {
         tipo: 'sucesso',
         mensagem: 'Retorno do pagamento recebido. Confira o status atualizado do seu pedido.',
       };
-      return res.redirect(`/tags/pedidos/${pedidoId}`);
+      return res.redirect(returnUrl);
     } catch (err) {
       logger.error('TagCommerceController', 'Erro no retorno de pagamento', err);
       req.session.flash = { tipo: 'erro', mensagem: 'Erro ao confirmar retorno do pagamento.' };

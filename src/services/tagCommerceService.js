@@ -175,6 +175,51 @@ function extrairValorCentavosComFallback(payload) {
   return null;
 }
 
+function normalizarBaseUrlPublica() {
+  const raw = String(process.env.BASE_URL || '').trim();
+  if (!raw) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('BASE_URL não configurada. Defina uma URL pública HTTPS para checkout/webhook.');
+    }
+    return 'http://localhost:3000';
+  }
+  let parsed;
+  try {
+    parsed = new URL(raw);
+  } catch {
+    throw new Error('BASE_URL inválida. Use uma URL absoluta, ex.: https://airpet.seuregistroonline.com.br');
+  }
+  if (!/^https?:$/i.test(parsed.protocol)) {
+    throw new Error('BASE_URL inválida. O protocolo deve ser http:// ou https://.');
+  }
+  if (process.env.NODE_ENV === 'production' && parsed.protocol !== 'https:') {
+    throw new Error('BASE_URL em produção precisa usar HTTPS.');
+  }
+  const normalized = `${parsed.protocol}//${parsed.host}${parsed.pathname || ''}`.replace(/\/+$/, '');
+  return normalized || `${parsed.protocol}//${parsed.host}`;
+}
+
+function resolveCheckoutUrls(pedidoId) {
+  const base = normalizarBaseUrlPublica();
+  const webhookOverride = String(process.env.INFINITEPAY_WEBHOOK_URL || '').trim();
+  const redirectOverride = String(process.env.INFINITEPAY_REDIRECT_URL || '').trim();
+
+  const webhookBase = webhookOverride || `${base}/tags/pagamentos/webhook/infinitepay`;
+  const redirectBase = redirectOverride || `${base}/tags/pagamentos/retorno`;
+
+  let webhookUrl;
+  let redirectUrl;
+  try {
+    webhookUrl = new URL(webhookBase).toString();
+    const redirectParsed = new URL(redirectBase);
+    redirectParsed.searchParams.set('pedido_id', String(pedidoId));
+    redirectUrl = redirectParsed.toString();
+  } catch {
+    throw new Error('URL de checkout inválida. Verifique BASE_URL/INFINITEPAY_WEBHOOK_URL/INFINITEPAY_REDIRECT_URL.');
+  }
+  return { webhookUrl, redirectUrl };
+}
+
 const tagCommerceService = {
   async ensurePedidosSchema() {
     await ensureTagCommerceSchema();
@@ -304,8 +349,7 @@ const tagCommerceService = {
 
   async criarCheckout(usuario, pedido) {
     const orderNsu = infinitePayService.gerarOrderNsu('tag');
-    const retornoUrl = `${process.env.BASE_URL || ''}/tags/pagamentos/retorno?pedido_id=${pedido.id}`;
-    const webhookUrl = `${process.env.BASE_URL || ''}/tags/pagamentos/webhook/infinitepay`;
+    const { redirectUrl, webhookUrl } = resolveCheckoutUrls(pedido.id);
     const descricao = pedido.order_type === 'assinatura_recorrente'
       ? `Assinatura TAG ${pedido.plan_slug}`
       : `TAG NFC (${pedido.quantidade_tags} unidade(s)) + assinatura ${pedido.plan_slug}`;
@@ -318,7 +362,7 @@ const tagCommerceService = {
         email: usuario.email,
         phone_number: normalizarPhoneNumber(pedido.billing_phone),
       },
-      redirectUrl: retornoUrl,
+      redirectUrl,
       webhookUrl,
     });
 
@@ -328,6 +372,30 @@ const tagCommerceService = {
       checkout.checkout_url,
       checkout.invoice_slug
     );
+  },
+
+  async confirmarPagamentoNoRetorno({ pedido, transactionNsu, slug }) {
+    if (!pedido || !pedido.infinitepay_order_nsu) {
+      return { confirmado: false, motivo: 'pedido_sem_order_nsu' };
+    }
+    const check = await infinitePayService.checarPagamentoCheckout({
+      orderNsu: pedido.infinitepay_order_nsu,
+      transactionNsu: transactionNsu || pedido.transaction_nsu || null,
+      slug: slug || pedido.invoice_slug || null,
+    });
+    if (!check.ok || !check.paid) {
+      return { confirmado: false, motivo: check.status || 'nao_pago', check };
+    }
+    const payload = {
+      order_nsu: pedido.infinitepay_order_nsu,
+      transaction_nsu: check.transactionNsu || transactionNsu || pedido.transaction_nsu || null,
+      amount: Number(pedido.total_centavos),
+      payment_check: true,
+      status: check.status || 'paid',
+      raw_payment_check: check.raw || {},
+    };
+    const out = await this.processarPagamentoWebhook(payload);
+    return { confirmado: true, check, out };
   },
 
   async processarPagamentoWebhook(payload) {

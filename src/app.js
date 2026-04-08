@@ -68,7 +68,13 @@ function createApplication() {
 
   app.use(logger.requestLogger());
   app.use(accessMetricsMiddleware);
-  app.use(express.json());
+  app.use(express.json({
+    verify: (req, _res, buf) => {
+      if (buf && buf.length > 0) {
+        req.rawBody = Buffer.from(buf);
+      }
+    },
+  }));
   app.use(express.urlencoded({ extended: true }));
   app.use(methodOverride('_method'));
   app.use(cookieParser());

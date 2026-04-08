@@ -3,6 +3,7 @@ const logger = require('../utils/logger');
 
 const API_BASE = process.env.INFINITEPAY_API_BASE || 'https://api.infinitepay.io';
 const CHECKOUT_PATH = '/invoices/public/checkout/links';
+const PAYMENT_CHECK_PATH = '/invoices/public/checkout/payment_check';
 
 function centavosToNumber(v) {
   const n = Number(v);
@@ -26,6 +27,23 @@ function sanitizeCustomer(customer) {
   return Object.keys(out).length ? out : undefined;
 }
 
+function sanitizeUrlForLogs(raw) {
+  try {
+    const u = new URL(String(raw || ''));
+    return `${u.protocol}//${u.host}${u.pathname}`;
+  } catch {
+    return String(raw || '');
+  }
+}
+
+function parseResponseTextAsJson(text) {
+  try {
+    return text ? JSON.parse(text) : {};
+  } catch {
+    return { raw_text: text };
+  }
+}
+
 async function postCheckout({ payload, token, withAuth }) {
   const headers = { 'Content-Type': 'application/json' };
   if (withAuth && token) headers.Authorization = `Bearer ${token}`;
@@ -37,14 +55,67 @@ async function postCheckout({ payload, token, withAuth }) {
   });
 
   const text = await response.text();
-  let data = {};
-  try {
-    data = text ? JSON.parse(text) : {};
-  } catch {
-    data = { raw_text: text };
-  }
+  const data = parseResponseTextAsJson(text);
 
   return { response, data };
+}
+
+async function postPaymentCheck({ payload, token, withAuth }) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (withAuth && token) headers.Authorization = `Bearer ${token}`;
+
+  const response = await fetch(`${API_BASE}${PAYMENT_CHECK_PATH}`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(payload),
+  });
+
+  const text = await response.text();
+  const data = parseResponseTextAsJson(text);
+  return { response, data };
+}
+
+function inferPaidState(data) {
+  const statusCandidates = [
+    data?.status,
+    data?.payment_status,
+    data?.invoice_status,
+    data?.payment?.status,
+    data?.data?.status,
+  ].filter(Boolean).map((v) => String(v).trim().toLowerCase());
+
+  const paidFlags = [
+    data?.paid,
+    data?.is_paid,
+    data?.payment?.paid,
+    data?.data?.paid,
+  ];
+
+  const paidByFlag = paidFlags.some((v) => v === true || v === 'true' || v === 1 || v === '1');
+  const paidByStatus = statusCandidates.some((s) => (
+    s.includes('paid')
+    || s.includes('approved')
+    || s.includes('confirm')
+    || s.includes('complete')
+    || s.includes('success')
+    || s === 'done'
+  ));
+
+  const transactionNsu = (
+    data?.transaction_nsu
+    || data?.transactionNsu
+    || data?.payment?.transaction_nsu
+    || data?.payment?.transactionNsu
+    || data?.data?.transaction_nsu
+    || data?.data?.transactionNsu
+    || null
+  );
+
+  return {
+    paid: Boolean(paidByFlag || paidByStatus),
+    transactionNsu,
+    status: statusCandidates[0] || null,
+  };
 }
 
 const infinitePayService = {
@@ -109,7 +180,17 @@ const infinitePayService = {
         data,
         tentativa: tentativa.nome,
       };
-      logger.warn('INFINITEPAY', `Falha ao criar checkout (${tentativa.nome}) status=${response.status}`);
+      const resumoErro = (
+        data?.message
+        || data?.error
+        || data?.details
+        || data?.raw_text
+        || 'sem detalhe'
+      );
+      logger.warn(
+        'INFINITEPAY',
+        `Falha ao criar checkout (${tentativa.nome}) status=${response.status} order_nsu=${orderNsu} redirect_url=${sanitizeUrlForLogs(redirectUrl)} webhook_url=${sanitizeUrlForLogs(webhookUrl)} detalhe=${String(resumoErro).slice(0, 240)}`
+      );
     }
 
     const err = new Error(
@@ -121,6 +202,68 @@ const infinitePayService = {
     err.details = lastError?.data || {};
     err.tentativa = lastError?.tentativa || null;
     throw err;
+  },
+
+  async checarPagamentoCheckout({ orderNsu, transactionNsu, slug }) {
+    const handle = normalizeHandle(process.env.INFINITEPAY_HANDLE);
+    if (!handle) {
+      return {
+        ok: false,
+        paid: false,
+        status: 'handle_missing',
+        source: 'local',
+        raw: { message: 'INFINITEPAY_HANDLE não configurado.' },
+      };
+    }
+
+    const token = process.env.INFINITEPAY_TOKEN;
+    const basePayload = {
+      handle,
+      order_nsu: orderNsu,
+      transaction_nsu: transactionNsu || undefined,
+      slug: slug || undefined,
+    };
+
+    const tentativas = [
+      { nome: 'order+slug+auth', payload: { ...basePayload }, withAuth: Boolean(token) },
+      { nome: 'order+slug-noauth', payload: { ...basePayload }, withAuth: false },
+      { nome: 'order-only-auth', payload: { handle, order_nsu: orderNsu }, withAuth: Boolean(token) },
+      { nome: 'order-only-noauth', payload: { handle, order_nsu: orderNsu }, withAuth: false },
+    ];
+
+    let lastError = null;
+    for (const tentativa of tentativas) {
+      if (!token && tentativa.withAuth) continue;
+      const { response, data } = await postPaymentCheck({
+        payload: tentativa.payload,
+        token,
+        withAuth: tentativa.withAuth,
+      });
+      if (response.ok) {
+        const paidState = inferPaidState(data);
+        return {
+          ok: true,
+          paid: paidState.paid,
+          status: paidState.status,
+          transactionNsu: paidState.transactionNsu,
+          source: tentativa.nome,
+          raw: data,
+        };
+      }
+      lastError = { status: response.status, data, tentativa: tentativa.nome };
+      logger.warn(
+        'INFINITEPAY',
+        `Falha payment_check (${tentativa.nome}) status=${response.status} order_nsu=${orderNsu} detalhe=${String(data?.message || data?.error || data?.raw_text || 'sem detalhe').slice(0, 240)}`
+      );
+    }
+
+    return {
+      ok: false,
+      paid: false,
+      status: `http_${lastError?.status || 'unknown'}`,
+      source: lastError?.tentativa || null,
+      raw: lastError?.data || {},
+    };
   },
 };
 
