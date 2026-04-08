@@ -39,9 +39,12 @@
     function (e) {
       var a = e.target.closest && e.target.closest('a[href]');
       if (!shouldShowForAnchor(a, e)) return;
-      var L = getLoading();
-      if (!L || typeof L.showRoute !== 'function') return;
-      L.showRoute();
+      setTimeout(function () {
+        if (e.defaultPrevented) return;
+        var L = getLoading();
+        if (!L || typeof L.showRoute !== 'function') return;
+        L.showRoute();
+      }, 0);
     },
     true
   );

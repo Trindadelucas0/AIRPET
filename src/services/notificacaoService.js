@@ -18,6 +18,15 @@ const TITULO_MAP = {
   seguidor: 'Novo Seguidor',
 };
 
+function normalizarLinkNotificacao(link) {
+  if (!link || typeof link !== 'string') return '/notificacoes';
+  const trimmed = link.trim();
+  if (!trimmed || trimmed === '#') return '/notificacoes';
+  if (/^\s*javascript:/i.test(trimmed)) return '/notificacoes';
+  if (!trimmed.startsWith('/')) return '/notificacoes';
+  return trimmed;
+}
+
 function montarMensagemAlerta(alerta) {
   const base = `🚨 Pet perdido na sua região! ${alerta.pet_nome} (${alerta.pet_raca || alerta.pet_tipo || 'pet'}) foi visto pela última vez próximo de você.`;
   if (alerta.recompensa != null && String(alerta.recompensa).trim() !== '') {
@@ -39,13 +48,17 @@ const notificacaoService = {
       return null;
     }
 
-    logger.info('NotificacaoService', `Criando notificação tipo '${tipo}' para usuário: ${usuarioId}`);
+    const linkNormalizado = normalizarLinkNotificacao(link);
+    if (link && linkNormalizado !== link) {
+      logger.warn('NotificacaoService', `Link de notificação ajustado para fallback. original='${link}' usuario=${usuarioId} tipo=${tipo}`);
+    }
+    logger.info('NotificacaoService', `Criando notificação tipo='${tipo}' usuario=${usuarioId} link='${linkNormalizado}'`);
 
     const notificacao = await Notificacao.criar({
       usuario_id: usuarioId,
       tipo,
       mensagem,
-      link: link || null,
+      link: linkNormalizado,
       remetente_id: remetente_id || null,
       publicacao_id: publicacao_id || null,
       pet_id: pet_id || null,
@@ -56,7 +69,7 @@ const notificacaoService = {
     pushService.enviarParaUsuario(usuarioId, {
       titulo: TITULO_MAP[tipo] || 'AIRPET',
       corpo: mensagem,
-      url: link || '/notificacoes',
+      url: linkNormalizado,
       tipo: tipo,
     }).catch(function (err) {
       logger.error('NotificacaoService', 'Falha ao enviar push', err);
@@ -64,7 +77,7 @@ const notificacaoService = {
 
     if (this._io) {
       this._io.of('/notificacoes').to('user_' + usuarioId).emit('nova_notificacao', {
-        id: notificacao.id, tipo, mensagem, link,
+        id: notificacao.id, tipo, mensagem, link: linkNormalizado,
         data: notificacao.data_criacao || notificacao.data,
         remetente_id: remetente_id || null,
         pet_id: pet_id || null,

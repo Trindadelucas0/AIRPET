@@ -222,7 +222,7 @@ const saudeService = {
         usuario_id: vacina.usuario_id,
         tipo: 'sistema',
         mensagem,
-        link: `/pet/${vacina.pet_id}/saude`,
+        link: `/pets/${vacina.pet_id}/saude`,
       });
 
       notificacoesEnviadas++;

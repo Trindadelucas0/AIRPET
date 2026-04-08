@@ -161,6 +161,35 @@
       });
   }
 
+  /**
+   * Executa operação com overlay diferido e timeout máximo.
+   * Evita overlays presos quando promessas nunca resolvem.
+   * @param {() => Promise<any>} workFn
+   * @param {object} [opts]
+   * @param {number} [opts.timeoutMs]
+   */
+  function withDeferredOverlayTimeout(workFn, opts) {
+    opts = opts || {};
+    var timeoutMs = Number.isFinite(opts.timeoutMs) ? opts.timeoutMs : 15000;
+    var timer = null;
+    return withDeferredOverlay(function () {
+      var timeoutPromise = new Promise(function (_, reject) {
+        timer = setTimeout(function () {
+          reject(new Error('overlay_timeout'));
+        }, timeoutMs);
+      });
+      return Promise.race([
+        Promise.resolve().then(workFn),
+        timeoutPromise
+      ]).finally(function () {
+        if (timer) {
+          clearTimeout(timer);
+          timer = null;
+        }
+      });
+    }, opts);
+  }
+
   function setMicrocopyMessages(arr) {
     if (arr && arr.length) microcopy = arr.slice();
   }
@@ -241,6 +270,7 @@
     beginLongWaitOverlay: beginLongWaitOverlay,
     endLongWaitOverlay: endLongWaitOverlay,
     withDeferredOverlay: withDeferredOverlay,
+    withDeferredOverlayTimeout: withDeferredOverlayTimeout,
     reducedMotion: reducedMotion,
     runLocked: runLocked,
     debounce: debounce,

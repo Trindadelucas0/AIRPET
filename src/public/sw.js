@@ -29,6 +29,18 @@ const SHELL_ASSETS = [
   '/images/icons/icon-512.svg',
 ];
 
+function sanitizeInternalUrl(rawUrl) {
+  if (!rawUrl || typeof rawUrl !== 'string') return '/notificacoes';
+  if (/^\s*javascript:/i.test(rawUrl)) return '/notificacoes';
+  try {
+    var parsed = new URL(rawUrl, self.location.origin);
+    if (parsed.origin !== self.location.origin) return '/notificacoes';
+    return parsed.pathname + parsed.search + parsed.hash;
+  } catch (_) {
+    return '/notificacoes';
+  }
+}
+
 function precacheShell(cache, urls) {
   return Promise.all(
     urls.map(function (url) {
@@ -223,10 +235,11 @@ self.addEventListener('push', function (event) {
 self.addEventListener('notificationclick', function (event) {
   event.notification.close();
 
-  var url = '/notificacoes';
-  if (event.notification.data && event.notification.data.url) {
-    url = event.notification.data.url;
-  }
+  var url = sanitizeInternalUrl(
+    event.notification.data && event.notification.data.url
+      ? event.notification.data.url
+      : '/notificacoes'
+  );
 
   if (event.action === 'close') return;
 

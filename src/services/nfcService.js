@@ -237,7 +237,7 @@ const nfcService = {
         if (tag.user_id) {
           const cidadeTexto = dadosScan.cidade ? ` em ${dadosScan.cidade}` : '';
           const nomeDoAnimal = tag.pet_nome || 'seu pet';
-          const linkPet = `/pet/${tag.pet_id}`;
+          const linkPet = `/pets/${tag.pet_id}`;
 
           await Notificacao.criar({
             usuario_id: tag.user_id,

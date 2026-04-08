@@ -174,6 +174,7 @@
                          border <%= !n.lida ? 'border-primary-100/50' : 'border-gray-100/80' %>"
                        data-notif-id="<%= n.id %>"
                        data-link="<%= (n.link || '#') %>"
+                       data-airpet-no-route-loader="true"
                        <%= isAlerta ? ' data-tipo="alerta" data-pet-id="' + n.pet_id + '"' : '' %>>
 
                       <!-- Avatar ou Icone -->
@@ -297,6 +298,74 @@
   'use strict';
 
   var usuarioId = <%= (typeof usuario !== 'undefined' && usuario && usuario.id) ? JSON.stringify(usuario.id) : 'null' %>;
+  var REQUEST_TIMEOUT_MS = 8000;
+
+  function logNotifClientError(contexto, erro, extra) {
+    try {
+      var payload = { contexto: contexto, erro: erro ? (erro.message || String(erro)) : 'erro_desconhecido' };
+      if (extra && typeof extra === 'object') payload.extra = extra;
+      console.warn('[notificacoes]', payload);
+    } catch (_) {}
+  }
+
+  function normalizarLinkInterno(link) {
+    if (!link || link === '#') return '/notificacoes';
+    if (/^\s*javascript:/i.test(link)) return '/notificacoes';
+    try {
+      var u = new URL(link, window.location.origin);
+      if (u.origin !== window.location.origin) return '/notificacoes';
+      return u.pathname + u.search + u.hash;
+    } catch (_) {
+      return '/notificacoes';
+    }
+  }
+
+  function hideRouteLoaderIfOpen() {
+    var L = window.AIRPET_LOADING;
+    if (!L) return;
+    try {
+      if (typeof L.hideRoute === 'function') L.hideRoute();
+      if (typeof L.resetRouteOverlay === 'function') L.resetRouteOverlay();
+    } catch (_) {}
+  }
+
+  function fetchJsonWithTimeout(url, options, timeoutMs) {
+    var timeout = Number(timeoutMs) > 0 ? Number(timeoutMs) : REQUEST_TIMEOUT_MS;
+    var controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    var timer = null;
+    var req = Object.assign({}, options || {});
+    if (controller) req.signal = controller.signal;
+    if (!req.headers) req.headers = { 'Accept': 'application/json' };
+    if (!req.credentials) req.credentials = 'same-origin';
+
+    if (controller) {
+      timer = setTimeout(function () { controller.abort(); }, timeout);
+    }
+
+    return fetch(url, req)
+      .then(function (r) {
+        if (!r.ok) throw new Error('http_' + r.status);
+        return r.json();
+      })
+      .finally(function () {
+        if (timer) clearTimeout(timer);
+      });
+  }
+
+  function promiseWithTimeout(promise, timeoutMs, timeoutCode) {
+    var timeout = Number(timeoutMs) > 0 ? Number(timeoutMs) : REQUEST_TIMEOUT_MS;
+    var timer = null;
+    return Promise.race([
+      Promise.resolve(promise),
+      new Promise(function (_, reject) {
+        timer = setTimeout(function () {
+          reject(new Error(timeoutCode || 'promise_timeout'));
+        }, timeout);
+      })
+    ]).finally(function () {
+      if (timer) clearTimeout(timer);
+    });
+  }
 
   function tempoRelativo(dataStr) {
     var agora = Date.now();
@@ -360,7 +429,7 @@
     }
 
     var doMarcar = function () {
-      return Promise.resolve(p).then(function (data) {
+      return promiseWithTimeout(p, REQUEST_TIMEOUT_MS, 'marcar_lida_timeout').then(function (data) {
         if (data && typeof data.sucesso !== 'undefined' && data.sucesso === false) return;
 
         var card = document.querySelector('[data-notif-id="' + id + '"]');
@@ -379,9 +448,16 @@
       });
     };
     if (window.AIRPET_LOADING && typeof window.AIRPET_LOADING.withDeferredOverlay === 'function') {
-      window.AIRPET_LOADING.withDeferredOverlay(doMarcar, { message: 'A marcar como lida…' }).catch(function () {});
+      var withOverlay = typeof window.AIRPET_LOADING.withDeferredOverlayTimeout === 'function'
+        ? window.AIRPET_LOADING.withDeferredOverlayTimeout
+        : window.AIRPET_LOADING.withDeferredOverlay;
+      withOverlay(doMarcar, { message: 'A marcar como lida…', timeoutMs: REQUEST_TIMEOUT_MS }).catch(function (err) {
+        logNotifClientError('marcar_lida_overlay', err, { id: id });
+      });
     } else {
-      doMarcar().catch(function () {});
+      doMarcar().catch(function (err) {
+        logNotifClientError('marcar_lida', err, { id: id });
+      });
     }
   };
 
@@ -422,15 +498,22 @@
     }
 
     var doMarcarNav = function () {
-      return Promise.resolve(p).then(function (data) {
+      return promiseWithTimeout(p, REQUEST_TIMEOUT_MS, 'marcar_lida_nav_timeout').then(function (data) {
         if (data && typeof data.sucesso !== 'undefined' && data.sucesso === false) return;
         atualizarBadgeGlobal();
       });
     };
     if (window.AIRPET_LOADING && typeof window.AIRPET_LOADING.withDeferredOverlay === 'function') {
-      window.AIRPET_LOADING.withDeferredOverlay(doMarcarNav, { message: 'A marcar como lida…' }).catch(function () {});
+      var withOverlayNav = typeof window.AIRPET_LOADING.withDeferredOverlayTimeout === 'function'
+        ? window.AIRPET_LOADING.withDeferredOverlayTimeout
+        : window.AIRPET_LOADING.withDeferredOverlay;
+      withOverlayNav(doMarcarNav, { message: 'A marcar como lida…', timeoutMs: REQUEST_TIMEOUT_MS }).catch(function (err) {
+        logNotifClientError('marcar_lida_nav_overlay', err, { id: id });
+      });
     } else {
-      doMarcarNav().catch(function () {});
+      doMarcarNav().catch(function (err) {
+        logNotifClientError('marcar_lida_nav', err, { id: id });
+      });
     }
   };
 
@@ -473,6 +556,10 @@
       };
       var work = function () {
         if (window.AIRPET_LOADING && typeof window.AIRPET_LOADING.withDeferredOverlay === 'function') {
+          var useTimeoutWrapper = typeof window.AIRPET_LOADING.withDeferredOverlayTimeout === 'function';
+          if (useTimeoutWrapper) {
+            return window.AIRPET_LOADING.withDeferredOverlayTimeout(workInner, { message: 'A marcar todas como lidas…', timeoutMs: REQUEST_TIMEOUT_MS });
+          }
           return window.AIRPET_LOADING.withDeferredOverlay(workInner, { message: 'A marcar todas como lidas…' });
         }
         return workInner();
@@ -498,7 +585,9 @@
           btnMarcarTodas.closest('.flex').innerHTML = '<span class="text-xs text-emerald-500 font-semibold"><i class="fa-solid fa-check mr-1"></i>Todas lidas</span>';
           atualizarBadgeGlobal();
         }
-      }).catch(function () {});
+      }).catch(function (err) {
+        logNotifClientError('marcar_todas_lidas', err);
+      });
     });
   }
 
@@ -528,7 +617,9 @@
       }).then(function (res) {
         var data = res && res.data ? res.data : res;
         apply((data && data.total) ? data.total : 0);
-      }).catch(function () {});
+      }).catch(function (err) {
+        logNotifClientError('badge_count_swr', err);
+      });
       return;
     }
 
@@ -538,7 +629,9 @@
     })
     .then(function (r) { return r.json(); })
     .then(function (data) { apply(data.total || 0); })
-    .catch(function () {});
+    .catch(function (err) {
+      logNotifClientError('badge_count_fetch', err);
+    });
   }
 
   var modalAlerta = document.getElementById('modalAlertaPerdido');
@@ -594,8 +687,9 @@
   function abrirModalNotificacao(mensagem, link) {
     if (modalNotifMensagem) modalNotifMensagem.textContent = mensagem || '';
     if (modalNotifVer) {
-      modalNotifVer.href = link && link !== '#' ? link : '/notificacoes';
-      modalNotifVer.style.display = link && link !== '#' ? '' : 'none';
+      var safeLink = normalizarLinkInterno(link);
+      modalNotifVer.href = safeLink;
+      modalNotifVer.style.display = safeLink !== '/notificacoes' ? '' : 'none';
     }
     if (modalNotif) {
       modalNotif.classList.remove('hidden');
@@ -615,14 +709,17 @@
     var a = e.target.closest('a.notif-link');
     if (!a) return;
     var notifId = a.getAttribute('data-notif-id');
-    var link = a.getAttribute('data-link') || '#';
+    var link = normalizarLinkInterno(a.getAttribute('data-link') || '#');
     var isAlerta = a.getAttribute('data-tipo') === 'alerta';
     var petId = a.getAttribute('data-pet-id');
 
     if (isAlerta && petId) {
       e.preventDefault();
-      fetch('/api/pets/' + petId + '/alerta-ativo', { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
-        .then(function (r) { return r.json(); })
+      hideRouteLoaderIfOpen();
+      fetchJsonWithTimeout('/api/pets/' + petId + '/alerta-ativo', {
+        headers: { 'Accept': 'application/json' },
+        credentials: 'same-origin'
+      }, REQUEST_TIMEOUT_MS)
         .then(function (data) {
           if (data.ativo && data.pet_nome != null) {
             if (notifId && typeof marcarLida === 'function') marcarLida(parseInt(notifId, 10));
@@ -631,11 +728,15 @@
             window.location.href = link;
           }
         })
-        .catch(function () { window.location.href = link; });
+        .catch(function (err) {
+          logNotifClientError('alerta_ativo_fetch', err, { petId: petId, notifId: notifId });
+          window.location.href = link;
+        });
       return;
     }
 
     e.preventDefault();
+    hideRouteLoaderIfOpen();
     var msgEl = a.querySelector('.flex-1.min-w-0 p');
     var mensagem = msgEl ? msgEl.textContent.trim() : '';
     if (notifId && typeof marcarLida === 'function') marcarLida(parseInt(notifId, 10));
