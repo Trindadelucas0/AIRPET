@@ -16,6 +16,25 @@
 
 const { query, pool } = require('../config/database');
 
+let ensureEscalonamentoSchemaPromise = null;
+
+async function ensureEscalonamentoSchema() {
+  if (!ensureEscalonamentoSchemaPromise) {
+    ensureEscalonamentoSchemaPromise = (async () => {
+      await query(`
+        ALTER TABLE pets_perdidos
+          ADD COLUMN IF NOT EXISTS ciclo_alerta INTEGER NOT NULL DEFAULT 1,
+          ADD COLUMN IF NOT EXISTS last_level_changed_at TIMESTAMPTZ,
+          ADD COLUMN IF NOT EXISTS last_broadcast_at TIMESTAMPTZ
+      `);
+    })().catch((err) => {
+      ensureEscalonamentoSchemaPromise = null;
+      throw err;
+    });
+  }
+  return ensureEscalonamentoSchemaPromise;
+}
+
 const PetPerdido = {
 
   /**
@@ -193,6 +212,7 @@ const PetPerdido = {
    * @returns {Promise<object>} O alerta atualizado
    */
   async aprovar(id) {
+    await ensureEscalonamentoSchema();
     const resultado = await query(
       `UPDATE pets_perdidos
        SET status = 'aprovado',
@@ -244,6 +264,7 @@ const PetPerdido = {
    * @returns {Promise<object>} O alerta atualizado
    */
   async atualizarNivel(id, nivel) {
+    await ensureEscalonamentoSchema();
     const resultado = await query(
       `UPDATE pets_perdidos
        SET nivel_alerta = $2,
@@ -302,6 +323,7 @@ const PetPerdido = {
   },
 
   async listarAprovadosComCoordenadasOrdenadosPorData() {
+    await ensureEscalonamentoSchema();
     const resultado = await query(
       `SELECT pp.id, pp.pet_id, pp.nivel_alerta, pp.ciclo_alerta, pp.last_broadcast_at, pp.data,
               pp.ultima_lat AS latitude, pp.ultima_lng AS longitude
@@ -313,6 +335,7 @@ const PetPerdido = {
   },
 
   async atualizarEscalonamento(id, payload = {}, client = null) {
+    await ensureEscalonamentoSchema();
     const executor = client || pool;
     const sets = [];
     const params = [];

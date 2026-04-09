@@ -14,16 +14,24 @@
  *  - NOTIFICATIONCLICK: abre a URL da notificacao ao clicar
  */
 
-const CACHE_VERSION = 'airpet-v8';
+const CACHE_VERSION = 'airpet-v9';
 
 const SHELL_ASSETS = [
   '/',
+  '/tags/planos',
+  '/tags/loja-tag',
+  '/tags/pedidos',
   '/offline.html',
   '/css/output.css',
   '/css/theme-override.css',
+  '/css/tags-commerce.css',
   '/js/app.js',
   '/js/pwa.js',
   '/js/permissions.js',
+  '/js/tags-planos.js',
+  '/js/tags-loja.js',
+  '/js/tags-pedidos.js',
+  '/js/tags-pedido-detalhe.js',
   '/manifest.json',
   '/images/icons/icon-192.svg',
   '/images/icons/icon-512.svg',

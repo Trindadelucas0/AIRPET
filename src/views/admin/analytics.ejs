@@ -2,496 +2,154 @@
 <%- include('../partials/admin-layout') %>
 
 <main class="flex-1">
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
     <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
       <div>
         <h1 class="text-2xl font-bold text-gray-900">Analytics da Rede</h1>
-        <p class="text-sm text-gray-500 mt-1">
-          Painel executivo da operação: influência, risco, consumo de conteúdo e sinais de desempenho para decisões de crescimento e patrocinado.
-        </p>
+        <p class="text-sm text-gray-500 mt-1">Visão executiva de crescimento, engajamento e risco.</p>
       </div>
-      <form method="GET" class="flex items-center gap-3">
+      <form method="GET" class="flex items-end gap-2">
         <div>
-          <label class="block text-xs font-medium text-gray-500 mb-1">Período principal</label>
-          <select name="periodo" class="border border-gray-300 rounded-lg text-sm px-2 py-1">
+          <label class="block text-xs text-gray-500 mb-1">Período</label>
+          <select name="periodo" class="border border-gray-300 rounded-lg text-sm px-3 py-2 bg-white">
             <option value="today" <%= periodoGlobal === 'today' ? 'selected' : '' %>>Hoje</option>
             <option value="week" <%= periodoGlobal === 'week' ? 'selected' : '' %>>Últimos 7 dias</option>
             <option value="month" <%= periodoGlobal === 'month' ? 'selected' : '' %>>Últimos 30 dias</option>
           </select>
         </div>
-        <button type="submit" class="mt-4 md:mt-0 inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-primary-500 text-white text-sm font-medium hover:bg-primary-600">
-          <i class="fa-solid fa-rotate-right"></i>
-          Atualizar
+        <button type="submit" class="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-900 text-white text-sm font-medium">
+          <i class="fa-solid fa-rotate-right"></i> Atualizar
         </button>
       </form>
     </div>
 
-    <!-- Usuários mais influentes -->
-    <section class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-      <div class="flex items-center justify-between mb-4">
-        <h2 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
-          <i class="fa-solid fa-crown text-yellow-500"></i>
-          Usuários mais influentes
-        </h2>
-        <p class="text-xs text-gray-400 max-w-md">
-          Visão consolidada de influência: base de seguidores, reações (curtidas/comentários) e volume de visualizações no período.
-        </p>
-      </div>
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
-        <div>
-          <h3 class="font-semibold text-gray-700 mb-2">Mais seguidores</h3>
-          <ul class="space-y-2 max-h-64 overflow-y-auto">
-            <% (influentes.seguidores || []).forEach(function(r, idx) { %>
-              <li class="flex items-center justify-between gap-3">
-                <a href="/explorar/perfil/<%= r.usuario_id %>" target="_blank" class="flex items-center gap-2 min-w-0 text-gray-700 hover:text-primary-600">
-                  <span class="text-xs text-gray-400 shrink-0">#<%= idx + 1 %></span>
-                  <% if (r.foto_perfil) { %>
-                    <img src="<%= r.foto_perfil %>" alt="" class="w-6 h-6 rounded-full object-cover">
-                  <% } else { %>
-                    <span class="w-6 h-6 rounded-full bg-gray-200 text-gray-600 text-[10px] flex items-center justify-center font-semibold">
-                      <%= (r.nome || ('U' + r.usuario_id)).charAt(0).toUpperCase() %>
-                    </span>
-                  <% } %>
-                  <span class="truncate"><%= r.nome || ('Usuário ' + r.usuario_id) %></span>
-                </a>
-                <span class="font-medium"><%= r.total %></span>
-              </li>
-            <% }) %>
-            <% if (!(influentes.seguidores || []).length) { %>
-              <li class="text-xs text-gray-400">Sem dados suficientes.</li>
-            <% } %>
-          </ul>
-        </div>
-        <div>
-          <h3 class="font-semibold text-gray-700 mb-2">Mais curtidas recebidas</h3>
-          <ul class="space-y-2 max-h-64 overflow-y-auto">
-            <% (influentes.likes || []).forEach(function(r, idx) { %>
-              <li class="flex items-center justify-between gap-3">
-                <a href="/explorar/perfil/<%= r.usuario_id %>" target="_blank" class="flex items-center gap-2 min-w-0 text-gray-700 hover:text-primary-600">
-                  <span class="text-xs text-gray-400 shrink-0">#<%= idx + 1 %></span>
-                  <% if (r.foto_perfil) { %>
-                    <img src="<%= r.foto_perfil %>" alt="" class="w-6 h-6 rounded-full object-cover">
-                  <% } else { %>
-                    <span class="w-6 h-6 rounded-full bg-gray-200 text-gray-600 text-[10px] flex items-center justify-center font-semibold">
-                      <%= (r.nome || ('U' + r.usuario_id)).charAt(0).toUpperCase() %>
-                    </span>
-                  <% } %>
-                  <span class="truncate"><%= r.nome || ('Usuário ' + r.usuario_id) %></span>
-                </a>
-                <span class="font-medium"><%= r.total %></span>
-              </li>
-            <% }) %>
-            <% if (!(influentes.likes || []).length) { %>
-              <li class="text-xs text-gray-400">Sem dados suficientes.</li>
-            <% } %>
-          </ul>
-        </div>
-        <div>
-          <h3 class="font-semibold text-gray-700 mb-2">Mais comentários recebidos</h3>
-          <ul class="space-y-2 max-h-64 overflow-y-auto">
-            <% (influentes.comentarios || []).forEach(function(r, idx) { %>
-              <li class="flex items-center justify-between gap-3">
-                <a href="/explorar/perfil/<%= r.usuario_id %>" target="_blank" class="flex items-center gap-2 min-w-0 text-gray-700 hover:text-primary-600">
-                  <span class="text-xs text-gray-400 shrink-0">#<%= idx + 1 %></span>
-                  <% if (r.foto_perfil) { %>
-                    <img src="<%= r.foto_perfil %>" alt="" class="w-6 h-6 rounded-full object-cover">
-                  <% } else { %>
-                    <span class="w-6 h-6 rounded-full bg-gray-200 text-gray-600 text-[10px] flex items-center justify-center font-semibold">
-                      <%= (r.nome || ('U' + r.usuario_id)).charAt(0).toUpperCase() %>
-                    </span>
-                  <% } %>
-                  <span class="truncate"><%= r.nome || ('Usuário ' + r.usuario_id) %></span>
-                </a>
-                <span class="font-medium"><%= r.total %></span>
-              </li>
-            <% }) %>
-            <% if (!(influentes.comentarios || []).length) { %>
-              <li class="text-xs text-gray-400">Sem dados suficientes.</li>
-            <% } %>
-          </ul>
-        </div>
-        <div>
-          <h3 class="font-semibold text-gray-700 mb-2">Mais visualizações por criador</h3>
-          <ul class="space-y-2 max-h-64 overflow-y-auto">
-            <% (influentes.views || []).forEach(function(r, idx) { %>
-              <li class="flex items-center justify-between gap-3">
-                <a href="/explorar/perfil/<%= r.usuario_id %>" target="_blank" class="flex items-center gap-2 min-w-0 text-gray-700 hover:text-primary-600">
-                  <span class="text-xs text-gray-400 shrink-0">#<%= idx + 1 %></span>
-                  <% if (r.foto_perfil) { %>
-                    <img src="<%= r.foto_perfil %>" alt="" class="w-6 h-6 rounded-full object-cover">
-                  <% } else { %>
-                    <span class="w-6 h-6 rounded-full bg-gray-200 text-gray-600 text-[10px] flex items-center justify-center font-semibold">
-                      <%= (r.nome || ('U' + r.usuario_id)).charAt(0).toUpperCase() %>
-                    </span>
-                  <% } %>
-                  <span class="truncate"><%= r.nome || ('Usuário ' + r.usuario_id) %></span>
-                </a>
-                <span class="font-medium"><%= r.views %></span>
-              </li>
-            <% }) %>
-            <% if (!(influentes.views || []).length) { %>
-              <li class="text-xs text-gray-400">Sem dados suficientes.</li>
-            <% } %>
-          </ul>
-        </div>
-      </div>
+    <section class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+      <div class="bg-white border rounded-xl p-4"><p class="text-xs text-gray-500 uppercase">Posts vistos</p><p class="text-2xl font-semibold"><%= (postsVistos || []).length %></p></div>
+      <div class="bg-white border rounded-xl p-4"><p class="text-xs text-gray-500 uppercase">Risco</p><p class="text-2xl font-semibold text-red-600"><%= (perigosos.riscos || []).length %></p></div>
+      <div class="bg-white border rounded-xl p-4"><p class="text-xs text-gray-500 uppercase">Viral</p><p class="text-2xl font-semibold"><%= (viralHoje.posts || []).length %></p></div>
+      <div class="bg-white border rounded-xl p-4"><p class="text-xs text-gray-500 uppercase">Raças</p><p class="text-2xl font-semibold"><%= (trendingRacas.racas || []).length %></p></div>
+      <div class="bg-white border rounded-xl p-4"><p class="text-xs text-gray-500 uppercase">Orgânico</p><p class="text-2xl font-semibold"><%= Number((resumoViews && resumoViews.total_organico) || 0) %></p></div>
+      <div class="bg-white border rounded-xl p-4"><p class="text-xs text-gray-500 uppercase">Boost</p><p class="text-2xl font-semibold"><%= Number((resumoViews && resumoViews.total_boost_janela_ativa) || 0) + Number((resumoViews && resumoViews.total_boost_card_patrocinado) || 0) %></p></div>
     </section>
 
-    <!-- Engajamento médio e taxa de resposta -->
-    <section class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-      <div class="flex items-center justify-between mb-4">
-        <h2 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
-          <i class="fa-solid fa-comments text-blue-500"></i>
-          Qualidade de engajamento
-        </h2>
-        <p class="text-xs text-gray-400 max-w-md">
-          Engajamento médio por post considera curtidas, comentários e reposts do período. Taxa de resposta compara o quanto cada criador responde em relação ao que recebe.
-        </p>
-      </div>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
-        <div>
-          <h3 class="font-semibold text-gray-700 mb-2">Maior engajamento médio por post</h3>
-          <ul class="space-y-2 max-h-64 overflow-y-auto">
-            <% (engajamentoMedio.usuarios || []).forEach(function(r, idx) { %>
-              <li class="flex items-center justify-between gap-3">
-                <a href="/explorar/perfil/<%= r.usuario_id %>" target="_blank" class="min-w-0 text-gray-600 hover:text-primary-600">
-                  #<%= idx + 1 %> <span class="font-medium"><%= r.nome || ('Usuário ' + r.usuario_id) %></span>
-                  <span class="text-xs text-gray-400">(<%= r.posts_publicados %> posts)</span>
-                </a>
-                <span class="font-medium">
-                  <%= Number(r.engajamento_medio).toFixed(1) %> / post
-                </span>
-              </li>
-            <% }) %>
-            <% if (!(engajamentoMedio.usuarios || []).length) { %>
-              <li class="text-xs text-gray-400">Sem dados suficientes para calcular engajamento médio.</li>
-            <% } %>
-          </ul>
-        </div>
-        <div>
-          <h3 class="font-semibold text-gray-700 mb-2">Melhor taxa de resposta</h3>
-          <ul class="space-y-2 max-h-64 overflow-y-auto">
-            <% (taxaResposta.usuarios || []).forEach(function(r, idx) { %>
-              <li class="flex items-center justify-between gap-3">
-                <a href="/explorar/perfil/<%= r.usuario_id %>" target="_blank" class="min-w-0 text-gray-600 hover:text-primary-600">
-                  #<%= idx + 1 %> <span class="font-medium"><%= r.nome || ('Usuário ' + r.usuario_id) %></span>
-                  <span class="text-xs text-gray-400">
-                    (<%= r.comentarios_feitos %> feitos · <%= r.comentarios_recebidos %> recebidos)
-                  </span>
-                </a>
-                <span class="font-medium">
-                  <% if (r.taxa_resposta === null) { %>
-                    —
-                  <% } else { %>
-                    x<%= Number(r.taxa_resposta).toFixed(2) %>
-                  <% } %>
-                </span>
-              </li>
-            <% }) %>
-            <% if (!(taxaResposta.usuarios || []).length) { %>
-              <li class="text-xs text-gray-400">Sem dados suficientes para calcular taxa de resposta.</li>
-            <% } %>
-          </ul>
-        </div>
-      </div>
-    </section>
-
-    <section class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-      <h2 class="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
-        <i class="fa-solid fa-eye text-purple-500"></i>
-        Posts mais visualizados no período
-      </h2>
-      <p class="text-xs text-gray-400 mb-3">
-        Ranking por visualizações registradas em eventos reais de navegação, com corte executivo entre orgânico e impacto de boost.
-      </p>
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
-        <div class="rounded-lg border border-gray-100 bg-gray-50 p-3">
-          <p class="text-[11px] text-gray-500 uppercase tracking-wide">Total orgânico</p>
-          <p class="text-lg font-semibold text-gray-900"><%= Number((resumoViews && resumoViews.total_organico) || 0) %></p>
-        </div>
-        <div class="rounded-lg border border-gray-100 bg-gray-50 p-3">
-          <p class="text-[11px] text-gray-500 uppercase tracking-wide">Boost (janela ativa)</p>
-          <p class="text-lg font-semibold text-gray-900"><%= Number((resumoViews && resumoViews.total_boost_janela_ativa) || 0) %></p>
-        </div>
-        <div class="rounded-lg border border-gray-100 bg-gray-50 p-3">
-          <p class="text-[11px] text-gray-500 uppercase tracking-wide">Boost (card patrocinado)</p>
-          <p class="text-lg font-semibold text-gray-900"><%= Number((resumoViews && resumoViews.total_boost_card_patrocinado) || 0) %></p>
-        </div>
-      </div>
-      <div class="overflow-x-auto">
-        <table class="min-w-full text-xs md:text-sm">
-          <thead>
-            <tr class="text-left text-gray-500 border-b border-gray-100">
-              <th class="pb-2 font-medium">Rank</th>
-              <th class="pb-2 font-medium">Post</th>
-              <th class="pb-2 font-medium">Autor</th>
-              <th class="pb-2 font-medium">Views</th>
-              <th class="pb-2 font-medium">Usuários únicos</th>
-              <th class="pb-2 font-medium">Orgânico</th>
-              <th class="pb-2 font-medium">Boost (janela ativa)</th>
-              <th class="pb-2 font-medium">Boost (card patrocinado)</th>
-              <th class="pb-2 font-medium">Link</th>
-            </tr>
-          </thead>
-          <tbody>
-            <% (postsVistos || []).forEach(function(p, idx) { %>
-              <tr class="border-b border-gray-50 hover:bg-gray-50/50">
-                <td class="py-2 text-gray-700">#<%= idx + 1 %></td>
-                <td class="py-2 text-gray-700">Post <%= p.post_id %></td>
-                <td class="py-2 text-gray-600">
-                  <a href="/explorar/perfil/<%= p.usuario_id %>" target="_blank" class="inline-flex items-center gap-2 text-primary-600 hover:underline">
-                    <% if (p.foto_perfil) { %>
-                      <img src="<%= p.foto_perfil %>" alt="" class="w-5 h-5 rounded-full object-cover">
-                    <% } %>
-                    <span><%= p.autor_nome || ('Usuário ' + p.usuario_id) %></span>
-                  </a>
-                </td>
-                <td class="py-2 font-medium text-gray-900"><%= p.total_views %></td>
-                <td class="py-2 text-gray-600"><%= p.usuarios_unicos %></td>
-                <td class="py-2 text-gray-600"><%= Number(p.views_organicas || 0) %></td>
-                <td class="py-2 text-gray-600"><%= Number(p.views_boost_janela_ativa || 0) %></td>
-                <td class="py-2 text-gray-600"><%= Number(p.views_boost_card_patrocinado || 0) %></td>
-                <td class="py-2">
-                  <a href="/explorar#post-<%= p.post_id %>" target="_blank" class="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-gray-200 text-xs text-primary-600 hover:bg-primary-50">
-                    Ver post
-                  </a>
-                </td>
-              </tr>
-            <% }) %>
-            <% if (!(postsVistos || []).length) { %>
-              <tr>
-                <td colspan="9" class="py-3 text-center text-xs text-gray-400">
-                  Nenhuma visualização registrada no período selecionado.
-                </td>
-              </tr>
-            <% } %>
-          </tbody>
-        </table>
-      </div>
-    </section>
-
-    <!-- Usuários perigosos -->
-    <section class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-      <h2 class="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-        <i class="fa-solid fa-triangle-exclamation text-red-500"></i>
-        Usuários com risco
-      </h2>
-      <p class="text-xs text-gray-400 mb-3">
-        Combina volume de denúncias/bloqueios com sinais estatísticos (spam_probability, report_rate, block_rate).
-      </p>
-      <div class="overflow-x-auto">
-        <table class="min-w-full text-sm">
-          <thead>
-            <tr class="text-left text-gray-500 border-b border-gray-100">
-              <th class="pb-2 font-medium">Usuário</th>
-              <th class="pb-2 font-medium">Reports</th>
-              <th class="pb-2 font-medium">Blocks</th>
-              <th class="pb-2 font-medium">Spam Score</th>
-              <th class="pb-2 font-medium">Report Rate</th>
-              <th class="pb-2 font-medium">Block Rate</th>
-            </tr>
-          </thead>
-          <tbody>
-            <% const denunciasMap = new Map(); (perigosos.denuncias || []).forEach(d => denunciasMap.set(d.usuario_id, d.total_reports)); %>
-            <% const bloqueiosMap = new Map(); (perigosos.bloqueios || []).forEach(b => bloqueiosMap.set(b.usuario_id, b.total_blocks)); %>
-            <% (perigosos.riscos || []).forEach(function(r) { %>
-              <tr class="border-b border-gray-50 hover:bg-gray-50/50">
-                <td class="py-2 font-medium text-gray-900">Usuário <%= r.user_id %></td>
-                <td class="py-2"><%= denunciasMap.get(r.user_id) || 0 %></td>
-                <td class="py-2"><%= bloqueiosMap.get(r.user_id) || 0 %></td>
-                <td class="py-2 text-gray-600"><%= r.spam_probability %></td>
-                <td class="py-2 text-gray-600"><%= r.report_rate %></td>
-                <td class="py-2 text-gray-600"><%= r.block_rate %></td>
-              </tr>
-            <% }) %>
-            <% if (!(perigosos.riscos || []).length) { %>
-              <tr><td colspan="6" class="py-3 text-xs text-gray-400">Sem sinais de risco registrados ainda.</td></tr>
-            <% } %>
-          </tbody>
-        </table>
-      </div>
-    </section>
-
-    <!-- Conteúdo viral e raças / cidades -->
     <section class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-        <h2 class="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
-          <i class="fa-solid fa-fire text-orange-500"></i>
-          Conteúdo viral (último período)
-        </h2>
-        <ul class="space-y-2 max-h-80 overflow-y-auto text-sm">
-          <% (viralHoje.posts || []).forEach(function(p, idx) { %>
-            <li class="flex items-center justify-between border-b border-gray-50 pb-1">
-              <div class="flex items-center gap-2">
-                <span class="text-xs text-gray-400">#<%= idx + 1 %></span>
-                <span class="text-gray-700">Post <%= p.id %> por usuário <%= p.usuario_id %></span>
-              </div>
-              <span class="text-xs text-gray-500">
-                score: <%= p.engagement_score || p.engagement_score_sum || 0 %>
-              </span>
-            </li>
-          <% }) %>
-          <% if (!(viralHoje.posts || []).length) { %>
-            <li class="text-xs text-gray-400">Nenhum post com score de engajamento calculado ainda.</li>
-          <% } %>
-        </ul>
+      <div class="bg-white border rounded-xl p-5">
+        <h2 class="text-lg font-semibold mb-3"><i class="fa-solid fa-chart-line text-indigo-500 mr-2"></i>Crescimento (30 dias)</h2>
+        <div class="relative min-h-[260px]"><canvas id="growthChart" class="w-full h-full"></canvas></div>
       </div>
-
-      <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 space-y-4">
-        <div>
-          <h2 class="text-lg font-semibold text-gray-900 mb-2 flex items-center gap-2">
-            <i class="fa-solid fa-dog text-emerald-500"></i>
-            Raças em alta
-          </h2>
-          <ul class="space-y-1 max-h-40 overflow-y-auto text-sm">
-            <% (trendingRacas.racas || []).forEach(function(r, idx) { %>
-              <li class="flex justify-between">
-                <span class="text-gray-700">#<%= idx + 1 %> <%= r.raca || 'Sem raça' %> (<%= r.tipo %>)</span>
-                <span class="font-medium"><%= r.total_interacoes %></span>
-              </li>
-            <% }) %>
-            <% if (!(trendingRacas.racas || []).length) { %>
-              <li class="text-xs text-gray-400">Nenhuma interação registrada por raça ainda.</li>
-            <% } %>
-          </ul>
-        </div>
-        <div>
-          <h2 class="text-lg font-semibold text-gray-900 mb-2 flex items-center gap-2">
-            <i class="fa-solid fa-city text-blue-500"></i>
-            Cidades mais ativas
-          </h2>
-          <p class="text-xs text-gray-400 mb-1">
-            Usuários, posts e interações no período, por cidade.
-          </p>
-          <ul class="space-y-1 max-h-40 overflow-y-auto text-sm">
-            <% const postsCidade = new Map(); (cidades.postsPorCidade || []).forEach(pc => postsCidade.set(pc.cidade, pc.total_posts_periodo)); %>
-            <% const interacoesCidade = new Map(); (cidades.interacoes || []).forEach(ic => interacoesCidade.set(ic.cidade, ic.total_interacoes)); %>
-            <% (cidades.usuariosAtivos || []).forEach(function(c, idx) { %>
-              <li class="flex justify-between">
-                <span class="text-gray-700">
-                  #<%= idx + 1 %> <%= c.cidade %>
-                  <span class="text-xs text-gray-400">
-                    (<%= c.total_usuarios %> usuários)
-                  </span>
-                </span>
-                <span class="text-right text-xs text-gray-600">
-                  <%= postsCidade.get(c.cidade) || 0 %> posts<br>
-                  <%= interacoesCidade.get(c.cidade) || 0 %> interações
-                </span>
-              </li>
-            <% }) %>
-            <% if (!(cidades.usuariosAtivos || []).length) { %>
-              <li class="text-xs text-gray-400">Nenhuma cidade com usuários cadastrados.</li>
-            <% } %>
-          </ul>
-        </div>
-      </div>
-    </section>
-
-    <!-- Crescimento da rede (gráfico + tabela) -->
-    <section class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-      <h2 class="text-lg font-semibold text-gray-900 mb-2 flex items-center gap-2">
-        <i class="fa-solid fa-chart-line text-indigo-500"></i>
-        Crescimento da rede (últimos 30 dias)
-      </h2>
-      <p class="text-xs text-gray-400 mb-3">
-        Evolução diária da base com duas métricas-chave: aquisição de usuários e ritmo de publicação. A tabela funciona como trilha de auditoria dos valores.
-      </p>
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div class="relative min-h-[260px]">
-          <canvas id="growthChart" class="w-full h-full"></canvas>
-        </div>
+      <div class="bg-white border rounded-xl p-5">
+        <h2 class="text-lg font-semibold mb-3"><i class="fa-solid fa-fire text-orange-500 mr-2"></i>Conteúdo viral</h2>
         <div class="overflow-x-auto">
-          <table class="min-w-full text-xs md:text-sm">
-            <thead>
-              <tr class="text-left text-gray-500 border-b border-gray-100">
-                <th class="pb-2 font-medium">Dia</th>
-                <th class="pb-2 font-medium">Novos usuários</th>
-                <th class="pb-2 font-medium">Novos posts</th>
-              </tr>
-            </thead>
+          <table class="min-w-full text-sm">
+            <thead><tr class="text-left text-gray-500 border-b"><th class="py-2">#</th><th>Post</th><th>Autor</th><th>Score</th></tr></thead>
             <tbody>
-              <% (timeline || []).forEach(function(linha) { %>
-                <tr class="border-b border-gray-50 hover:bg-gray-50/50">
-                  <td class="py-1 text-gray-700"><%= new Date(linha.day).toLocaleDateString('pt-BR') %></td>
-                  <td class="py-1 text-gray-600"><%= linha.novos_usuarios %></td>
-                  <td class="py-1 text-gray-600"><%= linha.novos_posts %></td>
+              <% (viralHoje.posts || []).slice(0, 8).forEach(function(p, idx) { %>
+                <tr class="border-b border-gray-50">
+                  <td class="py-2">#<%= idx + 1 %></td>
+                  <td>Post <%= p.id %></td>
+                  <td>Usuário <%= p.usuario_id %></td>
+                  <td><%= p.engagement_score || p.engagement_score_sum || 0 %></td>
                 </tr>
               <% }) %>
-              <% if (!(timeline || []).length) { %>
-                <tr><td colspan="3" class="py-3 text-xs text-gray-400">Sem dados de crescimento ainda.</td></tr>
-              <% } %>
+              <% if (!(viralHoje.posts || []).length) { %><tr><td colspan="4" class="py-3 text-xs text-gray-400">Sem dados.</td></tr><% } %>
             </tbody>
           </table>
         </div>
       </div>
     </section>
 
+    <section class="bg-white border rounded-xl p-5">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-lg font-semibold"><i class="fa-solid fa-crown text-yellow-500 mr-2"></i>Usuários mais influentes</h2>
+        <span class="text-xs text-gray-500">Seguidores · Curtidas · Comentários · Views</span>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
+        <div>
+          <h3 class="font-semibold text-gray-700 mb-2">Seguidores</h3>
+          <ul class="space-y-2">
+            <% (influentes.seguidores || []).slice(0, 6).forEach(function(r, idx) { %><li class="flex justify-between"><span>#<%= idx + 1 %> <%= r.nome || ('Usuário ' + r.usuario_id) %></span><strong><%= r.total %></strong></li><% }) %>
+          </ul>
+        </div>
+        <div>
+          <h3 class="font-semibold text-gray-700 mb-2">Curtidas</h3>
+          <ul class="space-y-2">
+            <% (influentes.likes || []).slice(0, 6).forEach(function(r, idx) { %><li class="flex justify-between"><span>#<%= idx + 1 %> <%= r.nome || ('Usuário ' + r.usuario_id) %></span><strong><%= r.total %></strong></li><% }) %>
+          </ul>
+        </div>
+        <div>
+          <h3 class="font-semibold text-gray-700 mb-2">Comentários</h3>
+          <ul class="space-y-2">
+            <% (influentes.comentarios || []).slice(0, 6).forEach(function(r, idx) { %><li class="flex justify-between"><span>#<%= idx + 1 %> <%= r.nome || ('Usuário ' + r.usuario_id) %></span><strong><%= r.total %></strong></li><% }) %>
+          </ul>
+        </div>
+        <div>
+          <h3 class="font-semibold text-gray-700 mb-2">Views</h3>
+          <ul class="space-y-2">
+            <% (influentes.views || []).slice(0, 6).forEach(function(r, idx) { %><li class="flex justify-between"><span>#<%= idx + 1 %> <%= r.nome || ('Usuário ' + r.usuario_id) %></span><strong><%= r.views %></strong></li><% }) %>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div class="bg-white border rounded-xl p-5">
+        <h2 class="text-lg font-semibold mb-3"><i class="fa-solid fa-triangle-exclamation text-red-500 mr-2"></i>Usuários com risco</h2>
+        <div class="overflow-x-auto">
+          <table class="min-w-full text-sm">
+            <thead><tr class="text-left text-gray-500 border-b"><th class="py-2">Usuário</th><th>Reports</th><th>Blocks</th><th>Spam</th></tr></thead>
+            <tbody>
+              <% const denunciasMap = new Map(); (perigosos.denuncias || []).forEach(d => denunciasMap.set(d.usuario_id, d.total_reports)); %>
+              <% const bloqueiosMap = new Map(); (perigosos.bloqueios || []).forEach(b => bloqueiosMap.set(b.usuario_id, b.total_blocks)); %>
+              <% (perigosos.riscos || []).forEach(function(r) { %>
+                <tr class="border-b border-gray-50">
+                  <td class="py-2">Usuário <%= r.user_id %></td>
+                  <td><%= denunciasMap.get(r.user_id) || 0 %></td>
+                  <td><%= bloqueiosMap.get(r.user_id) || 0 %></td>
+                  <td><%= r.spam_probability %></td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="bg-white border rounded-xl p-5">
+        <h2 class="text-lg font-semibold mb-3"><i class="fa-solid fa-eye text-purple-500 mr-2"></i>Posts mais visualizados</h2>
+        <div class="overflow-x-auto">
+          <table class="min-w-full text-sm">
+            <thead><tr class="text-left text-gray-500 border-b"><th class="py-2">#</th><th>Post</th><th>Views</th><th>Únicos</th></tr></thead>
+            <tbody>
+              <% (postsVistos || []).slice(0, 8).forEach(function(p, idx) { %>
+                <tr class="border-b border-gray-50"><td class="py-2">#<%= idx + 1 %></td><td>Post <%= p.post_id %></td><td><%= p.total_views %></td><td><%= p.usuarios_unicos %></td></tr>
+              <% }) %>
+              <% if (!(postsVistos || []).length) { %><tr><td colspan="4" class="py-3 text-xs text-gray-400">Sem visualizações no período.</td></tr><% } %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
   </div>
 </main>
 
-<script>
-  window.analyticsTimeline = <%- JSON.stringify(timeline || []) %>;
-</script>
+<script>window.analyticsTimeline = <%- JSON.stringify(timeline || []) %>;</script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
   (function () {
-    if (!window.analyticsTimeline || !Array.isArray(window.analyticsTimeline) || !window.analyticsTimeline.length) return;
-    var canvas = document.getElementById('growthChart');
+    if (!window.analyticsTimeline || !window.analyticsTimeline.length) return;
+    var canvas = document.getElementById("growthChart");
     if (!canvas || !window.Chart) return;
-
-    var labels = window.analyticsTimeline.map(function (p) {
-      return new Date(p.day).toLocaleDateString('pt-BR');
-    });
-    var novosUsuarios = window.analyticsTimeline.map(function (p) {
-      return p.novos_usuarios || 0;
-    });
-    var novosPosts = window.analyticsTimeline.map(function (p) {
-      return p.novos_posts || 0;
-    });
-
-    new Chart(canvas.getContext('2d'), {
-      type: 'line',
+    var labels = window.analyticsTimeline.map(function (p) { return new Date(p.day).toLocaleDateString("pt-BR"); });
+    var novosUsuarios = window.analyticsTimeline.map(function (p) { return p.novos_usuarios || 0; });
+    var novosPosts = window.analyticsTimeline.map(function (p) { return p.novos_posts || 0; });
+    new Chart(canvas.getContext("2d"), {
+      type: "line",
       data: {
         labels: labels,
         datasets: [
-          {
-            label: 'Novos usuários',
-            data: novosUsuarios,
-            borderColor: 'rgba(59,130,246,1)',
-            backgroundColor: 'rgba(59,130,246,0.1)',
-            borderWidth: 2,
-            tension: 0.25,
-            pointRadius: 2,
-          },
-          {
-            label: 'Novos posts',
-            data: novosPosts,
-            borderColor: 'rgba(16,185,129,1)',
-            backgroundColor: 'rgba(16,185,129,0.1)',
-            borderWidth: 2,
-            tension: 0.25,
-            pointRadius: 2,
-          },
-        ],
+          { label: "Novos usuários", data: novosUsuarios, borderColor: "#1a1917", backgroundColor: "rgba(26,25,23,0.05)", borderWidth: 1.5, tension: 0.35, pointRadius: 0, fill: true },
+          { label: "Novos posts", data: novosPosts, borderColor: "#d97706", backgroundColor: "rgba(217,119,6,0.08)", borderWidth: 1.5, tension: 0.35, pointRadius: 0, fill: true }
+        ]
       },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-          y: {
-            beginAtZero: true,
-            ticks: { precision: 0 },
-          },
-        },
-        plugins: {
-          legend: {
-            display: true,
-            position: 'bottom',
-          },
-        },
-      },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: "bottom" } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
     });
   })();
 </script>

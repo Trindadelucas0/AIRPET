@@ -5,7 +5,10 @@ const PlanDefinition = {
   async listarAtivos() {
     try {
       const r = await query(
-        `SELECT *
+        `SELECT *,
+                COALESCE(nome, nome_exibicao) AS nome_plano,
+                COALESCE(preco, mensalidade_centavos) AS preco_centavos,
+                COALESCE(beneficios, '[]'::jsonb) AS beneficios_json
          FROM plan_definitions
          WHERE ativo = true
          ORDER BY ordem ASC, id ASC`

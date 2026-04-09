@@ -4,7 +4,7 @@
  * Inicializa Express, conecta ao banco, garante pastas de upload,
  * configura middlewares globais, Socket.IO e inicia o servidor HTTP.
  *
- * Schema do PostgreSQL: rode `npm run db:migrate` antes de subir a API (node-pg-migrate).
+ * Schema do PostgreSQL: startup pode executar auto-migrate (baseline + pgm).
  */
 
 require('dotenv').config();
@@ -15,6 +15,7 @@ const { createApplication } = require('./src/app');
 const { pool } = require('./src/config/database');
 const logger = require('./src/utils/logger');
 const schedulerService = require('./src/services/schedulerService');
+const { runStartupMigrations } = require('./src/services/startupMigrationService');
 
 const { app, server, io } = createApplication();
 
@@ -46,11 +47,14 @@ function validarEnv() {
 }
 
 async function iniciar() {
+  let migrationReport = null;
   try {
     validarEnv();
     logger.secao('Database');
     await pool.query('SELECT NOW()');
     logger.info('DB', 'Conectado ao PostgreSQL com sucesso');
+    logger.secao('Migrations');
+    migrationReport = await runStartupMigrations();
     const schemaTag = await pool.query(`SELECT to_regclass('public.plan_definitions') AS plan_definitions`);
     if (!schemaTag.rows[0]?.plan_definitions) {
       logger.warn(
@@ -71,7 +75,7 @@ async function iniciar() {
         porta: PORT,
         ambiente: process.env.NODE_ENV || 'development',
         db: 'Conectado',
-        migrations: null,
+        migrations: migrationReport,
       });
       logger.secao('Servidor Pronto');
       logger.info('SERVER', `Acesse http://localhost:${PORT}`);

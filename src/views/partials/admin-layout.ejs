@@ -7,60 +7,79 @@
   <link rel="stylesheet" href="/css/output.css">
   <link rel="stylesheet" href="/css/design-system.css">
   <link rel="stylesheet" href="/css/theme-override.css">
+  <link rel="stylesheet" href="/css/admin-modern.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Rubik+Doodle+Shadow&family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
-  <style>
-    .admin-nav a { transition: background-color .15s ease, color .15s ease; }
-    .admin-nav a.active {
-      background: color-mix(in srgb, var(--color-primary) 12%, transparent);
-      color: var(--color-primary);
-      font-weight: 700;
-      box-shadow: 0 10px 25px rgba(242,96,32,0.12);
-    }
-    .admin-nav a:hover:not(.active) {
-      background: color-mix(in srgb, var(--color-primary) 8%, transparent);
-      color: var(--text);
-    }
-  </style>
 </head>
-<body class="admin-shell app-shell min-h-screen antialiased text-gray-800 bg-gray-50">
+<body class="admin-modern-shell admin-shell app-shell min-h-screen antialiased text-gray-800">
 <% const p = typeof currentPath !== 'undefined' ? currentPath : ''; %>
-<div class="min-h-screen lg:flex">
-  <aside class="w-full lg:w-72 bg-white border-r border-gray-200 lg:sticky lg:top-0 lg:h-screen">
-    <div class="px-4 py-4 border-b border-gray-100 flex items-center justify-between">
-      <a href="<%= adminPath %>" class="flex items-center gap-2.5 group">
-        <span class="w-9 h-9 rounded-xl bg-primary-500 text-white flex items-center justify-center shadow-md group-hover:scale-105 transition-transform">
-          <i class="fa-solid fa-shield-halved text-sm"></i>
+<div class="admin-modern-layout">
+  <aside class="admin-modern-sidebar" id="adminSidebar">
+    <div class="admin-modern-brand">
+      <a href="<%= adminPath %>" class="admin-brand-link">
+        <span class="admin-brand-icon"><i class="fa-solid fa-shield-dog"></i></span>
+        <span>
+          <span class="admin-brand-name">AIRPET</span>
+          <span class="admin-brand-tag">Admin Console</span>
         </span>
-        <span class="text-lg font-bold text-gray-800"><span class="font-brand text-xl leading-none tracking-normal">AIRPET</span> Admin</span>
-      </a>
-      <a href="<%= adminPath %>/logout" class="text-sm text-gray-500 hover:text-red-600">
-        <i class="fa-solid fa-right-from-bracket"></i>
       </a>
     </div>
-    <nav class="admin-nav px-3 py-3 space-y-1">
-      <a href="<%= adminPath %>" class="block px-3 py-2 rounded-lg text-sm font-medium <%= (p === '' || p === '/') ? 'active' : 'text-gray-600' %>"><i class="fa-solid fa-chart-line mr-2 w-4"></i>Dashboard</a>
-      <a href="<%= adminPath %>/usuarios" class="block px-3 py-2 rounded-lg text-sm font-medium <%= p === '/usuarios' ? 'active' : 'text-gray-600' %>"><i class="fa-solid fa-users mr-2 w-4"></i>Usuários</a>
-      <a href="<%= adminPath %>/pets" class="block px-3 py-2 rounded-lg text-sm font-medium <%= p === '/pets' ? 'active' : 'text-gray-600' %>"><i class="fa-solid fa-paw mr-2 w-4"></i>Pets</a>
-      <a href="<%= adminPath %>/tags" class="block px-3 py-2 rounded-lg text-sm font-medium <%= p === '/tags' ? 'active' : 'text-gray-600' %>"><i class="fa-solid fa-tag mr-2 w-4"></i>Tags NFC</a>
-      <a href="<%= adminPath %>/pedidos" class="block px-3 py-2 rounded-lg text-sm font-medium <%= p === '/pedidos' || p === '/tags-commerce' ? 'active' : 'text-gray-600' %>"><i class="fa-solid fa-cart-shopping mr-2 w-4"></i>Pedidos</a>
-      <a href="<%= adminPath %>/pets-perdidos" class="block px-3 py-2 rounded-lg text-sm font-medium <%= p === '/pets-perdidos' ? 'active' : 'text-gray-600' %>"><i class="fa-solid fa-triangle-exclamation mr-2 w-4"></i>Alertas</a>
-      <a href="<%= adminPath %>/petshops/solicitacoes" class="block px-3 py-2 rounded-lg text-sm font-medium <%= p === '/petshops/solicitacoes' ? 'active' : 'text-gray-600' %>"><i class="fa-solid fa-store mr-2 w-4"></i>Parceiros</a>
-      <div class="pt-2 mt-2 border-t border-gray-100 text-xs uppercase text-gray-400 px-3">Operação</div>
-      <a href="<%= adminPath %>/monitoramento" class="block px-3 py-2 rounded-lg text-sm font-medium <%= p === '/monitoramento' ? 'active' : 'text-gray-600' %>"><i class="fa-solid fa-gauge-high mr-2 w-4"></i>Monitoramento</a>
-      <a href="<%= adminPath %>/analytics" class="block px-3 py-2 rounded-lg text-sm font-medium <%= p === '/analytics' ? 'active' : 'text-gray-600' %>"><i class="fa-solid fa-chart-pie mr-2 w-4"></i>Analytics</a>
-      <a href="<%= adminPath %>/configuracoes" class="block px-3 py-2 rounded-lg text-sm font-medium <%= p === '/configuracoes' ? 'active' : 'text-gray-600' %>"><i class="fa-solid fa-gear mr-2 w-4"></i>Configurações</a>
+
+    <nav class="admin-modern-nav">
+      <div class="admin-nav-section">Principal</div>
+      <a href="<%= adminPath %>" class="admin-nav-item <%= (p === '' || p === '/') ? 'active' : '' %>">
+        <i class="fa-solid fa-chart-line"></i> Dashboard
+      </a>
+      <a href="<%= adminPath %>/analytics" class="admin-nav-item <%= p === '/analytics' ? 'active' : '' %>">
+        <i class="fa-solid fa-chart-pie"></i> Analytics
+      </a>
+      <a href="<%= adminPath %>/pets-perdidos" class="admin-nav-item <%= p === '/pets-perdidos' ? 'active' : '' %>">
+        <i class="fa-solid fa-paw"></i> Pets Perdidos
+      </a>
+      <a href="<%= adminPath %>/tags" class="admin-nav-item <%= p === '/tags' ? 'active' : '' %>">
+        <i class="fa-solid fa-tag"></i> Tags NFC
+      </a>
+
+      <div class="admin-nav-section">Operacao</div>
+      <a href="<%= adminPath %>/pedidos" class="admin-nav-item <%= p === '/pedidos' || p === '/tags-commerce' ? 'active' : '' %>">
+        <i class="fa-solid fa-cart-shopping"></i> Pedidos
+      </a>
+      <a href="<%= adminPath %>/usuarios" class="admin-nav-item <%= p === '/usuarios' ? 'active' : '' %>">
+        <i class="fa-solid fa-users"></i> Usuarios
+      </a>
+      <a href="<%= adminPath %>/pets" class="admin-nav-item <%= p === '/pets' ? 'active' : '' %>">
+        <i class="fa-solid fa-dog"></i> Pets
+      </a>
+      <a href="<%= adminPath %>/petshops/solicitacoes" class="admin-nav-item <%= p === '/petshops/solicitacoes' ? 'active' : '' %>">
+        <i class="fa-solid fa-store"></i> Parceiros
+      </a>
+      <a href="<%= adminPath %>/monitoramento" class="admin-nav-item <%= p === '/monitoramento' ? 'active' : '' %>">
+        <i class="fa-solid fa-gauge-high"></i> Monitoramento
+      </a>
+      <a href="<%= adminPath %>/configuracoes" class="admin-nav-item <%= p === '/configuracoes' ? 'active' : '' %>">
+        <i class="fa-solid fa-gear"></i> Configuracoes
+      </a>
     </nav>
+
+    <div class="admin-modern-sidebar-footer">
+      <a href="<%= adminPath %>/logout" class="admin-nav-item">
+        <i class="fa-solid fa-right-from-bracket"></i> Sair
+      </a>
+    </div>
   </aside>
-  <section class="flex-1 min-w-0">
-    <header class="bg-white border-b border-gray-200 sticky top-0 z-30">
-      <div class="px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
-        <span class="text-sm text-gray-500">Painel administrativo AIRPET</span>
-        <a href="<%= adminPath %>/logout" class="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-red-50 hover:text-red-600 transition-colors">
-          <i class="fa-solid fa-right-from-bracket"></i> Sair
-        </a>
+
+  <section class="admin-modern-main">
+    <header class="admin-modern-topbar">
+      <div class="admin-topbar-left">
+        <button type="button" class="admin-mobile-menu" onclick="document.getElementById('adminSidebar').classList.toggle('open')">
+          <i class="fa-solid fa-bars"></i>
+        </button>
+        <span class="admin-breadcrumb">
+          <%= typeof titulo !== 'undefined' ? titulo : 'Painel administrativo' %>
+        </span>
       </div>
+      <a href="<%= adminPath %>/logout" class="admin-topbar-logout"><i class="fa-solid fa-right-from-bracket"></i> Sair</a>
     </header>
     <%- include('./flash') %>

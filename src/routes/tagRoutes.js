@@ -49,9 +49,11 @@ router.post('/admin/commerce/cupons/:id', apenasAdmin, tagCommerceController.adm
 // --- Rotas comerciais TAG (venda, pedidos, assinatura) ---
 router.get('/loja-tag', tagCommerceController.mostrarLoja);
 router.get('/planos', tagCommerceController.mostrarPlanos);
+router.get('/api/planos', tagCommerceController.apiListarPlanos);
 /** Corrige typo comum /tags/plano → /tags/planos */
 router.get('/plano', (req, res) => res.redirect(302, '/tags/planos'));
 router.post('/pedidos', estaAutenticado, tagCommerceController.criarPedido);
+router.post('/assinar', estaAutenticado, tagCommerceController.assinarPlano);
 router.get('/pedidos', estaAutenticado, tagCommerceController.listarPedidos);
 router.get('/pedidos/:id', estaAutenticado, tagCommerceController.detalhePedido);
 router.post(

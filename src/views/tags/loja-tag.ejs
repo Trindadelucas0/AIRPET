@@ -11,25 +11,17 @@
   var planoSelecionado = selectedPlanSlug || '';
 %>
 
-<main class="container mx-auto max-w-7xl px-4 py-8 space-y-8">
-  <section class="relative overflow-hidden rounded-3xl border border-slate-200 bg-white p-6 md:p-8 shadow-sm">
-    <div class="pointer-events-none absolute -right-8 -top-10 h-40 w-40 rounded-full bg-primary-100 blur-3xl"></div>
-    <div class="pointer-events-none absolute -left-8 -bottom-12 h-32 w-32 rounded-full bg-blue-100 blur-3xl"></div>
-
+<main class="tc-wrap">
+  <section class="tc-hero">
     <div class="relative flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
       <div>
-        <p class="text-xs font-bold uppercase tracking-[0.09em] text-primary-600">TAG NFC AIRPET</p>
-        <h1 class="mt-2 max-w-3xl text-3xl font-black tracking-tight text-slate-900 md:text-4xl">
-          Compre uma vez a tag e escolha o nível de proteção ideal para o seu pet.
-        </h1>
-        <p class="mt-3 max-w-2xl text-sm leading-relaxed text-slate-600">
-          Cada tag comprada deve ser vinculada a um pet cadastrado. Ao ativar uma nova tag para o mesmo pet,
-          a tag anterior é desativada automaticamente.
-        </p>
-        <div class="mt-4 flex flex-wrap gap-2">
-          <span class="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">Pagamento seguro</span>
-          <span class="rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">Renovação soma +30 dias</span>
-          <span class="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">Sem fidelidade</span>
+        <p class="tc-eyebrow">Tag NFC AIRPET</p>
+        <h1 class="tc-title">Compre uma vez a tag e escolha o nivel de protecao ideal para o seu pet.</h1>
+        <p class="tc-sub">Cada tag comprada deve ser vinculada a um pet cadastrado. Ao ativar nova tag para o mesmo pet, a anterior é desativada.</p>
+        <div class="tc-badges">
+          <span class="tc-badge tc-badge-green">Pagamento seguro</span>
+          <span class="tc-badge tc-badge-blue">Renovação soma +30 dias</span>
+          <span class="tc-badge">Sem fidelidade</span>
         </div>
         <% if (typeof upgradeResumo !== 'undefined' && upgradeResumo && upgradeResumo.elegivel) { %>
           <div class="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
@@ -44,25 +36,23 @@
     </div>
   </section>
 
-  <section class="grid gap-4 md:grid-cols-3">
+  <section class="tc-grid3 tc-section">
     <% (planos || []).forEach(function(plano) { %>
       <% var ui = planoUi[plano.slug] || { titulo: plano.nome || 'Plano', resumo: 'Plano AIRPET', badge: '', bullets: [] }; %>
       <% var destaque = planoSelecionado ? plano.slug === planoSelecionado : plano.slug === 'plus'; %>
-      <article class="relative overflow-hidden rounded-2xl border bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md <%= destaque ? 'border-primary-300 ring-2 ring-primary-100' : 'border-slate-200' %>">
-        <div class="flex items-center justify-between gap-3">
+      <article class="tc-card <%= destaque ? 'featured' : '' %>">
+        <div class="tc-card-head">
           <h2 class="text-lg font-bold text-slate-900"><%= ui.titulo %></h2>
           <% if (ui.badge) { %>
             <span class="rounded-full bg-primary-100 px-3 py-1 text-xs font-semibold text-primary-700"><%= ui.badge %></span>
           <% } %>
         </div>
-        <p class="mt-3 text-2xl font-black text-primary-700">
+        <p class="tc-price">
           <%= brl(plano.mensalidade_centavos) %>
           <span class="text-xs font-semibold text-slate-500">/ 30 dias</span>
         </p>
-        <p class="text-xs font-semibold text-slate-500"><%= custoDia(plano.mensalidade_centavos) %></p>
-        <p class="mt-2 text-sm text-slate-600"><%= ui.resumo %></p>
-        <p class="mt-2 text-xs text-slate-500">Renovação adiciona +30 dias ao saldo atual.</p>
-        <ul class="mt-4 space-y-1.5 text-xs text-slate-600">
+        <p class="tc-sub"><%= ui.resumo %> · <%= custoDia(plano.mensalidade_centavos) %></p>
+        <ul class="tc-list">
           <% ui.bullets.forEach(function(item) { %>
             <li class="flex items-start gap-2">
               <i class="fa-solid fa-circle-check mt-0.5 text-emerald-600"></i>
@@ -75,8 +65,8 @@
   </section>
 
   <% if (typeof usuario !== 'undefined' && usuario) { %>
-    <section id="comprar" class="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
-      <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+    <section id="comprar" class="tc-split tc-section">
+      <div class="tc-card">
         <div class="mb-5 flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
           <div>
             <h3 class="text-xl font-black text-slate-900">Criar pedido</h3>
@@ -92,10 +82,10 @@
         <form action="/tags/pedidos" method="POST" class="space-y-5" id="form-tag-order">
           <section class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
             <h4 class="text-sm font-bold text-slate-900">Configuração do pedido</h4>
-            <div class="mt-3 grid gap-4 md:grid-cols-3">
+            <div class="tc-row3 tc-section">
               <label class="text-sm">
                 <span class="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-600">Plano</span>
-                <select name="plan_slug" class="input !bg-white">
+                <select name="plan_slug" class="tc-select">
                   <% (planos || []).forEach(function(plano) { %>
                     <option value="<%= plano.slug %>" <%= planoSelecionado === plano.slug ? 'selected' : '' %>><%= plano.nome_exibicao %></option>
                   <% }) %>
@@ -104,7 +94,7 @@
 
               <label class="text-sm">
                 <span class="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-600">Tipo de pedido</span>
-                <select name="order_type" id="order_type" class="input !bg-white">
+                <select name="order_type" id="order_type" class="tc-select">
                   <option value="compra_tag">Primeira compra / nova tag</option>
                   <option value="assinatura_recorrente">Somente renovação da assinatura</option>
                 </select>
@@ -112,7 +102,7 @@
 
               <label class="text-sm">
                 <span class="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-600">Quantidade de tags</span>
-                <input type="number" min="1" max="10" value="1" id="quantidade_tags" name="quantidade_tags" class="input !bg-white">
+                <input type="number" min="1" max="10" value="1" id="quantidade_tags" name="quantidade_tags" class="tc-input">
               </label>
             </div>
           </section>
@@ -127,67 +117,67 @@
               </div>
               <a href="/pets" class="text-xs font-bold text-primary-700 hover:text-primary-900">Cadastrar pet</a>
             </div>
-            <div class="mt-3 grid gap-3 md:grid-cols-2" id="pet-selectors" data-has-pets="<%= (pets || []).length ? '1' : '0' %>"></div>
+            <div class="tc-row2 tc-section" id="pet-selectors" data-has-pets="<%= (pets || []).length ? '1' : '0' %>"></div>
           </section>
 
           <section class="rounded-2xl border border-slate-200 bg-white p-4">
             <h4 class="text-sm font-bold text-slate-900">Dados para nota fiscal</h4>
             <p class="mt-1 text-xs text-slate-500">Preencha os dados reais para emissão fiscal do pedido.</p>
 
-            <div class="mt-3 grid gap-4 md:grid-cols-2">
+            <div class="tc-row2 tc-section">
               <label class="text-sm">
                 <span class="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-600">Nome completo / Razão social</span>
-                <input type="text" name="billing_name" required maxlength="150" class="input">
+                <input type="text" name="billing_name" required maxlength="150" class="tc-input">
               </label>
               <label class="text-sm">
                 <span class="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-600">CPF ou CNPJ</span>
-                <input type="text" name="billing_cpf_cnpj" required maxlength="18" class="input" placeholder="Somente números ou formatado">
+                <input type="text" name="billing_cpf_cnpj" required maxlength="18" class="tc-input" placeholder="Somente números ou formatado">
               </label>
               <label class="text-sm">
                 <span class="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-600">Telefone</span>
-                <input type="text" name="billing_phone" required maxlength="30" class="input">
+                <input type="text" name="billing_phone" required maxlength="30" class="tc-input">
               </label>
               <label class="text-sm">
                 <span class="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-600">CEP</span>
-                <input type="text" name="billing_cep" required maxlength="9" class="input">
+                <input type="text" name="billing_cep" required maxlength="9" class="tc-input">
               </label>
               <label class="text-sm md:col-span-2">
                 <span class="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-600">Logradouro</span>
-                <input type="text" name="billing_logradouro" required maxlength="160" class="input">
+                <input type="text" name="billing_logradouro" required maxlength="160" class="tc-input">
               </label>
               <label class="text-sm">
                 <span class="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-600">Número</span>
-                <input type="text" name="billing_numero" required maxlength="20" class="input">
+                <input type="text" name="billing_numero" required maxlength="20" class="tc-input">
               </label>
               <label class="text-sm">
                 <span class="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-600">Complemento (opcional)</span>
-                <input type="text" name="billing_complemento" maxlength="100" class="input">
+                <input type="text" name="billing_complemento" maxlength="100" class="tc-input">
               </label>
               <label class="text-sm">
                 <span class="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-600">Bairro</span>
-                <input type="text" name="billing_bairro" required maxlength="100" class="input">
+                <input type="text" name="billing_bairro" required maxlength="100" class="tc-input">
               </label>
               <label class="text-sm">
                 <span class="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-600">Cidade</span>
-                <input type="text" name="billing_cidade" required maxlength="100" class="input">
+                <input type="text" name="billing_cidade" required maxlength="100" class="tc-input">
               </label>
               <label class="text-sm">
                 <span class="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-600">UF</span>
-                <input type="text" name="billing_uf" required maxlength="2" class="input uppercase">
+                <input type="text" name="billing_uf" required maxlength="2" class="tc-input uppercase">
               </label>
             </div>
           </section>
 
           <section class="rounded-2xl border border-slate-200 bg-white p-4">
             <h4 class="text-sm font-bold text-slate-900">Benefícios opcionais</h4>
-            <div class="mt-3 grid gap-4 md:grid-cols-2">
+            <div class="tc-row2 tc-section">
               <label class="text-sm">
                 <span class="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-600">Cupom (opcional)</span>
-                <input type="text" name="promo_code" placeholder="Ex: AIRPET10" class="input uppercase">
+                <input type="text" name="promo_code" placeholder="Ex: AIRPET10" class="tc-input uppercase">
               </label>
               <label class="text-sm">
                 <span class="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-600">Código de indicação (opcional)</span>
-                <input type="text" name="referral_code" class="input uppercase">
+                <input type="text" name="referral_code" class="tc-input uppercase">
               </label>
             </div>
           </section>
@@ -205,8 +195,8 @@
         </form>
       </div>
 
-      <aside class="space-y-4 lg:sticky lg:top-24">
-        <section class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+      <aside class="space-y-4 tc-sticky">
+        <section class="tc-card">
           <h4 class="text-sm font-black text-slate-900">Resumo da compra</h4>
           <p class="mt-1 text-xs text-slate-500">Seu pedido é validado no servidor antes de gerar o checkout.</p>
           <ul class="mt-3 space-y-2 text-xs text-slate-600">
@@ -219,7 +209,7 @@
           </ul>
         </section>
 
-        <section class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <section class="tc-card">
           <h4 class="text-sm font-black text-slate-900">Dúvidas rápidas</h4>
           <div class="mt-3 space-y-3 text-xs text-slate-600">
             <p><strong class="text-slate-800">Posso renovar sem comprar nova tag?</strong><br>Sim. Selecione "Somente renovação da assinatura".</p>
@@ -236,67 +226,9 @@
 </main>
 
 <script>
-  (function () {
-    const pets = <%- safeJson((pets || []).map(function (p) { return { id: p.id, nome: p.nome }; })) %>;
-    const qtdInput = document.getElementById('quantidade_tags');
-    const orderTypeSelect = document.getElementById('order_type');
-    const selectorsRoot = document.getElementById('pet-selectors');
-    const form = document.getElementById('form-tag-order');
-    const submitBtn = document.getElementById('submit-order-btn');
-    const submitLabel = document.getElementById('submit-order-label');
-
-    if (!qtdInput || !orderTypeSelect || !selectorsRoot) return;
-
-    function buildOption(pet, selectedId) {
-      const selectedAttr = Number(selectedId) === Number(pet.id) ? 'selected' : '';
-      return '<option value="' + pet.id + '" ' + selectedAttr + '>' + pet.nome + '</option>';
-    }
-
-    function renderSelectors() {
-      const isAssinatura = orderTypeSelect.value === 'assinatura_recorrente';
-      const qtd = isAssinatura ? 0 : Math.min(10, Math.max(1, Number(qtdInput.value || 1)));
-      qtdInput.disabled = isAssinatura;
-      if (isAssinatura) qtdInput.value = 1;
-
-      const selected = Array.from(selectorsRoot.querySelectorAll('select[name="pet_ids"]')).map(function (el) {
-        return el.value;
-      });
-
-      if (!pets.length && !isAssinatura) {
-        selectorsRoot.innerHTML = '<p class="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-600">Você precisa cadastrar ao menos 1 pet para continuar.</p>';
-        return;
-      }
-
-      let html = '';
-      for (let i = 0; i < qtd; i += 1) {
-        const options = pets.map(function (pet) { return buildOption(pet, selected[i]); }).join('');
-        html += '<label class="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm">' +
-          '<span class="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-600">Tag #' + (i + 1) + '</span>' +
-          '<select name="pet_ids" required class="input !bg-white !py-2.5">' +
-          options +
-          '</select>' +
-          '</label>';
-      }
-
-      if (isAssinatura) {
-        html = '<p class="rounded-xl border border-blue-200 bg-blue-50 p-3 text-sm text-blue-700">Renovação sem compra de hardware. Nenhum pet precisa ser selecionado.</p>';
-      }
-
-      selectorsRoot.innerHTML = html;
-    }
-
-    if (form && submitBtn && submitLabel) {
-      form.addEventListener('submit', function () {
-        submitBtn.disabled = true;
-        submitBtn.classList.add('opacity-70', 'cursor-not-allowed');
-        submitLabel.textContent = 'Redirecionando...';
-      });
-    }
-
-    qtdInput.addEventListener('change', renderSelectors);
-    orderTypeSelect.addEventListener('change', renderSelectors);
-    renderSelectors();
-  })();
+  window.AIRPET_TAG_LOJA = {
+    pets: <%- safeJson((pets || []).map(function (p) { return { id: p.id, nome: p.nome }; })) %>
+  };
 </script>
 
 <%- include('../partials/footer') %>

@@ -29,6 +29,15 @@ async function ensureTagCommerceSchema() {
         )
       `);
       await query(`
+        ALTER TABLE plan_definitions
+          ADD COLUMN IF NOT EXISTS nome VARCHAR(100),
+          ADD COLUMN IF NOT EXISTS descricao TEXT,
+          ADD COLUMN IF NOT EXISTS preco INTEGER,
+          ADD COLUMN IF NOT EXISTS beneficios JSONB NOT NULL DEFAULT '[]'::jsonb,
+          ADD COLUMN IF NOT EXISTS destaque BOOLEAN NOT NULL DEFAULT false,
+          ADD COLUMN IF NOT EXISTS criado_em TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      `);
+      await query(`
         INSERT INTO plan_definitions (slug, nome_exibicao, mensalidade_centavos, ordem, ativo, features_json)
         VALUES
           ('basico', 'AIRPET Essencial', 1990, 1, true, '{"scan_publico_basico": true, "explorar_busca": true}'::jsonb),
@@ -47,6 +56,29 @@ async function ensureTagCommerceSchema() {
         data_atualizacao = NOW()
         WHERE slug IN ('basico', 'plus', 'familia')
       `);
+      await query(`
+        UPDATE plan_definitions
+        SET
+          nome = COALESCE(NULLIF(nome, ''), nome_exibicao),
+          descricao = CASE
+            WHEN slug = 'basico' THEN COALESCE(NULLIF(descricao, ''), 'Proteção fundamental para começar com segurança.')
+            WHEN slug = 'plus' THEN COALESCE(NULLIF(descricao, ''), 'Plano recomendado com alertas e contexto de resgate.')
+            WHEN slug = 'familia' THEN COALESCE(NULLIF(descricao, ''), 'Cobertura máxima com rede colaborativa e multicanal.')
+            ELSE descricao
+          END,
+          preco = COALESCE(preco, mensalidade_centavos),
+          beneficios = CASE
+            WHEN jsonb_typeof(beneficios) = 'array' AND jsonb_array_length(beneficios) > 0 THEN beneficios
+            WHEN slug = 'basico' THEN '["Contato rápido no scan","Página pública do pet","Notificação de escaneamento"]'::jsonb
+            WHEN slug = 'plus' THEN '["Tudo do Essencial","Alerta com mapa","Notificações em tempo real"]'::jsonb
+            WHEN slug = 'familia' THEN '["Tudo do Proteção","Rede colaborativa","Suporte prioritário"]'::jsonb
+            ELSE '[]'::jsonb
+          END,
+          destaque = CASE
+            WHEN slug = 'plus' THEN true
+            ELSE COALESCE(destaque, false)
+          END
+      `);
 
       await query(`
         CREATE TABLE IF NOT EXISTS tag_subscriptions (
@@ -62,7 +94,31 @@ async function ensureTagCommerceSchema() {
           UNIQUE (usuario_id)
         )
       `);
+      await query(`
+        ALTER TABLE tag_subscriptions
+          ADD COLUMN IF NOT EXISTS plano_id BIGINT REFERENCES plan_definitions(id) ON DELETE SET NULL,
+          ADD COLUMN IF NOT EXISTS status_assinatura VARCHAR(30) NOT NULL DEFAULT 'ativa',
+          ADD COLUMN IF NOT EXISTS data_fim TIMESTAMPTZ,
+          ADD COLUMN IF NOT EXISTS renovacao_automatica BOOLEAN NOT NULL DEFAULT true,
+          ADD COLUMN IF NOT EXISTS origem_pedido BIGINT,
+          ADD COLUMN IF NOT EXISTS criado_em TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      `);
+      await query(`
+        UPDATE tag_subscriptions
+        SET
+          status_assinatura = COALESCE(NULLIF(status_assinatura, ''), status, 'ativa'),
+          data_fim = COALESCE(data_fim, valid_until)
+      `);
+      await query(`
+        UPDATE tag_subscriptions ts
+        SET plano_id = pd.id
+        FROM plan_definitions pd
+        WHERE ts.plano_id IS NULL
+          AND LOWER(COALESCE(ts.plan_slug, '')) = LOWER(pd.slug)
+      `);
       await query(`CREATE INDEX IF NOT EXISTS idx_tag_subscriptions_valid_until ON tag_subscriptions (valid_until)`);
+      await query(`CREATE INDEX IF NOT EXISTS idx_tag_subscriptions_plan_id ON tag_subscriptions (plano_id)`);
+      await query(`CREATE INDEX IF NOT EXISTS idx_tag_subscriptions_status_assinatura ON tag_subscriptions (status_assinatura)`);
 
       await query(`
         CREATE TABLE IF NOT EXISTS tag_product_orders (
@@ -148,6 +204,22 @@ async function ensureTagCommerceSchema() {
           data_atualizacao TIMESTAMPTZ,
           UNIQUE (order_id, sequencia)
         )
+      `);
+      await query(`
+        DO $$
+        BEGIN
+          IF NOT EXISTS (
+            SELECT 1
+            FROM pg_constraint
+            WHERE conname = 'fk_tag_subscriptions_origem_pedido'
+          ) THEN
+            ALTER TABLE tag_subscriptions
+            ADD CONSTRAINT fk_tag_subscriptions_origem_pedido
+            FOREIGN KEY (origem_pedido)
+            REFERENCES tag_product_orders(id)
+            ON DELETE SET NULL;
+          END IF;
+        END $$;
       `);
       await query(`
         CREATE INDEX IF NOT EXISTS idx_tag_order_units_order

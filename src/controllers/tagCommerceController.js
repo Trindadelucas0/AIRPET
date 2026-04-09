@@ -19,6 +19,32 @@ function toArray(value) {
   return [value];
 }
 
+function tagCommerceHeadAssets() {
+  return '<link rel="stylesheet" href="/css/tags-commerce.css">';
+}
+
+function scriptTag(src) {
+  return `<script src="${src}"></script>`;
+}
+
+function serializePlanos(planos = [], planCopyMap = PLAN_COPY_MAP) {
+  return (planos || []).map((plano) => {
+    const ui = planCopyMap[plano.slug] || {};
+    return {
+      id: plano.id,
+      slug: plano.slug,
+      nome: plano.nome_plano || plano.nome || plano.nome_exibicao || plano.slug,
+      nome_exibicao: plano.nome_exibicao || plano.nome_plano || plano.slug,
+      descricao: plano.descricao || ui.subtitulo || ui.resumo || '',
+      preco_centavos: Number(plano.preco_centavos || plano.preco || plano.mensalidade_centavos || 0),
+      beneficios: Array.isArray(plano.beneficios_json) ? plano.beneficios_json : (ui.bullets || []),
+      destaque: Boolean(plano.destaque || ui.destaque),
+      badge: ui.badge || null,
+      resumo: ui.resumo || null,
+    };
+  });
+}
+
 function redirecionarComFallbackSchema(req, res, redirectPath) {
   req.session.flash = {
     tipo: 'erro',
@@ -186,6 +212,8 @@ const tagCommerceController = {
         pets,
         estadoPlano,
         upgradeResumo,
+        extraHead: tagCommerceHeadAssets(),
+        extraScripts: scriptTag('/js/tags-loja.js'),
       });
     } catch (err) {
       if (isSchemaMissingError(err)) {
@@ -266,6 +294,8 @@ const tagCommerceController = {
         titulo: 'Meus pedidos TAG',
         pedidos,
         estadoPlano,
+        extraHead: tagCommerceHeadAssets(),
+        extraScripts: scriptTag('/js/tags-pedidos.js'),
       });
     } catch (err) {
       if (isSchemaMissingError(err)) {
@@ -295,6 +325,8 @@ const tagCommerceController = {
         pedido,
         unidades,
         pets,
+        extraHead: tagCommerceHeadAssets(),
+        extraScripts: scriptTag('/js/tags-pedido-detalhe.js'),
       });
     } catch (err) {
       if (isSchemaMissingError(err)) {
@@ -426,7 +458,66 @@ const tagCommerceController = {
       planos,
       planCopyMap: PLAN_COPY_MAP,
       upgradeResumo,
+      extraHead: tagCommerceHeadAssets(),
+      extraScripts: scriptTag('/js/tags-planos.js'),
     });
+  },
+
+  async apiListarPlanos(req, res) {
+    try {
+      await tagCommerceService.ensurePedidosSchema();
+      const planos = await tagCommerceService.carregarPlanos();
+      return res.json({ ok: true, planos: serializePlanos(planos) });
+    } catch (err) {
+      logger.error('TagCommerceController', 'Erro ao listar planos via API', err);
+      return res.status(500).json({ ok: false, message: 'Erro ao listar planos.' });
+    }
+  },
+
+  async assinarPlano(req, res) {
+    try {
+      await tagCommerceService.ensurePedidosSchema();
+      const usuarioId = req.session.usuario.id;
+      const payload = {
+        plan_slug: req.body.plan_slug,
+        order_type: 'assinatura_recorrente',
+        quantidade_tags: 0,
+        pet_ids: [],
+        promo_code: req.body.promo_code,
+        billing: {
+          billing_name: req.body.billing_name,
+          billing_cpf_cnpj: req.body.billing_cpf_cnpj,
+          billing_phone: req.body.billing_phone,
+          billing_cep: req.body.billing_cep,
+          billing_logradouro: req.body.billing_logradouro,
+          billing_numero: req.body.billing_numero,
+          billing_complemento: req.body.billing_complemento,
+          billing_bairro: req.body.billing_bairro,
+          billing_cidade: req.body.billing_cidade,
+          billing_uf: req.body.billing_uf,
+        },
+      };
+      const { pedido } = await tagCommerceService.criarPedido(usuarioId, payload);
+      const usuario = await Usuario.buscarPorId(usuarioId);
+      const checkout = await tagCommerceService.criarCheckout(usuario, pedido);
+      if (req.xhr || String(req.get('accept') || '').includes('application/json')) {
+        return res.status(201).json({
+          ok: true,
+          pedido_id: pedido.id,
+          checkout_url: checkout?.checkout_url || null,
+        });
+      }
+      if (checkout.checkout_url) return res.redirect(checkout.checkout_url);
+      req.session.flash = { tipo: 'sucesso', mensagem: 'Assinatura criada com sucesso.' };
+      return res.redirect(`/tags/pedidos/${pedido.id}`);
+    } catch (err) {
+      logger.error('TagCommerceController', 'Erro ao criar assinatura TAG', err);
+      if (req.xhr || String(req.get('accept') || '').includes('application/json')) {
+        return res.status(400).json({ ok: false, message: err.message || 'Não foi possível assinar o plano.' });
+      }
+      req.session.flash = { tipo: 'erro', mensagem: err.message || 'Não foi possível assinar o plano.' };
+      return res.redirect('/tags/planos');
+    }
   },
 
   async adminListarPedidos(req, res) {

@@ -13,7 +13,7 @@ const infinitePayService = require('./infinitePayService');
 const tagEntitlementService = require('./tagEntitlementService');
 const logger = require('../utils/logger');
 const { ensureTagCommerceSchema } = require('../models/tagCommerceSchema');
-const UPGRADE_DISCOUNT_CENTS = 1000;
+const UPGRADE_DISCOUNT_CENTS = Number(process.env.TAG_UPGRADE_DISCOUNT_CENTS || 1000);
 
 function normalizarPlano(slug) {
   const valor = String(slug || 'basico').toLowerCase();
@@ -433,6 +433,17 @@ const tagCommerceService = {
   },
 
   async criarCheckout(usuario, pedido) {
+    const checkoutMode = String(process.env.TAG_CHECKOUT_MODE || 'provider').trim().toLowerCase();
+    if (checkoutMode === 'mock') {
+      const mockUrl = `/tags/pagamentos/retorno?pedido_id=${pedido.id}&mock=1`;
+      return TagProductOrder.atualizarCheckout(
+        pedido.id,
+        `MOCK-${Date.now()}-${pedido.id}`,
+        mockUrl,
+        null
+      );
+    }
+
     const orderNsu = infinitePayService.gerarOrderNsu('tag');
     const { redirectUrl, webhookUrl } = resolveCheckoutUrls(pedido.id);
     const descricao = pedido.order_type === 'assinatura_recorrente'

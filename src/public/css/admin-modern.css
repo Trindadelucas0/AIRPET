@@ -1,0 +1,201 @@
+:root {
+  --adm-bg: #f5f4f1;
+  --adm-surface: #ffffff;
+  --adm-surface-2: #f9f8f6;
+  --adm-border: rgba(0, 0, 0, 0.08);
+  --adm-text: #1a1917;
+  --adm-text-2: #6b6a65;
+  --adm-text-3: #a8a7a1;
+  --adm-accent: #1a1917;
+  --adm-radius: 12px;
+}
+
+body.admin-modern-shell {
+  background: var(--adm-bg);
+  color: var(--adm-text);
+  font-family: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.admin-modern-layout {
+  min-height: 100vh;
+  display: flex;
+}
+
+.admin-modern-sidebar {
+  width: 248px;
+  background: var(--adm-surface);
+  border-right: 1px solid var(--adm-border);
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  z-index: 60;
+  overflow-y: auto;
+  transition: transform 0.2s ease;
+}
+
+.admin-modern-brand {
+  padding: 18px 16px;
+  border-bottom: 1px solid var(--adm-border);
+}
+
+.admin-brand-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+}
+
+.admin-brand-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: var(--adm-accent);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.admin-brand-name {
+  display: block;
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: -0.2px;
+  color: var(--adm-text);
+}
+
+.admin-brand-tag {
+  display: block;
+  font-size: 10px;
+  color: var(--adm-text-3);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.admin-modern-nav {
+  padding: 12px;
+  flex: 1;
+}
+
+.admin-nav-section {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--adm-text-3);
+  margin: 14px 6px 8px;
+}
+
+.admin-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 10px;
+  margin-bottom: 2px;
+  border-radius: 8px;
+  text-decoration: none;
+  font-size: 13px;
+  color: var(--adm-text-2);
+  transition: background-color 0.14s ease, color 0.14s ease;
+}
+
+.admin-nav-item i {
+  width: 14px;
+}
+
+.admin-nav-item:hover {
+  background: var(--adm-surface-2);
+  color: var(--adm-text);
+}
+
+.admin-nav-item.active {
+  background: var(--adm-accent);
+  color: #fff;
+  font-weight: 600;
+}
+
+.admin-modern-sidebar-footer {
+  border-top: 1px solid var(--adm-border);
+  padding: 12px;
+}
+
+.admin-modern-main {
+  margin-left: 248px;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-modern-topbar {
+  height: 56px;
+  padding: 0 24px;
+  border-bottom: 1px solid var(--adm-border);
+  background: rgba(245, 244, 241, 0.85);
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 40;
+}
+
+.admin-topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.admin-breadcrumb {
+  color: var(--adm-text-2);
+  font-size: 13px;
+}
+
+.admin-topbar-logout {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  border: 1px solid var(--adm-border);
+  border-radius: 8px;
+  padding: 0 12px;
+  text-decoration: none;
+  font-size: 12px;
+  color: var(--adm-text-2);
+  background: var(--adm-surface);
+}
+
+.admin-topbar-logout:hover {
+  color: var(--adm-text);
+}
+
+.admin-mobile-menu {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid var(--adm-border);
+  background: var(--adm-surface);
+  color: var(--adm-text-2);
+  display: none;
+}
+
+@media (max-width: 960px) {
+  .admin-modern-sidebar {
+    transform: translateX(-100%);
+  }
+  .admin-modern-sidebar.open {
+    transform: translateX(0);
+  }
+  .admin-modern-main {
+    margin-left: 0;
+  }
+  .admin-mobile-menu {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
