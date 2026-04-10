@@ -62,7 +62,9 @@ async function iniciar() {
         'Schema TAG NFC nao encontrado (plan_definitions ausente). Rode `npm run db:migrate` no ambiente antes de usar /tags/loja-tag.'
       );
     }
-
+app.get('/loaderio-2340347d46737358dce737c59095abea.txt', (req, res) => {
+    res.send('loaderio-2340347d46737358dce737c59095abea');
+});
     ensurePublicImageDirs();
 
     logger.secao('Services');
