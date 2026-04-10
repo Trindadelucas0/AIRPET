@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const { performance } = require('node:perf_hooks');
 const path = require('path');
 const multer = require('multer');
 
@@ -42,6 +43,67 @@ const PetPerdido = require('../models/PetPerdido');
 const petPerdidoController = require('../controllers/petPerdidoController');
 const logger = require('../utils/logger');
 
+const HOME_CACHE_TTL_MS = Math.max(parseInt(process.env.HOME_CACHE_TTL_MS || '60000', 10) || 60000, 5000);
+const homePublicCache = {
+  value: null,
+  expiresAt: 0,
+  inFlight: null,
+};
+
+async function loadHomePublicData() {
+  const queryTimings = {};
+  const t0 = performance.now();
+  const timed = async (label, fn) => {
+    const qs = performance.now();
+    const result = await fn();
+    queryTimings[label] = Number((performance.now() - qs).toFixed(2));
+    return result;
+  };
+
+  const [petsTotal, usuariosTotal, pontosMapaAtivos, perdidosRecentes] = await Promise.all([
+    timed('petsTotal', () => Pet.contarTotal()),
+    timed('usuariosTotal', () => Usuario.contarTotal()),
+    timed('pontosMapaAtivos', () => PontoMapa.contarAtivos()),
+    timed('perdidosRecentes', () => PetPerdido.listarRecentesAprovadosParaHome(3)),
+  ]);
+
+  return {
+    stats: {
+      pets: petsTotal,
+      usuarios: usuariosTotal,
+      petshops: pontosMapaAtivos,
+    },
+    petsPerdidosRecentes: perdidosRecentes,
+    metrics: {
+      totalMs: Number((performance.now() - t0).toFixed(2)),
+      queryMs: queryTimings,
+    },
+  };
+}
+
+async function getHomePublicDataCached() {
+  const now = Date.now();
+  if (homePublicCache.value && homePublicCache.expiresAt > now) {
+    return { ...homePublicCache.value, cacheHit: true };
+  }
+  if (homePublicCache.inFlight) {
+    const value = await homePublicCache.inFlight;
+    return { ...value, cacheHit: true, fromInFlight: true };
+  }
+  homePublicCache.inFlight = (async () => {
+    const value = await loadHomePublicData();
+    homePublicCache.value = value;
+    homePublicCache.expiresAt = Date.now() + HOME_CACHE_TTL_MS;
+    return value;
+  })();
+  try {
+    const value = await homePublicCache.inFlight;
+    return { ...value, cacheHit: false };
+  } finally {
+    homePublicCache.inFlight = null;
+  }
+}
+
 router.use(limiterGeral);
 
 router.get('/alerta/:alertaId', petPerdidoController.mostrarAlertaPublico);
@@ -54,23 +116,26 @@ router.get('/', async (req, res) => {
   let stats = { pets: 0, usuarios: 0, petshops: 0 };
   let petsPerdidosRecentes = [];
   let statsCarregamentoFalhou = false;
+  const reqStart = performance.now();
 
   try {
-    const [petsTotal, usuariosTotal, pontosMapaAtivos, perdidosRecentes] = await Promise.all([
-      Pet.contarTotal(),
-      Usuario.contarTotal(),
-      PontoMapa.contarAtivos(),
-      PetPerdido.listarRecentesAprovadosParaHome(3),
-    ]);
-    stats = {
-      pets: petsTotal,
-      usuarios: usuariosTotal,
-      petshops: pontosMapaAtivos,
-    };
-    petsPerdidosRecentes = perdidosRecentes;
+    const homeData = await getHomePublicDataCached();
+    stats = homeData.stats;
+    petsPerdidosRecentes = homeData.petsPerdidosRecentes;
+    if (process.env.LOG_HOME_PERF === 'true') {
+      logger.info(
+        'HOME_PERF',
+        `cacheHit=${homeData.cacheHit ? '1' : '0'} total=${homeData.metrics.totalMs}ms queries=${JSON.stringify(homeData.metrics.queryMs)}`
+      );
+    }
   } catch (e) {
     statsCarregamentoFalhou = true;
     logger.error('ROUTES', 'Erro ao carregar estatísticas da home', e);
+  }
+
+  if (process.env.LOG_HOME_PERF === 'true') {
+    const totalReqMs = Number((performance.now() - reqStart).toFixed(2));
+    logger.info('HOME_PERF', `requestTotal=${totalReqMs}ms`);
   }
 
   res.render('home', { titulo: 'Inicio', stats, petsPerdidosRecentes, statsCarregamentoFalhou });

@@ -188,6 +188,96 @@ function table(titulo, dados) {
 // ─── Request Logger (substitui morgan) ──────────────────────────────────────
 
 const STATIC_EXT = /\.(css|js|png|jpg|jpeg|gif|svg|ico|woff2?|ttf|eot|map|webmanifest)$/i;
+const PERF_MAX_SAMPLES = Math.max(parseInt(process.env.REQ_PERF_MAX_SAMPLES || '2000', 10) || 2000, 200);
+const PERF_LOG_EVERY = Math.max(parseInt(process.env.REQ_PERF_LOG_EVERY || '200', 10) || 200, 50);
+const requestPerf = {
+  startedAt: Date.now(),
+  total: 0,
+  errors: 0,
+  samples: [],
+  byRoute: new Map(),
+};
+
+function percentileFromSorted(sorted, percentile) {
+  if (!sorted.length) return 0;
+  const idx = Math.ceil((percentile / 100) * sorted.length) - 1;
+  return sorted[Math.max(0, Math.min(sorted.length - 1, idx))];
+}
+
+function toFixedMs(n) {
+  return Number.isFinite(n) ? Number(n.toFixed(2)) : 0;
+}
+
+function registerPerfSample(routeKey, durationMs, statusCode) {
+  requestPerf.total += 1;
+  if (statusCode >= 500) requestPerf.errors += 1;
+  requestPerf.samples.push(durationMs);
+  if (requestPerf.samples.length > PERF_MAX_SAMPLES) {
+    requestPerf.samples.splice(0, requestPerf.samples.length - PERF_MAX_SAMPLES);
+  }
+
+  const routeStats = requestPerf.byRoute.get(routeKey) || { count: 0, errors: 0, samples: [] };
+  routeStats.count += 1;
+  if (statusCode >= 500) routeStats.errors += 1;
+  routeStats.samples.push(durationMs);
+  if (routeStats.samples.length > PERF_MAX_SAMPLES) {
+    routeStats.samples.splice(0, routeStats.samples.length - PERF_MAX_SAMPLES);
+  }
+  requestPerf.byRoute.set(routeKey, routeStats);
+}
+
+function summarizePerf(samples, count, errors) {
+  if (!samples.length) {
+    return {
+      count,
+      errors,
+      errorRate: 0,
+      avgMs: 0,
+      p95Ms: 0,
+      p99Ms: 0,
+      maxMs: 0,
+    };
+  }
+  const sorted = [...samples].sort((a, b) => a - b);
+  const total = samples.reduce((acc, v) => acc + v, 0);
+  return {
+    count,
+    errors,
+    errorRate: toFixedMs((errors / Math.max(1, count)) * 100),
+    avgMs: toFixedMs(total / samples.length),
+    p95Ms: toFixedMs(percentileFromSorted(sorted, 95)),
+    p99Ms: toFixedMs(percentileFromSorted(sorted, 99)),
+    maxMs: toFixedMs(sorted[sorted.length - 1]),
+  };
+}
+
+function getRequestPerfSnapshot() {
+  const uptimeMs = Date.now() - requestPerf.startedAt;
+  const global = summarizePerf(requestPerf.samples, requestPerf.total, requestPerf.errors);
+  const byRoute = [];
+  requestPerf.byRoute.forEach((stats, route) => {
+    byRoute.push({
+      route,
+      ...summarizePerf(stats.samples, stats.count, stats.errors),
+    });
+  });
+  byRoute.sort((a, b) => b.count - a.count);
+  return {
+    startedAt: new Date(requestPerf.startedAt).toISOString(),
+    uptimeMs,
+    windowSamples: requestPerf.samples.length,
+    ...global,
+    byRoute,
+  };
+}
+
+function resetRequestPerf() {
+  requestPerf.startedAt = Date.now();
+  requestPerf.total = 0;
+  requestPerf.errors = 0;
+  requestPerf.samples = [];
+  requestPerf.byRoute.clear();
+}
 
 function requestLogger() {
   return (req, res, next) => {
@@ -229,8 +319,16 @@ function requestLogger() {
       const url = `${c.white}${pad(req.originalUrl || req.url, 35)}${c.reset}`;
       const st = `${statusCor}${c.bold}${status}${c.reset}`;
       const dur = `${tempoCor}${duracao}ms${c.reset}`;
+      const routeKey = `${metodo} ${req.path}`;
+
+      registerPerfSample(routeKey, duracao, status);
 
       console.log(`${tag}  ${tempo}  ${met} ${url} ${st}  ${dur}`);
+      if (requestPerf.total % PERF_LOG_EVERY === 0) {
+        const snapshot = getRequestPerfSnapshot();
+        const perfMsg = `REQ_PERF janela=${snapshot.windowSamples} avg=${snapshot.avgMs}ms p95=${snapshot.p95Ms}ms p99=${snapshot.p99Ms}ms erro=${snapshot.errorRate}%`;
+        info('PERF', perfMsg);
+      }
     };
 
     next();
@@ -239,4 +337,4 @@ function requestLogger() {
 
 // ─── Exports ────────────────────────────────────────────────────────────────
 
-module.exports = { info, error, warn, banner, secao, table, requestLogger };
+module.exports = { info, error, warn, banner, secao, table, requestLogger, getRequestPerfSnapshot, resetRequestPerf };

@@ -164,6 +164,17 @@ function createApplication() {
     }
   });
 
+  app.get('/health/perf', async (req, res) => {
+    const secret = process.env.HEALTH_PERF_SECRET || process.env.HEALTH_DB_SECRET;
+    if (!secret || String(req.query.secret || '') !== secret) {
+      return res.status(404).end();
+    }
+    const reset = String(req.query.reset || '').toLowerCase() === 'true';
+    const snapshot = logger.getRequestPerfSnapshot();
+    if (reset) logger.resetRequestPerf();
+    return res.json({ ok: true, snapshot, resetApplied: reset });
+  });
+
   // Loader.io domain verification endpoint.
   app.get('/loaderio-2340347d46737358dce737c59095abea.txt', (req, res) => {
     res.type('text/plain').send('loaderio-2340347d46737358dce737c59095abea');
