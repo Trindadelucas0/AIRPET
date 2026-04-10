@@ -29,6 +29,7 @@ const TagScan = require('../models/TagScan');
 const NfcTag = require('../models/NfcTag');
 const Localizacao = require('../models/Localizacao');
 const tagEntitlementService = require('../services/tagEntitlementService');
+const petPlanLimitService = require('../services/petPlanLimitService');
 const { withTransaction } = require('../config/database');
 const logger = require('../utils/logger');
 const { multerPublicUrl } = require('../middlewares/persistUploadMiddleware');
@@ -98,6 +99,17 @@ const petController = {
    */
   async criar(req, res) {
     try {
+      const usuarioId = req.session.usuario.id;
+      const petsAtuais = await Pet.buscarPorUsuario(usuarioId);
+      const { limitePets } = await petPlanLimitService.obterLimiteUsuario(usuarioId);
+      if (petsAtuais.length >= limitePets) {
+        req.session.flash = {
+          tipo: 'erro',
+          mensagem: `Seu plano atual permite até ${limitePets} pet(s). Faça upgrade para cadastrar mais.`,
+        };
+        return res.redirect('/pets/cadastro');
+      }
+
       const { nome, tipo, tipo_custom, raca, cor, porte, sexo, dataNascimento, peso, descricao, telefoneContato,
         microchip, castrado: castradoBody, alergias_medicacoes, veterinario_nome, veterinario_telefone, observacoes } = req.body;
       const castrado = castradoBody === 'sim' || castradoBody === 'on' ? true : (castradoBody === 'nao' ? false : null);
@@ -105,7 +117,7 @@ const petController = {
       const foto = multerPublicUrl(req.file, 'pets');
 
       const dadosPet = {
-        usuario_id: req.session.usuario.id,
+        usuario_id: usuarioId,
         nome,
         tipo: tipo || 'cachorro',
         tipo_custom: tipo === 'outro' ? tipo_custom : null,
@@ -250,6 +262,8 @@ const petController = {
 
       let scans = [];
       let tags = [];
+      let tagsAtivas = [];
+      let tagsHistorico = [];
       let fotosRecebidas = [];
       if (ehDono) {
         [scans, tags, fotosRecebidas] = await Promise.all([
@@ -257,6 +271,8 @@ const petController = {
           NfcTag.buscarPorUsuario(req.session.usuario.id).then(lista => lista.filter(t => t.pet_id === parseInt(id, 10))),
           Localizacao.buscarComFotosPorPet(id, 20),
         ]);
+        tagsAtivas = (tags || []).filter((t) => t.status === 'active');
+        tagsHistorico = (tags || []).filter((t) => t.status !== 'active');
       }
 
       res.render('pets/perfil', {
@@ -265,6 +281,8 @@ const petController = {
         ehDono,
         scans,
         tags,
+        tagsAtivas,
+        tagsHistorico,
         fotosRecebidas,
         idadePet,
         calendario,
@@ -557,7 +575,14 @@ const petController = {
         if (!reservada) {
           throw new Error('TAG_RESERVA_INVALIDA');
         }
-        await NfcTag.ativar(tag.id, id, client);
+        const anteriorAtiva = await NfcTag.buscarAtivaPorPetId(id, client);
+        const novaTag = await NfcTag.ativar(tag.id, id, client);
+        if (!novaTag) {
+          throw new Error('FALHA_ATIVACAO_TAG');
+        }
+        if (anteriorAtiva && Number(anteriorAtiva.id) !== Number(novaTag.id)) {
+          await NfcTag.desativarPorSubstituicao(anteriorAtiva.id, novaTag.id, client);
+        }
       });
 
       logger.info('PET_CTRL', `Tag ${tag_code} vinculada ao pet ${pet.nome} (ID: ${id}) pelo usuário ${usuarioId}`);

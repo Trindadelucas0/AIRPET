@@ -35,7 +35,8 @@ const Notificacao = {
               r.nome AS remetente_nome,
               r.cor_perfil AS remetente_cor,
               r.foto_perfil AS remetente_foto,
-              pt.nome AS pet_nome
+              pt.nome AS pet_nome,
+              pt.foto AS pet_foto
        FROM notificacoes n
        LEFT JOIN usuarios r ON r.id = n.remetente_id
        LEFT JOIN pets pt ON pt.id = n.pet_id
@@ -55,7 +56,8 @@ const Notificacao = {
               r.nome AS remetente_nome,
               r.cor_perfil AS remetente_cor,
               r.foto_perfil AS remetente_foto,
-              pt.nome AS pet_nome
+              pt.nome AS pet_nome,
+              pt.foto AS pet_foto
        FROM notificacoes n
        LEFT JOIN usuarios r ON r.id = n.remetente_id
        LEFT JOIN pets pt ON pt.id = n.pet_id

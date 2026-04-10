@@ -169,11 +169,21 @@
               <i class="fa-regular fa-calendar-check"></i> Entrar para agendar
             </a>
           <% } %>
-          <% if (whatsappPerfilUrl) { %>
-            <a href="<%= whatsappPerfilUrl %>" target="_blank" rel="noopener" class="btn-action primary">
-              <i class="fa-brands fa-whatsapp"></i> WhatsApp
-            </a>
-          <% } %>
+          <button type="button" class="btn-action primary" onclick="if(navigator.share){navigator.share({title:'<%= (petshop.nome || 'Petshop').replace(/'/g, '\\\\\'') %>',url:window.location.href}).catch(function(){});}else if(navigator.clipboard){navigator.clipboard.writeText(window.location.href).then(function(){alert('Link copiado!');});}">
+            <i class="fa-solid fa-share-nodes"></i> Compartilhar
+          </button>
+          <a href="/petshop-panel/auth/login" class="btn-action secondary">
+            <i class="fa-solid fa-store"></i> Área Pet Parceiro
+          </a>
+          <a href="#secao-servicos" class="btn-action ghost">
+            <i class="fa-solid fa-scissors"></i> Serviços
+          </a>
+          <a href="/agenda?petshop_id=<%= petshop.id %>" class="btn-action ghost">
+            <i class="fa-regular fa-calendar-check"></i> Agendamentos
+          </a>
+          <a href="#secao-produtos" class="btn-action ghost">
+            <i class="fa-solid fa-box-open"></i> Produtos
+          </a>
           <% if (typeof usuario !== 'undefined' && usuario) { %>
             <% if (temVinculoAprovado) { %>
               <button type="button" class="btn-action success" disabled>
@@ -225,7 +235,7 @@
       </div>
     <% } %>
 
-    <section class="section-card">
+    <section class="section-card" id="secao-produtos">
       <h2 class="section-title">Fotos do dia a dia</h2>
       <% if (!totalFotos) { %>
         <p class="text-sm text-gray-500">Este parceiro ainda não publicou fotos do feed.</p>
@@ -240,7 +250,7 @@
       <% } %>
     </section>
 
-    <section class="section-card">
+    <section class="section-card" id="secao-servicos">
       <h2 class="section-title">Promoções</h2>
       <% if (!totalPromos) { %>
         <p class="text-sm text-gray-500">Nenhuma promoção ativa no momento.</p>

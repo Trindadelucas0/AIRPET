@@ -9,6 +9,7 @@ const NfcTag = require('../models/NfcTag');
 const TagSubscription = require('../models/TagSubscription');
 const PlanDefinition = require('../models/PlanDefinition');
 const Pet = require('../models/Pet');
+const petPlanLimitService = require('./petPlanLimitService');
 const infinitePayService = require('./infinitePayService');
 const tagEntitlementService = require('./tagEntitlementService');
 const logger = require('../utils/logger');
@@ -287,7 +288,10 @@ const tagCommerceService = {
     }
 
     const petsUsuario = await Pet.buscarPorUsuario(usuarioId);
-    if (petsUsuario.length > 10) throw new Error('Limite máximo de 10 pets por usuário excedido.');
+    const { limitePets } = await petPlanLimitService.obterLimiteUsuario(usuarioId);
+    if (petsUsuario.length > limitePets) {
+      throw new Error(`Seu plano atual permite até ${limitePets} pet(s).`);
+    }
 
     const petSet = new Set(petsUsuario.map((p) => Number(p.id)));
     for (const petId of petIds) {

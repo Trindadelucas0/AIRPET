@@ -1196,24 +1196,10 @@
       }
     }
 
-    var whatsappRow = document.getElementById('postDetailWhatsappRow');
-    var whatsappBtn = document.getElementById('postDetailBtnWhatsapp');
-    if (whatsappRow && whatsappBtn) {
-      if (meta.kind === 'petshop' && meta.isPromo) {
-        var precoLabel = (meta.preco != null) ? ('R$ ' + Number(meta.preco).toFixed(2).replace('.', ',')) : '';
-        var textoWa = 'Olá! Tenho interesse na promoção "' + (meta.displayName || 'parceiro') + '"' + (precoLabel ? (' por ' + precoLabel) : '') + ' que vi no AIRPET.';
-        var waUrl = buildWhatsappUrl(meta.whatsapp_publico, textoWa) || (meta.contato_link || '');
-        if (waUrl) {
-          whatsappBtn.setAttribute('href', waUrl);
-          whatsappRow.classList.remove('hidden');
-        } else {
-          whatsappBtn.setAttribute('href', '#');
-          whatsappRow.classList.add('hidden');
-        }
-      } else {
-        whatsappBtn.setAttribute('href', '#');
-        whatsappRow.classList.add('hidden');
-      }
+    var shareHint = document.getElementById('postDetailShareHint');
+    if (shareHint) {
+      if (meta.kind === 'petshop' && meta.isPromo) shareHint.classList.remove('hidden');
+      else shareHint.classList.add('hidden');
     }
 
     var tw = document.getElementById('postDetailTextWrap');
@@ -2260,8 +2246,20 @@
   /* ──────────── Share ──────────── */
   function compartilhar(postId, autor) {
     var url = window.location.origin + '/explorar#post-' + postId;
-    var texto = 'Veja o post de ' + autor + ' no AIRPET! 🐾 ' + url;
-    window.open('https://wa.me/?text=' + encodeURIComponent(texto), '_blank');
+    var texto = 'Veja o post de ' + autor + ' no AIRPET! ' + url;
+    if (navigator.share) {
+      navigator.share({ title: 'AIRPET', text: texto, url: url }).catch(function () {});
+      return;
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).then(function () {
+        toast('Link copiado para a area de transferencia.');
+      }).catch(function () {
+        toast('Nao foi possivel copiar o link.', 'erro');
+      });
+      return;
+    }
+    toast(url);
   }
 
   (function bindPostDetailCompartilhar() {

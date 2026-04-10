@@ -105,6 +105,17 @@ async function autoDeleteSeNecessario(usuarioId) {
   return antiga;
 }
 
+async function validarPetDonoOuFalhar(petId, usuarioId, mensagem = 'Pet não encontrado ou você não é o dono.') {
+  if (!petId) return null;
+  const pet = await Pet.buscarPorId(petId);
+  if (!pet || pet.usuario_id !== usuarioId) {
+    const erro = new Error(mensagem);
+    erro.code = 'PET_NAO_PERTENCE';
+    throw erro;
+  }
+  return pet;
+}
+
 /** Explorar: só exibe cards com mídia (texto só não entra na grade). */
 function postTemMidiaExplorar(p) {
   if (!p || typeof p !== 'object') return false;
@@ -529,12 +540,7 @@ const explorarController = {
       }
       const textoLimpo = String(texto || '').trim();
       const petId = pet_id ? parseInt(pet_id, 10) : null;
-      if (petId) {
-        const pet = await Pet.buscarPorId(petId);
-        if (!pet || pet.usuario_id !== uid) {
-          return res.status(400).json({ sucesso: false, mensagem: 'Pet não encontrado ou você não é o dono.' });
-        }
-      }
+      await validarPetDonoOuFalhar(petId, uid);
 
       const requestHash = buildPostRequestHash({
         texto: textoLimpo,
@@ -582,6 +588,9 @@ const explorarController = {
       await saveIdempotentResponse(uid, idempotencyKey, requestHash, 200, payload);
       res.json(payload);
     } catch (err) {
+      if (err && err.code === 'PET_NAO_PERTENCE') {
+        return res.status(400).json({ sucesso: false, mensagem: 'Pet não encontrado ou você não é o dono.' });
+      }
       logger.error('EXPLORAR', 'Erro ao criar post', err);
       const msg = process.env.NODE_ENV === 'production'
         ? 'Erro ao publicar. Tente novamente.'
@@ -1062,10 +1071,7 @@ const explorarController = {
         return res.status(400).json({ sucesso: false, mensagem: 'Escreva algo ou envie mídia.' });
       }
       if (petId) {
-        const pet = await Pet.buscarPorId(petId);
-        if (!pet || pet.usuario_id !== uid) {
-          return res.status(400).json({ sucesso: false, mensagem: 'Pet inválido para publicação.' });
-        }
+        await validarPetDonoOuFalhar(petId, uid, 'Pet inválido para publicação.');
       }
 
       const idempotencyKey = String(req.get('Idempotency-Key') || req.get('X-Idempotency-Key') || '').trim().slice(0, 120);
@@ -1077,6 +1083,22 @@ const explorarController = {
       const idem = await tryGetIdempotentResponse(uid, idempotencyKey, requestHash);
       if (idem) return res.status(idem.status).json(idem.payload);
 
+      const ultimo = await Publicacao.ultimoPostDoUsuario(uid);
+      if (ultimo && (Date.now() - new Date(ultimo.criado_em).getTime()) < 3000) {
+        const payload = { sucesso: false, mensagem: 'Aguarde alguns segundos antes de publicar novamente.' };
+        await saveIdempotentResponse(uid, idempotencyKey, requestHash, 429, payload);
+        return res.status(429).json(payload);
+      }
+      const repetido = await Publicacao.buscarRecenteIgual(uid, texto, petId || null, 15);
+      if (repetido) {
+        const postExistente = await Publicacao.buscarPorId(repetido.id, uid);
+        const totalPostsExistente = await Publicacao.contarAtivas(uid);
+        const payload = { sucesso: true, post: postExistente, totalPosts: totalPostsExistente, removido: null, duplicado: true };
+        await saveIdempotentResponse(uid, idempotencyKey, requestHash, 200, payload);
+        return res.json(payload);
+      }
+
+      const removido = await autoDeleteSeNecessario(uid);
       const post = await Publicacao.criar({
         usuario_id: uid,
         pet_id: petId || null,
@@ -1115,6 +1137,8 @@ const explorarController = {
       const payload = {
         sucesso: true,
         post: completo,
+        totalPosts: await Publicacao.contarAtivas(uid),
+        removido: removido ? removido.id : null,
         media_count: mediaFiles.length,
         mentions_count: usuariosMencionados.length,
         tags_pending: tags.length,
@@ -1122,6 +1146,9 @@ const explorarController = {
       await saveIdempotentResponse(uid, idempotencyKey, requestHash, 200, payload);
       return res.json(payload);
     } catch (err) {
+      if (err && err.code === 'PET_NAO_PERTENCE') {
+        return res.status(400).json({ sucesso: false, mensagem: err.message || 'Pet inválido para publicação.' });
+      }
       logger.error('EXPLORAR', 'Erro criar post v2', err);
       return res.status(500).json({ sucesso: false, mensagem: 'Erro ao publicar.' });
     }
@@ -1471,7 +1498,7 @@ const explorarController = {
         return res.status(400).json({ sucesso: false, mensagem: 'postId inválido.' });
       }
 
-      await PostInteractionRaw.registrarVisualizacao({
+      const registro = await PostInteractionRaw.registrarVisualizacaoUnica({
         userId: uid,
         postId,
         watchMs,
@@ -1479,7 +1506,7 @@ const explorarController = {
         metadata: { source },
       });
 
-      return res.json({ sucesso: true });
+      return res.json({ sucesso: true, view_contabilizada: Boolean(registro && registro.inserido) });
     } catch (err) {
       logger.error('EXPLORAR', 'Erro ao registrar visualização', err);
       return res.status(500).json({ sucesso: false });

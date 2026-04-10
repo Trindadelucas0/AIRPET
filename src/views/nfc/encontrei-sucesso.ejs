@@ -1,28 +1,37 @@
 <%- include('../partials/header') %>
 
-<main class="min-h-screen bg-gradient-to-b from-green-50 to-white py-12 px-4">
+<main class="min-h-screen bg-gradient-to-b from-emerald-50 via-white to-white py-10 px-4">
   <div class="max-w-md mx-auto text-center">
-    <div class="bg-white rounded-2xl shadow-lg p-8">
-      <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+    <div class="bg-white rounded-3xl shadow-2xl shadow-emerald-100/70 border border-emerald-100 p-8">
+      <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6 ring-8 ring-green-50">
         <i class="fas fa-check text-green-500 text-3xl"></i>
       </div>
 
-      <h1 class="text-2xl font-bold text-gray-800 mb-2">Obrigado!</h1>
-      <p class="text-gray-600 mb-6">
-        Suas informações foram enviadas ao dono de <strong><%= pet.nome %></strong>.
-        Você está ajudando a reunir uma família!
+      <h1 class="text-2xl font-extrabold text-gray-800 mb-2">Mensagem enviada com sucesso</h1>
+      <p class="text-gray-600 mb-5 leading-relaxed">
+        O tutor de <strong><%= pet.nome %></strong> foi avisado agora.
+        Obrigado por agir com cuidado e empatia.
       </p>
 
       <% if (pet.foto) { %>
         <img src="<%= pet.foto %>" alt="<%= pet.nome %>" class="w-24 h-24 rounded-full object-cover mx-auto mb-6 border-4 border-green-200">
       <% } %>
 
+      <div class="text-left bg-gray-50 border border-gray-200 rounded-2xl p-4 mb-5">
+        <p class="text-xs font-bold uppercase tracking-wide text-gray-500 mb-2">Proximos passos</p>
+        <ul class="text-sm text-gray-700 space-y-1">
+          <li><i class="fa-solid fa-check text-emerald-500 mr-2"></i>Fique com o pet em local seguro</li>
+          <li><i class="fa-solid fa-check text-emerald-500 mr-2"></i>Mantenha seu celular disponivel</li>
+          <li><i class="fa-solid fa-check text-emerald-500 mr-2"></i>Se possivel, envie atualizacoes de local</li>
+        </ul>
+      </div>
+
       <div class="space-y-3">
         <a href="/tag/<%= tag_code %>" class="btn-primary w-full text-center inline-flex items-center justify-center gap-2">
           <i class="fas fa-arrow-left"></i> Voltar ao perfil do pet
         </a>
-        <a href="/mapa" class="block w-full py-3 bg-gray-100 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 transition text-center">
-          <i class="fas fa-map mr-2"></i>Ver mapa
+        <a href="/" class="block w-full py-3 bg-gray-100 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 transition text-center">
+          <i class="fas fa-house mr-2"></i>Fechar e ir para inicio
         </a>
       </div>
     </div>

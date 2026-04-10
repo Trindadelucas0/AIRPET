@@ -16,6 +16,7 @@ const logger = require('./utils/logger');
 const ConfigSistema = require('./models/ConfigSistema');
 const { query: dbHealthQuery, getPoolStats } = require('./config/database');
 const { accessMetricsMiddleware } = require('./middlewares/accessMetricsMiddleware');
+const csrfOriginGuardMiddleware = require('./middlewares/csrfOriginGuardMiddleware');
 
 function createApplication() {
   const app = express();
@@ -39,28 +40,24 @@ function createApplication() {
     crossOriginEmbedderPolicy: false,
     downloadOptions: false,
   };
-  if (cspReportOnly) {
-    const reportUri = (process.env.CSP_REPORT_URI || '').trim();
-    helmetOpts.contentSecurityPolicy = {
-      reportOnly: true,
-      useDefaults: false,
-      directives: {
-        defaultSrc: ["'self'"],
-        scriptSrc: ["'self'", "'unsafe-inline'", 'https:', 'http:'],
-        styleSrc: ["'self'", "'unsafe-inline'", 'https:'],
-        imgSrc: ["'self'", 'data:', 'blob:', 'https:'],
-        connectSrc: ["'self'", 'wss:', 'ws:', 'https:'],
-        fontSrc: ["'self'", 'https:', 'data:'],
-        frameSrc: ["'self'", 'https:'],
-        ...(reportUri ? { reportUri: [reportUri] } : {}),
-      },
-    };
-  } else {
-    helmetOpts.contentSecurityPolicy = false;
-  }
+  const reportUri = (process.env.CSP_REPORT_URI || '').trim();
+  helmetOpts.contentSecurityPolicy = {
+    reportOnly: cspReportOnly,
+    useDefaults: false,
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", 'https:', 'http:'],
+      styleSrc: ["'self'", "'unsafe-inline'", 'https:'],
+      imgSrc: ["'self'", 'data:', 'blob:', 'https:'],
+      connectSrc: ["'self'", 'wss:', 'ws:', 'https:'],
+      fontSrc: ["'self'", 'https:', 'data:'],
+      frameSrc: ["'self'", 'https:'],
+      ...(reportUri ? { reportUri: [reportUri] } : {}),
+    },
+  };
   app.use(helmet(helmetOpts));
 
-  // CSRF: cookies de sessao sem token anti-CSRF; proximo passo e tokens em forms + header em fetch (ver plano de seguranca).
+  // CSRF: proteção de origem/referer para requisições mutáveis autenticadas por sessão.
   app.use((req, res, next) => {
     res.removeHeader('X-Download-Options');
     next();
@@ -79,6 +76,7 @@ function createApplication() {
   app.use(methodOverride('_method'));
   app.use(cookieParser());
   app.use(sessionMiddleware);
+  app.use(csrfOriginGuardMiddleware);
 
   app.set('view engine', 'ejs');
   app.set('views', path.join(__dirname, 'views'));
