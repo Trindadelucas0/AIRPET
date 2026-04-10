@@ -164,6 +164,11 @@ function createApplication() {
     }
   });
 
+  // Loader.io domain verification endpoint.
+  app.get('/loaderio-2340347d46737358dce737c59095abea.txt', (req, res) => {
+    res.type('text/plain').send('loaderio-2340347d46737358dce737c59095abea');
+  });
+
   app.use('/api/internal', require('./routes/internalWebhooks'));
 
   app.get('/manifest.json', async (req, res) => {
