@@ -30,6 +30,7 @@ const NfcTag = require('../models/NfcTag');
 const Localizacao = require('../models/Localizacao');
 const tagEntitlementService = require('../services/tagEntitlementService');
 const petPlanLimitService = require('../services/petPlanLimitService');
+const storageService = require('../services/storageService');
 const { withTransaction } = require('../config/database');
 const logger = require('../utils/logger');
 const { multerPublicUrl } = require('../middlewares/persistUploadMiddleware');
@@ -111,7 +112,7 @@ const petController = {
       }
 
       const { nome, tipo, tipo_custom, raca, cor, porte, sexo, dataNascimento, peso, descricao, telefoneContato,
-        microchip, castrado: castradoBody, alergias_medicacoes, veterinario_nome, veterinario_telefone, observacoes } = req.body;
+        microchip, numero_pedigree, castrado: castradoBody, alergias_medicacoes, veterinario_nome, veterinario_telefone, observacoes } = req.body;
       const castrado = castradoBody === 'sim' || castradoBody === 'on' ? true : (castradoBody === 'nao' ? false : null);
 
       const foto = multerPublicUrl(req.file, 'pets');
@@ -131,6 +132,7 @@ const petController = {
         descricao_emocional: descricao,
         telefone_contato: telefoneContato,
         microchip,
+        numero_pedigree,
         castrado,
         alergias_medicacoes,
         veterinario_nome,
@@ -359,7 +361,7 @@ const petController = {
       }
 
       const { nome, tipo, tipo_custom, raca, cor, porte, sexo, dataNascimento, peso, descricao, telefoneContato,
-        microchip, castrado: castradoBody, alergias_medicacoes, veterinario_nome, veterinario_telefone, observacoes } = req.body;
+        microchip, numero_pedigree, foto_cropped, castrado: castradoBody, alergias_medicacoes, veterinario_nome, veterinario_telefone, observacoes } = req.body;
       const castrado = castradoBody === 'sim' || castradoBody === 'on' ? true : (castradoBody === 'nao' ? false : null);
 
       await Pet.atualizar(id, {
@@ -375,6 +377,7 @@ const petController = {
         descricao_emocional: descricao,
         telefone_contato: telefoneContato,
         microchip,
+        numero_pedigree,
         castrado,
         alergias_medicacoes,
         veterinario_nome,
@@ -390,6 +393,27 @@ const petController = {
         } catch (errFoto) {
           logger.error('PET_CTRL', 'Erro ao atualizar foto do pet', errFoto);
           req.session.flash = { tipo: 'aviso', mensagem: 'Dados salvos, mas não foi possível atualizar a foto.' };
+          return res.redirect(`/pets/${id}`);
+        }
+      } else if (foto_cropped) {
+        try {
+          const base64 = String(foto_cropped).trim();
+          const match = base64.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/);
+          if (match && match[2]) {
+            const mimetype = match[1] || 'image/jpeg';
+            const rawBase64 = match[2];
+            const buffer = Buffer.from(rawBase64, 'base64');
+            const { publicUrl } = await storageService.saveBuffer({
+              buffer,
+              mimetype,
+              originalname: mimetype.includes('png') ? 'foto-crop.png' : 'foto-crop.jpg',
+              folder: 'pets',
+            });
+            if (publicUrl) await Pet.atualizarFoto(id, publicUrl);
+          }
+        } catch (errFotoCrop) {
+          logger.error('PET_CTRL', 'Erro ao processar foto recortada do pet', errFotoCrop);
+          req.session.flash = { tipo: 'aviso', mensagem: 'Dados salvos, mas não foi possível atualizar a foto recortada.' };
           return res.redirect(`/pets/${id}`);
         }
       }

@@ -1,187 +1,222 @@
 <% locals.titulo = 'Editar ' + pet.nome %>
 <% locals.extraHead = `
-<link href="https://fonts.googleapis.com/css2?family=Rubik+Doodle+Shadow&family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cropperjs@1.6.2/dist/cropper.min.css">
 <style>
-  /* Layout do fluxo de pets deve seguir o design system (tema claro no PC). */
-  body{font-family:'DM Sans',sans-serif;}
-  .form-wrap{max-width:560px;margin:0 auto;padding:24px 20px 80px;}
-  .page-topbar{position:sticky;top:56px;z-index:40;background:rgba(255,255,255,0.88);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:12px 0;}
-  .page-topbar-inner{max-width:560px;margin:0 auto;padding:0 20px;display:flex;align-items:center;gap:12px;}
-  .back-link{color:var(--text-dim);font-size:13px;text-decoration:none;display:flex;align-items:center;gap:6px;transition:color 0.15s;}
-  .back-link:hover{color:var(--accent);text-decoration:none;}
-  .page-topbar{position:sticky;top:56px;z-index:40;background:rgba(255,255,255,0.88);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:12px 0;}
-  .page-title{font-family:var(--font-display);font-size:18px;font-weight:800;color:var(--text);}
-  .section-card{background:var(--ink-2);border:1px solid var(--border);border-radius:18px;padding:22px;margin-bottom:14px;}
-  .section-card-title{font-family:var(--font-display);font-size:13px;font-weight:700;color:var(--text-dim);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:16px;display:flex;align-items:center;gap:8px;}
-  .section-card-title-icon{width:26px;height:26px;border-radius:7px;background:var(--accent-glow);border:1px solid rgba(242,96,32,0.15);display:flex;align-items:center;justify-content:center;color:var(--accent);font-size:11px;}
-  .ds-label{display:block;font-size:11px;font-weight:700;color:var(--text-dim);letter-spacing:0.07em;text-transform:uppercase;margin-bottom:6px;}
-  .ds-input{width:100%;background:var(--ink-3);border:1px solid var(--border);border-radius:10px;padding:11px 14px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;outline:none;transition:border-color 0.2s,box-shadow 0.2s;}
-  .ds-input::placeholder{color:var(--text-muted);}
-  .ds-input:focus{border-color:rgba(242,96,32,0.5);box-shadow:0 0 0 3px rgba(242,96,32,0.06);}
-  select.ds-input{cursor:pointer;}
-  .field-group{margin-bottom:14px;}
-  .field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
-  @media(max-width:480px){.field-row{grid-template-columns:1fr;}}
-  .foto-label{display:block;cursor:pointer;border:2px dashed var(--border);border-radius:14px;overflow:hidden;transition:border-color 0.2s;position:relative;}
-  .foto-label:hover{border-color:rgba(242,96,32,0.4);}
-  .foto-preview{width:100%;height:200px;object-fit:cover;display:block;background:var(--ink-3);}
-  .foto-placeholder{width:100%;height:200px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:var(--text-dim);background:var(--ink-3);}
-  .foto-overlay{position:absolute;inset:0;background:rgba(13,13,15,0.5);display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;font-weight:700;opacity:0;transition:opacity 0.2s;}
-  .foto-label:hover .foto-overlay{opacity:1;}
-  .btn-save{width:100%;padding:14px;background:var(--accent);color:#fff;border:none;border-radius:12px;font-family:'DM Sans',sans-serif;font-size:16px;font-weight:700;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:8px;}
-  .btn-save:hover{background:var(--accent-light);transform:translateY(-1px);}
-  .btn-cancel{width:100%;padding:12px;background:transparent;color:var(--text-dim);border:1px solid var(--border);border-radius:12px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.15s;text-align:center;text-decoration:none;display:block;margin-top:8px;}
-  .btn-cancel:hover{border-color:var(--border-hover);color:var(--text);text-decoration:none;}
-  .castrado-toggle{display:flex;align-items:center;gap:12px;padding:14px 16px;background:var(--ink-3);border:1px solid var(--border);border-radius:10px;cursor:pointer;}
-  .toggle-track{width:44px;height:24px;border-radius:12px;background:var(--ink-4);position:relative;transition:background 0.2s;flex-shrink:0;}
-  .toggle-track.on{background:var(--green);}
-  .toggle-thumb{width:18px;height:18px;border-radius:50%;background:#fff;position:absolute;top:3px;left:3px;transition:left 0.2s;box-shadow:0 1px 3px rgba(0,0,0,0.3);}
-  .toggle-track.on .toggle-thumb{left:23px;}
-  .toggle-label{font-size:14px;font-weight:600;color:var(--text);}
+  .edit-wrap{max-width:560px;margin:0 auto;padding:16px 16px 120px;}
+  .edit-topbar{position:sticky;top:56px;z-index:40;background:rgba(255,255,255,.92);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);}
+  .edit-topbar-inner{max-width:560px;margin:0 auto;padding:12px 16px;display:flex;align-items:center;gap:12px;}
+  .edit-title{font-size:18px;font-weight:800;color:#0f172a;}
+  .back-link{font-size:13px;color:#64748b;text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+  .section{background:#fff;border-radius:20px;box-shadow:0 4px 20px rgba(15,23,42,.05);padding:18px;margin-bottom:14px}
+  .section-label{font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#94a3b8;margin-bottom:12px}
+  .field{margin-bottom:12px}
+  .field:last-child{margin-bottom:0}
+  .label{display:block;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#64748b;margin-bottom:6px}
+  .input{width:100%;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:12px 14px;font-size:14px;color:#0f172a;outline:none;transition:border-color .15s,box-shadow .15s}
+  .input:focus{border-color:#fb923c;box-shadow:0 0 0 3px rgba(251,146,60,.16)}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  @media (max-width:460px){.row{grid-template-columns:1fr}}
+  .photo-card{position:relative;display:block;cursor:pointer;border-radius:18px;overflow:hidden;background:#f1f5f9;min-height:240px}
+  .photo-preview{width:100%;height:240px;object-fit:cover}
+  .photo-empty{height:240px;display:flex;align-items:center;justify-content:center;flex-direction:column;color:#94a3b8;gap:8px}
+  .photo-hint{position:absolute;bottom:10px;left:10px;right:10px;padding:8px 10px;border-radius:10px;background:rgba(15,23,42,.45);backdrop-filter:blur(6px);color:#fff;font-size:12px;font-weight:600;text-align:center}
+  .switch{display:flex;align-items:center;gap:12px;padding:12px;border-radius:12px;background:#f8fafc;border:1px solid #e2e8f0;cursor:pointer}
+  .track{width:44px;height:24px;border-radius:999px;background:#cbd5e1;position:relative;transition:background .2s}
+  .track.on{background:#22c55e}
+  .thumb{position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:999px;background:#fff;transition:left .2s}
+  .track.on .thumb{left:23px}
+  .actions{position:fixed;left:0;right:0;bottom:0;padding:10px 16px calc(env(safe-area-inset-bottom) + 10px);background:rgba(255,255,255,.96);backdrop-filter:blur(10px);border-top:1px solid #e2e8f0;z-index:50}
+  .actions-inner{max-width:560px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .btn{border-radius:12px;padding:13px 14px;font-size:14px;font-weight:700;text-align:center;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:7px;transition:transform .12s}
+  .btn:active{transform:scale(.98)}
+  .btn-primary{background:#ec5a1c;color:#fff}
+  .btn-soft{background:#fff;color:#334155;border:1px solid #e2e8f0}
+  .sheet{position:fixed;inset:0;z-index:80;display:none}
+  .sheet.open{display:block}
+  .sheet-backdrop{position:absolute;inset:0;background:rgba(15,23,42,.62)}
+  .sheet-panel{position:absolute;left:0;right:0;bottom:0;background:#fff;border-radius:18px 18px 0 0;max-width:560px;margin:0 auto;padding:14px 14px 20px;max-height:88svh;overflow:auto}
+  .crop-wrap{height:320px;background:#0f172a;border-radius:14px;overflow:hidden}
+  .crop-wrap img{max-width:100%}
 </style>
 ` %>
 <%- include('../partials/header') %>
 <%- include('../partials/flash') %>
 
-<div class="page-topbar">
-  <div class="page-topbar-inner">
-    <a href="/pets/<%= pet.id %>" class="back-link"><i class="fa-solid fa-arrow-left"></i> <%= pet.nome %></a>
-    <span class="page-title">Editar</span>
+<div class="edit-topbar">
+  <div class="edit-topbar-inner">
+    <a href="/pets/<%= pet.id %>" class="back-link"><i class="fa-solid fa-arrow-left"></i> Voltar</a>
+    <h1 class="edit-title">Editar <%= pet.nome %></h1>
   </div>
 </div>
 
 <main class="flex-1">
-  <div class="form-wrap">
-    <form action="/pets/<%= pet.id %>/editar" method="POST" enctype="multipart/form-data">
+  <form class="edit-wrap" action="/pets/<%= pet.id %>/editar" method="POST" enctype="multipart/form-data">
+    <input type="file" id="petFoto" name="foto" accept="image/*" class="hidden">
+    <input type="hidden" id="fotoCropped" name="foto_cropped">
 
-      <!-- Foto -->
-      <div class="section-card">
-        <div class="section-card-title"><div class="section-card-title-icon"><i class="fa-solid fa-camera"></i></div>Foto</div>
-        <label for="petFoto" class="foto-label">
-          <% if (pet.foto) { %>
-            <img src="<%= pet.foto %><%= pet.data_atualizacao ? '?t=' + new Date(pet.data_atualizacao).getTime() : '' %>"
-                 id="fotoAtual" class="foto-preview" alt="<%= pet.nome %>">
-          <% } else { %>
-            <div id="fotoAtual" class="foto-placeholder">
-              <i class="fa-solid fa-paw" style="font-size:40px;opacity:0.2;"></i>
-              <span style="font-size:13px;font-weight:600;">Adicionar foto</span>
-            </div>
-          <% } %>
-          <div class="foto-overlay"><i class="fa-solid fa-camera mr-2"></i> Alterar foto</div>
-        </label>
-        <input type="file" id="petFoto" name="foto" accept="image/*" class="hidden" onchange="previewFoto(this)">
-        <p style="font-size:11px;color:var(--text-muted);margin-top:8px;">JPG, PNG ou WebP · Máx. 5 MB</p>
+    <section class="section">
+      <p class="section-label">Foto</p>
+      <label for="petFoto" class="photo-card" id="triggerFoto">
+        <% if (pet.foto) { %>
+          <img src="<%= pet.foto %><%= pet.data_atualizacao ? '?t=' + new Date(pet.data_atualizacao).getTime() : '' %>" id="fotoAtual" class="photo-preview" alt="<%= pet.nome %>">
+        <% } else { %>
+          <div id="fotoAtual" class="photo-empty">
+            <i class="fa-solid fa-camera text-3xl"></i>
+            <span>Escolher foto</span>
+          </div>
+        <% } %>
+        <div class="photo-hint">Toque para cortar, dar zoom e posicionar</div>
+      </label>
+    </section>
+
+    <section class="section">
+      <p class="section-label">Sobre o pet</p>
+      <div class="field"><label class="label" for="nome">Nome</label><input class="input" id="nome" name="nome" maxlength="50" required value="<%= pet.nome %>"></div>
+      <div class="row">
+        <div class="field"><label class="label" for="tipo">Tipo</label><select class="input" id="tipo" name="tipo"><option value="cachorro" <%= pet.tipo==='cachorro'?'selected':'' %>>Cachorro</option><option value="gato" <%= pet.tipo==='gato'?'selected':'' %>>Gato</option><option value="passaro" <%= pet.tipo==='passaro'?'selected':'' %>>Pássaro</option><option value="outro" <%= pet.tipo==='outro'?'selected':'' %>>Outro</option></select></div>
+        <div class="field"><label class="label" for="sexo">Sexo</label><select class="input" id="sexo" name="sexo"><option value="">Não informado</option><option value="macho" <%= pet.sexo==='macho'?'selected':'' %>>Macho</option><option value="femea" <%= pet.sexo==='femea'?'selected':'' %>>Fêmea</option></select></div>
       </div>
-
-      <!-- Dados básicos -->
-      <div class="section-card">
-        <div class="section-card-title"><div class="section-card-title-icon"><i class="fa-solid fa-id-card"></i></div>Dados básicos</div>
-        <div class="field-group">
-          <label class="ds-label" for="nome">Nome</label>
-          <input type="text" id="nome" name="nome" required value="<%= pet.nome %>" class="ds-input" maxlength="50">
-        </div>
-        <div class="field-row">
-          <div class="field-group" style="margin-bottom:0">
-            <label class="ds-label" for="tipo">Tipo</label>
-            <select id="tipo" name="tipo" class="ds-input">
-              <option value="cachorro" <%= pet.tipo==='cachorro'?'selected':'' %>>🐶 Cachorro</option>
-              <option value="gato"     <%= pet.tipo==='gato'?'selected':'' %>>🐱 Gato</option>
-              <option value="passaro"  <%= pet.tipo==='passaro'?'selected':'' %>>🦜 Pássaro</option>
-              <option value="outro"    <%= pet.tipo==='outro'?'selected':'' %>>🐾 Outro</option>
-            </select>
-          </div>
-          <div class="field-group" style="margin-bottom:0">
-            <label class="ds-label" for="sexo">Sexo</label>
-            <select id="sexo" name="sexo" class="ds-input">
-              <option value="">Não informado</option>
-              <option value="macho"  <%= pet.sexo==='macho'?'selected':'' %>>Macho</option>
-              <option value="femea"  <%= pet.sexo==='femea'?'selected':'' %>>Fêmea</option>
-            </select>
-          </div>
-        </div>
-        <div class="field-group" style="margin-top:14px;">
-          <label class="ds-label" for="raca">Raça</label>
-          <input type="text" id="raca" name="raca" value="<%= pet.raca||'' %>" placeholder="Ex: Golden Retriever, SRD" class="ds-input">
-        </div>
-        <div class="field-row">
-          <div class="field-group" style="margin-bottom:0">
-            <label class="ds-label" for="porte">Porte</label>
-            <select id="porte" name="porte" class="ds-input">
-              <option value="">—</option>
-              <option value="mini"    <%= pet.porte==='mini'?'selected':'' %>>Mini</option>
-              <option value="pequeno" <%= pet.porte==='pequeno'?'selected':'' %>>Pequeno</option>
-              <option value="medio"   <%= pet.porte==='medio'?'selected':'' %>>Médio</option>
-              <option value="grande"  <%= pet.porte==='grande'?'selected':'' %>>Grande</option>
-              <option value="gigante" <%= pet.porte==='gigante'?'selected':'' %>>Gigante</option>
-            </select>
-          </div>
-          <div class="field-group" style="margin-bottom:0">
-            <label class="ds-label" for="cor">Cor / Pelagem</label>
-            <input type="text" id="cor" name="cor" value="<%= pet.cor||'' %>" placeholder="Ex: Preto" class="ds-input">
-          </div>
-        </div>
-        <div class="field-group" style="margin-top:14px;">
-          <label class="ds-label" for="dataNascimento">Data de Nascimento</label>
-          <input type="date" id="dataNascimento" name="dataNascimento"
-                 value="<%= pet.data_nascimento ? new Date(pet.data_nascimento).toISOString().split('T')[0] : '' %>"
-                 class="ds-input">
-        </div>
-        <div class="field-group">
-          <label class="ds-label" for="peso">Peso (kg)</label>
-          <input type="number" id="peso" name="peso" value="<%= pet.peso||'' %>" step="0.1" min="0" placeholder="Ex: 12.5" class="ds-input">
-        </div>
+      <div class="field"><label class="label" for="raca">Raça</label><input class="input" id="raca" name="raca" value="<%= pet.raca||'' %>"></div>
+      <div class="row">
+        <div class="field"><label class="label" for="porte">Porte</label><select class="input" id="porte" name="porte"><option value="">—</option><option value="mini" <%= pet.porte==='mini'?'selected':'' %>>Mini</option><option value="pequeno" <%= pet.porte==='pequeno'?'selected':'' %>>Pequeno</option><option value="medio" <%= pet.porte==='medio'?'selected':'' %>>Médio</option><option value="grande" <%= pet.porte==='grande'?'selected':'' %>>Grande</option><option value="gigante" <%= pet.porte==='gigante'?'selected':'' %>>Gigante</option></select></div>
+        <div class="field"><label class="label" for="cor">Cor</label><input class="input" id="cor" name="cor" value="<%= pet.cor||'' %>"></div>
       </div>
-
-      <!-- Castração -->
-      <div class="section-card">
-        <div class="section-card-title"><div class="section-card-title-icon"><i class="fa-solid fa-scissors"></i></div>Castração</div>
-        <label class="castrado-toggle" id="castradoToggle">
-          <input type="hidden" name="castrado" id="castradoVal" value="<%= pet.castrado ? 'sim' : 'nao' %>">
-          <div class="toggle-track <%= pet.castrado ? 'on' : '' %>" id="castradoTrack">
-            <div class="toggle-thumb"></div>
-          </div>
-          <span class="toggle-label" id="castradoLabel"><%= pet.castrado ? 'Castrado(a)' : 'Não castrado(a)' %></span>
-        </label>
+      <div class="row">
+        <div class="field"><label class="label" for="dataNascimento">Nascimento</label><input class="input" type="date" id="dataNascimento" name="dataNascimento" value="<%= pet.data_nascimento ? new Date(pet.data_nascimento).toISOString().split('T')[0] : '' %>"></div>
+        <div class="field"><label class="label" for="peso">Peso (kg)</label><input class="input" type="number" step="0.1" min="0" id="peso" name="peso" value="<%= pet.peso||'' %>"></div>
       </div>
+      <label class="switch" id="castradoToggle">
+        <input type="hidden" id="castradoVal" name="castrado" value="<%= pet.castrado ? 'sim' : 'nao' %>">
+        <span class="track <%= pet.castrado ? 'on' : '' %>" id="castradoTrack"><span class="thumb"></span></span>
+        <span id="castradoLabel"><%= pet.castrado ? 'Castrado(a)' : 'Não castrado(a)' %></span>
+      </label>
+    </section>
 
-      <!-- Bio -->
-      <div class="section-card">
-        <div class="section-card-title"><div class="section-card-title-icon"><i class="fa-solid fa-quote-left"></i></div>Descrição</div>
-        <textarea name="descricao" class="ds-input" rows="4" maxlength="200"
-                  placeholder="Uma frase carinhosa sobre seu pet..." style="resize:none;"><%= pet.descricao_emocional||'' %></textarea>
-        <div style="font-size:11px;color:var(--text-muted);text-align:right;margin-top:4px;" id="bioCount"><%= (pet.descricao_emocional||'').length %>/200</div>
+    <section class="section">
+      <p class="section-label">Identificação</p>
+      <div class="field"><label class="label" for="telefoneContato">Telefone contato</label><input class="input" id="telefoneContato" name="telefoneContato" value="<%= pet.telefone_contato||'' %>"></div>
+      <div class="field"><label class="label" for="microchip">Microchip</label><input class="input" id="microchip" name="microchip" value="<%= pet.microchip||'' %>"></div>
+      <div class="field"><label class="label" for="numero_pedigree">Número de pedigree</label><input class="input" id="numero_pedigree" name="numero_pedigree" value="<%= pet.numero_pedigree||'' %>"></div>
+    </section>
+
+    <section class="section">
+      <p class="section-label">Saúde e veterinário</p>
+      <div class="field"><label class="label" for="veterinario_nome">Veterinário</label><input class="input" id="veterinario_nome" name="veterinario_nome" value="<%= pet.veterinario_nome||'' %>"></div>
+      <div class="field"><label class="label" for="veterinario_telefone">Telefone veterinário</label><input class="input" id="veterinario_telefone" name="veterinario_telefone" value="<%= pet.veterinario_telefone||'' %>"></div>
+      <div class="field"><label class="label" for="alergias_medicacoes">Alergias/medicações</label><textarea class="input" rows="3" id="alergias_medicacoes" name="alergias_medicacoes"><%= pet.alergias_medicacoes||'' %></textarea></div>
+    </section>
+
+    <section class="section">
+      <p class="section-label">Observações</p>
+      <div class="field"><label class="label" for="descricao">Descrição</label><textarea class="input" rows="3" maxlength="200" id="descricao" name="descricao"><%= pet.descricao_emocional||'' %></textarea></div>
+      <div class="field"><label class="label" for="observacoes">Observações gerais</label><textarea class="input" rows="4" id="observacoes" name="observacoes"><%= pet.observacoes||'' %></textarea></div>
+    </section>
+
+    <div class="actions">
+      <div class="actions-inner">
+        <a class="btn btn-soft" href="/pets/<%= pet.id %>">Cancelar</a>
+        <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Salvar</button>
       </div>
-
-      <button type="submit" class="btn-save"><i class="fa-solid fa-floppy-disk"></i> Salvar alterações</button>
-      <a href="/pets/<%= pet.id %>" class="btn-cancel">Cancelar</a>
-    </form>
-  </div>
+    </div>
+  </form>
 </main>
 
+<div class="sheet" id="cropSheet" aria-hidden="true">
+  <div class="sheet-backdrop"></div>
+  <div class="sheet-panel">
+    <div class="flex items-center justify-between mb-2">
+      <h3 class="text-sm font-bold text-slate-900">Ajustar foto do pet</h3>
+      <button type="button" id="closeCropper" class="w-8 h-8 rounded-full border border-slate-200 text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="crop-wrap mb-3"><img id="cropImage" alt="Prévia para recorte"></div>
+    <div class="mb-3">
+      <label class="label" for="zoomRange">Zoom</label>
+      <input id="zoomRange" type="range" min="0" max="100" value="0" class="w-full">
+    </div>
+    <div class="grid grid-cols-3 gap-2">
+      <button type="button" id="rotateCrop" class="btn btn-soft !py-2.5">Girar</button>
+      <button type="button" id="cancelCrop" class="btn btn-soft !py-2.5">Cancelar</button>
+      <button type="button" id="applyCrop" class="btn btn-primary !py-2.5">Usar foto</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/cropperjs@1.6.2/dist/cropper.min.js"></script>
 <script>
-function previewFoto(input) {
-  if (!input.files[0]) return;
-  var r = new FileReader();
-  r.onload = function(e) {
-    var el = document.getElementById('fotoAtual');
-    if (el.tagName === 'IMG') { el.src = e.target.result; }
-    else { var img = document.createElement('img'); img.src = e.target.result; img.className = 'foto-preview'; img.id='fotoAtual'; el.parentNode.replaceChild(img, el); }
-  };
-  r.readAsDataURL(input.files[0]);
-}
+  var inputFoto = document.getElementById('petFoto');
+  var fotoAtual = document.getElementById('fotoAtual');
+  var cropSheet = document.getElementById('cropSheet');
+  var cropImage = document.getElementById('cropImage');
+  var closeCropperBtn = document.getElementById('closeCropper');
+  var cancelCropBtn = document.getElementById('cancelCrop');
+  var applyCropBtn = document.getElementById('applyCrop');
+  var rotateCropBtn = document.getElementById('rotateCrop');
+  var zoomRange = document.getElementById('zoomRange');
+  var fotoCropped = document.getElementById('fotoCropped');
+  var cropper = null;
 
-var track = document.getElementById('castradoTrack');
-var label = document.getElementById('castradoLabel');
-var val = document.getElementById('castradoVal');
-document.getElementById('castradoToggle').addEventListener('click', function(e) {
-  if (e.target.tagName === 'INPUT') return;
-  var on = track.classList.toggle('on');
-  val.value = on ? 'sim' : 'nao';
-  label.textContent = on ? 'Castrado(a)' : 'Não castrado(a)';
-});
+  function openSheet() { cropSheet.classList.add('open'); cropSheet.setAttribute('aria-hidden', 'false'); document.body.style.overflow = 'hidden'; }
+  function closeSheet() { cropSheet.classList.remove('open'); cropSheet.setAttribute('aria-hidden', 'true'); document.body.style.overflow = ''; if (cropper) { cropper.destroy(); cropper = null; } zoomRange.value = 0; }
 
-var bioArea = document.querySelector('textarea[name="descricao"]');
-if (bioArea) bioArea.addEventListener('input', function() { document.getElementById('bioCount').textContent = this.value.length + '/200'; });
+  inputFoto.addEventListener('change', function () {
+    if (!inputFoto.files || !inputFoto.files[0]) return;
+    var file = inputFoto.files[0];
+    var reader = new FileReader();
+    reader.onload = function (e) {
+      cropImage.src = e.target.result;
+      openSheet();
+      if (cropper) cropper.destroy();
+      cropper = new Cropper(cropImage, {
+        aspectRatio: 1,
+        viewMode: 1,
+        dragMode: 'move',
+        autoCropArea: 1,
+        responsive: true,
+        background: false
+      });
+    };
+    reader.readAsDataURL(file);
+  });
+
+  zoomRange.addEventListener('input', function () {
+    if (!cropper) return;
+    var val = Number(zoomRange.value) / 100;
+    cropper.zoomTo(1 + val);
+  });
+
+  rotateCropBtn.addEventListener('click', function () { if (cropper) cropper.rotate(90); });
+  closeCropperBtn.addEventListener('click', closeSheet);
+  cancelCropBtn.addEventListener('click', closeSheet);
+  cropSheet.querySelector('.sheet-backdrop').addEventListener('click', closeSheet);
+
+  applyCropBtn.addEventListener('click', function () {
+    if (!cropper) return;
+    var canvas = cropper.getCroppedCanvas({ width: 1080, height: 1080, imageSmoothingQuality: 'high' });
+    var dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+    fotoCropped.value = dataUrl;
+    if (fotoAtual && fotoAtual.tagName === 'IMG') {
+      fotoAtual.src = dataUrl;
+    } else if (fotoAtual) {
+      var img = document.createElement('img');
+      img.id = 'fotoAtual';
+      img.className = 'photo-preview';
+      img.src = dataUrl;
+      fotoAtual.parentNode.replaceChild(img, fotoAtual);
+      fotoAtual = img;
+    }
+    inputFoto.value = '';
+    closeSheet();
+  });
+
+  var track = document.getElementById('castradoTrack');
+  var label = document.getElementById('castradoLabel');
+  var val = document.getElementById('castradoVal');
+  document.getElementById('castradoToggle').addEventListener('click', function (e) {
+    if (e.target.tagName === 'INPUT') return;
+    var on = track.classList.toggle('on');
+    val.value = on ? 'sim' : 'nao';
+    label.textContent = on ? 'Castrado(a)' : 'Não castrado(a)';
+  });
 </script>
 
 <%- include('../partials/footer') %>

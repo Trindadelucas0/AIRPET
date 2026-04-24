@@ -1,0 +1,162 @@
+DOCUMENTACAO COMPLETA AIRPET
+
+1. VISAO GERAL
+O AIRPET e uma plataforma de protecao e recuperacao de pets com:
+- tag NFC/QR
+- logistica de geracao, reserva, envio e ativacao
+- rede social pet
+- mapa com localizacoes e avistamentos
+- painel administrativo
+- modulo comercial de planos e pedidos
+
+2. PROPOSTA DE VALOR
+Para tutor:
+- identificacao rapida do pet
+- alerta quando a tag e escaneada
+- ajuda na busca com historico de localizacao
+
+Para empresa:
+- controle do ciclo de vida das tags
+- rastreabilidade operacional
+- dados para decisao
+
+Para investidor:
+- receita recorrente
+- alta retencao por utilidade real
+- potencial de escala B2C e B2B
+
+3. MODULO NFC E RECUPERACAO
+Fluxo:
+1) pessoa escaneia tag
+2) sistema abre pagina da tag
+3) se ativa, mostra dados uteis
+4) registra scan e possivel localizacao
+5) tutor e notificado
+6) mapa e jornada de busca ganham informacao nova
+
+4. MODULO LOGISTICO DE TAGS
+Ciclo:
+stock -> reserved -> sent -> active (ou blocked)
+
+Etapas:
+- gerar lote
+- reservar para cliente
+- marcar enviada
+- cliente ativar
+- cliente vincular ao pet
+- bloquear/desbloquear quando necessario
+
+Beneficio:
+- menos fraude
+- controle de custo por lote
+- melhor previsao de estoque
+
+5. MODULO COMERCIAL
+- pedidos de tag
+- pagamento e confirmacao
+- vinculacao de unidades
+- planos e assinatura
+- cupom e upgrades
+
+6. REDE SOCIAL
+- feed explorar e feed de seguidos
+- publicar fotos e texto
+- curtidas, comentarios, repost
+- seguir usuarios e pets
+- recomendacoes e descoberta
+- notificacoes sociais
+
+Valor:
+- aumenta engajamento
+- fortalece comunidade
+- amplia alcance de alertas
+
+7. PARCEIROS/EMPRESAS
+- presenca de petshops no ecossistema
+- publicacoes e promocoes
+- apoio local na jornada de recuperacao
+- potencial de monetizacao B2B
+
+8. MAPA E BUSCA
+- mostra localizacoes e avistamentos
+- ajuda priorizar regioes
+- melhora resposta operacional
+- acelera reencontro
+
+9. FLUXO INTEGRADO DE RECUPERACAO
+1) tag ativa
+2) pet encontrado e escaneado
+3) sistema coleta e processa informacao
+4) tutor recebe alerta
+5) mapa atualiza pistas
+6) comunidade aumenta visibilidade
+7) chance de reencontro sobe
+
+10. SEGURANCA E GOVERNANCA
+- controle de posse da tag
+- bloqueio de tag
+- protecoes antiabuso
+- moderacao em pontos sensiveis
+- trilha de auditoria de eventos
+
+11. KPIs RECOMENDADOS
+Operacao:
+- tags por lote
+- taxa reserva/envio/ativacao
+- tempo envio->ativacao
+- taxa de bloqueio
+
+Produto:
+- scans por tag ativa
+- scans com localizacao
+- tempo ate primeiro avistamento
+- taxa de recuperacao
+
+Comercial:
+- conversao loja->pedido
+- pedido->pagamento
+- ativacao por pedido pago
+- renovacao/churn
+
+Social:
+- DAU/WAU
+- posts por usuario ativo
+- engajamento por post
+- retencao 7/30 dias
+
+12. MELHORIAS PRIORITARIAS (NAO TECNICAS)
+- reforcar regra 1 tag = 1 dono
+- criar transferencia formal controlada
+- simplificar ativacao para cliente
+- padronizar playbook operacional
+- dashboard executivo mensal
+- marketing orientado por dados
+
+13. DIRETRIZ POR TIME
+Operacao:
+- executar fluxo padrao
+- controlar lote, envio e bloqueio
+
+Atendimento:
+- acelerar ativacao
+- resolver erros comuns de forma guiada
+
+Marketing:
+- comunicar seguranca + recuperacao + comunidade
+- usar casos reais de sucesso
+
+Software/Produto:
+- reduzir atrito
+- fortalecer antiabuso
+- evoluir mapa, notificacoes e metricas
+
+14. MENSAGEM INSTITUCIONAL
+O AIRPET une NFC, logistica de identificacao e rede social para transformar busca de pets em acao rapida e coordenada, aumentando a chance de reencontro quando cada minuto importa.
+
+15. CONCLUSAO
+O AIRPET e uma plataforma completa:
+- identificacao inteligente
+- operacao rastreavel
+- comunidade ativa
+- mapa com inteligencia de busca
+- modelo de receita recorrente
