@@ -4,6 +4,20 @@ function isStateChanging(method) {
   return !SAFE_METHODS.has(String(method || '').toUpperCase());
 }
 
+function normalizePath(rawPath) {
+  const path = String(rawPath || '').trim();
+  if (!path) return '/';
+  if (path === '/') return '/';
+  return path.startsWith('/') ? path.replace(/\/+$/, '') : `/${path}`.replace(/\/+$/, '');
+}
+
+const ADMIN_BASE_PATH = normalizePath(process.env.ADMIN_PATH || '/admin');
+
+function isAdminLoginRequest(req) {
+  if (String(req.method || '').toUpperCase() !== 'POST') return false;
+  return normalizePath(req.path) === `${ADMIN_BASE_PATH}/login`;
+}
+
 function parseOriginFromUrl(raw) {
   try {
     return new URL(raw).origin;
@@ -14,6 +28,7 @@ function parseOriginFromUrl(raw) {
 
 function csrfOriginGuardMiddleware(req, res, next) {
   if (!isStateChanging(req.method)) return next();
+  if (isAdminLoginRequest(req)) return next();
 
   const hasSessionUser = Boolean(req.session && (req.session.usuario || req.session.petshopAccount));
   if (!hasSessionUser) return next();
