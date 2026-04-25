@@ -119,23 +119,14 @@
       <% if (pet.foto_capa) { %>
         <img src="<%= pet.foto_capa %>" alt="" class="pet-hero-cover">
       <% } %>
-      <div class="relative z-10 flex items-start justify-between">
-        <div class="glass-chip rounded-full px-3 py-1.5 text-[11px] text-white font-semibold tracking-wide uppercase">
-          Perfil oficial do pet
+      <% if (eMeuPet) { %>
+        <div class="relative z-10 flex justify-end">
+          <input type="file" id="inputCapaPet" accept="image/*" class="hidden">
+          <button type="button" id="btnEditarCapaPet" class="glass-chip rounded-full px-3 py-1.5 text-[11px] text-white/90 font-semibold">
+            <i class="fa-solid fa-camera mr-1"></i>Editar capa
+          </button>
         </div>
-        <% if (eMeuPet) { %>
-          <div>
-            <input type="file" id="inputCapaPet" accept="image/*" class="hidden">
-            <button type="button" id="btnEditarCapaPet" class="glass-chip rounded-full px-3 py-1.5 text-[11px] text-white/90 font-semibold">
-              <i class="fa-solid fa-camera mr-1"></i>Editar capa
-            </button>
-          </div>
-        <% } else { %>
-          <div class="glass-chip rounded-full px-3 py-1.5 text-[11px] text-white/90 font-semibold">
-            <i class="fa-solid fa-sparkles mr-1"></i>Vibe AIRPET
-          </div>
-        <% } %>
-      </div>
+      <% } %>
     </section>
 
     <div class="px-4">
@@ -165,30 +156,33 @@
       <section class="profile-reveal" style="animation-delay: .05s">
         <div class="flex flex-wrap items-center gap-2">
           <h1 class="text-2xl font-black text-gray-900 leading-tight"><%= pet.nome %></h1>
-          <span class="inline-flex items-center gap-1 rounded-full bg-orange-50 text-orange-700 px-2.5 py-1 text-[11px] font-bold">
-            <i class="fa-solid fa-paw text-[10px]"></i> Verificado
-          </span>
+          <% if (pet.raca) { %>
+            <span class="inline-flex items-center gap-1 rounded-full bg-orange-50 text-orange-700 px-2.5 py-1 text-[11px] font-bold">
+              <i class="fa-solid fa-paw text-[10px]"></i> <%= pet.raca %>
+            </span>
+          <% } %>
         </div>
         <% if (dono) { %>
           <p class="text-sm text-gray-500 mt-1">
-            Tutor:
-            <a href="/explorar/perfil/<%= dono.id %>" class="text-primary-500 hover:underline font-semibold"><%= dono.nome %></a>
+            Tutor: <a href="/explorar/perfil/<%= dono.id %>" class="text-primary-500 hover:underline font-semibold"><%= dono.nome %></a>
           </p>
         <% } %>
 
-        <div class="grid grid-cols-3 gap-2 mt-4">
-          <div class="rounded-xl border border-gray-100 bg-white p-2.5 text-center">
-            <p class="text-[11px] uppercase tracking-wide text-gray-400 font-semibold">Posts</p>
-            <p class="text-lg font-black text-gray-900 leading-none mt-1"><%= posts.length %></p>
-          </div>
-          <button type="button" id="btnVerSeguidores" title="Ver seguidores" class="rounded-xl border border-gray-100 bg-white p-2.5 text-center hover:border-primary-200 hover:bg-orange-50/50 transition-colors">
-            <p class="text-[11px] uppercase tracking-wide text-gray-400 font-semibold">Seguidores</p>
-            <p class="text-lg font-black text-gray-900 leading-none mt-1" id="seguidoresCount"><%= totalSeguidores %></p>
-          </button>
-          <button type="button" id="btnVerSeguindo" title="Ver seguindo" class="rounded-xl border border-gray-100 bg-white p-2.5 text-center hover:border-primary-200 hover:bg-orange-50/50 transition-colors">
-            <p class="text-[11px] uppercase tracking-wide text-gray-400 font-semibold">Seguindo</p>
-            <p class="text-lg font-black text-gray-900 leading-none mt-1"><%= totalSeguindo %></p>
-          </button>
+        <!-- Stats sociais: só mostra seguidores se for relevante -->
+        <div class="flex items-center gap-3 mt-4">
+          <% if (totalSeguidores > 0 || !eMeuPet) { %>
+            <button type="button" id="btnVerSeguidores"
+              class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-gray-200 bg-white text-sm font-semibold text-gray-700 hover:border-primary-200 hover:bg-orange-50/50 transition-colors">
+              <i class="fa-solid fa-paw text-primary-400 text-[11px]"></i>
+              <span id="seguidoresCount"><%= totalSeguidores %></span>
+              <span class="text-gray-400 font-normal"><%= totalSeguidores === 1 ? 'seguidor' : 'seguidores' %></span>
+            </button>
+          <% } %>
+          <% if (eMeuPet) { %>
+            <a href="/pets/<%= pet.id %>" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-primary-200 bg-primary-50 text-sm font-semibold text-primary-600 hover:bg-primary-100 transition-colors">
+              <i class="fa-solid fa-shield-halved text-[11px]"></i> Gerenciar pet
+            </a>
+          <% } %>
         </div>
       </section>
 
