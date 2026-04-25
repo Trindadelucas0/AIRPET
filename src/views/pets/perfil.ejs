@@ -675,30 +675,6 @@
     <% } %>
     <% } %> <!-- /ehDono -->
 
-    <!-- ════════════ GROWTH: Compartilhamento viral ════════════ -->
-    <% if (ehDono && !isPerdido) { %>
-    <div class="rounded-2xl border border-orange-200 bg-gradient-to-br from-orange-50 to-amber-50 p-4 mb-5">
-      <div class="flex items-center gap-3 mb-3">
-        <span class="text-2xl">🔗</span>
-        <div>
-          <p class="text-sm font-extrabold text-gray-900">Compartilhe o perfil de <%= pet.nome %></p>
-          <p class="text-xs text-orange-700 mt-0.5">Se ele se perder, quem receber o link já sabe o que fazer</p>
-        </div>
-      </div>
-      <div class="grid grid-cols-2 gap-2">
-        <button type="button"
-          onclick="registrarFunil('share_whatsapp_safe'); var u=encodeURIComponent(window.location.href); window.open('https://wa.me/?text=' + encodeURIComponent('Esse é o perfil do <%= pet.nome %> no AIRPET 🐾 Se alguém encontrá-lo, pode usar o link: ' + window.location.href),'_blank');"
-          class="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-[#25d366] hover:bg-[#1fb954] text-white text-xs font-bold transition-colors">
-          <i class="fa-brands fa-whatsapp"></i> WhatsApp
-        </button>
-        <button type="button"
-          onclick="registrarFunil('share_copy'); navigator.clipboard && navigator.clipboard.writeText(window.location.href).then(function(){alert('Link copiado!');});"
-          class="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-white border border-gray-200 text-gray-600 text-xs font-bold hover:bg-gray-50 transition-colors">
-          <i class="fa-solid fa-link"></i> Copiar link
-        </button>
-      </div>
-    </div>
-    <% } %>
 
     <!-- ════════════ CONTATO (view pública) ════════════ -->
     <% if (pet.telefone_contato && ehDono) { %>

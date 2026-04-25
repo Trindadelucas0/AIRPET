@@ -186,27 +186,23 @@
         </div>
       </section>
 
-      <!-- Bloco petshops -->
+      <!-- Bloco petshops — só exibe se tiver vínculos ou se for visitante -->
+      <% var _petshops = petshopsVinculados || []; %>
+      <% if (_petshops.length > 0 || !eMeuPet) { %>
       <section class="profile-reveal mt-5 rounded-2xl border border-[#f4dbce] bg-gradient-to-b from-[#fff5ee] via-[#fffaf7] to-white p-4 sm:p-5 shadow-[0_8px_24px_rgba(236,90,28,.08)]" style="animation-delay: .08s">
         <div class="flex items-start justify-between gap-3 mb-3">
           <div>
             <h2 class="font-black text-gray-900 text-base sm:text-lg">Parceiros do pet</h2>
-            <p class="text-xs text-gray-500 mt-0.5">Vínculos ativos aprovados pelos PetParceiros.</p>
+            <p class="text-xs text-gray-500 mt-0.5">Clínicas e petshops vinculados.</p>
           </div>
           <a href="/petshops" class="text-[11px] font-semibold text-orange-700 bg-orange-100/70 rounded-full px-2.5 py-1 hover:bg-orange-200/70">Buscar PetParceiro</a>
         </div>
 
         <div id="petshopLinksWrap" class="space-y-2.5">
-          <% if ((petshopsVinculados || []).length === 0) { %>
-            <div class="rounded-2xl border border-dashed border-orange-200 bg-white/80 px-4 py-5 text-center">
-              <div class="w-11 h-11 mx-auto rounded-full bg-orange-100 text-orange-600 flex items-center justify-center mb-2">
-                <i class="fa-solid fa-store text-sm"></i>
-              </div>
-              <p class="text-sm font-semibold text-gray-700">Nenhum petshop vinculado por enquanto</p>
-              <p class="text-xs text-gray-500 mt-1">Abra uma solicitação direto na página do PetParceiro para aparecer aqui.</p>
-            </div>
+          <% if (_petshops.length === 0) { %>
+            <p class="text-sm text-gray-400 text-center py-4">Nenhum parceiro vinculado ainda.</p>
           <% } %>
-          <% (petshopsVinculados || []).forEach(function(link) { %>
+          <% _petshops.forEach(function(link) { %>
             <div class="petshop-card rounded-2xl p-3 sm:p-3.5 flex items-center justify-between gap-3" data-linked-petshop-id="<%= link.petshop_id %>">
               <div class="min-w-0">
                 <a href="/petshops/<%= link.petshop_slug || link.petshop_id %>" class="text-sm sm:text-[15px] font-bold text-gray-800 hover:text-primary-500 block truncate"><%= link.petshop_nome %></a>
@@ -235,6 +231,7 @@
           <% }) %>
         </div>
       </section>
+      <% } %> <!-- /if petshops -->
     </div>
 
     <div class="px-4 pt-4" id="postsContainer">
@@ -873,8 +870,8 @@
       })
       .catch(function () { listaSegBody.innerHTML = '<p class="text-sm text-red-500 text-center py-6">Erro ao carregar.</p>'; });
   }
-  document.getElementById('btnVerSeguidores').addEventListener('click', function () { openListaPet('seguidores'); });
-  document.getElementById('btnVerSeguindo').addEventListener('click', function () { openListaPet('seguindo'); });
+  var _btnVerSeg = document.getElementById('btnVerSeguidores');
+  if (_btnVerSeg) _btnVerSeg.addEventListener('click', function () { openListaPet('seguidores'); });
   document.getElementById('closeListaSeg').addEventListener('click', function () { listaSegModal.classList.add('hidden'); });
   document.getElementById('listaSegOverlay').addEventListener('click', function () { listaSegModal.classList.add('hidden'); });
 })();
