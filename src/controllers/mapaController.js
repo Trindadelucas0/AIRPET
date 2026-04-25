@@ -33,7 +33,14 @@ const PontoMapa = require('../models/PontoMapa');
 const Petshop = require('../models/Petshop');
 const PetPerdido = require('../models/PetPerdido');
 const TagScan = require('../models/TagScan');
+const SeguidorPet = require('../models/SeguidorPet');
+const petEventBus = require('../services/petEventBus');
 const logger = require('../utils/logger');
+
+const SSE_MAX_CONNECTIONS = 500;
+const SSE_TTL_MS = 5 * 60 * 1000;   // 5 min — reconecta automaticamente
+const SSE_HB_MS  = 25 * 1000;        // heartbeat 25s
+let   _sseConnections = 0;
 
 /**
  * buscarPins — Retorna os marcadores do mapa dentro de uma bounding box
@@ -88,12 +95,13 @@ async function buscarPins(req, res) {
 
     /*
      * Busca os 4 tipos de dados em paralelo para performance.
-     * Pontos do mapa e últimos scans por pet são filtrados pela bounding box.
+     * Todos os tipos são filtrados pela bounding box — evita retornar
+     * centenas de registros de todo o Brasil a cada pan do mapa.
      */
     const [pontos, petshops, perdidos, petScans] = await Promise.all([
       PontoMapa.buscarPorBoundingBox(sw.lat, sw.lng, ne.lat, ne.lng),
-      Petshop.listarAtivos(),
-      PetPerdido.listarAprovados(),
+      Petshop.listarPinsParaMapaBBox(sw.lat, sw.lng, ne.lat, ne.lng),
+      PetPerdido.listarAprovadosNaBox(sw.lat, sw.lng, ne.lat, ne.lng),
       TagScan.listarUltimoScanPorPetNaBox(sw.lat, sw.lng, ne.lat, ne.lng),
     ]);
 
@@ -173,6 +181,8 @@ async function buscarPins(req, res) {
       const lat = parseFloat(row.latitude);
       const lng = parseFloat(row.longitude);
       if (isNaN(lat) || isNaN(lng)) return;
+      const scanData = row.data ? new Date(row.data) : null;
+      const horasAtras = scanData ? (Date.now() - scanData.getTime()) / 3600000 : null;
       features.push({
         type: 'Feature',
         geometry: {
@@ -184,8 +194,10 @@ async function buscarPins(req, res) {
           tipo: 'pet_scan',
           nome: row.pet_nome || 'Pet',
           foto: row.pet_foto || null,
+          pet_status: row.pet_status || 'ativo',
           cidade: row.cidade || null,
-          data: row.data ? new Date(row.data).toISOString() : null,
+          data: scanData ? scanData.toISOString() : null,
+          horas_atras: horasAtras !== null ? Math.round(horasAtras) : null,
         },
       });
     });
@@ -205,7 +217,139 @@ async function buscarPins(req, res) {
   }
 }
 
+/**
+ * buscarPinsSocial — Retorna última localização dos pets que o usuário segue
+ *
+ * Rota: GET /mapa/api/pins/social (requer autenticação)
+ */
+async function buscarPinsSocial(req, res) {
+  if (!req.session || !req.session.usuario) {
+    return res.status(401).json({ sucesso: false, mensagem: 'Não autenticado.' });
+  }
+
+  try {
+    const usuarioId = req.session.usuario.id;
+
+    const resultado = await require('../config/database').query(
+      `SELECT DISTINCT ON (t.pet_id)
+         t.pet_id,
+         p.nome AS pet_nome,
+         p.foto AS pet_foto,
+         p.status AS pet_status,
+         ts.latitude,
+         ts.longitude,
+         ts.cidade,
+         ts.data
+       FROM tag_scans ts
+       JOIN nfc_tags t ON t.id = ts.tag_id
+       JOIN pets p ON p.id = t.pet_id
+       JOIN seguidores_pets sp ON sp.pet_id = t.pet_id
+       WHERE sp.usuario_id = $1
+         AND t.status = 'active'
+         AND ts.latitude IS NOT NULL
+         AND ts.longitude IS NOT NULL
+         AND ts.data > NOW() - INTERVAL '30 days'
+       ORDER BY t.pet_id, ts.data DESC
+       LIMIT 100`,
+      [usuarioId]
+    );
+
+    const features = resultado.rows.map((row) => {
+      const lat = parseFloat(row.latitude);
+      const lng = parseFloat(row.longitude);
+      const scanData = row.data ? new Date(row.data) : null;
+      const horasAtras = scanData ? Math.round((Date.now() - scanData.getTime()) / 3600000) : null;
+      return {
+        type: 'Feature',
+        geometry: { type: 'Point', coordinates: [lng, lat] },
+        properties: {
+          id: row.pet_id,
+          tipo: 'pet_seguido',
+          nome: row.pet_nome || 'Pet',
+          foto: row.pet_foto || null,
+          pet_status: row.pet_status || 'ativo',
+          cidade: row.cidade || null,
+          data: scanData ? scanData.toISOString() : null,
+          horas_atras: horasAtras,
+        },
+      };
+    });
+
+    return res.status(200).json({ type: 'FeatureCollection', features });
+  } catch (erro) {
+    logger.error('MapaController', 'Erro ao buscar pins sociais', erro);
+    return res.status(500).json({ sucesso: false, mensagem: 'Erro ao carregar pets seguidos.' });
+  }
+}
+
+/**
+ * streamMapaSSE — Server-Sent Events para atualizações em tempo real no mapa
+ *
+ * Rota: GET /mapa/api/stream
+ * Query params: swLat, swLng, neLat, neLng (bounding box atual do mapa do cliente)
+ *
+ * Escuta o petEventBus e retransmite eventos nfc_scan cujas coordenadas
+ * estejam dentro da bbox informada pelo cliente.
+ */
+async function streamMapaSSE(req, res) {
+  if (_sseConnections >= SSE_MAX_CONNECTIONS) {
+    return res.status(503).json({ mensagem: 'Muitas conexões ativas.' });
+  }
+
+  const swLat = parseFloat(req.query.swLat);
+  const swLng = parseFloat(req.query.swLng);
+  const neLat = parseFloat(req.query.neLat);
+  const neLng = parseFloat(req.query.neLng);
+  const hasBbox = !isNaN(swLat) && !isNaN(swLng) && !isNaN(neLat) && !isNaN(neLng);
+
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('X-Accel-Buffering', 'no');
+  res.flushHeaders();
+
+  _sseConnections++;
+  let closed = false;
+
+  const hb = setInterval(() => {
+    if (!closed) { try { res.write(':heartbeat\n\n'); } catch (_) { cleanup(); } }
+  }, SSE_HB_MS);
+
+  const ttl = setTimeout(() => {
+    if (!closed) { try { res.write('event: close\ndata: {}\n\n'); res.end(); } catch (_) {} cleanup(); }
+  }, SSE_TTL_MS);
+
+  function cleanup() {
+    if (closed) return;
+    closed = true;
+    _sseConnections--;
+    clearInterval(hb);
+    clearTimeout(ttl);
+    petEventBus.removeListener('nfc_scan_global', onNfcScan);
+  }
+
+  function onNfcScan(data) {
+    if (closed) return;
+    // Filtrar pela bbox se fornecida
+    if (hasBbox) {
+      const lat = data.lat;
+      const lng = data.lng;
+      if (lat < swLat || lat > neLat || lng < swLng || lng > neLng) return;
+    }
+    try {
+      res.write('event: nfc_scan\ndata: ' + JSON.stringify(data) + '\n\n');
+    } catch (_) { cleanup(); }
+  }
+
+  // Registra listener no EventEmitter nativo (não no sistema SSE por pet)
+  petEventBus.on('nfc_scan_global', onNfcScan);
+
+  res.on('close', cleanup);
+  res.on('error', cleanup);
+}
+
 /* Exporta o controller */
 module.exports = {
   buscarPins,
+  buscarPinsSocial,
+  streamMapaSSE,
 };

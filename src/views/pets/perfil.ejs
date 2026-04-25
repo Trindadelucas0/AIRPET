@@ -533,12 +533,16 @@
           <%= scans.length %> evento<%= scans.length !== 1 ? 's' : '' %>
         </span>
       </div>
-      <p class="text-xs text-gray-500 mb-4">
-        Quando alguém escaneia a tag de <%= pet.nome %>, a localização aparece aqui. Toque em um evento para ver no mapa.
+      <p class="text-xs text-gray-500 mb-1">
+        Mostra onde a tag NFC de <%= pet.nome %> foi lida — não necessariamente onde ele está agora.
+      </p>
+      <p class="text-xs text-amber-600 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2 mb-4 leading-relaxed">
+        <i class="fa-solid fa-circle-info mr-1"></i>
+        A localização registrada é de <strong>quem escaneou a tag</strong>. Toque em um evento para ver no mapa e traçar uma rota.
       </p>
 
       <!-- Lista de eventos -->
-      <div class="divide-y divide-gray-200/70 max-h-[380px] overflow-y-auto rounded-xl border border-gray-200/70 bg-white">
+      <div class="divide-y divide-gray-200/70 max-h-[420px] overflow-y-auto rounded-xl border border-gray-200/70 bg-white">
         <% scans.forEach(function(scan, idx) {
           var dt = new Date(scan.data);
           var agora2 = new Date();
@@ -547,45 +551,65 @@
           var diffH = Math.floor(diffMin / 60);
           var diffD = Math.floor(diffH / 24);
           var tempoAtras = '';
-          if (diffD > 0) { tempoAtras = diffD + 'd'; }
-          else if (diffH > 0) { tempoAtras = diffH + 'h'; }
-          else if (diffMin > 0) { tempoAtras = diffMin + 'min'; }
-          else { tempoAtras = 'agora'; }
+          if (diffD > 0) { tempoAtras = 'há ' + diffD + (diffD === 1 ? ' dia' : ' dias'); }
+          else if (diffH > 0) { tempoAtras = 'há ' + diffH + (diffH === 1 ? ' hora' : ' horas'); }
+          else if (diffMin > 0) { tempoAtras = 'há ' + diffMin + ' min'; }
+          else { tempoAtras = 'agora mesmo'; }
           var origem = scan.origem || 'nfc';
           var chipClass = origem === 'encontrado' ? 'event-chip--finder' : (origem === 'manual' ? 'event-chip--manual' : 'event-chip--nfc');
           var chipLabel = origem === 'encontrado' ? 'Avistamento' : (origem === 'manual' ? 'Manual' : 'NFC');
+          var temCoords = scan.latitude && scan.longitude;
+          var gmapsUrl = temCoords ? 'https://www.google.com/maps/dir/?api=1&destination=' + scan.latitude + ',' + scan.longitude : '';
+          var wazeUrl  = temCoords ? 'https://waze.com/ul?ll=' + scan.latitude + ',' + scan.longitude + '&navigate=yes' : '';
         %>
-          <div class="scan-item p-3 flex items-center gap-3 cursor-pointer"
+          <div class="scan-item <%= temCoords ? 'cursor-pointer' : '' %> p-3"
                data-lat="<%= scan.latitude || '' %>"
                data-lng="<%= scan.longitude || '' %>"
                data-data="<%= dt.toISOString() %>"
                data-cidade="<%= scan.cidade || '' %>"
                data-idx="<%= idx %>"
-               onclick="mostrarScanNoMapa(this)">
-            <div class="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0
-                 <%= idx === 0 ? 'bg-primary-500 text-white' : 'bg-gray-100 text-gray-500' %>">
-              <% if (idx === 0) { %>
-                <i class="fa-solid fa-location-dot text-sm"></i>
-              <% } else { %>
-                <span class="text-xs font-bold"><%= idx + 1 %></span>
-              <% } %>
-            </div>
-            <div class="flex-1 min-w-0">
-              <div class="flex items-center gap-2 flex-wrap">
-                <p class="text-sm font-semibold text-gray-800">
-                  <% if (idx === 0) { %><span class="text-primary-500">Mais recente</span><% } else { %>Evento #<%= idx + 1 %><% } %>
-                </p>
-                <span class="event-chip <%= chipClass %>"><%= chipLabel %></span>
+               <% if (temCoords) { %>onclick="mostrarScanNoMapa(this)"<% } %>>
+            <div class="flex items-start gap-3">
+              <div class="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5
+                   <%= idx === 0 ? 'bg-primary-500 text-white' : 'bg-gray-100 text-gray-500' %>">
+                <% if (idx === 0) { %>
+                  <i class="fa-solid fa-location-dot text-sm"></i>
+                <% } else { %>
+                  <span class="text-xs font-bold"><%= idx + 1 %></span>
+                <% } %>
               </div>
-              <p class="text-xs text-gray-500 mt-0.5">
-                <%= dt.toLocaleDateString('pt-BR') %> às <%= dt.toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'}) %>
-                <span class="text-gray-400 ml-1">(<%= tempoAtras %>)</span>
-              </p>
-              <% if (scan.cidade) { %>
-                <p class="text-xs text-gray-400 truncate"><i class="fa-solid fa-map-pin mr-1"></i><%= scan.cidade %></p>
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 flex-wrap mb-0.5">
+                  <p class="text-sm font-semibold text-gray-800">
+                    <% if (idx === 0) { %><span class="text-primary-500">Mais recente</span><% } else { %>Leitura #<%= idx + 1 %><% } %>
+                  </p>
+                  <span class="event-chip <%= chipClass %>"><%= chipLabel %></span>
+                </div>
+                <p class="text-xs text-gray-500">
+                  <%= dt.toLocaleDateString('pt-BR') %> às <%= dt.toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'}) %>
+                  <span class="text-primary-400 font-medium ml-1">· <%= tempoAtras %></span>
+                </p>
+                <% if (scan.cidade) { %>
+                  <p class="text-xs text-gray-400 truncate mt-0.5"><i class="fa-solid fa-map-pin text-[10px] mr-1"></i><%= scan.cidade %></p>
+                <% } %>
+                <% if (temCoords) { %>
+                  <!-- Botões de rota: clique parado para abrir rota, sem acionar mostrarScanNoMapa -->
+                  <div class="flex gap-2 mt-2" onclick="event.stopPropagation()">
+                    <a href="<%= gmapsUrl %>" target="_blank" rel="noopener"
+                       class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-blue-50 text-blue-700 border border-blue-100 hover:bg-blue-100 transition-colors">
+                      <i class="fa-solid fa-diamond-turn-right text-[9px]"></i> Google Maps
+                    </a>
+                    <a href="<%= wazeUrl %>" target="_blank" rel="noopener"
+                       class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-cyan-50 text-cyan-700 border border-cyan-100 hover:bg-cyan-100 transition-colors">
+                      <i class="fa-brands fa-waze text-[9px]"></i> Waze
+                    </a>
+                  </div>
+                <% } %>
+              </div>
+              <% if (temCoords) { %>
+                <i class="fa-solid fa-chevron-right text-gray-300 text-xs flex-shrink-0 mt-1"></i>
               <% } %>
             </div>
-            <i class="fa-solid fa-chevron-right text-gray-300 text-xs flex-shrink-0"></i>
           </div>
         <% }); %>
       </div>

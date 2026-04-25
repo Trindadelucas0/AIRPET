@@ -101,6 +101,7 @@ const TagScan = {
          t.pet_id,
          p.nome AS pet_nome,
          p.foto AS pet_foto,
+         p.status AS pet_status,
          ts.latitude,
          ts.longitude,
          ts.cidade,
@@ -112,10 +113,12 @@ const TagScan = {
          AND t.pet_id IS NOT NULL
          AND ts.latitude IS NOT NULL
          AND ts.longitude IS NOT NULL
-         AND ts.latitude BETWEEN $1 AND $2
-         AND ts.longitude BETWEEN $3 AND $4
-       ORDER BY t.pet_id, ts.data DESC`,
-      [swLat, neLat, swLng, neLng]
+         AND ts.latitude BETWEEN $1 AND $3
+         AND ts.longitude BETWEEN $2 AND $4
+         AND ts.data > NOW() - INTERVAL '30 days'
+       ORDER BY t.pet_id, ts.data DESC
+       LIMIT 200`,
+      [swLat, swLng, neLat, neLng]
     );
     return resultado.rows;
   },

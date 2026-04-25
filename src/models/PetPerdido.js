@@ -369,6 +369,73 @@ const PetPerdido = {
     return resultado.rows[0];
   },
 
+  /**
+   * Lista alertas aprovados dentro de uma bounding box.
+   * Substitui listarAprovados() no mapa público para evitar retornar
+   * todos os alertas do Brasil independentemente do zoom.
+   *
+   * @param {number} swLat - Latitude canto sul-oeste
+   * @param {number} swLng - Longitude canto sul-oeste
+   * @param {number} neLat - Latitude canto nordeste
+   * @param {number} neLng - Longitude canto nordeste
+   * @returns {Promise<Array>}
+   */
+  async listarAprovadosNaBox(swLat, swLng, neLat, neLng) {
+    const resultado = await query(
+      `SELECT pp.*, pp.ultima_lat AS latitude, pp.ultima_lng AS longitude,
+              p.nome AS pet_nome, p.foto AS pet_foto, u.nome AS dono_nome
+       FROM pets_perdidos pp
+       JOIN pets p ON p.id = pp.pet_id
+       JOIN usuarios u ON u.id = p.usuario_id
+       WHERE pp.status = 'aprovado'
+         AND pp.ultima_lat IS NOT NULL
+         AND pp.ultima_lng IS NOT NULL
+         AND pp.ultima_lat BETWEEN $1 AND $3
+         AND pp.ultima_lng BETWEEN $2 AND $4
+       ORDER BY pp.data DESC
+       LIMIT 100`,
+      [swLat, swLng, neLat, neLng]
+    );
+    return resultado.rows;
+  },
+
+  /**
+   * Busca alertas aprovados dentro de um raio em metros a partir de um ponto.
+   * Usado para notificação de proximidade: quando uma tag é escaneada perto
+   * de onde um pet está perdido, o tutor é notificado.
+   *
+   * @param {number} lat - Latitude do ponto de referência
+   * @param {number} lng - Longitude do ponto de referência
+   * @param {number} raioMetros - Raio em metros (padrão: 500)
+   * @returns {Promise<Array>}
+   */
+  async buscarAprovadosNaRaio(lat, lng, raioMetros = 500) {
+    const resultado = await query(
+      `SELECT pp.id, pp.pet_id, pp.nivel_alerta,
+              pp.ultima_lat AS latitude, pp.ultima_lng AS longitude,
+              p.nome AS pet_nome, p.foto AS pet_foto, p.usuario_id,
+              u.nome AS dono_nome,
+              ST_Distance(
+                pp.ultima_localizacao,
+                ST_SetSRID(ST_MakePoint($2, $1), 4326)::geography
+              ) AS distancia_metros
+       FROM pets_perdidos pp
+       JOIN pets p ON p.id = pp.pet_id
+       JOIN usuarios u ON u.id = p.usuario_id
+       WHERE pp.status = 'aprovado'
+         AND pp.ultima_localizacao IS NOT NULL
+         AND ST_DWithin(
+               pp.ultima_localizacao,
+               ST_SetSRID(ST_MakePoint($2, $1), 4326)::geography,
+               $3
+             )
+       ORDER BY distancia_metros ASC
+       LIMIT 10`,
+      [lat, lng, raioMetros]
+    );
+    return resultado.rows;
+  },
+
   async listarPinsParaMapaBBox(swLat, swLng, neLat, neLng) {
     const resultado = await query(
       `SELECT pp.id, p.nome, pp.latitude, pp.longitude,

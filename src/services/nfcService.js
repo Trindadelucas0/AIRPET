@@ -212,9 +212,49 @@ const nfcService = {
             logger.error('NfcService', 'Falha ao projetar evento NFC no tracking store', err);
           });
 
-          // Emite em tempo real para tutores com o perfil aberto (SSE)
+          // Emite em tempo real para tutores com o perfil aberto (SSE por pet)
           petEventBus.emit(String(tag.pet_id), 'nfc_scan', {
             petId: tag.pet_id,
+            lat: dadosScan.latitude,
+            lng: dadosScan.longitude,
+            cidade: dadosScan.cidade || null,
+            ts: Date.now(),
+          });
+
+          // Alerta de proximidade: notifica tutores de pets perdidos próximos ao scan
+          PetPerdido.buscarAprovadosNaRaio(dadosScan.latitude, dadosScan.longitude, 500)
+            .then(async (perdidosProximos) => {
+              for (const perdido of perdidosProximos) {
+                // Não notificar o mesmo tutor cujo pet acabou de ser escaneado
+                if (perdido.usuario_id === tag.user_id) continue;
+                const distM = Math.round(perdido.distancia_metros || 0);
+                const cidadeTexto = dadosScan.cidade ? ` em ${dadosScan.cidade}` : '';
+                await Notificacao.criar({
+                  usuario_id: perdido.usuario_id,
+                  tipo: 'avistamento_proximo',
+                  mensagem: `Um pet foi avistado a ~${distM}m de onde ${perdido.pet_nome} foi visto pela última vez${cidadeTexto}. Pode ser ele!`,
+                  link: `/pets/${perdido.pet_id}`,
+                });
+                if (notificacoesMulticanalHabilitado) {
+                  pushService.enviarParaUsuario(perdido.usuario_id, {
+                    titulo: '🔍 Avistamento próximo!',
+                    corpo: `Um pet foi visto a ~${distM}m de ${perdido.pet_nome}. Verifique!`,
+                    url: `/pets/${perdido.pet_id}`,
+                    tipo: 'avistamento_proximo',
+                  }).catch(() => {});
+                }
+              }
+            })
+            .catch((err) => {
+              logger.error('NfcService', 'Falha ao verificar proximidade de pets perdidos', err);
+            });
+
+          // Emite evento global para o mapa público (SSE do mapa via EventEmitter)
+          petEventBus.emitGlobal('nfc_scan_global', {
+            petId: tag.pet_id,
+            nome: tag.pet_nome || (dadosPet && dadosPet.nome) || null,
+            foto: dadosPet && dadosPet.foto ? dadosPet.foto : null,
+            petStatus: dadosPet && dadosPet.status ? dadosPet.status : 'ativo',
             lat: dadosScan.latitude,
             lng: dadosScan.longitude,
             cidade: dadosScan.cidade || null,

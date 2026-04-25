@@ -254,14 +254,17 @@ const Petshop = {
 
   async listarPinsParaMapaBBox(swLat, swLng, neLat, neLng) {
     const resultado = await query(
-      `SELECT id, nome, latitude, longitude, 'petshop' AS categoria,
-              'store' AS icone, 'petshop' AS tipo_original
+      `SELECT id, nome, slug, endereco, latitude, longitude,
+              telefone, whatsapp, logo_url, foto_capa_url,
+              'petshop' AS categoria, 'store' AS icone, 'petshop' AS tipo_original
        FROM petshops
        WHERE ativo = true
+         AND localizacao IS NOT NULL
          AND ST_Within(
                localizacao::geometry,
                ST_MakeEnvelope($2, $1, $4, $3, 4326)
-             )`,
+             )
+       LIMIT 150`,
       [swLat, swLng, neLat, neLng]
     );
     return resultado.rows;

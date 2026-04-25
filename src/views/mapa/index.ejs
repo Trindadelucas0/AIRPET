@@ -12,6 +12,73 @@
   .painel-localizar { max-height: 20rem; transition: max-height 0.25s ease-out, opacity 0.2s; }
   .painel-localizar.collapsed { max-height: 0; overflow: hidden; opacity: 0; pointer-events: none; }
   @media (min-width: 768px) { .painel-localizar.collapsed { max-height: 20rem; overflow: visible; opacity: 1; pointer-events: auto; } }
+
+  /* ── Bottom Sheet ── */
+  .mapa-bottom-sheet {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    z-index: 2000;
+    background: transparent;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    pointer-events: none;
+  }
+  .mapa-bottom-sheet.active { pointer-events: auto; }
+  .mapa-bottom-sheet__backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(15,23,42,0.45);
+    backdrop-filter: blur(2px);
+    opacity: 0;
+    transition: opacity 0.25s ease;
+    z-index: 1;
+  }
+  .mapa-bottom-sheet.active .mapa-bottom-sheet__backdrop { opacity: 1; }
+  .mapa-bottom-sheet__panel {
+    position: relative;
+    z-index: 2;
+    width: 100%;
+    max-width: 520px;
+    background: #fff;
+    border-radius: 1.25rem 1.25rem 0 0;
+    box-shadow: 0 -12px 40px rgba(15,23,42,.18);
+    padding: 1rem 1.25rem calc(1.25rem + env(safe-area-inset-bottom));
+    transform: translateY(100%);
+    transition: transform 0.28s cubic-bezier(.32,0,.67,0);
+    max-height: 72dvh;
+    overflow-y: auto;
+  }
+  .mapa-bottom-sheet.active .mapa-bottom-sheet__panel {
+    transform: translateY(0);
+  }
+  @media (min-width: 640px) {
+    .mapa-bottom-sheet__panel {
+      border-radius: 1.25rem;
+      margin-bottom: 1.5rem;
+    }
+  }
+  .mapa-bs-handle {
+    width: 40px; height: 4px; border-radius: 999px;
+    background: #e5e7eb; margin: 0 auto 1rem;
+  }
+  .mapa-bs-close {
+    position: absolute; top: .85rem; right: 1rem;
+    width: 2rem; height: 2rem;
+    border: 1px solid #e5e7eb; border-radius: 50%;
+    background: #fff; color: #6b7280;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; font-size: 13px;
+    transition: background .15s, color .15s;
+  }
+  .mapa-bs-close:hover { background: #f3f4f6; color: #111827; }
+
+  /* ── Pin de pet com foto ── */
+  .pet-photo-pin { background: transparent !important; border: none !important; }
+  @keyframes petPinRing {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(220,38,38,0.4); }
+    50%       { box-shadow: 0 0 0 7px rgba(220,38,38,0); }
+  }
 </style>
 ` %>
 <%- include('../partials/header') %>
@@ -25,6 +92,9 @@
       <%- include('../partials/map-layer-button', { layer: 'avistamentos', icon: 'fa-solid fa-eye', label: 'Avistamentos', isActive: true }) %>
       <%- include('../partials/map-layer-button', { layer: 'pontos', icon: 'fa-solid fa-map-pin', label: 'Pontos', isActive: false }) %>
       <%- include('../partials/map-layer-button', { layer: 'pet_scans', icon: 'fa-solid fa-paw', label: 'Pets no mapa', isActive: true }) %>
+      <% if (locals.usuario) { %>
+        <%- include('../partials/map-layer-button', { layer: 'social', icon: 'fa-solid fa-heart', label: 'Seguindo', isActive: false }) %>
+      <% } %>
       <button type="button" id="btnToggleLocalizar" class="ml-auto flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold border border-gray-200 whitespace-nowrap transition-all text-gray-600 hover:bg-gray-50 md:hidden">
         <i class="fa-solid fa-magnifying-glass-location"></i> Localizar regiao
       </button>
@@ -65,6 +135,18 @@
     <i class="fa-solid fa-location-crosshairs text-lg"></i>
   </button>
 
+</div>
+
+<!-- Bottom Sheet do Mapa -->
+<div id="mapaBottomSheet" class="mapa-bottom-sheet hidden" role="dialog" aria-modal="true" aria-label="Detalhes do local">
+  <div class="mapa-bottom-sheet__backdrop"></div>
+  <div class="mapa-bottom-sheet__panel">
+    <div class="mapa-bs-handle"></div>
+    <button type="button" id="mapaBottomSheetClose" class="mapa-bs-close" aria-label="Fechar">
+      <i class="fa-solid fa-times"></i>
+    </button>
+    <div id="mapaBottomSheetContent"></div>
+  </div>
 </div>
 
 <% locals.extraScripts = `

@@ -95,6 +95,16 @@ class PetEventBus extends EventEmitter {
   }
 
   /**
+   * Emite um evento global via EventEmitter (não SSE por pet).
+   * Usado para transmitir eventos ao mapa público via listeners registrados com .on().
+   * @param {string} event - Nome do evento (ex: 'nfc_scan_global')
+   * @param {object} data
+   */
+  emitGlobal(event, data = {}) {
+    super.emit(event, data);
+  }
+
+  /**
    * Retorna quantas conexões ativas existem para métricas.
    */
   stats() {
