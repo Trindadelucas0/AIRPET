@@ -28,6 +28,12 @@ const RegistroSaude = require('../models/RegistroSaude');
 const TagScan = require('../models/TagScan');
 const NfcTag = require('../models/NfcTag');
 const Localizacao = require('../models/Localizacao');
+const SeguidorPet = require('../models/SeguidorPet');
+const Conversa = require('../models/Conversa');
+const MensagemChat = require('../models/MensagemChat');
+const PetStatusHistory = require('../models/PetStatusHistory');
+const PetTrackingEvent = require('../models/PetTrackingEvent');
+const petEventBus = require('../services/petEventBus');
 const tagEntitlementService = require('../services/tagEntitlementService');
 const petPlanLimitService = require('../services/petPlanLimitService');
 const storageService = require('../services/storageService');
@@ -267,15 +273,30 @@ const petController = {
       let tagsAtivas = [];
       let tagsHistorico = [];
       let fotosRecebidas = [];
+      let alertaAtivo = null;
+      let ultimoScanPerdido = null;
       if (ehDono) {
-        [scans, tags, fotosRecebidas] = await Promise.all([
-          TagScan.buscarPorPet(id, 10),
+        [scans, tags, fotosRecebidas, alertaAtivo] = await Promise.all([
+          TagScan.buscarPorPet(id, 20),
           NfcTag.buscarPorUsuario(req.session.usuario.id).then(lista => lista.filter(t => t.pet_id === parseInt(id, 10))),
           Localizacao.buscarComFotosPorPet(id, 20),
+          PetPerdido.buscarAtivoPorPet(id),
         ]);
         tagsAtivas = (tags || []).filter((t) => t.status === 'active');
         tagsHistorico = (tags || []).filter((t) => t.status !== 'active');
+        if (pet.status === 'perdido') {
+          ultimoScanPerdido = await TagScan.ultimoScanPet(id);
+        }
       }
+
+      let totalSeguidores = 0;
+      let estaSeguindo = false;
+      try {
+        totalSeguidores = await SeguidorPet.contarSeguidores(id);
+        if (!ehDono && req.session.usuario) {
+          estaSeguindo = await SeguidorPet.estaSeguindo(req.session.usuario.id, id);
+        }
+      } catch (_) { }
 
       res.render('pets/perfil', {
         titulo: `Perfil de ${pet.nome}`,
@@ -289,6 +310,10 @@ const petController = {
         idadePet,
         calendario,
         pesoIdeal,
+        alertaAtivo,
+        ultimoScanPerdido,
+        totalSeguidores,
+        estaSeguindo,
       });
     } catch (erro) {
       logger.error('PET_CTRL', 'Erro ao exibir perfil do pet', erro);
@@ -621,6 +646,140 @@ const petController = {
       logger.error('PET_CTRL', 'Erro ao vincular tag ao pet', erro);
       req.session.flash = { tipo: 'erro', mensagem: 'Erro ao vincular a tag. Tente novamente.' };
       return res.redirect(`/pets/${req.params.id}/vincular-tag`);
+    }
+  },
+
+  /**
+   * API inline: alterna status do pet entre 'perdido' e 'seguro' sem trocar de página.
+   * Rota: POST /pets/:id/toggle-status
+   */
+  async toggleStatus(req, res) {
+    try {
+      const { id } = req.params;
+      const usuarioId = req.session.usuario.id;
+      const pet = await Pet.buscarPorId(id);
+
+      if (!pet) return res.status(404).json({ sucesso: false, mensagem: 'Pet não encontrado.' });
+      if (pet.usuario_id !== usuarioId) return res.status(403).json({ sucesso: false, mensagem: 'Sem permissão.' });
+
+      if (pet.status === 'perdido') {
+        const alerta = await PetPerdido.buscarAtivoPorPet(id);
+        await withTransaction(async (client) => {
+          if (alerta) {
+            await PetPerdido.resolver(alerta.id, client);
+            try {
+              const conversas = await Conversa.buscarPorPetPerdido(alerta.id, client);
+              for (const c of conversas) {
+                await MensagemChat.deletarPorConversa(c.id, client);
+                await Conversa.encerrar(c.id, client);
+              }
+            } catch (_) { }
+          }
+          await Pet.atualizarStatus(id, 'seguro', client);
+        });
+        PetStatusHistory.registrar({ pet_id: parseInt(id, 10), usuario_id: usuarioId, old_status: 'perdido', new_status: 'seguro' }).catch(() => {});
+        PetTrackingEvent.registrar({ pet_id: parseInt(id, 10), event_type: 'status_change', source: 'owner', visibility: 'owner', metadata: { novoStatus: 'seguro', atorId: usuarioId } }).catch(() => {});
+        petEventBus.emit(id, 'status_change', { petId: id, novoStatus: 'seguro', ts: Date.now() });
+        logger.info('PET_CTRL', `Pet ${pet.nome} (${id}) marcado como ENCONTRADO pelo tutor ${usuarioId}`);
+        return res.json({ sucesso: true, novoStatus: 'seguro', mensagem: `${pet.nome} está em segurança!` });
+      } else {
+        const { descricao, latitude, longitude, recompensa } = req.body || {};
+        await withTransaction(async (client) => {
+          await PetPerdido.criar({
+            pet_id: parseInt(id, 10),
+            descricao: descricao || 'Reportado pelo tutor.',
+            latitude: latitude ? parseFloat(latitude) : null,
+            longitude: longitude ? parseFloat(longitude) : null,
+            cidade: null,
+            recompensa: recompensa || null,
+          }, client);
+          await Pet.atualizarStatus(id, 'perdido', client);
+        });
+        PetStatusHistory.registrar({ pet_id: parseInt(id, 10), usuario_id: usuarioId, old_status: 'seguro', new_status: 'perdido', descricao, latitude, longitude, recompensa }).catch(() => {});
+        PetTrackingEvent.registrar({ pet_id: parseInt(id, 10), event_type: 'status_change', source: 'owner', latitude, longitude, visibility: 'public', metadata: { novoStatus: 'perdido', descricao, atorId: usuarioId } }).catch(() => {});
+        petEventBus.emit(id, 'status_change', { petId: id, novoStatus: 'perdido', ts: Date.now() });
+        logger.info('PET_CTRL', `Pet ${pet.nome} (${id}) reportado como PERDIDO pelo tutor ${usuarioId}`);
+        return res.json({ sucesso: true, novoStatus: 'perdido', mensagem: `${pet.nome} foi reportado como perdido. O alerta será publicado após análise.` });
+      }
+    } catch (erro) {
+      logger.error('PET_CTRL', 'Erro ao alternar status do pet', erro);
+      return res.status(500).json({ sucesso: false, mensagem: 'Erro ao atualizar status. Tente novamente.' });
+    }
+  },
+
+  /**
+   * API inline: bloqueia ou desbloqueia uma tag NFC do pet.
+   * Rota: POST /pets/:id/tags/:tagId/toggle-block
+   */
+  async toggleBlockTag(req, res) {
+    try {
+      const { id, tagId } = req.params;
+      const usuarioId = req.session.usuario.id;
+
+      const pet = await Pet.buscarPorId(id);
+      if (!pet || pet.usuario_id !== usuarioId) return res.status(403).json({ sucesso: false, mensagem: 'Sem permissão.' });
+
+      const tag = await NfcTag.buscarPorId(tagId);
+      if (!tag || tag.user_id !== usuarioId) return res.status(404).json({ sucesso: false, mensagem: 'Tag não encontrada.' });
+
+      let tagAtualizada;
+      if (tag.status === 'blocked') {
+        tagAtualizada = await NfcTag.desbloquear(tagId);
+      } else {
+        tagAtualizada = await NfcTag.bloquear(tagId);
+      }
+
+      return res.json({ sucesso: true, tag: tagAtualizada, novoStatus: tagAtualizada ? tagAtualizada.status : null });
+    } catch (erro) {
+      logger.error('PET_CTRL', 'Erro ao alternar bloqueio de tag', erro);
+      return res.status(500).json({ sucesso: false, mensagem: 'Erro ao atualizar tag.' });
+    }
+  },
+
+  /**
+   * SSE — stream de eventos em tempo real do perfil do pet.
+   * Rota: GET /pets/:id/events
+   * Emite: nfc_scan, status_change, follow
+   */
+  sseEvents(req, res) {
+    try {
+      const { id } = req.params;
+      res.setHeader('Content-Type', 'text/event-stream');
+      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Connection', 'keep-alive');
+      res.setHeader('X-Accel-Buffering', 'no');
+      res.flushHeaders();
+      res.write(`event: connected\ndata: ${JSON.stringify({ petId: id, ts: Date.now() })}\n\n`);
+      petEventBus.subscribe(id, res);
+    } catch (erro) {
+      logger.error('PET_CTRL', 'Erro ao iniciar SSE', erro);
+      try { res.end(); } catch (_) {}
+    }
+  },
+
+  /**
+   * API inline: alterna seguimento de um pet pelo usuário logado.
+   * Rota: POST /pets/:id/seguir
+   */
+  async toggleSeguir(req, res) {
+    try {
+      const { id } = req.params;
+      const usuarioId = req.session.usuario.id;
+      const pet = await Pet.buscarPorId(id);
+      if (!pet) return res.status(404).json({ sucesso: false, mensagem: 'Pet não encontrado.' });
+      if (pet.usuario_id === usuarioId) return res.status(400).json({ sucesso: false, mensagem: 'Você não pode seguir seu próprio pet.' });
+
+      const jaSeguindo = await SeguidorPet.estaSeguindo(usuarioId, id);
+      if (jaSeguindo) {
+        await SeguidorPet.deixarDeSeguir(usuarioId, id);
+      } else {
+        await SeguidorPet.seguir(usuarioId, id);
+      }
+      const totalSeguidores = await SeguidorPet.contarSeguidores(id);
+      return res.json({ sucesso: true, seguindo: !jaSeguindo, totalSeguidores });
+    } catch (erro) {
+      logger.error('PET_CTRL', 'Erro ao alternar seguimento', erro);
+      return res.status(500).json({ sucesso: false, mensagem: 'Erro ao atualizar seguimento.' });
     }
   },
 

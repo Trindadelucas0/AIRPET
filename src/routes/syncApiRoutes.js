@@ -28,4 +28,18 @@ router.patch('/me', estaAutenticadoAPI, syncApiController.patchMe);
 router.get('/me/preferences', estaAutenticadoAPI, syncApiController.getPreferences);
 router.get('/me/following', estaAutenticadoAPI, syncApiController.getFollowing);
 
+// Rastreamento de funil via sendBeacon (sem auth obrigatória)
+router.post('/funil', (req, res) => {
+  try {
+    const { acao, pet_id, ts } = req.body || {};
+    if (acao && typeof acao === 'string' && acao.length <= 60) {
+      const logger = require('../utils/logger');
+      logger.info('FUNIL', `acao=${acao} pet=${pet_id||'-'} uid=${req.session?.usuario?.id||'anon'} ts=${ts||Date.now()}`);
+    }
+    res.status(204).end();
+  } catch (_) {
+    res.status(204).end();
+  }
+});
+
 module.exports = router;

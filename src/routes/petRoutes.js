@@ -67,4 +67,16 @@ router.put('/:id', function (req, res, next) {
 // Página de saúde do pet
 router.get('/:id/saude', petController.mostrarSaude);
 
+// Toggle de status perdido/encontrado inline (sem trocar de página)
+router.post('/:id/toggle-status', petController.toggleStatus);
+
+// Toggle de seguimento do pet
+router.post('/:id/seguir', petController.toggleSeguir);
+
+// Gerenciamento de tags inline (bloquear/desbloquear)
+router.post('/:id/tags/:tagId/toggle-block', petController.toggleBlockTag);
+
+// SSE — realtime de eventos do pet (scans, status)
+router.get('/:id/events', petController.sseEvents);
+
 module.exports = router;

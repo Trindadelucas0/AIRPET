@@ -37,6 +37,8 @@ const Pet = require('../models/Pet');
 const Localizacao = require('../models/Localizacao');
 const Notificacao = require('../models/Notificacao');
 const PetPerdido = require('../models/PetPerdido');
+const PetTrackingEvent = require('../models/PetTrackingEvent');
+const petEventBus = require('./petEventBus');
 const petshopRecoveryIntegrationService = require('./petshopRecoveryIntegrationService');
 const tagEntitlementService = require('./tagEntitlementService');
 const pushService = require('./pushService');
@@ -194,6 +196,29 @@ const nfcService = {
             origem: 'nfc',
             foto_url: null,
             cidade: dadosScan.cidade || null,
+          });
+
+          // Projeta no event store unificado (falha silenciosa — não bloqueia fluxo)
+          PetTrackingEvent.registrar({
+            pet_id: tag.pet_id,
+            event_type: 'nfc_scan',
+            source: 'nfc',
+            latitude: dadosScan.latitude,
+            longitude: dadosScan.longitude,
+            cidade: dadosScan.cidade || null,
+            visibility: 'owner',
+            metadata: { tag_code: tagCode, ip: dadosScan.ip, user_agent: dadosScan.user_agent },
+          }).catch((err) => {
+            logger.error('NfcService', 'Falha ao projetar evento NFC no tracking store', err);
+          });
+
+          // Emite em tempo real para tutores com o perfil aberto (SSE)
+          petEventBus.emit(String(tag.pet_id), 'nfc_scan', {
+            petId: tag.pet_id,
+            lat: dadosScan.latitude,
+            lng: dadosScan.longitude,
+            cidade: dadosScan.cidade || null,
+            ts: Date.now(),
           });
 
           logger.info('NfcService', `Localização registrada para pet: ${tag.pet_id}`);

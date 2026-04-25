@@ -24,6 +24,38 @@ async function runBaselineReconciliations() {
       ADD COLUMN IF NOT EXISTS last_level_changed_at TIMESTAMPTZ`,
     `ALTER TABLE IF EXISTS pets_perdidos
       ADD COLUMN IF NOT EXISTS last_broadcast_at TIMESTAMPTZ`,
+    /* pet_status_history — auditoria de mudanças de status (perdido/seguro) */
+    `CREATE TABLE IF NOT EXISTS pet_status_history (
+      id          BIGSERIAL PRIMARY KEY,
+      pet_id      INTEGER NOT NULL REFERENCES pets(id) ON DELETE CASCADE,
+      usuario_id  INTEGER REFERENCES usuarios(id) ON DELETE SET NULL,
+      old_status  VARCHAR(20),
+      new_status  VARCHAR(20) NOT NULL,
+      descricao   TEXT,
+      latitude    NUMERIC(10,6),
+      longitude   NUMERIC(10,6),
+      recompensa  VARCHAR(80),
+      created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )`,
+    `CREATE INDEX IF NOT EXISTS idx_pet_status_history_pet_at
+      ON pet_status_history(pet_id, created_at DESC)`,
+    /* pet_tracking_events — event store unificado de rastreamento */
+    `CREATE TABLE IF NOT EXISTS pet_tracking_events (
+      id              BIGSERIAL PRIMARY KEY,
+      pet_id          INTEGER NOT NULL REFERENCES pets(id) ON DELETE CASCADE,
+      event_type      VARCHAR(40) NOT NULL,
+      source          VARCHAR(30) NOT NULL DEFAULT 'nfc',
+      latitude        NUMERIC(10,6),
+      longitude       NUMERIC(10,6),
+      cidade          VARCHAR(120),
+      confidence      SMALLINT DEFAULT 100,
+      visibility      VARCHAR(20) NOT NULL DEFAULT 'owner',
+      metadata        JSONB,
+      event_at        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )`,
+    `CREATE INDEX IF NOT EXISTS idx_pet_tracking_events_pet_at
+      ON pet_tracking_events(pet_id, event_at DESC)`,
   ];
 
   let ok = 0;

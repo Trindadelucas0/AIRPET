@@ -2,154 +2,161 @@
 <% locals.extraHead = `
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
-  #mapaScan { height: 350px; border-radius: 14px; z-index: 1; }
+  /* ── BANNER DE ALERTA PERDIDO ────────────────────────── */
+  .lost-alert-banner {
+    background: linear-gradient(90deg, #ef4444 0%, #dc2626 100%);
+    animation: bannerPulse 2.8s ease-in-out infinite;
+  }
+  @keyframes bannerPulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0); }
+    50%       { box-shadow: 0 0 0 6px rgba(239,68,68,0.18); }
+  }
+  .lost-badge-ring {
+    animation: ringPop 1.4s cubic-bezier(.4,0,.6,1) infinite;
+  }
+  @keyframes ringPop {
+    0%,100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.35); }
+    50%     { box-shadow: 0 0 0 8px rgba(239,68,68,0); }
+  }
 
+  /* ── CARTÃO DO PERFIL ─────────────────────────────────── */
   .profile-soft-card {
     border-color: color-mix(in srgb, var(--border) 82%, white);
     border-radius: 1.25rem;
-    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
+    box-shadow: 0 8px 24px rgba(15,23,42,0.04);
   }
-
   .profile-soft-subcard {
     border: 1px solid color-mix(in srgb, var(--border) 76%, white);
     border-radius: 0.95rem;
     background: color-mix(in srgb, var(--muted) 45%, white);
   }
-
-  .profile-info-card {
-    border-color: color-mix(in srgb, var(--border) 78%, white);
-    border-radius: 1rem;
-    box-shadow: 0 2px 10px rgba(15, 23, 42, 0.03);
-  }
-
-  .profile-action-card {
-    border-color: color-mix(in srgb, var(--border) 80%, white);
-    border-radius: 1rem;
-    min-height: 84px;
-  }
-
-  .profile-focus:focus-visible {
-    outline: 0;
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--ring) 20%, transparent);
-    border-color: color-mix(in srgb, var(--ring) 60%, white);
-  }
-
   .profile-callout-card {
     background: color-mix(in srgb, var(--muted) 62%, white);
     border: 1px solid color-mix(in srgb, var(--border) 76%, white);
     border-radius: 1rem;
   }
-
-  .pet-panel {
-    padding: 1.1rem;
-    border-radius: 1rem;
-    border: 1px solid color-mix(in srgb, var(--border) 74%, white);
-    background: linear-gradient(180deg, #ffffff 0%, color-mix(in srgb, var(--muted) 45%, white) 100%);
-  }
-
-  .pet-chip-soft {
-    border: 1px solid color-mix(in srgb, var(--border) 72%, white);
-    background: color-mix(in srgb, var(--muted) 58%, white);
-  }
-
-  .panel-modal-overlay {
-    background: rgba(15, 23, 42, 0.58);
-    backdrop-filter: blur(3px);
-  }
-
-  .panel-modal-surface {
-    border: 1px solid color-mix(in srgb, var(--border) 75%, white);
-    border-radius: 1.1rem;
-    box-shadow: 0 24px 54px rgba(15, 23, 42, 0.28);
-    background: #ffffff;
-    overflow: hidden;
-  }
-
-  .panel-modal-header {
-    padding: 0.85rem 1rem;
-    border-bottom: 1px solid color-mix(in srgb, var(--border) 74%, white);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: .75rem;
-  }
-
-  .panel-modal-close {
-    width: 2rem;
-    height: 2rem;
-    border: 1px solid color-mix(in srgb, var(--border) 76%, white);
-    border-radius: 999px;
-    color: #475569;
-    background: #fff;
-    transition: all .2s ease;
-  }
-
-  .panel-modal-close:hover { background: #f8fafc; color: #0f172a; }
-
-  .panel-modal-media-wrap {
-    background: #f8fafc;
-    max-height: min(70vh, 760px);
-    overflow: hidden;
-  }
-
   .panel-map-shell {
     border: 1px solid color-mix(in srgb, var(--border) 76%, white);
     border-radius: 1rem;
     background: color-mix(in srgb, var(--muted) 42%, white);
   }
 
-  .scan-info-grid {
-    display: grid;
-    grid-template-columns: 1fr auto;
-    gap: 0.75rem;
-    align-items: center;
-  }
+  /* ── HERO ─────────────────────────────────────────────── */
+  .pet-hero-cover { object-fit: cover; }
+  #mapaScan { height: 300px; border-radius: 14px; z-index: 1; }
 
-  .panel-nav-btn {
-    border-radius: .85rem;
-    border: 1px solid color-mix(in srgb, var(--border) 72%, white);
-    font-weight: 600;
-    font-size: .86rem;
-    transition: all .2s ease;
+  /* ── SCAN TIMELINE ───────────────────────────────────── */
+  .scan-item { border-left: 3px solid transparent; transition: background-color .2s, border-color .2s; }
+  .scan-item:hover { background: color-mix(in srgb, var(--muted) 72%, white); }
+  .scan-item.active { background: color-mix(in srgb, var(--muted) 64%, white); border-left-color: var(--primary); }
+  .event-chip {
+    display: inline-flex; align-items: center; gap: 3px;
+    padding: 1px 7px; border-radius: 999px; font-size: 10px; font-weight: 700;
   }
+  .event-chip--nfc    { background: #eff6ff; color: #1d4ed8; }
+  .event-chip--manual { background: #f0fdf4; color: #15803d; }
+  .event-chip--finder { background: #fefce8; color: #a16207; }
 
+  /* ── MODAIS INLINE ────────────────────────────────────── */
+  .inline-modal-overlay {
+    position: fixed; inset: 0; z-index: 9990;
+    background: rgba(15,23,42,0.55); backdrop-filter: blur(4px);
+    display: flex; align-items: flex-end; justify-content: center;
+  }
+  .inline-modal-overlay.hidden { display: none !important; }
+  @media (min-width: 640px) { .inline-modal-overlay { align-items: center; } }
+  .inline-modal-sheet {
+    width: 100%; max-width: 560px;
+    background: #fff;
+    border-radius: 1.25rem 1.25rem 0 0;
+    box-shadow: 0 -20px 50px rgba(15,23,42,.22);
+    max-height: 88dvh; overflow-y: auto;
+    padding: 1.25rem 1.25rem calc(1.25rem + env(safe-area-inset-bottom));
+    animation: sheetIn .25s cubic-bezier(.32,0,.67,0) both;
+  }
+  @media (min-width: 640px) {
+    .inline-modal-sheet { border-radius: 1.25rem; max-height: 90vh; }
+  }
+  @keyframes sheetIn { from { transform: translateY(60px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+  .modal-handle { width: 40px; height: 4px; border-radius: 999px; background: #e5e7eb; margin: 0 auto 1rem; }
+
+  /* ── TAG MANAGER ─────────────────────────────────────── */
+  .tag-card {
+    border-radius: 1rem;
+    border: 1.5px solid color-mix(in srgb, var(--border) 74%, white);
+    background: #fff;
+    transition: box-shadow .2s, border-color .2s;
+  }
+  .tag-card:hover { box-shadow: 0 4px 14px rgba(15,23,42,.07); }
+  .tag-card.tag-card--active { border-color: color-mix(in srgb, var(--primary) 40%, white); }
+  .tag-status-chip {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 2px 9px; border-radius: 999px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em;
+  }
+  .tag-status-chip--active   { background: #dcfce7; color: #15803d; }
+  .tag-status-chip--blocked  { background: #fee2e2; color: #b91c1c; }
+  .tag-status-chip--other    { background: #f3f4f6; color: #6b7280; }
+
+  /* ── SOCIAL BLOCK ─────────────────────────────────────── */
+  .social-stat-btn { transition: background .15s; }
+  .social-stat-btn:hover { background: color-mix(in srgb, var(--muted) 70%, white); }
+
+  /* ── SCAN INFO GRID ──────────────────────────────────── */
+  .scan-info-grid { display: grid; grid-template-columns: 1fr auto; gap: .75rem; align-items: center; }
+  .panel-nav-btn { border-radius: .85rem; border: 1px solid color-mix(in srgb, var(--border) 72%, white); font-weight: 600; font-size: .86rem; transition: all .2s ease; }
   .panel-nav-btn:hover { transform: translateY(-1px); }
 
-  .scan-item {
-    border-left: 3px solid transparent;
-    transition: background-color .2s ease, border-color .2s ease;
-  }
-
-  .scan-item:hover { background: color-mix(in srgb, var(--muted) 72%, white); }
-
-  .scan-item.active {
-    background: color-mix(in srgb, var(--muted) 64%, white);
-    border-left-color: var(--primary);
-  }
+  /* ── FOTO RECEBIDA ───────────────────────────────────── */
+  .panel-modal-overlay { background: rgba(15,23,42,.58); backdrop-filter: blur(3px); }
+  .panel-modal-surface { border: 1px solid color-mix(in srgb, var(--border) 75%, white); border-radius: 1.1rem; box-shadow: 0 24px 54px rgba(15,23,42,.28); background: #fff; overflow: hidden; }
+  .panel-modal-header  { padding: .85rem 1rem; border-bottom: 1px solid color-mix(in srgb, var(--border) 74%, white); display: flex; align-items: center; justify-content: space-between; gap: .75rem; }
+  .panel-modal-close   { width: 2rem; height: 2rem; border: 1px solid color-mix(in srgb, var(--border) 76%, white); border-radius: 999px; color: #475569; background: #fff; transition: all .2s ease; }
+  .panel-modal-close:hover { background: #f8fafc; color: #0f172a; }
+  .panel-modal-media-wrap { background: #f8fafc; max-height: min(70vh, 760px); overflow: hidden; }
 </style>
 ` %>
 <%- include('../partials/header') %>
 <%- include('../partials/flash') %>
 
+<% const isPerdido = pet.status === 'perdido'; %>
+
+<!-- ════════════ BANNER CRÍTICO — PET PERDIDO ════════════ -->
+<% if (isPerdido && ehDono) { %>
+<div class="lost-alert-banner sticky top-14 z-50 px-4 py-2.5 flex items-center justify-center gap-3 text-white text-sm font-bold">
+  <span class="w-5 h-5 rounded-full border-2 border-white/80 flex items-center justify-center text-[10px] lost-badge-ring flex-shrink-0">
+    <i class="fa-solid fa-triangle-exclamation"></i>
+  </span>
+  <span><%= pet.nome %> está marcado como PERDIDO</span>
+  <button type="button" onclick="abrirModalEncontrado()"
+    class="ml-auto flex-shrink-0 bg-white/20 hover:bg-white/35 border border-white/40 rounded-full px-3 py-1 text-xs font-bold transition-colors">
+    Encontrado!
+  </button>
+</div>
+<% } %>
+
 <main class="flex-1 container mx-auto px-0 sm:px-4 py-0 sm:py-6 max-w-4xl">
   <%- include('../partials/page-header', { backHref: '/pets', backLabel: 'Meus Pets', sticky: false }) %>
 
-  <!-- Hero editorial mobile-first -->
+  <!-- ════════════ HERO ════════════ -->
   <section class="relative mb-5 sm:mb-6 sm:rounded-[1.35rem] sm:overflow-hidden sm:shadow-sm">
     <% if (pet.foto) { %>
-      <img src="<%= pet.foto %><%= pet.data_atualizacao ? '?t=' + new Date(pet.data_atualizacao).getTime() : '' %>" alt="<%= pet.nome %>"
-           class="w-full h-[58svh] sm:h-[480px] object-cover">
+      <img src="<%= pet.foto %><%= pet.data_atualizacao ? '?t=' + new Date(pet.data_atualizacao).getTime() : '' %>"
+           alt="<%= pet.nome %>" class="w-full h-[58svh] sm:h-[480px] object-cover pet-hero-cover">
     <% } else { %>
       <div class="w-full h-[58svh] sm:h-[480px] bg-gradient-to-br from-orange-100 to-orange-50 flex items-center justify-center">
         <i class="fa-solid fa-paw text-7xl text-orange-300"></i>
       </div>
     <% } %>
     <div class="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent"></div>
+
+    <!-- Status badge -->
     <span class="absolute top-4 right-4 px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wide shadow-sm backdrop-blur
-      <%= pet.status === 'perdido' ? 'bg-red-500/95 text-white' : 'bg-emerald-500/95 text-white' %>">
-      <i class="fa-solid <%= pet.status === 'perdido' ? 'fa-triangle-exclamation' : 'fa-shield-halved' %> mr-1"></i>
-      <%= pet.status === 'perdido' ? 'Perdido' : 'Seguro' %>
+      <%= isPerdido ? 'bg-red-500/95 text-white' : 'bg-emerald-500/95 text-white' %>">
+      <i class="fa-solid <%= isPerdido ? 'fa-triangle-exclamation' : 'fa-shield-halved' %> mr-1"></i>
+      <%= isPerdido ? 'Perdido' : 'Seguro' %>
     </span>
+
+    <!-- Info do pet no rodapé do hero -->
     <div class="absolute bottom-0 left-0 right-0 p-5 sm:p-6 text-white">
       <div class="flex flex-wrap items-center gap-2 mb-2">
         <% if (pet.tipo) { %>
@@ -159,7 +166,7 @@
         <% } %>
         <% if (pet.dono_nome) { %>
           <span class="inline-flex items-center px-2.5 py-1 rounded-full bg-white/15 text-[11px] font-semibold">
-            <i class="fa-solid fa-user mr-1"></i> Tutor: <%= pet.dono_nome %>
+            <i class="fa-solid fa-user mr-1"></i>Tutor: <%= pet.dono_nome %>
           </span>
         <% } %>
       </div>
@@ -181,18 +188,146 @@
     </div>
   </section>
 
-  <% if (pet.status === 'perdido') { %>
-    <div class="mb-6">
-      <button type="button"
-        onclick="compartilharWhatsApp('🚨 Pet perdido: <%= pet.nome %>! Se você viu este pet, acesse: ' + window.location.origin + '/pets/<%= pet.id %>')"
-        class="w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-green-500 hover:bg-green-600 text-white font-bold transition-colors shadow-sm">
-        <i class="fa-brands fa-whatsapp text-xl"></i> Compartilhar no WhatsApp
-      </button>
-    </div>
-  <% } %>
+  <div class="px-4 sm:px-0 pb-28">
 
-  <div class="px-4 sm:px-0 pb-24">
-    <section class="mb-6">
+    <!-- ════════════ BLOCO SOCIAL (seguidores + follow) ════════════ -->
+    <section class="card profile-soft-card mb-5">
+      <div class="flex items-center justify-between gap-3">
+        <div class="flex items-center gap-3">
+          <% if (pet.foto) { %>
+            <img src="<%= pet.foto %>" alt="<%= pet.nome %>" class="w-14 h-14 rounded-full object-cover ring-2 ring-orange-200 shadow-sm flex-shrink-0">
+          <% } else { %>
+            <span class="w-14 h-14 rounded-full flex items-center justify-center bg-primary-50 text-primary-500 ring-2 ring-primary-200/70 flex-shrink-0"><i class="fa-solid fa-paw text-xl"></i></span>
+          <% } %>
+          <div>
+            <p class="text-base font-extrabold text-gray-900 leading-tight"><%= pet.nome %></p>
+            <% if (pet.dono_nome) { %>
+              <p class="text-xs text-gray-500 mt-0.5">
+                <i class="fa-solid fa-user text-[10px] mr-1"></i>Tutor <strong class="text-gray-700"><%= pet.dono_nome %></strong>
+              </p>
+            <% } %>
+          </div>
+        </div>
+        <!-- Seguir/Seguindo (apenas para não-donos logados) -->
+        <% if (!ehDono && req.session && req.session.usuario) { %>
+          <button type="button" id="btnFollowPet"
+            data-pet-id="<%= pet.id %>"
+            data-following="<%= estaSeguindo ? 'true' : 'false' %>"
+            class="flex-shrink-0 inline-flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-bold transition-all
+              <%= estaSeguindo ? 'bg-white border-2 border-gray-300 text-gray-700 hover:border-red-300 hover:text-red-600' : 'bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-lg shadow-primary-500/20' %>">
+            <i class="fa-solid fa-paw text-xs"></i>
+            <span id="followLabel"><%= estaSeguindo ? 'Seguindo' : 'Seguir' %></span>
+          </button>
+        <% } %>
+      </div>
+
+      <!-- Estatísticas sociais -->
+      <div class="grid grid-cols-3 gap-2 mt-4">
+        <div class="rounded-xl border border-gray-100 bg-white p-2.5 text-center">
+          <p class="text-[10px] uppercase tracking-wide text-gray-400 font-bold">Status</p>
+          <p class="text-sm font-black mt-1 <%= isPerdido ? 'text-red-600' : 'text-emerald-600' %>">
+            <%= isPerdido ? 'Perdido' : 'Seguro' %>
+          </p>
+        </div>
+        <button type="button" id="btnVerSeguidores" class="social-stat-btn rounded-xl border border-gray-100 bg-white p-2.5 text-center">
+          <p class="text-[10px] uppercase tracking-wide text-gray-400 font-bold">Seguidores</p>
+          <p class="text-lg font-black text-gray-900 leading-none mt-1" id="seguidoresCount"><%= totalSeguidores %></p>
+        </button>
+        <% if (ehDono) { %>
+          <a href="/pets/<%= pet.id %>/editar" class="social-stat-btn rounded-xl border border-gray-100 bg-white p-2.5 text-center flex flex-col items-center justify-center">
+            <p class="text-[10px] uppercase tracking-wide text-gray-400 font-bold">Editar</p>
+            <i class="fa-solid fa-pen text-primary-500 mt-1"></i>
+          </a>
+        <% } else { %>
+          <div class="rounded-xl border border-gray-100 bg-white p-2.5 text-center">
+            <p class="text-[10px] uppercase tracking-wide text-gray-400 font-bold">Tipo</p>
+            <p class="text-sm font-black text-gray-900 mt-1 capitalize"><%= pet.tipo || '—' %></p>
+          </div>
+        <% } %>
+      </div>
+    </section>
+
+    <!-- ════════════ CTA PRINCIPAL (status) ════════════ -->
+    <% if (ehDono) { %>
+    <section class="mb-5">
+      <% if (isPerdido) { %>
+        <!-- Pet PERDIDO → botões de ação de emergência -->
+        <div class="rounded-2xl bg-red-50 border-2 border-red-200 p-4 mb-3">
+          <div class="flex items-center gap-3 mb-3">
+            <span class="w-10 h-10 rounded-xl bg-red-500 text-white flex items-center justify-center flex-shrink-0 lost-badge-ring text-base">🚨</span>
+            <div>
+              <p class="text-sm font-extrabold text-red-700">Alerta ativo — <%= pet.nome %> está perdido</p>
+              <p class="text-xs text-red-500 mt-0.5">Cada compartilhamento aumenta as chances de encontrá-lo. Compartilhe agora.</p>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <button type="button" onclick="abrirModalEncontrado()"
+              class="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-bold transition-colors shadow-sm">
+              <i class="fa-solid fa-check-circle"></i> Encontrado! 🎉
+            </button>
+            <button type="button" onclick="registrarFunil('owner_share'); compartilharWhatsApp();"
+              class="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-[#25d366] hover:bg-[#1fb954] text-white text-sm font-bold transition-colors shadow-sm">
+              <i class="fa-brands fa-whatsapp text-lg"></i> Compartilhar
+            </button>
+          </div>
+          <p class="text-[11px] text-red-400 mt-3 text-center">Quando alguém encostar o celular na tag, você recebe notificação na hora.</p>
+        </div>
+      <% } else { %>
+        <!-- Pet SEGURO → botão de reportar perdido (discreto, não assustador) -->
+        <button type="button" onclick="abrirModalPerdido()"
+          class="w-full inline-flex items-center justify-center gap-2 px-4 py-3.5 rounded-xl border-2 border-red-100 bg-white text-red-500 hover:bg-red-50 hover:border-red-200 text-sm font-semibold transition-colors">
+          <i class="fa-solid fa-triangle-exclamation text-red-400"></i>
+          <%= pet.nome %> saiu e não voltou — Reportar como perdido
+        </button>
+      <% } %>
+    </section>
+    <% } %>
+
+    <!-- ════════════ VIEW PÚBLICA (quem encontrou) ════════════ -->
+    <% if (!ehDono) { %>
+    <section class="rounded-2xl p-5 mb-5 <%= isPerdido ? 'bg-red-50 border-2 border-red-200' : 'bg-orange-50 border border-orange-200' %>">
+      <% if (isPerdido) { %>
+        <div class="flex items-center gap-3 mb-4">
+          <span class="w-10 h-10 rounded-xl bg-red-500 text-white flex items-center justify-center flex-shrink-0 text-lg">🚨</span>
+          <div>
+            <h2 class="text-base font-extrabold text-gray-900">Você encontrou <%= pet.nome %>?</h2>
+            <p class="text-xs text-red-600 font-semibold mt-0.5">Quando cada minuto importa, a tag conecta você ao tutor</p>
+          </div>
+        </div>
+      <% } else { %>
+        <div class="flex items-center gap-3 mb-4">
+          <span class="text-2xl">🐾</span>
+          <div>
+            <h2 class="text-base font-extrabold text-gray-900">Escaneou a tag de <%= pet.nome %>?</h2>
+            <p class="text-xs text-orange-700 font-semibold mt-0.5">Se estiver perdido, seu tutor precisa saber agora</p>
+          </div>
+        </div>
+      <% } %>
+      <div class="flex flex-col gap-2">
+        <% if (pet.telefone_contato) { %>
+          <a href="https://wa.me/55<%= pet.telefone_contato.replace(/\D/g,'') %>?text=<%= encodeURIComponent('Olá! Encontrei ' + pet.nome + ' aqui perto. Vi pelo AIRPET que ' + (isPerdido ? 'ele está perdido' : 'o pet tem tag NFC') + '. Quero ajudar a devolvê-lo!') %>"
+             target="_blank"
+             onclick="registrarFunil('finder_whatsapp')"
+             class="inline-flex items-center justify-center gap-2 px-4 py-3.5 rounded-xl bg-green-500 hover:bg-green-600 text-white font-bold text-sm transition-colors shadow-sm">
+            <i class="fa-brands fa-whatsapp text-lg"></i> Chamar tutor no WhatsApp — 1 toque
+          </a>
+          <a href="tel:<%= pet.telefone_contato %>"
+             onclick="registrarFunil('finder_call')"
+             class="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-white border-2 border-green-300 text-green-700 hover:bg-green-50 font-bold text-sm transition-colors">
+            <i class="fa-solid fa-phone"></i> Ligar agora
+          </a>
+        <% } %>
+        <button type="button" onclick="registrarFunil('finder_location'); enviarLocalizacao();"
+          class="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl border-2 border-primary-200 bg-primary-50 text-primary-600 hover:bg-primary-100 font-bold text-sm transition-colors">
+          <i class="fa-solid fa-location-dot"></i> Estou com ele — enviar localização
+        </button>
+      </div>
+      <p class="text-[11px] text-gray-400 mt-3 text-center">Gratuito. Sem cadastro. Em menos de 10 segundos.</p>
+    </section>
+    <% } %>
+
+    <!-- ════════════ IDENTIFICAÇÃO ════════════ -->
+    <section class="mb-5">
       <p class="text-[10px] font-bold tracking-[0.14em] uppercase text-gray-400 mb-2">Identificação</p>
       <div class="grid grid-cols-2 gap-3">
         <div class="bg-white rounded-2xl shadow-sm p-4">
@@ -221,7 +356,8 @@
       </div>
     </section>
 
-    <section class="mb-6">
+    <!-- Identificação oficial -->
+    <section class="mb-5">
       <p class="text-[10px] font-bold tracking-[0.14em] uppercase text-gray-400 mb-2">Identificação oficial</p>
       <div class="bg-white rounded-2xl shadow-sm p-4 space-y-3">
         <div class="flex items-center justify-between gap-3">
@@ -239,257 +375,279 @@
       </div>
     </section>
 
+    <!-- Saúde -->
     <% if (pet.veterinario_nome || pet.veterinario_telefone || pet.alergias_medicacoes || pet.observacoes) { %>
-      <section class="mb-6">
-        <p class="text-[10px] font-bold tracking-[0.14em] uppercase text-gray-400 mb-2">Saúde e veterinário</p>
-        <div class="bg-white rounded-2xl shadow-sm p-4 space-y-3">
-          <% if (pet.veterinario_nome || pet.veterinario_telefone) { %>
-            <p class="text-sm text-gray-700">
-              <strong class="text-gray-900">Veterinário:</strong>
-              <%= pet.veterinario_nome || '—' %>
-              <% if (pet.veterinario_telefone) { %> · <%= pet.veterinario_telefone %><% } %>
-            </p>
-          <% } %>
-          <% if (pet.alergias_medicacoes) { %>
-            <p class="text-sm text-amber-700"><i class="fa-solid fa-triangle-exclamation mr-1"></i><%= pet.alergias_medicacoes %></p>
-          <% } %>
-          <% if (pet.observacoes) { %>
-            <p class="text-sm text-gray-600"><strong class="text-gray-900">Observações:</strong> <%= pet.observacoes %></p>
-          <% } %>
-        </div>
-      </section>
+    <section class="mb-5">
+      <p class="text-[10px] font-bold tracking-[0.14em] uppercase text-gray-400 mb-2">Saúde e veterinário</p>
+      <div class="bg-white rounded-2xl shadow-sm p-4 space-y-3">
+        <% if (pet.veterinario_nome || pet.veterinario_telefone) { %>
+          <p class="text-sm text-gray-700">
+            <strong class="text-gray-900">Veterinário:</strong>
+            <%= pet.veterinario_nome || '—' %>
+            <% if (pet.veterinario_telefone) { %> · <%= pet.veterinario_telefone %><% } %>
+          </p>
+        <% } %>
+        <% if (pet.alergias_medicacoes) { %>
+          <p class="text-sm text-amber-700"><i class="fa-solid fa-triangle-exclamation mr-1"></i><%= pet.alergias_medicacoes %></p>
+        <% } %>
+        <% if (pet.observacoes) { %>
+          <p class="text-sm text-gray-600"><strong class="text-gray-900">Observações:</strong> <%= pet.observacoes %></p>
+        <% } %>
+      </div>
+    </section>
     <% } %>
 
-  <% if (ehDono) { %>
-    <!-- Seção de Tag NFC -->
-    <div class="card profile-soft-card mb-6">
-      <div class="flex items-center justify-between mb-3">
+    <!-- ════════════ TAG NFC MANAGER ════════════ -->
+    <% if (ehDono) { %>
+    <div class="card profile-soft-card mb-5">
+      <div class="flex items-center justify-between mb-4">
         <div class="flex items-center gap-2">
-          <div class="w-9 h-9 rounded-xl bg-primary-500/10 flex items-center justify-center">
+          <div class="w-9 h-9 rounded-xl bg-primary-500/10 flex items-center justify-center flex-shrink-0">
             <i class="fa-solid fa-microchip text-primary-500"></i>
           </div>
           <div>
-            <h2 class="text-lg font-bold text-gray-900">Tag NFC AIRPET</h2>
-            <p class="text-xs text-gray-500">A forma mais rápida de trazer <%= pet.nome %> de volta para casa.</p>
+            <h2 class="text-base font-bold text-gray-900">Tags NFC</h2>
+            <p class="text-xs text-gray-500">Gerencie as tags vinculadas a <%= pet.nome %></p>
           </div>
         </div>
         <% if (typeof tags !== 'undefined' && tags && tags.length > 0) { %>
-          <span class="text-xs bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full font-semibold">
-            <i class="fa-solid fa-check mr-1"></i><%= tags.length %> tag<%= tags.length > 1 ? 's' : '' %>
+          <span class="text-xs font-semibold px-2.5 py-1 rounded-full <%= tagsAtivas.length > 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-600' %>">
+            <i class="fa-solid <%= tagsAtivas.length > 0 ? 'fa-check' : 'fa-times' %> mr-1"></i>
+            <%= tags.length %> tag<%= tags.length !== 1 ? 's' : '' %>
           </span>
         <% } %>
       </div>
 
-      <% if (typeof tagsAtivas !== 'undefined' && tagsAtivas && tagsAtivas.length > 0) { %>
+      <!-- Tags ativas -->
+      <% if (typeof tagsAtivas !== 'undefined' && tagsAtivas.length > 0) { %>
         <div class="space-y-2 mb-4">
-          <% tagsAtivas.forEach(function(tag) { %>
-            <div class="flex items-center gap-3 profile-soft-subcard p-3">
-              <span class="w-9 h-9 rounded-lg bg-primary-500/10 text-primary-500 flex items-center justify-center flex-shrink-0">
-                <i class="fa-solid fa-microchip text-sm"></i>
-              </span>
-              <div class="flex-1 min-w-0">
-                <p class="text-sm font-bold font-mono text-gray-800"><%= tag.tag_code %></p>
-                <p class="text-xs text-gray-400">
-                  Status:
-                  <span class="font-semibold capitalize <%= tag.status === 'active' ? 'text-emerald-600' : 'text-amber-600' %>"><%= tag.status %></span>
-                  <% if (pet.status === 'perdido') { %>
-                    <span class="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-700">
-                      <i class="fa-solid fa-triangle-exclamation"></i> Perdido
+          <p class="text-[10px] font-bold tracking-widest text-gray-400 uppercase mb-2">Ativas</p>
+          <% tagsAtivas.forEach(function(tag, ti) { %>
+            <div class="tag-card tag-card--active p-3.5" id="tag-card-<%= tag.id %>">
+              <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-xl bg-primary-500/10 text-primary-500 flex items-center justify-center flex-shrink-0">
+                  <i class="fa-solid fa-microchip text-sm"></i>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <p class="text-sm font-bold font-mono text-gray-800"><%= tag.tag_code %></p>
+                  <div class="flex flex-wrap items-center gap-2 mt-1">
+                    <span class="tag-status-chip tag-status-chip--active" id="tag-status-chip-<%= tag.id %>">
+                      <i class="fa-solid fa-circle" style="font-size:6px"></i> Ativa
                     </span>
-                  <% } %>
-                </p>
+                    <% if (ti === 0) { %>
+                      <span class="tag-status-chip" style="background:#ffe4cc;color:#c2410c;">
+                        <i class="fa-solid fa-star" style="font-size:8px"></i> Principal
+                      </span>
+                    <% } %>
+                  </div>
+                </div>
+                <% if (isPerdido) { %>
+                  <i class="fa-solid fa-triangle-exclamation text-red-500 flex-shrink-0"></i>
+                <% } else { %>
+                  <i class="fa-solid fa-shield-halved text-emerald-400 flex-shrink-0"></i>
+                <% } %>
               </div>
-              <i class="fa-solid <%= pet.status === 'perdido' ? 'fa-triangle-exclamation text-red-500' : 'fa-shield-halved text-emerald-400' %>"></i>
+              <div class="flex gap-2 mt-3 pt-3 border-t border-gray-100">
+                <button type="button"
+                  onclick="toggleBlockTag('<%= pet.id %>', '<%= tag.id %>', this)"
+                  data-tag-id="<%= tag.id %>"
+                  data-tag-status="<%= tag.status %>"
+                  class="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold border border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 transition-colors">
+                  <i class="fa-solid fa-lock text-[10px]"></i> Bloquear
+                </button>
+                <a href="https://airpet.app/tag/<%= tag.tag_code %>" target="_blank"
+                  class="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold border border-gray-200 bg-gray-50 text-gray-600 hover:bg-gray-100 transition-colors">
+                  <i class="fa-solid fa-external-link text-[10px]"></i> Testar tag
+                </a>
+              </div>
             </div>
           <% }); %>
         </div>
-      <% } else { %>
-        <div class="py-4 mb-4">
-          <div class="flex items-center gap-3 mb-3">
-            <div class="w-10 h-10 rounded-full bg-orange-50 flex items-center justify-center">
-              <i class="fa-solid fa-tag text-orange-400"></i>
-            </div>
-            <div>
-              <p class="text-sm font-semibold text-gray-800">Nenhuma tag vinculada ainda</p>
-              <p class="text-xs text-gray-500">
-                Se alguém encontrar <strong><%= pet.nome %></strong> na rua, a tag NFC ajuda essa pessoa a chegar até você
-                em poucos toques no celular.
-              </p>
-            </div>
-          </div>
-          <ul class="text-xs text-gray-500 space-y-1.5 pl-3 list-disc list-inside">
-            <li>Quem encontra encosta o celular na tag e vê um resumo seguro do perfil.</li>
-            <li>Você recebe uma notificação com o local aproximado onde a tag foi escaneada.</li>
-            <li>É como uma plaquinha de identificação inteligente, sempre atualizada.</li>
-          </ul>
-        </div>
       <% } %>
 
-      <% if (typeof tagsHistorico !== 'undefined' && tagsHistorico && tagsHistorico.length > 0) { %>
-        <div class="mt-3 pt-3 border-t border-gray-200/70">
-          <p class="text-xs font-semibold text-gray-500 mb-2">Histórico de tags desativadas</p>
-          <div class="space-y-2">
-            <% tagsHistorico.forEach(function(tag) { %>
-              <div class="flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
-                <span class="text-xs font-mono text-gray-700"><%= tag.tag_code %></span>
-                <span class="text-[11px] font-semibold text-amber-700 capitalize"><%= tag.status %></span>
+      <!-- Tags inativas/histórico -->
+      <% if (typeof tagsHistorico !== 'undefined' && tagsHistorico.length > 0) { %>
+        <div class="space-y-2 mb-4">
+          <p class="text-[10px] font-bold tracking-widest text-gray-400 uppercase mb-2">Histórico</p>
+          <% tagsHistorico.forEach(function(tag) { %>
+            <div class="tag-card p-3 flex items-center justify-between" id="tag-card-<%= tag.id %>">
+              <div class="flex items-center gap-2">
+                <div class="w-7 h-7 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
+                  <i class="fa-solid fa-microchip text-gray-400 text-[11px]"></i>
+                </div>
+                <span class="text-xs font-mono text-gray-600"><%= tag.tag_code %></span>
               </div>
-            <% }); %>
+              <div class="flex items-center gap-2">
+                <span class="tag-status-chip tag-status-chip--<%= tag.status === 'blocked' ? 'blocked' : 'other' %> capitalize" id="tag-status-chip-<%= tag.id %>"><%= tag.status %></span>
+                <% if (tag.status === 'blocked') { %>
+                  <button type="button"
+                    onclick="toggleBlockTag('<%= pet.id %>', '<%= tag.id %>', this)"
+                    data-tag-id="<%= tag.id %>"
+                    data-tag-status="<%= tag.status %>"
+                    class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors">
+                    <i class="fa-solid fa-unlock text-[9px]"></i> Desbloquear
+                  </button>
+                <% } %>
+              </div>
+            </div>
+          <% }); %>
+        </div>
+      <% } %>
+
+      <!-- Sem tags -->
+      <% if ((!tagsAtivas || tagsAtivas.length === 0) && (!tagsHistorico || tagsHistorico.length === 0)) { %>
+        <div class="py-5 mb-4 flex items-start gap-3">
+          <div class="w-10 h-10 rounded-full bg-orange-50 flex items-center justify-center flex-shrink-0">
+            <i class="fa-solid fa-tag text-orange-400"></i>
+          </div>
+          <div>
+            <p class="text-sm font-semibold text-gray-800">Nenhuma tag vinculada</p>
+            <p class="text-xs text-gray-500 mt-1 leading-relaxed">
+              Quando alguém encontrar <%= pet.nome %> e encostar o celular na tag NFC, você recebe uma notificação com a localização — tudo em segundos.
+            </p>
           </div>
         </div>
       <% } %>
 
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
+      <!-- Ações de tag -->
+      <div class="grid grid-cols-2 gap-2">
         <a href="/pets/<%= pet.id %>/vincular-tag"
            class="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold text-white bg-primary-500 hover:bg-primary-600 transition-colors">
-          <i class="fa-solid fa-plus"></i>
-          Já tenho uma tag AIRPET
+          <i class="fa-solid fa-plus"></i> Vincular tag
         </a>
         <a href="/tags/loja-tag"
            class="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold text-primary-500 border-2 border-primary-100 bg-primary-50 hover:bg-primary-100 transition-colors">
-          <i class="fa-solid fa-tag"></i>
-          Adquirir TAG
+          <i class="fa-solid fa-tag"></i> Adquirir tag
         </a>
       </div>
     </div>
 
-    <!-- =====================================================
-         HISTORICO DE SCANS DA TAG NFC (ultimos 10)
-         ===================================================== -->
+    <!-- ════════════ TIMELINE NFC ════════════ -->
     <% if (typeof scans !== 'undefined' && scans && scans.length > 0) { %>
-      <div class="card profile-soft-card mb-6">
-        <div class="flex items-center justify-between mb-4">
-          <h2 class="text-lg font-bold text-gray-900">
-            <i class="fa-solid fa-satellite-dish text-primary-500 mr-2"></i>Historico de Scans
-          </h2>
-          <span class="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded-full font-semibold">
-            <%= scans.length %> registro<%= scans.length !== 1 ? 's' : '' %>
-          </span>
-        </div>
-        <p class="text-xs text-gray-500 mb-4">
-          Ultimas vezes que a tag NFC de <%= pet.nome %> foi escaneada. Toque para ver no mapa.
-        </p>
-
-        <div class="space-y-0 divide-y divide-gray-200/70 max-h-[400px] overflow-y-auto rounded-xl border border-gray-200/70 bg-white">
-          <% scans.forEach(function(scan, idx) {
-            var dt = new Date(scan.data);
-            var agora2 = new Date();
-            var diffMs = agora2 - dt;
-            var diffMin = Math.floor(diffMs / 60000);
-            var diffH = Math.floor(diffMin / 60);
-            var diffD = Math.floor(diffH / 24);
-            var tempoAtras = '';
-            if (diffD > 0) { tempoAtras = diffD + ' dia' + (diffD > 1 ? 's' : '') + ' atras'; }
-            else if (diffH > 0) { tempoAtras = diffH + 'h atras'; }
-            else if (diffMin > 0) { tempoAtras = diffMin + 'min atras'; }
-            else { tempoAtras = 'agora'; }
-          %>
-            <div class="scan-item p-3 flex items-center gap-3 cursor-pointer"
-                 data-lat="<%= scan.latitude %>"
-                 data-lng="<%= scan.longitude %>"
-                 data-data="<%= dt.toISOString() %>"
-                 data-cidade="<%= scan.cidade || '' %>"
-                 data-idx="<%= idx %>"
-                 onclick="mostrarScanNoMapa(this)">
-              <div class="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0
-                   <%= idx === 0 ? 'bg-primary-500 text-white' : 'bg-gray-100 text-gray-500' %>">
-                <% if (idx === 0) { %>
-                  <i class="fa-solid fa-location-dot text-sm"></i>
-                <% } else { %>
-                  <span class="text-xs font-bold"><%= idx + 1 %></span>
-                <% } %>
-              </div>
-              <div class="flex-1 min-w-0">
-                <p class="text-sm font-semibold text-gray-800">
-                  <% if (idx === 0) { %>
-                    <span class="text-primary-500">Mais recente</span>
-                  <% } else { %>
-                    Scan #<%= idx + 1 %>
-                  <% } %>
-                </p>
-                <p class="text-xs text-gray-500">
-                  <%= dt.toLocaleDateString('pt-BR') %> as <%= dt.toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'}) %>
-                  <span class="text-gray-400">(<%= tempoAtras %>)</span>
-                </p>
-                <% if (scan.cidade) { %>
-                  <p class="text-xs text-gray-400 truncate"><i class="fa-solid fa-map-pin mr-1"></i><%= scan.cidade %></p>
-                <% } %>
-              </div>
-              <div class="flex items-center gap-2 flex-shrink-0">
-                <i class="fa-solid fa-route text-gray-300 text-sm"></i>
-                <i class="fa-solid fa-chevron-right text-gray-300 text-xs"></i>
-              </div>
-            </div>
-          <% }); %>
-        </div>
+    <div class="card profile-soft-card mb-5">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="text-base font-bold text-gray-900">
+          <i class="fa-solid fa-satellite-dish text-primary-500 mr-2"></i>Rastreamento NFC
+        </h2>
+        <span class="text-xs bg-orange-100 text-orange-700 px-2.5 py-1 rounded-full font-semibold">
+          <%= scans.length %> evento<%= scans.length !== 1 ? 's' : '' %>
+        </span>
       </div>
+      <p class="text-xs text-gray-500 mb-4">
+        Quando alguém escaneia a tag de <%= pet.nome %>, a localização aparece aqui. Toque em um evento para ver no mapa.
+      </p>
 
-      <!-- Mapa de scans -->
-      <div id="mapaScansContainer" class="card profile-soft-card panel-map-shell mb-6 hidden">
-        <div class="flex items-center justify-between mb-3">
-          <h2 class="text-lg font-bold text-gray-900 leading-tight">
-            <i class="fa-solid fa-map text-primary-500 mr-2"></i>Localizacao do Scan
-          </h2>
-          <button type="button" onclick="fecharMapaScan()" class="panel-modal-close profile-focus inline-flex items-center justify-center" aria-label="Fechar painel de localizacao">
-            <i class="fa-solid fa-times text-lg"></i>
-          </button>
-        </div>
+      <!-- Lista de eventos -->
+      <div class="divide-y divide-gray-200/70 max-h-[380px] overflow-y-auto rounded-xl border border-gray-200/70 bg-white">
+        <% scans.forEach(function(scan, idx) {
+          var dt = new Date(scan.data);
+          var agora2 = new Date();
+          var diffMs = agora2 - dt;
+          var diffMin = Math.floor(diffMs / 60000);
+          var diffH = Math.floor(diffMin / 60);
+          var diffD = Math.floor(diffH / 24);
+          var tempoAtras = '';
+          if (diffD > 0) { tempoAtras = diffD + 'd'; }
+          else if (diffH > 0) { tempoAtras = diffH + 'h'; }
+          else if (diffMin > 0) { tempoAtras = diffMin + 'min'; }
+          else { tempoAtras = 'agora'; }
+          var origem = scan.origem || 'nfc';
+          var chipClass = origem === 'encontrado' ? 'event-chip--finder' : (origem === 'manual' ? 'event-chip--manual' : 'event-chip--nfc');
+          var chipLabel = origem === 'encontrado' ? 'Avistamento' : (origem === 'manual' ? 'Manual' : 'NFC');
+        %>
+          <div class="scan-item p-3 flex items-center gap-3 cursor-pointer"
+               data-lat="<%= scan.latitude || '' %>"
+               data-lng="<%= scan.longitude || '' %>"
+               data-data="<%= dt.toISOString() %>"
+               data-cidade="<%= scan.cidade || '' %>"
+               data-idx="<%= idx %>"
+               onclick="mostrarScanNoMapa(this)">
+            <div class="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0
+                 <%= idx === 0 ? 'bg-primary-500 text-white' : 'bg-gray-100 text-gray-500' %>">
+              <% if (idx === 0) { %>
+                <i class="fa-solid fa-location-dot text-sm"></i>
+              <% } else { %>
+                <span class="text-xs font-bold"><%= idx + 1 %></span>
+              <% } %>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2 flex-wrap">
+                <p class="text-sm font-semibold text-gray-800">
+                  <% if (idx === 0) { %><span class="text-primary-500">Mais recente</span><% } else { %>Evento #<%= idx + 1 %><% } %>
+                </p>
+                <span class="event-chip <%= chipClass %>"><%= chipLabel %></span>
+              </div>
+              <p class="text-xs text-gray-500 mt-0.5">
+                <%= dt.toLocaleDateString('pt-BR') %> às <%= dt.toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'}) %>
+                <span class="text-gray-400 ml-1">(<%= tempoAtras %>)</span>
+              </p>
+              <% if (scan.cidade) { %>
+                <p class="text-xs text-gray-400 truncate"><i class="fa-solid fa-map-pin mr-1"></i><%= scan.cidade %></p>
+              <% } %>
+            </div>
+            <i class="fa-solid fa-chevron-right text-gray-300 text-xs flex-shrink-0"></i>
+          </div>
+        <% }); %>
+      </div>
+    </div>
 
-        <!-- Info do scan selecionado -->
-        <div id="scanInfoCard" class="profile-callout-card p-3.5 mb-3">
-          <div class="scan-info-grid">
-            <div>
-              <p class="text-sm font-bold text-gray-800 leading-tight" id="scanInfoTitle"></p>
-              <p class="text-xs text-gray-500 mt-0.5" id="scanInfoData"></p>
-            </div>
-            <div class="text-right rounded-lg border border-gray-200/80 bg-white px-3 py-1.5">
-              <p class="text-sm font-bold text-primary-500 leading-tight" id="scanInfoDist"></p>
-              <p class="text-[11px] text-gray-500 mt-0.5" id="scanInfoTempo"></p>
-            </div>
+    <!-- Mapa do scan selecionado -->
+    <div id="mapaScansContainer" class="card profile-soft-card panel-map-shell mb-5 hidden">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="text-base font-bold text-gray-900 leading-tight">
+          <i class="fa-solid fa-map text-primary-500 mr-2"></i>Localização
+        </h2>
+        <button type="button" onclick="fecharMapaScan()" class="panel-modal-close inline-flex items-center justify-center" aria-label="Fechar mapa">
+          <i class="fa-solid fa-times text-lg"></i>
+        </button>
+      </div>
+      <div id="scanInfoCard" class="profile-callout-card p-3.5 mb-3">
+        <div class="scan-info-grid">
+          <div>
+            <p class="text-sm font-bold text-gray-800 leading-tight" id="scanInfoTitle"></p>
+            <p class="text-xs text-gray-500 mt-0.5" id="scanInfoData"></p>
+          </div>
+          <div class="text-right rounded-lg border border-gray-200/80 bg-white px-3 py-1.5">
+            <p class="text-sm font-bold text-primary-500 leading-tight" id="scanInfoDist"></p>
+            <p class="text-[11px] text-gray-500 mt-0.5" id="scanInfoTempo"></p>
           </div>
         </div>
-
-        <div id="mapaScan"></div>
-
-        <!-- Botoes de navegacao -->
-        <div class="grid grid-cols-2 gap-3 mt-3" id="navButtons" style="display:none">
-          <a id="btnGoogleMaps" href="#" target="_blank"
-             class="panel-nav-btn profile-focus flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white">
-            <i class="fa-solid fa-diamond-turn-right"></i> Google Maps
-          </a>
-          <a id="btnWaze" href="#" target="_blank"
-             class="panel-nav-btn profile-focus flex items-center justify-center gap-2 px-4 py-3 bg-[#33ccff] hover:bg-[#28b8e8] text-white">
-            <i class="fa-brands fa-waze"></i> Waze
-          </a>
-        </div>
       </div>
-    <% } else { %>
-      <!-- Sem scans -->
-      <% if (typeof tags !== 'undefined' && tags && tags.length > 0) { %>
-        <div class="card profile-soft-card mb-6 text-center">
-          <i class="fa-solid fa-satellite-dish text-gray-300 text-3xl mb-2"></i>
-          <p class="text-sm text-gray-500">Nenhum scan registrado ainda.</p>
-          <p class="text-xs text-gray-400 mt-1">Quando alguem escanear a tag NFC de <%= pet.nome %>, o historico aparecera aqui.</p>
-        </div>
-      <% } %>
+      <div id="mapaScan"></div>
+      <div class="grid grid-cols-2 gap-3 mt-3" id="navButtons" style="display:none">
+        <a id="btnGoogleMaps" href="#" target="_blank"
+           class="panel-nav-btn flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white">
+          <i class="fa-solid fa-diamond-turn-right"></i> Google Maps
+        </a>
+        <a id="btnWaze" href="#" target="_blank"
+           class="panel-nav-btn flex items-center justify-center gap-2 px-4 py-3 bg-[#33ccff] hover:bg-[#28b8e8] text-white">
+          <i class="fa-brands fa-waze"></i> Waze
+        </a>
+      </div>
+    </div>
+    <% } else if (typeof tags !== 'undefined' && tags && tags.length > 0) { %>
+      <div class="card profile-soft-card mb-5 text-center py-8">
+        <i class="fa-solid fa-satellite-dish text-gray-300 text-3xl mb-3"></i>
+        <p class="text-sm font-semibold text-gray-500">Nenhum scan registrado ainda</p>
+        <p class="text-xs text-gray-400 mt-1">Quando a tag NFC de <%= pet.nome %> for escaneada, o histórico aparece aqui.</p>
+      </div>
     <% } %>
-  <% } %>
-  </div>
 
-  <!-- Fotos recebidas (quem encontrou enviou foto) -->
-  <% if (typeof ehDono !== 'undefined' && ehDono && typeof fotosRecebidas !== 'undefined' && fotosRecebidas && fotosRecebidas.length > 0) { %>
-    <div class="card profile-soft-card mb-6" id="fotos-recebidas">
-      <h2 class="text-lg font-bold text-gray-900 mb-3">
+    <!-- Fotos recebidas -->
+    <% if (typeof fotosRecebidas !== 'undefined' && fotosRecebidas && fotosRecebidas.length > 0) { %>
+    <div class="card profile-soft-card mb-5" id="fotos-recebidas">
+      <h2 class="text-base font-bold text-gray-900 mb-2">
         <i class="fa-solid fa-camera text-primary-500 mr-2"></i>Fotos recebidas
       </h2>
-      <p class="text-xs text-gray-500 mb-4">Fotos que alguem enviou ao encontrar <%= pet.nome %>. Toque para ampliar.</p>
+      <p class="text-xs text-gray-500 mb-4">Fotos enviadas por quem avistou <%= pet.nome %>. Toque para ampliar.</p>
       <div class="grid grid-cols-3 sm:grid-cols-4 gap-3">
         <% fotosRecebidas.forEach(function(loc) {
-          var dt = loc.data ? new Date(loc.data) : null;
-          var dataStr = dt ? dt.toLocaleDateString('pt-BR') + ' ' + dt.toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'}) : '';
+          var dt2 = loc.data ? new Date(loc.data) : null;
+          var dataStr2 = dt2 ? dt2.toLocaleDateString('pt-BR') + ' ' + dt2.toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'}) : '';
         %>
-          <button type="button" class="block rounded-xl overflow-hidden border border-gray-200/80 hover:border-primary-400/50 focus:outline-none focus:ring-2 focus:ring-primary-500/25 foto-recebida-btn profile-focus"
-                  data-foto-url="<%= loc.foto_url %>" data-data-str="<%= dataStr %>">
+          <button type="button"
+            class="block rounded-xl overflow-hidden border border-gray-200/80 hover:border-primary-400/50 focus:outline-none foto-recebida-btn"
+            data-foto-url="<%= loc.foto_url %>" data-data-str="<%= dataStr2 %>">
             <img src="<%= loc.foto_url %>" alt="Foto recebida" class="w-full aspect-square object-cover">
           </button>
         <% }); %>
@@ -504,7 +662,7 @@
               <p class="text-sm font-semibold text-gray-900 truncate">Foto enviada por quem encontrou</p>
               <p id="modalFotoRecebidaData" class="text-xs text-gray-500 truncate"></p>
             </div>
-            <button type="button" onclick="fecharModalFoto()" class="panel-modal-close profile-focus inline-flex items-center justify-center flex-shrink-0" aria-label="Fechar modal de foto">
+            <button type="button" onclick="fecharModalFoto()" class="panel-modal-close inline-flex items-center justify-center flex-shrink-0">
               <i class="fa-solid fa-times text-sm"></i>
             </button>
           </div>
@@ -514,266 +672,545 @@
         </div>
       </div>
     </div>
-    <script>
-    function abrirModalFoto(url, dataStr) {
-      var modal = document.getElementById('modalFotoRecebida');
-      var img = document.getElementById('modalFotoRecebidaImg');
-      var dataEl = document.getElementById('modalFotoRecebidaData');
-      if (modal && img) {
-        img.src = url || '';
-        if (dataEl) dataEl.textContent = dataStr || '';
-        modal.classList.remove('hidden');
-        modal.classList.add('flex');
-        modal.setAttribute('aria-hidden', 'false');
-        document.body.style.overflow = 'hidden';
-      }
-    }
-    function fecharModalFoto() {
-      var modal = document.getElementById('modalFotoRecebida');
-      if (modal) {
-        modal.classList.add('hidden');
-        modal.classList.remove('flex');
-        modal.setAttribute('aria-hidden', 'true');
-        document.body.style.overflow = '';
-      }
-    }
-    document.querySelectorAll('.foto-recebida-btn').forEach(function(btn) {
-      btn.addEventListener('click', function() {
-        abrirModalFoto(this.getAttribute('data-foto-url'), this.getAttribute('data-data-str'));
-      });
-    });
-    var modalEl = document.getElementById('modalFotoRecebida');
-    if (modalEl) modalEl.addEventListener('click', function(e) { if (e.target === this) fecharModalFoto(); });
-    document.addEventListener('keydown', function(e) {
-      if (e.key === 'Escape') fecharModalFoto();
-    });
-    </script>
-  <% } %>
+    <% } %>
+    <% } %> <!-- /ehDono -->
 
-  <!-- Telefone de contato publico -->
-  <% if (pet.telefone_contato) { %>
-    <div class="card profile-soft-card mb-6">
-      <h2 class="text-lg font-bold text-gray-900 mb-3">
-        <i class="fa-solid fa-phone text-primary-500 mr-2"></i>Contato
+    <!-- ════════════ GROWTH: Compartilhamento viral ════════════ -->
+    <% if (ehDono && !isPerdido) { %>
+    <div class="rounded-2xl border border-orange-200 bg-gradient-to-br from-orange-50 to-amber-50 p-4 mb-5">
+      <div class="flex items-center gap-3 mb-3">
+        <span class="text-2xl">🔗</span>
+        <div>
+          <p class="text-sm font-extrabold text-gray-900">Compartilhe o perfil de <%= pet.nome %></p>
+          <p class="text-xs text-orange-700 mt-0.5">Se ele se perder, quem receber o link já sabe o que fazer</p>
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-2">
+        <button type="button"
+          onclick="registrarFunil('share_whatsapp_safe'); var u=encodeURIComponent(window.location.href); window.open('https://wa.me/?text=' + encodeURIComponent('Esse é o perfil do <%= pet.nome %> no AIRPET 🐾 Se alguém encontrá-lo, pode usar o link: ' + window.location.href),'_blank');"
+          class="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-[#25d366] hover:bg-[#1fb954] text-white text-xs font-bold transition-colors">
+          <i class="fa-brands fa-whatsapp"></i> WhatsApp
+        </button>
+        <button type="button"
+          onclick="registrarFunil('share_copy'); navigator.clipboard && navigator.clipboard.writeText(window.location.href).then(function(){alert('Link copiado!');});"
+          class="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-white border border-gray-200 text-gray-600 text-xs font-bold hover:bg-gray-50 transition-colors">
+          <i class="fa-solid fa-link"></i> Copiar link
+        </button>
+      </div>
+    </div>
+    <% } %>
+
+    <!-- ════════════ CONTATO (view pública) ════════════ -->
+    <% if (pet.telefone_contato && ehDono) { %>
+    <div class="card profile-soft-card mb-5">
+      <h2 class="text-base font-bold text-gray-900 mb-3">
+        <i class="fa-solid fa-phone text-primary-500 mr-2"></i>Contato público
       </h2>
       <div class="flex gap-3">
         <a href="tel:<%= pet.telefone_contato %>" class="btn-primary flex-1 !inline-flex items-center justify-center gap-2">
           <i class="fa-solid fa-phone"></i> Ligar
         </a>
         <a href="https://wa.me/55<%= pet.telefone_contato.replace(/\D/g,'') %>" target="_blank"
-           class="flex-1 inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-green-500 hover:bg-green-600 text-white font-semibold transition-colors profile-focus">
+           class="flex-1 inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-green-500 hover:bg-green-600 text-white font-semibold transition-colors">
           <i class="fa-brands fa-whatsapp"></i> WhatsApp
         </a>
       </div>
     </div>
-  <% } %>
+    <% } %>
 
-  <!-- Contato para quem encontrou (view publica) -->
-  <% if (!ehDono) { %>
-    <div class="card profile-callout-card text-center mb-6">
-      <h2 class="text-lg font-bold text-gray-900 mb-2">
-        <i class="fa-solid fa-heart text-red-400 mr-1"></i> Encontrou este pet?
-      </h2>
-      <p class="text-sm text-gray-500 mb-4">Ajude <%= pet.nome %> a voltar para casa!</p>
-      <div class="flex flex-col gap-2">
-        <% if (pet.telefone_contato) { %>
-          <a href="tel:<%= pet.telefone_contato %>" class="btn-primary !inline-flex items-center justify-center gap-2">
-            <i class="fa-solid fa-phone"></i> Ligar para o tutor
-          </a>
-        <% } %>
-        <button type="button" onclick="enviarLocalizacao()" class="btn-outline !inline-flex items-center justify-center gap-2">
-          <i class="fa-solid fa-location-dot"></i> Enviar minha localizacao
-        </button>
-      </div>
-    </div>
-  <% } %>
-
-  <% if (ehDono) { %>
-    <div class="fixed bottom-0 inset-x-0 z-40 border-t border-gray-200/80 bg-white/95 backdrop-blur supports-[padding:max(0px)]:pb-[max(env(safe-area-inset-bottom),0.6rem)]">
-      <div class="max-w-4xl mx-auto px-4 py-2.5 grid grid-cols-3 gap-2">
-        <a href="/pets/<%= pet.id %>/saude" class="inline-flex flex-col items-center justify-center gap-1 rounded-xl py-2.5 text-xs font-semibold text-gray-700 bg-gray-50 active:scale-[0.98] transition-transform">
-          <i class="fa-solid fa-heart-pulse text-green-600"></i> Saúde
-        </a>
-        <a href="/pets/<%= pet.id %>/editar" class="inline-flex flex-col items-center justify-center gap-1 rounded-xl py-2.5 text-xs font-semibold text-white bg-primary-500 active:scale-[0.98] transition-transform">
-          <i class="fa-solid fa-pen"></i> Editar
-        </a>
-        <% if (pet.status !== 'perdido') { %>
-          <a href="/perdidos/<%= pet.id %>/formulario" class="inline-flex flex-col items-center justify-center gap-1 rounded-xl py-2.5 text-xs font-semibold text-gray-700 bg-gray-50 active:scale-[0.98] transition-transform">
-            <i class="fa-solid fa-triangle-exclamation text-red-500"></i> Reportar
-          </a>
-        <% } else { %>
-          <a href="/perdidos/<%= pet.id %>/encontrado" class="inline-flex flex-col items-center justify-center gap-1 rounded-xl py-2.5 text-xs font-semibold text-gray-700 bg-gray-50 active:scale-[0.98] transition-transform">
-            <i class="fa-solid fa-check-circle text-green-600"></i> Encontrado
-          </a>
-        <% } %>
-      </div>
-    </div>
-  <% } %>
+  </div><!-- /px-4 -->
 </main>
+
+<!-- ═══════════════════════════════════════════════
+     MODAL: MARCAR COMO PERDIDO
+═══════════════════════════════════════════════════ -->
+<% if (ehDono && !isPerdido) { %>
+<div id="modalPerdido" class="inline-modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="modalPerdidoTitulo">
+  <div class="inline-modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="flex items-center gap-3 mb-5">
+      <div class="w-10 h-10 rounded-xl bg-red-100 text-red-600 flex items-center justify-center flex-shrink-0">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+      </div>
+      <div>
+        <h2 id="modalPerdidoTitulo" class="text-base font-extrabold text-gray-900">Reportar <%= pet.nome %> como perdido</h2>
+        <p class="text-xs text-gray-500 mt-0.5">O alerta será publicado após análise — geralmente em minutos.</p>
+      </div>
+    </div>
+
+    <div class="rounded-2xl border border-red-100 bg-red-50 p-3.5 mb-5">
+      <% if (pet.foto) { %>
+        <div class="flex items-center gap-3">
+          <img src="<%= pet.foto %>" alt="<%= pet.nome %>" class="w-14 h-14 rounded-xl object-cover border-2 border-red-200 flex-shrink-0">
+          <div>
+            <p class="font-bold text-gray-900"><%= pet.nome %></p>
+            <p class="text-xs text-gray-500"><%= pet.tipo ? (pet.tipo.charAt(0).toUpperCase()+pet.tipo.slice(1)) : 'Pet' %> · <%= pet.raca || 'SRD' %></p>
+          </div>
+        </div>
+      <% } %>
+    </div>
+
+    <form id="formPerdidoInline" onsubmit="submitPerdido(event)">
+      <input type="hidden" id="perdidoLat" name="latitude">
+      <input type="hidden" id="perdidoLng" name="longitude">
+
+      <!-- Localização -->
+      <div class="mb-4">
+        <label class="block text-xs font-bold text-gray-600 uppercase tracking-wide mb-2">Última localização conhecida</label>
+        <% if (typeof ultimoScanPerdido !== 'undefined' && ultimoScanPerdido && ultimoScanPerdido.latitude) { %>
+          <button type="button" onclick="usarUltimoScanPerdido()"
+            class="w-full flex items-center gap-3 p-3.5 rounded-xl border-2 border-blue-200 bg-blue-50 hover:bg-blue-100 text-left mb-2 transition-colors">
+            <i class="fa-solid fa-satellite-dish text-blue-500"></i>
+            <div>
+              <p class="text-sm font-bold text-gray-900">Usar último scan NFC</p>
+              <p class="text-xs text-gray-500"><% var dtUs = new Date(ultimoScanPerdido.data); %><%= dtUs.toLocaleDateString('pt-BR') %> às <%= dtUs.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}) %></p>
+            </div>
+          </button>
+        <% } %>
+        <button type="button" onclick="usarGPS()"
+          class="w-full flex items-center gap-3 p-3.5 rounded-xl border-2 border-gray-200 hover:border-primary-300 bg-white text-left transition-colors">
+          <i class="fa-solid fa-location-crosshairs text-primary-500"></i>
+          <div>
+            <p class="text-sm font-bold text-gray-900">Usar minha localização atual</p>
+            <p class="text-xs text-gray-500">Requer permissão de GPS</p>
+          </div>
+        </button>
+        <div id="gpsStatus" class="hidden mt-2 text-xs text-primary-600 font-semibold px-2"></div>
+      </div>
+
+      <!-- Descrição -->
+      <div class="mb-4">
+        <label class="block text-xs font-bold text-gray-600 uppercase tracking-wide mb-2">Detalhes <span class="text-gray-400 font-normal">(opcional)</span></label>
+        <textarea id="perdidoDescricao" name="descricao" rows="3" style="resize:none;"
+          class="w-full rounded-xl border border-gray-200 bg-white px-3.5 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-primary-500/20 focus:border-primary-400 outline-none"
+          placeholder="Como estava usando? Coleira? Algum sinal particular..."></textarea>
+      </div>
+
+      <!-- Recompensa -->
+      <div class="mb-5">
+        <label class="block text-xs font-bold text-gray-600 uppercase tracking-wide mb-2">Recompensa <span class="text-gray-400 font-normal">(opcional)</span></label>
+        <input type="text" id="perdidoRecompensa" name="recompensa" maxlength="60"
+          class="w-full rounded-xl border border-gray-200 bg-white px-3.5 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-primary-500/20 focus:border-primary-400 outline-none"
+          placeholder="Ex: R$ 200, Pix, etc.">
+      </div>
+
+      <button type="submit" id="btnSubmitPerdido"
+        class="w-full inline-flex items-center justify-center gap-2 px-4 py-3.5 rounded-xl bg-red-500 hover:bg-red-600 text-white font-bold text-sm transition-colors shadow-sm">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+        Reportar como perdido
+      </button>
+      <button type="button" onclick="fecharModalPerdido()"
+        class="w-full mt-2 py-2.5 text-sm font-semibold text-gray-500 hover:text-gray-700 transition-colors">
+        Cancelar
+      </button>
+    </form>
+  </div>
+</div>
+<% } %>
+
+<!-- ═══════════════════════════════════════════════
+     MODAL: MARCAR COMO ENCONTRADO
+═══════════════════════════════════════════════════ -->
+<% if (ehDono && isPerdido) { %>
+<div id="modalEncontrado" class="inline-modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="modalEncontradoTitulo">
+  <div class="inline-modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="text-center mb-5">
+      <div class="text-5xl mb-3">🎊</div>
+      <h2 id="modalEncontradoTitulo" class="text-xl font-extrabold text-gray-900"><%= pet.nome %> foi encontrado!</h2>
+      <p class="text-sm text-gray-500 mt-1 leading-relaxed">Confirme para encerrar o alerta e marcar <%= pet.nome %> como em segurança.</p>
+    </div>
+
+    <div class="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 mb-5 flex items-center gap-3">
+      <% if (pet.foto) { %>
+        <img src="<%= pet.foto %>" alt="<%= pet.nome %>" class="w-14 h-14 rounded-full object-cover border-2 border-emerald-300 flex-shrink-0">
+      <% } else { %>
+        <div class="w-14 h-14 rounded-full bg-emerald-100 border-2 border-emerald-300 flex items-center justify-center flex-shrink-0 text-2xl">🐾</div>
+      <% } %>
+      <div>
+        <p class="font-bold text-gray-900"><%= pet.nome %></p>
+        <p class="text-xs text-emerald-600 font-semibold mt-0.5">Prestes a ser marcado como seguro</p>
+      </div>
+    </div>
+
+    <button type="button" id="btnConfirmarEncontrado" onclick="submitEncontrado()"
+      class="w-full inline-flex items-center justify-center gap-2 px-4 py-3.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-sm transition-colors shadow-sm">
+      <i class="fa-solid fa-check-circle"></i>
+      Confirmar — <%= pet.nome %> está em segurança!
+    </button>
+    <button type="button" onclick="fecharModalEncontrado()"
+      class="w-full mt-2 py-2.5 text-sm font-semibold text-gray-500 hover:text-gray-700 transition-colors">
+      Cancelar
+    </button>
+  </div>
+</div>
+<% } %>
+
+<!-- Modal lista seguidores -->
+<div id="listaSegModal" class="fixed inset-0 z-[60] hidden">
+  <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" id="listaSegOverlay"></div>
+  <div class="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl max-h-[70vh] flex flex-col shadow-[0_20px_50px_rgba(17,24,39,.2)] border border-orange-100">
+    <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+      <h3 class="font-bold text-gray-900">Seguidores</h3>
+      <button type="button" id="closeListaSeg" class="p-1 text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+    </div>
+    <div id="listaSegBody" class="flex-1 overflow-y-auto px-5 py-3 space-y-2"></div>
+  </div>
+</div>
+
+<!-- Footer sticky (só para dono) -->
+<% if (ehDono) { %>
+<div class="fixed bottom-0 inset-x-0 z-40 border-t border-gray-200/80 bg-white/95 backdrop-blur supports-[padding:max(0px)]:pb-[max(env(safe-area-inset-bottom),0.6rem)]">
+  <div class="max-w-4xl mx-auto px-4 py-2.5 grid grid-cols-3 gap-2">
+    <a href="/pets/<%= pet.id %>/saude" class="inline-flex flex-col items-center justify-center gap-1 rounded-xl py-2.5 text-xs font-semibold text-gray-700 bg-gray-50 active:scale-[0.98] transition-transform">
+      <i class="fa-solid fa-heart-pulse text-green-600"></i> Saúde
+    </a>
+    <a href="/pets/<%= pet.id %>/editar" class="inline-flex flex-col items-center justify-center gap-1 rounded-xl py-2.5 text-xs font-semibold text-white bg-primary-500 active:scale-[0.98] transition-transform">
+      <i class="fa-solid fa-pen"></i> Editar
+    </a>
+    <% if (!isPerdido) { %>
+      <button type="button" onclick="abrirModalPerdido()" class="inline-flex flex-col items-center justify-center gap-1 rounded-xl py-2.5 text-xs font-semibold text-red-600 bg-red-50 active:scale-[0.98] transition-transform">
+        <i class="fa-solid fa-triangle-exclamation text-red-500"></i> Perdido
+      </button>
+    <% } else { %>
+      <button type="button" onclick="abrirModalEncontrado()" class="inline-flex flex-col items-center justify-center gap-1 rounded-xl py-2.5 text-xs font-semibold text-emerald-700 bg-emerald-50 active:scale-[0.98] transition-transform">
+        <i class="fa-solid fa-check-circle text-emerald-600"></i> Encontrado
+      </button>
+    <% } %>
+  </div>
+</div>
+<% } %>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 (function () {
-  var mapaScan = null;
-  var scanMarker = null;
-  var routeLine = null;
-  var userMarker = null;
-  var minhaPos = null;
+  /* ── Variáveis de contexto ── */
+  var PET_ID = '<%= pet.id %>';
+  var IS_PERDIDO = <%= isPerdido ? 'true' : 'false' %>;
+  var ULTIMO_SCAN_LAT = <%= (typeof ultimoScanPerdido !== 'undefined' && ultimoScanPerdido && ultimoScanPerdido.latitude) ? ultimoScanPerdido.latitude : 'null' %>;
+  var ULTIMO_SCAN_LNG = <%= (typeof ultimoScanPerdido !== 'undefined' && ultimoScanPerdido && ultimoScanPerdido.longitude) ? ultimoScanPerdido.longitude : 'null' %>;
 
-  /* Tenta obter posicao do usuario em background */
+  /* ── Mapa NFC ── */
+  var mapaScan = null, scanMarker = null, routeLine = null, userMarker = null, minhaPos = null;
   if (navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition(function (pos) {
+    navigator.geolocation.getCurrentPosition(function(pos) {
       minhaPos = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-    }, function () {}, { timeout: 8000 });
+    }, function() {}, { timeout: 8000 });
   }
-
   function initMap() {
     if (mapaScan) return;
     mapaScan = L.map('mapaScan').setView([-15.78, -47.93], 5);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; OSM', maxZoom: 19
-    }).addTo(mapaScan);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OSM', maxZoom: 19 }).addTo(mapaScan);
   }
-
   function calcDistancia(lat1, lon1, lat2, lon2) {
-    var R = 6371;
-    var dLat = (lat2 - lat1) * Math.PI / 180;
-    var dLon = (lon2 - lon1) * Math.PI / 180;
-    var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-      Math.sin(dLon / 2) * Math.sin(dLon / 2);
-    var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c;
+    var R=6371, dLat=(lat2-lat1)*Math.PI/180, dLon=(lon2-lon1)*Math.PI/180;
+    var a=Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)*Math.sin(dLon/2);
+    return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
   }
+  function fmtDist(km) { return km < 1 ? Math.round(km*1000)+'m' : km.toFixed(1)+'km'; }
+  function fmtTempo(km) { var m=Math.round((km/40)*60); if(m<1) return '<1min'; if(m<60) return m+'min'; return Math.floor(m/60)+'h'+(m%60>0?' '+m%60+'min':''); }
 
-  function formatarDistancia(km) {
-    if (km < 1) return Math.round(km * 1000) + ' m';
-    return km.toFixed(1) + ' km';
-  }
-
-  function estimarTempo(km) {
-    var minutos = Math.round((km / 40) * 60);
-    if (minutos < 1) return '< 1 min';
-    if (minutos < 60) return minutos + ' min';
-    var h = Math.floor(minutos / 60);
-    var m = minutos % 60;
-    return h + 'h' + (m > 0 ? ' ' + m + 'min' : '');
-  }
-
-  window.mostrarScanNoMapa = function (el) {
-    var lat = parseFloat(el.dataset.lat);
-    var lng = parseFloat(el.dataset.lng);
-    var data = el.dataset.data;
-    var cidade = el.dataset.cidade;
-    var idx = parseInt(el.dataset.idx, 10);
-
-    document.querySelectorAll('.scan-item').forEach(function (s) { s.classList.remove('active'); });
+  window.mostrarScanNoMapa = function(el) {
+    var lat=parseFloat(el.dataset.lat), lng=parseFloat(el.dataset.lng);
+    if (!lat || !lng) return;
+    var data=el.dataset.data, cidade=el.dataset.cidade, idx=parseInt(el.dataset.idx,10);
+    document.querySelectorAll('.scan-item').forEach(function(s){s.classList.remove('active');});
     el.classList.add('active');
-
-    var container = document.getElementById('mapaScansContainer');
+    var container=document.getElementById('mapaScansContainer');
     container.classList.remove('hidden');
-
     initMap();
-
-    setTimeout(function () {
+    setTimeout(function(){
       mapaScan.invalidateSize();
-
       if (scanMarker) mapaScan.removeLayer(scanMarker);
       if (routeLine) mapaScan.removeLayer(routeLine);
       if (userMarker) mapaScan.removeLayer(userMarker);
-
-      scanMarker = L.marker([lat, lng], {
-        icon: L.divIcon({
-          className: 'custom-pin',
-          html: '<div style="background:#ec5a1c;width:36px;height:36px;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center"><i class="fa-solid fa-paw" style="color:#fff;font-size:14px"></i></div>',
-          iconSize: [36, 36], iconAnchor: [18, 18]
-        })
-      }).addTo(mapaScan);
-
-      var dt = new Date(data);
-      var titulo = idx === 0 ? 'Scan mais recente' : 'Scan #' + (idx + 1);
-      var dataStr = dt.toLocaleDateString('pt-BR') + ' as ' + dt.toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'});
-
-      document.getElementById('scanInfoTitle').textContent = titulo + (cidade ? ' — ' + cidade : '');
-      document.getElementById('scanInfoData').textContent = dataStr;
-
+      scanMarker=L.marker([lat,lng],{icon:L.divIcon({className:'custom-pin',html:'<div style="background:#ec5a1c;width:36px;height:36px;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center"><i class="fa-solid fa-paw" style="color:#fff;font-size:14px"></i></div>',iconSize:[36,36],iconAnchor:[18,18]})}).addTo(mapaScan);
+      var dt=new Date(data);
+      var titulo=idx===0?'Scan mais recente':'Scan #'+(idx+1);
+      var dataStr=dt.toLocaleDateString('pt-BR')+' às '+dt.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+      document.getElementById('scanInfoTitle').textContent=titulo+(cidade?' — '+cidade:'');
+      document.getElementById('scanInfoData').textContent=dataStr;
       if (minhaPos) {
-        var dist = calcDistancia(minhaPos.lat, minhaPos.lng, lat, lng);
-        document.getElementById('scanInfoDist').textContent = formatarDistancia(dist);
-        document.getElementById('scanInfoTempo').textContent = '~' + estimarTempo(dist) + ' de carro';
-
-        userMarker = L.marker([minhaPos.lat, minhaPos.lng], {
-          icon: L.divIcon({
-            className: 'custom-pin',
-            html: '<div style="background:#3b82f6;width:28px;height:28px;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center"><i class="fa-solid fa-user" style="color:#fff;font-size:10px"></i></div>',
-            iconSize: [28, 28], iconAnchor: [14, 14]
-          })
-        }).addTo(mapaScan).bindPopup('<b>Voce esta aqui</b>');
-
-        routeLine = L.polyline([
-          [minhaPos.lat, minhaPos.lng],
-          [lat, lng]
-        ], {
-          color: '#ec5a1c', weight: 3, opacity: 0.7, dashArray: '8, 8'
-        }).addTo(mapaScan);
-
-        var bounds = L.latLngBounds([[minhaPos.lat, minhaPos.lng], [lat, lng]]);
-        mapaScan.fitBounds(bounds, { padding: [40, 40] });
-
-        document.getElementById('navButtons').style.display = 'grid';
-        document.getElementById('btnGoogleMaps').href =
-          'https://www.google.com/maps/dir/?api=1&destination=' + lat + ',' + lng;
-        document.getElementById('btnWaze').href =
-          'https://waze.com/ul?ll=' + lat + ',' + lng + '&navigate=yes';
+        var dist=calcDistancia(minhaPos.lat,minhaPos.lng,lat,lng);
+        document.getElementById('scanInfoDist').textContent=fmtDist(dist);
+        document.getElementById('scanInfoTempo').textContent='~'+fmtTempo(dist)+' de carro';
+        userMarker=L.marker([minhaPos.lat,minhaPos.lng],{icon:L.divIcon({className:'custom-pin',html:'<div style="background:#3b82f6;width:28px;height:28px;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center"><i class="fa-solid fa-user" style="color:#fff;font-size:10px"></i></div>',iconSize:[28,28],iconAnchor:[14,14]})}).addTo(mapaScan).bindPopup('<b>Você está aqui</b>');
+        routeLine=L.polyline([[minhaPos.lat,minhaPos.lng],[lat,lng]],{color:'#ec5a1c',weight:3,opacity:.7,dashArray:'8,8'}).addTo(mapaScan);
+        mapaScan.fitBounds(L.latLngBounds([[minhaPos.lat,minhaPos.lng],[lat,lng]]),{padding:[40,40]});
       } else {
-        document.getElementById('scanInfoDist').textContent = '—';
-        document.getElementById('scanInfoTempo').textContent = 'Ative o GPS';
-        mapaScan.setView([lat, lng], 15);
-        document.getElementById('navButtons').style.display = 'grid';
-        document.getElementById('btnGoogleMaps').href =
-          'https://www.google.com/maps/dir/?api=1&destination=' + lat + ',' + lng;
-        document.getElementById('btnWaze').href =
-          'https://waze.com/ul?ll=' + lat + ',' + lng + '&navigate=yes';
+        document.getElementById('scanInfoDist').textContent='—';
+        document.getElementById('scanInfoTempo').textContent='Ative o GPS';
+        mapaScan.setView([lat,lng],15);
       }
-
-      container.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      document.getElementById('navButtons').style.display='grid';
+      document.getElementById('btnGoogleMaps').href='https://www.google.com/maps/dir/?api=1&destination='+lat+','+lng;
+      document.getElementById('btnWaze').href='https://waze.com/ul?ll='+lat+','+lng+'&navigate=yes';
+      container.scrollIntoView({behavior:'smooth',block:'center'});
     }, 150);
   };
-
-  window.fecharMapaScan = function () {
+  window.fecharMapaScan = function() {
     document.getElementById('mapaScansContainer').classList.add('hidden');
-    document.querySelectorAll('.scan-item').forEach(function (s) { s.classList.remove('active'); });
+    document.querySelectorAll('.scan-item').forEach(function(s){s.classList.remove('active');});
   };
-})();
 
-function enviarLocalizacao() {
-  if (!navigator.geolocation) { alert('Geolocalizacao nao suportada'); return; }
-  navigator.geolocation.getCurrentPosition(function (pos) {
-    var body = JSON.stringify({
-      pet_id: '<%= pet.id %>',
-      latitude: pos.coords.latitude,
-      longitude: pos.coords.longitude,
-      origem: 'encontrado'
+  /* ── Modal perdido ── */
+  window.abrirModalPerdido = function() {
+    var m = document.getElementById('modalPerdido');
+    if (m) { m.classList.remove('hidden'); document.body.style.overflow='hidden'; }
+  };
+  window.fecharModalPerdido = function() {
+    var m = document.getElementById('modalPerdido');
+    if (m) { m.classList.add('hidden'); document.body.style.overflow=''; }
+  };
+
+  /* ── Modal encontrado ── */
+  window.abrirModalEncontrado = function() {
+    var m = document.getElementById('modalEncontrado');
+    if (m) { m.classList.remove('hidden'); document.body.style.overflow='hidden'; }
+  };
+  window.fecharModalEncontrado = function() {
+    var m = document.getElementById('modalEncontrado');
+    if (m) { m.classList.add('hidden'); document.body.style.overflow=''; }
+  };
+
+  /* ── Fechar modal ao clicar fora ── */
+  ['modalPerdido','modalEncontrado'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.addEventListener('click', function(e) { if (e.target === el) { el.classList.add('hidden'); document.body.style.overflow=''; } });
+  });
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      ['modalPerdido','modalEncontrado'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el && !el.classList.contains('hidden')) { el.classList.add('hidden'); document.body.style.overflow=''; }
+      });
+    }
+  });
+
+  /* ── GPS helper ── */
+  window.usarGPS = function() {
+    var st = document.getElementById('gpsStatus');
+    if (st) { st.classList.remove('hidden'); st.textContent = 'Obtendo localização…'; }
+    navigator.geolocation.getCurrentPosition(function(pos) {
+      document.getElementById('perdidoLat').value = pos.coords.latitude.toFixed(6);
+      document.getElementById('perdidoLng').value = pos.coords.longitude.toFixed(6);
+      if (st) st.textContent = 'Localização obtida: ' + pos.coords.latitude.toFixed(4) + ', ' + pos.coords.longitude.toFixed(4);
+    }, function() {
+      if (st) st.textContent = 'Não foi possível obter localização.';
+    }, { timeout: 8000 });
+  };
+  window.usarUltimoScanPerdido = function() {
+    if (!ULTIMO_SCAN_LAT || !ULTIMO_SCAN_LNG) return;
+    document.getElementById('perdidoLat').value = ULTIMO_SCAN_LAT;
+    document.getElementById('perdidoLng').value = ULTIMO_SCAN_LNG;
+    var st = document.getElementById('gpsStatus');
+    if (st) { st.classList.remove('hidden'); st.textContent = 'Localização do último scan NFC selecionada.'; }
+  };
+
+  /* ── Submit: reportar perdido ── */
+  window.submitPerdido = function(e) {
+    e.preventDefault();
+    var btn = document.getElementById('btnSubmitPerdido');
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>Enviando…'; }
+    var body = {
+      descricao: (document.getElementById('perdidoDescricao') || {}).value || '',
+      latitude: (document.getElementById('perdidoLat') || {}).value || null,
+      longitude: (document.getElementById('perdidoLng') || {}).value || null,
+      recompensa: (document.getElementById('perdidoRecompensa') || {}).value || '',
+    };
+    fetch('/pets/' + PET_ID + '/toggle-status', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin',
+      body: JSON.stringify(body),
+    }).then(function(r){ return r.json(); }).then(function(data) {
+      if (data.sucesso) {
+        window.location.reload();
+      } else {
+        if (btn) { btn.disabled=false; btn.innerHTML='<i class="fa-solid fa-triangle-exclamation mr-2"></i>Reportar como perdido'; }
+        alert(data.mensagem || 'Erro ao reportar.');
+      }
+    }).catch(function(){
+      if (btn) { btn.disabled=false; btn.innerHTML='<i class="fa-solid fa-triangle-exclamation mr-2"></i>Reportar como perdido'; }
+      alert('Erro de conexão. Tente novamente.');
     });
-    var run = function () {
-      return fetch('/api/localizacao', {
+  };
+
+  /* ── Submit: marcar como encontrado ── */
+  window.submitEncontrado = function() {
+    var btn = document.getElementById('btnConfirmarEncontrado');
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>Confirmando…'; }
+    fetch('/pets/' + PET_ID + '/toggle-status', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin',
+      body: JSON.stringify({}),
+    }).then(function(r){ return r.json(); }).then(function(data) {
+      if (data.sucesso) {
+        window.location.reload();
+      } else {
+        if (btn) { btn.disabled=false; btn.innerHTML='<i class="fa-solid fa-check-circle mr-2"></i>Confirmar'; }
+        alert(data.mensagem || 'Erro ao confirmar.');
+      }
+    }).catch(function(){
+      if (btn) { btn.disabled=false; btn.innerHTML='<i class="fa-solid fa-check-circle mr-2"></i>Confirmar'; }
+      alert('Erro de conexão. Tente novamente.');
+    });
+  };
+
+  /* ── WhatsApp share ── */
+  window.compartilharWhatsApp = function() {
+    var url = window.location.origin + '/pets/' + PET_ID;
+    var msg = encodeURIComponent('🚨 ALERTA: <%= pet.nome %> está PERDIDO! Se você viu este pet, acesse o perfil e entre em contato com o tutor: ' + url);
+    window.open('https://wa.me/?text=' + msg, '_blank');
+  };
+
+  /* ── Enviar localização (visitante) ── */
+  window.enviarLocalizacao = function() {
+    if (!navigator.geolocation) { alert('Geolocalização não suportada.'); return; }
+    navigator.geolocation.getCurrentPosition(function(pos) {
+      fetch('/api/localizacao', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'same-origin',
-        body: body
+        body: JSON.stringify({ pet_id: PET_ID, latitude: pos.coords.latitude, longitude: pos.coords.longitude, origem: 'encontrado' }),
+      }).then(function() {
+        alert('Localização enviada! Obrigado por ajudar 🐾');
+      }).catch(function() {
+        alert('Erro ao enviar. Tente novamente.');
       });
-    };
-    var L = window.AIRPET_LOADING;
-    var p = L && typeof L.withDeferredOverlay === 'function'
-      ? L.withDeferredOverlay(run, { message: 'A enviar localização…' })
-      : run();
-    p.then(function () {
-      alert('Localizacao enviada! Obrigado por ajudar.');
-    }).catch(function () {
-      alert('Erro ao enviar. Tente novamente.');
+    }, function() { alert('Não foi possível obter sua localização.'); });
+  };
+
+  /* ── Follow/Unfollow ── */
+  var btnFollowPet = document.getElementById('btnFollowPet');
+  if (btnFollowPet) {
+    btnFollowPet.addEventListener('click', function() {
+      var following = btnFollowPet.dataset.following === 'true';
+      btnFollowPet.disabled = true;
+      fetch('/pets/' + PET_ID + '/seguir', {
+        method: 'POST', headers: { 'Accept': 'application/json' }, credentials: 'same-origin'
+      }).then(function(r){ return r.json(); }).then(function(data) {
+        if (data.sucesso) {
+          btnFollowPet.dataset.following = data.seguindo ? 'true' : 'false';
+          var label = document.getElementById('followLabel');
+          if (label) label.textContent = data.seguindo ? 'Seguindo' : 'Seguir';
+          var cnt = document.getElementById('seguidoresCount');
+          if (cnt && data.totalSeguidores !== undefined) cnt.textContent = data.totalSeguidores;
+        }
+      }).finally(function(){ btnFollowPet.disabled = false; });
     });
+  }
+
+  /* ── Lista de seguidores ── */
+  var btnVerSeg = document.getElementById('btnVerSeguidores');
+  if (btnVerSeg) {
+    btnVerSeg.addEventListener('click', function() {
+      var modal = document.getElementById('listaSegModal');
+      var body  = document.getElementById('listaSegBody');
+      if (!modal || !body) return;
+      body.innerHTML = '<div class="text-center py-8 text-gray-400"><i class="fa-solid fa-spinner fa-spin text-xl"></i></div>';
+      modal.classList.remove('hidden');
+      fetch('/explorar/pet/' + PET_ID + '/seguidores', { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
+        .then(function(r){ return r.json(); })
+        .then(function(data) {
+          var lista = data.lista || [];
+          if (!lista.length) { body.innerHTML = '<p class="text-sm text-gray-500 text-center py-6">Nenhum seguidor ainda.</p>'; return; }
+          function esc(s){ var d=document.createElement('div');d.textContent=s;return d.innerHTML; }
+          body.innerHTML = lista.map(function(u) {
+            var av = u.foto_perfil ? '<img src="'+esc(u.foto_perfil)+'" class="w-10 h-10 rounded-full object-cover">' : '<span class="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-bold" style="background:'+esc(u.cor_perfil||'#ec5a1c')+'">'+esc((u.nome||'U').charAt(0).toUpperCase())+'</span>';
+            return '<a href="/explorar/perfil/'+u.id+'" class="flex items-center gap-3 p-2 rounded-xl hover:bg-gray-50">'+av+'<span class="font-semibold text-gray-900">'+esc(u.nome)+'</span></a>';
+          }).join('');
+        }).catch(function(){ body.innerHTML = '<p class="text-sm text-red-500 text-center py-6">Erro ao carregar.</p>'; });
+    });
+    document.getElementById('closeListaSeg').addEventListener('click', function() { document.getElementById('listaSegModal').classList.add('hidden'); });
+    document.getElementById('listaSegOverlay').addEventListener('click', function() { document.getElementById('listaSegModal').classList.add('hidden'); });
+  }
+
+  /* ── Rastreamento de funil (analytics) ── */
+  window.registrarFunil = function(acao) {
+    try {
+      navigator.sendBeacon('/api/v1/funil', JSON.stringify({ acao: acao, pet_id: PET_ID, ts: Date.now() }));
+    } catch(_) {}
+  };
+
+  /* ── SSE realtime updates ── */
+  (function initSSE() {
+    if (!<%= ehDono ? 'true' : 'false' %>) return;
+    if (typeof EventSource === 'undefined') return;
+    var es = new EventSource('/pets/' + PET_ID + '/events');
+    var sseToast = function(msg, icon) {
+      var wrap = document.createElement('div');
+      wrap.style.cssText = 'position:fixed;bottom:84px;left:50%;transform:translateX(-50%);z-index:9999;background:#fff;border:1px solid #fde68a;border-radius:12px;padding:10px 16px;font-size:13px;font-weight:700;color:#92400e;box-shadow:0 8px 24px rgba(15,23,42,.14);display:flex;align-items:center;gap:8px;animation:toastIn .2s ease-out both';
+      wrap.innerHTML = (icon||'🔔') + ' ' + msg;
+      document.body.appendChild(wrap);
+      setTimeout(function(){wrap.style.opacity='0';wrap.style.transform='translateX(-50%) translateY(6px)';wrap.style.transition='opacity .15s ease,transform .15s ease';setTimeout(function(){wrap.remove();},180);},3500);
+    };
+    es.addEventListener('nfc_scan', function(ev) {
+      try {
+        var d = JSON.parse(ev.data);
+        var loc = d.cidade ? ' em ' + d.cidade : '';
+        sseToast('Nova leitura NFC detectada' + loc + '!', '📡');
+        setTimeout(function(){window.location.reload();}, 2000);
+      } catch(_){}
+    });
+    es.addEventListener('status_change', function(ev) {
+      try {
+        var d = JSON.parse(ev.data);
+        if (d.novoStatus && d.petId === PET_ID) {
+          sseToast(d.novoStatus === 'seguro' ? '🎉 Pet marcado como seguro!' : '🚨 Status alterado para perdido', d.novoStatus === 'seguro' ? '🎉' : '🚨');
+          setTimeout(function(){window.location.reload();}, 1500);
+        }
+      } catch(_){}
+    });
+    es.onerror = function() { es.close(); };
+  })();
+
+  /* ── Toggle bloqueio de tag ── */
+  window.toggleBlockTag = function(petId, tagId, btn) {
+    if (!confirm('Tem certeza? ' + (btn.dataset.tagStatus === 'blocked' ? 'A tag voltará a funcionar normalmente.' : 'A tag será bloqueada e deixará de funcionar.'))) return;
+    btn.disabled = true;
+    fetch('/pets/' + petId + '/tags/' + tagId + '/toggle-block', {
+      method: 'POST', headers: { 'Accept': 'application/json' }, credentials: 'same-origin'
+    }).then(function(r){ return r.json(); }).then(function(data) {
+      if (data.sucesso && data.novoStatus) {
+        btn.dataset.tagStatus = data.novoStatus;
+        var chip = document.getElementById('tag-status-chip-' + tagId);
+        if (chip) {
+          if (data.novoStatus === 'blocked') {
+            chip.className = 'tag-status-chip tag-status-chip--blocked';
+            chip.textContent = 'Bloqueada';
+            btn.innerHTML = '<i class="fa-solid fa-unlock text-[9px]"></i> Desbloquear';
+            btn.className = 'inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors';
+          } else if (data.novoStatus === 'active') {
+            chip.className = 'tag-status-chip tag-status-chip--active';
+            chip.innerHTML = '<i class="fa-solid fa-circle" style="font-size:6px"></i> Ativa';
+            btn.innerHTML = '<i class="fa-solid fa-lock text-[10px]"></i> Bloquear';
+            btn.className = 'flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold border border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 transition-colors';
+          }
+        }
+      } else {
+        alert((data && data.mensagem) || 'Erro ao atualizar tag.');
+      }
+    }).catch(function(){ alert('Erro de conexão.'); })
+      .finally(function(){ btn.disabled = false; });
+  };
+
+  /* ── Fotos recebidas ── */
+  function abrirModalFoto(url, dataStr) {
+    var modal=document.getElementById('modalFotoRecebida'), img=document.getElementById('modalFotoRecebidaImg'), dataEl=document.getElementById('modalFotoRecebidaData');
+    if (modal&&img) { img.src=url||''; if(dataEl) dataEl.textContent=dataStr||''; modal.classList.remove('hidden'); modal.classList.add('flex'); document.body.style.overflow='hidden'; }
+  }
+  window.fecharModalFoto = function() {
+    var modal=document.getElementById('modalFotoRecebida');
+    if (modal) { modal.classList.add('hidden'); modal.classList.remove('flex'); document.body.style.overflow=''; }
+  };
+  document.querySelectorAll('.foto-recebida-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() { abrirModalFoto(this.getAttribute('data-foto-url'), this.getAttribute('data-data-str')); });
   });
-}
+  var mf = document.getElementById('modalFotoRecebida');
+  if (mf) { mf.addEventListener('click', function(e){ if(e.target===this) window.fecharModalFoto(); }); }
+})();
 </script>
 
 <%- include('../partials/footer') %>
