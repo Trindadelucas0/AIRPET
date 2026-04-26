@@ -447,19 +447,6 @@
                   <i class="fa-solid fa-shield-halved text-emerald-400 flex-shrink-0"></i>
                 <% } %>
               </div>
-              <div class="flex gap-2 mt-3 pt-3 border-t border-gray-100">
-                <button type="button"
-                  onclick="toggleBlockTag('<%= pet.id %>', '<%= tag.id %>', this)"
-                  data-tag-id="<%= tag.id %>"
-                  data-tag-status="<%= tag.status %>"
-                  class="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold border border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 transition-colors">
-                  <i class="fa-solid fa-lock text-[10px]"></i> Bloquear
-                </button>
-                <a href="https://airpet.app/tag/<%= tag.tag_code %>" target="_blank"
-                  class="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold border border-gray-200 bg-gray-50 text-gray-600 hover:bg-gray-100 transition-colors">
-                  <i class="fa-solid fa-external-link text-[10px]"></i> Testar tag
-                </a>
-              </div>
             </div>
           <% }); %>
         </div>
@@ -477,18 +464,7 @@
                 </div>
                 <span class="text-xs font-mono text-gray-600"><%= tag.tag_code %></span>
               </div>
-              <div class="flex items-center gap-2">
-                <span class="tag-status-chip tag-status-chip--<%= tag.status === 'blocked' ? 'blocked' : 'other' %> capitalize" id="tag-status-chip-<%= tag.id %>"><%= tag.status %></span>
-                <% if (tag.status === 'blocked') { %>
-                  <button type="button"
-                    onclick="toggleBlockTag('<%= pet.id %>', '<%= tag.id %>', this)"
-                    data-tag-id="<%= tag.id %>"
-                    data-tag-status="<%= tag.status %>"
-                    class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors">
-                    <i class="fa-solid fa-unlock text-[9px]"></i> Desbloquear
-                  </button>
-                <% } %>
-              </div>
+              <span class="tag-status-chip tag-status-chip--<%= tag.status === 'blocked' ? 'blocked' : 'other' %> capitalize" id="tag-status-chip-<%= tag.id %>"><%= tag.status %></span>
             </div>
           <% }); %>
         </div>
@@ -1165,36 +1141,6 @@
     });
     es.onerror = function() { es.close(); };
   })();
-
-  /* ── Toggle bloqueio de tag ── */
-  window.toggleBlockTag = function(petId, tagId, btn) {
-    if (!confirm('Tem certeza? ' + (btn.dataset.tagStatus === 'blocked' ? 'A tag voltará a funcionar normalmente.' : 'A tag será bloqueada e deixará de funcionar.'))) return;
-    btn.disabled = true;
-    fetch('/pets/' + petId + '/tags/' + tagId + '/toggle-block', {
-      method: 'POST', headers: { 'Accept': 'application/json' }, credentials: 'same-origin'
-    }).then(function(r){ return r.json(); }).then(function(data) {
-      if (data.sucesso && data.novoStatus) {
-        btn.dataset.tagStatus = data.novoStatus;
-        var chip = document.getElementById('tag-status-chip-' + tagId);
-        if (chip) {
-          if (data.novoStatus === 'blocked') {
-            chip.className = 'tag-status-chip tag-status-chip--blocked';
-            chip.textContent = 'Bloqueada';
-            btn.innerHTML = '<i class="fa-solid fa-unlock text-[9px]"></i> Desbloquear';
-            btn.className = 'inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors';
-          } else if (data.novoStatus === 'active') {
-            chip.className = 'tag-status-chip tag-status-chip--active';
-            chip.innerHTML = '<i class="fa-solid fa-circle" style="font-size:6px"></i> Ativa';
-            btn.innerHTML = '<i class="fa-solid fa-lock text-[10px]"></i> Bloquear';
-            btn.className = 'flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold border border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 transition-colors';
-          }
-        }
-      } else {
-        alert((data && data.mensagem) || 'Erro ao atualizar tag.');
-      }
-    }).catch(function(){ alert('Erro de conexão.'); })
-      .finally(function(){ btn.disabled = false; });
-  };
 
   /* ── Fotos recebidas ── */
   function abrirModalFoto(url, dataStr) {

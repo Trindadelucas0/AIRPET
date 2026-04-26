@@ -33,7 +33,6 @@ const PontoMapa = require('../models/PontoMapa');
 const Petshop = require('../models/Petshop');
 const PetPerdido = require('../models/PetPerdido');
 const TagScan = require('../models/TagScan');
-const SeguidorPet = require('../models/SeguidorPet');
 const petEventBus = require('../services/petEventBus');
 const logger = require('../utils/logger');
 
@@ -178,6 +177,8 @@ async function buscarPins(req, res) {
 
     /* Última localização da tag por pet (scan NFC) dentro da bbox */
     (petScans || []).forEach((row) => {
+      // Regra de visibilidade: no mapa público, exibir scan apenas de pets perdidos.
+      if (row.pet_status !== 'perdido') return;
       const lat = parseFloat(row.latitude);
       const lng = parseFloat(row.longitude);
       if (isNaN(lat) || isNaN(lng)) return;
@@ -329,6 +330,8 @@ async function streamMapaSSE(req, res) {
 
   function onNfcScan(data) {
     if (closed) return;
+    // Regra de visibilidade: no mapa público via SSE, só transmite pets perdidos.
+    if (data.petStatus !== 'perdido') return;
     // Filtrar pela bbox se fornecida
     if (hasBbox) {
       const lat = data.lat;
