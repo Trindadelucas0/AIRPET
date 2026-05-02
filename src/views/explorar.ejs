@@ -1,6 +1,5 @@
 <%
   locals.extraHead = `
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/driver.js@1.3.1/dist/driver.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css"
           integrity="sha512-0x6JxdTnmQSFJb7g8+YovV0OXFWVQlpnYbJwY9FpZ0P4B+GacePAfjxqRgJ0hnW50Omh2kHh2k9nN1F4b0q1Sw=="
           crossorigin="anonymous" referrerpolicy="no-referrer">
@@ -13,11 +12,6 @@
       .autocomplete-item { display:flex; align-items:center; gap:8px; padding:8px 12px; cursor:pointer; font-size:13px; transition:background .15s; }
       .autocomplete-item:hover { background:var(--ink-3); }
       .post-enter { animation: slideUp .4s ease-out both; }
-      .driver-popover { border-radius:16px !important; }
-      .driver-popover-title { font-weight:700 !important; color:#111827 !important; }
-      .driver-popover-description { color:#6b7280 !important; }
-      .driver-popover-next-btn { background:linear-gradient(135deg,#ec5a1c,#dd4212) !important; border:none !important; border-radius:10px !important; font-weight:600 !important; }
-      .driver-popover-prev-btn { border-radius:10px !important; font-weight:600 !important; }
       /* Tipografia Explorar: corpo legível (DM Sans), título com Rubik Doodle Shadow + Syne */
       .explorar-page {
         font-family: 'DM Sans', ui-sans-serif, system-ui, -apple-system, sans-serif;
@@ -732,7 +726,6 @@
 <!-- ══════════════════════════════════════════════ -->
 <!-- ═══ SCRIPTS ══════════════════════════════════ -->
 <!-- ══════════════════════════════════════════════ -->
-<script src="https://cdn.jsdelivr.net/npm/driver.js@1.3.1/dist/driver.js.iife.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"
         integrity="sha512-9KkIqdfN7ipE6L4oF4lF0W5f+Yk3nN7+E2n1Q0Y1kHjAPiVnJjOVT1fE2YTYL4e1kCwTxmU1nPqkRIKO1pV4Eg=="
         crossorigin="anonymous" referrerpolicy="no-referrer"></script>
@@ -2637,30 +2630,6 @@
       }, 'A seguir pet…');
     });
   });
-
-  /* ──────────── Onboarding (Driver.js) ──────────── */
-  if (typeof window.driver !== 'undefined' && !localStorage.getItem('airpet_onboarding_done')) {
-    setTimeout(function () {
-      var steps = [];
-      var feedTab = document.getElementById('bottomNavFeedTab');
-      if (feedTab && feedTab.offsetParent !== null) {
-        steps.push({ element: '#bottomNavFeedTab', popover: { title: 'Publique no Feed', description: 'Toque em Feed na barra inferior para criar posts com foto e texto do seu pet. Nesta página você também pode usar o botão de publicar acima.', side: 'top', align: 'center' } });
-      }
-      if (document.querySelector('article.explorar-post-card[data-explorar-meta]')) {
-        steps.push({ element: 'article.explorar-post-card[data-explorar-meta]', popover: { title: 'Veja os detalhes', description: 'Toque em qualquer lugar do card para abrir o post: foto, texto completo, data e comentários.', side: 'top', align: 'center' } });
-      }
-      if (!steps.length) return;
-      var driverObj = window.driver.js.driver({
-        showProgress: true,
-        steps: steps,
-        nextBtnText: 'Próximo',
-        prevBtnText: 'Anterior',
-        doneBtnText: 'Entendi!',
-        onDestroyed: function () { localStorage.setItem('airpet_onboarding_done', '1'); }
-      });
-      driverObj.drive();
-    }, 800);
-  }
 
 })();
 </script>

@@ -139,7 +139,7 @@
 <!-- Mobile Bottom Navigation (logged in only) -->
 <% if (isLogado) { %>
 <nav id="bottomNav" class="md:hidden fixed bottom-0 left-0 right-0 z-50 safe-bottom">
-  <!-- Mantido no DOM para explorar.ejs / tour / CTAs que chamam .click() — sem botão visual no centro -->
+  <!-- Mantido no DOM para compatibilidade de CTAs que chamam .click() — sem botão visual no centro -->
   <button type="button" id="fabNewPost" class="fab-new-post-hidden" tabindex="-1" aria-hidden="true"></button>
   <div class="bottom-nav-grid h-[60px] px-2 max-w-lg mx-auto w-full">
     <a href="/feed" id="bottomNavFeedTab" class="bottom-tab bottom-tab-cell <%= currentPath === '/feed' ? 'bottom-tab--active' : '' %>">

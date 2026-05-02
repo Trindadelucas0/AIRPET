@@ -38,7 +38,7 @@
   /* ── STEP CARD ── */
   .wizard-step {
     background:var(--ink-2); border:1px solid var(--border); border-radius:20px; padding:32px 28px;
-    animation:step-in 0.3s ease-out both;
+    animation:step-in 0.3s ease-out both; margin-bottom:16px;
   }
   @keyframes step-in { from { opacity:0; transform:translateX(20px); } to { opacity:1; transform:none; } }
   .step-icon-wrap {
@@ -157,6 +157,7 @@
     transition:color 0.15s;
   }
   .btn-skip:hover { color:var(--text-dim); }
+  .btn-next[type="button"], .btn-back-step, .btn-skip { display:none; }
 </style>
 ` %>
 <%- include('../partials/header') %>
@@ -172,17 +173,10 @@
 <main class="flex-1">
   <div class="wizard-wrap">
 
-    <%- include('../partials/wizard-shell', {
-      shellId: 'pet-cadastro-shell',
-      badge: 'Cadastro guiado',
-      title: 'Novo pet',
-      subtitle: 'Preencha os dados essenciais para ativar a proteção.',
-      currentStep: 1,
-      totalSteps: 9,
-      stepLabelId: 'stepLabel',
-      stepPercentId: 'stepPercent',
-      progressBarId: 'progressBar'
-    }) %>
+    <section class="bg-white border border-gray-100 rounded-2xl px-4 py-5 mb-4">
+      <h2 class="text-lg font-semibold text-gray-900">Novo pet</h2>
+      <p class="text-sm text-gray-500 mt-1">Preencha os dados essenciais para ativar a proteção.</p>
+    </section>
 
     <form action="/pets/cadastro" method="POST" enctype="multipart/form-data" id="formCadastro">
 
@@ -199,7 +193,7 @@
       </div>
 
       <!-- Step 2: Tipo -->
-      <div class="wizard-step hidden" data-step="2">
+      <div class="wizard-step" data-step="2">
         <div class="step-icon-wrap"><i class="fa-solid fa-paw"></i></div>
         <h2 class="step-title">Qual o tipo?</h2>
         <p class="step-sub">Selecione a espécie do seu pet</p>
@@ -224,7 +218,7 @@
       </div>
 
       <!-- Step 3: Raça -->
-      <div class="wizard-step hidden" data-step="3">
+      <div class="wizard-step" data-step="3">
         <div class="step-icon-wrap"><i class="fa-solid fa-dna"></i></div>
         <h2 class="step-title">Qual a raça?</h2>
         <p class="step-sub">Pode digitar ou deixar em branco</p>
@@ -236,7 +230,7 @@
       </div>
 
       <!-- Step 4: Sexo -->
-      <div class="wizard-step hidden" data-step="4">
+      <div class="wizard-step" data-step="4">
         <div class="step-icon-wrap"><i class="fa-solid fa-venus-mars"></i></div>
         <h2 class="step-title">Qual o sexo?</h2>
         <p class="step-sub">Selecione uma opção</p>
@@ -254,7 +248,7 @@
       </div>
 
       <!-- Step 5: Porte -->
-      <div class="wizard-step hidden" data-step="5">
+      <div class="wizard-step" data-step="5">
         <div class="step-icon-wrap"><i class="fa-solid fa-weight-scale"></i></div>
         <h2 class="step-title">Qual o porte?</h2>
         <p class="step-sub">Tamanho aproximado</p>
@@ -265,13 +259,13 @@
           <button type="button" onclick="selectPorte(this,'medio')" class="porte-btn">🐕 Médio</button>
           <button type="button" onclick="selectPorte(this,'grande')" class="porte-btn">🐕‍🦺 Grande</button>
           <button type="button" onclick="selectPorte(this,'gigante')" class="porte-btn">🦮 Gigante</button>
-          <button type="button" onclick="nextStep()" class="porte-btn" style="border-style:dashed; font-size:11px;">Não sei</button>
+          <button type="button" onclick="selectPorte(this,'')" class="porte-btn" style="border-style:dashed; font-size:11px;">Não sei</button>
         </div>
         <button type="button" class="btn-back-step" onclick="prevStep()"><i class="fa-solid fa-arrow-left mr-1"></i> Voltar</button>
       </div>
 
       <!-- Step 6: Nascimento -->
-      <div class="wizard-step hidden" data-step="6">
+      <div class="wizard-step" data-step="6">
         <div class="step-icon-wrap"><i class="fa-solid fa-cake-candles"></i></div>
         <h2 class="step-title">Quando nasceu?</h2>
         <p class="step-sub">Data de nascimento aproximada</p>
@@ -282,7 +276,7 @@
       </div>
 
       <!-- Step 7: Cor -->
-      <div class="wizard-step hidden" data-step="7">
+      <div class="wizard-step" data-step="7">
         <div class="step-icon-wrap"><i class="fa-solid fa-palette"></i></div>
         <h2 class="step-title">Qual a cor/pelagem?</h2>
         <p class="step-sub">Cor predominante do pelo</p>
@@ -294,7 +288,7 @@
       </div>
 
       <!-- Step 8: Foto -->
-      <div class="wizard-step hidden" data-step="8">
+      <div class="wizard-step" data-step="8">
         <div class="step-icon-wrap"><i class="fa-solid fa-camera"></i></div>
         <h2 class="step-title">Foto do pet</h2>
         <p class="step-sub">Uma boa foto ajuda a identificá-lo</p>
@@ -313,7 +307,7 @@
       </div>
 
       <!-- Step 9: Bio / Descrição emocional -->
-      <div class="wizard-step hidden" data-step="9">
+      <div class="wizard-step" data-step="9">
         <div class="step-icon-wrap"><i class="fa-solid fa-quote-left"></i></div>
         <h2 class="step-title">Algo especial?</h2>
         <p class="step-sub">Uma frase carinhosa sobre o seu pet (opcional)</p>
@@ -332,53 +326,25 @@
 </main>
 
 <script>
-var currentStep = 1, totalSteps = 9;
-
-function updateProgress() {
-  var pct = Math.round((currentStep / totalSteps) * 100);
-  document.getElementById('progressBar').style.width = pct + '%';
-  document.getElementById('stepLabel').textContent = 'Passo ' + currentStep + ' de ' + totalSteps;
-  document.getElementById('stepPercent').textContent = pct + '%';
-}
-
-function showStep(n) {
-  document.querySelectorAll('.wizard-step').forEach(function(s) { s.classList.add('hidden'); });
-  document.querySelector('[data-step="' + n + '"]').classList.remove('hidden');
-  currentStep = n;
-  updateProgress();
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-
-function nextStep() {
-  if (currentStep === 1 && !document.getElementById('petNome').value.trim()) {
-    document.getElementById('petNome').focus(); return;
-  }
-  if (currentStep < totalSteps) showStep(currentStep + 1);
-}
-
-function prevStep() {
-  if (currentStep > 1) showStep(currentStep - 1);
-}
+function nextStep() {}
+function prevStep() {}
 
 function selectTipo(btn, val) {
   document.querySelectorAll('.tipo-btn').forEach(function(b) { b.classList.remove('selected'); });
   btn.classList.add('selected');
   document.getElementById('petTipo').value = val;
-  setTimeout(nextStep, 250);
 }
 
 function selectSexo(btn, val) {
   document.querySelectorAll('.sexo-btn').forEach(function(b) { b.classList.remove('selected'); });
   btn.classList.add('selected');
   document.getElementById('petSexo').value = val;
-  setTimeout(nextStep, 250);
 }
 
 function selectPorte(btn, val) {
   document.querySelectorAll('.porte-btn').forEach(function(b) { b.classList.remove('selected'); });
   btn.classList.add('selected');
   document.getElementById('petPorte').value = val;
-  setTimeout(nextStep, 250);
 }
 
 function previewFoto(input) {
