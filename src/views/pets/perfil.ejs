@@ -1,5 +1,6 @@
 <% locals.titulo = pet.nome %>
 <% locals.extraHead = `
+<link rel="stylesheet" href="/css/pet-profile.css">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
   /* ── BANNER DE ALERTA PERDIDO ────────────────────────── */
@@ -234,9 +235,11 @@
           <p class="text-lg font-black text-gray-900 leading-none mt-1" id="seguidoresCount"><%= totalSeguidores %></p>
         </button>
         <% if (ehDono) { %>
-          <a href="/pets/<%= pet.id %>/editar" class="social-stat-btn rounded-xl border border-gray-100 bg-white p-2.5 text-center flex flex-col items-center justify-center">
-            <p class="text-[10px] uppercase tracking-wide text-gray-400 font-bold">Editar</p>
-            <i class="fa-solid fa-pen text-primary-500 mt-1"></i>
+          <a href="/pets/<%= pet.id %>/editar"
+             class="social-stat-btn rounded-xl border p-2.5 text-center flex flex-col items-center justify-center"
+             style="border-color:rgba(242,96,32,0.25);background:rgba(242,96,32,0.06)">
+            <p class="text-[10px] uppercase tracking-wide font-bold" style="color:var(--accent)">Editar</p>
+            <i class="fa-solid fa-pen mt-1" style="color:var(--accent)"></i>
           </a>
         <% } else { %>
           <div class="rounded-xl border border-gray-100 bg-white p-2.5 text-center">
@@ -326,73 +329,331 @@
     </section>
     <% } %>
 
-    <!-- ════════════ IDENTIFICAÇÃO ════════════ -->
-    <section class="mb-5">
-      <p class="text-[10px] font-bold tracking-[0.14em] uppercase text-gray-400 mb-2">Identificação</p>
-      <div class="grid grid-cols-2 gap-3">
-        <div class="bg-white rounded-2xl shadow-sm p-4">
-          <p class="text-xs text-gray-400 uppercase font-semibold mb-1">Raça</p>
-          <p class="text-sm font-bold text-gray-800"><%= pet.raca || 'SRD' %></p>
-        </div>
-        <div class="bg-white rounded-2xl shadow-sm p-4">
-          <p class="text-xs text-gray-400 uppercase font-semibold mb-1">Porte</p>
-          <p class="text-sm font-bold text-gray-800 capitalize"><%= pet.porte || '—' %></p>
-        </div>
-        <div class="bg-white rounded-2xl shadow-sm p-4">
-          <p class="text-xs text-gray-400 uppercase font-semibold mb-1">Peso</p>
-          <p class="text-sm font-bold text-gray-800"><%= pet.peso ? pet.peso + ' kg' : '—' %></p>
-        </div>
-        <div class="bg-white rounded-2xl shadow-sm p-4">
-          <p class="text-xs text-gray-400 uppercase font-semibold mb-1">Nascimento</p>
-          <p class="text-sm font-bold text-gray-800"><%= pet.data_nascimento ? new Date(pet.data_nascimento).toLocaleDateString('pt-BR') : '—' %></p>
-        </div>
-      </div>
-      <div class="mt-3 bg-white rounded-2xl shadow-sm p-4 flex flex-wrap gap-x-5 gap-y-2 text-sm">
-        <span class="text-gray-600"><strong class="text-gray-900">Sexo:</strong> <%= pet.sexo ? (pet.sexo === 'femea' ? 'Fêmea' : (pet.sexo === 'nao_sei' ? 'N/A' : 'Macho')) : '—' %></span>
-        <span class="text-gray-600"><strong class="text-gray-900">Cor:</strong> <%= pet.cor || '—' %></span>
-        <% if (typeof idadePet !== 'undefined' && idadePet) { %>
-          <span class="text-gray-600"><strong class="text-gray-900">Idade:</strong> <%= idadePet.anos %>a <%= idadePet.meses %>m</span>
-        <% } %>
+    <!-- ════════════ STATUS DE SAÚDE AGREGADO ════════════ -->
+    <%
+      var healthDotClass = 'gray';
+      var healthText = 'Dados de saúde incompletos';
+      var hasHealthData = pet.veterinario_nome || pet.alergias_medicacoes || pet.observacoes;
+      var hasUrgentEvent = typeof calendario !== 'undefined' && calendario.some(function(ev) {
+        return ev.data && (new Date(ev.data) - new Date()) < 7 * 24 * 60 * 60 * 1000;
+      });
+      if (hasUrgentEvent) {
+        healthDotClass = 'amber';
+        healthText = 'Atenção: evento de saúde nos próximos 7 dias';
+      } else if (hasHealthData) {
+        healthDotClass = 'green';
+        healthText = 'Saúde registrada';
+      }
+    %>
+    <section class="mb-4">
+      <div class="pp-health-bar">
+        <span class="pp-health-dot <%= healthDotClass %>"></span>
+        <span class="pp-health-label"><%= healthText %></span>
+        <a href="/pets/<%= pet.id %>/saude" class="pp-health-link">
+          Ficha completa <i class="fa-solid fa-arrow-right" style="font-size:10px"></i>
+        </a>
       </div>
     </section>
 
-    <!-- Identificação oficial -->
+    <!-- ════════════ FICHA DO PET (dl/dt style) ════════════ -->
     <section class="mb-5">
-      <p class="text-[10px] font-bold tracking-[0.14em] uppercase text-gray-400 mb-2">Identificação oficial</p>
-      <div class="bg-white rounded-2xl shadow-sm p-4 space-y-3">
-        <div class="flex items-center justify-between gap-3">
-          <span class="text-xs text-gray-500 uppercase font-semibold">Microchip</span>
-          <span class="text-sm font-semibold text-gray-900 text-right break-all"><%= pet.microchip || 'Não informado' %></span>
-        </div>
-        <div class="flex items-center justify-between gap-3">
-          <span class="text-xs text-gray-500 uppercase font-semibold">Nº Pedigree</span>
-          <span class="text-sm font-semibold text-gray-900 text-right break-all"><%= pet.numero_pedigree || 'Não informado' %></span>
-        </div>
-        <div class="flex items-center justify-between gap-3">
-          <span class="text-xs text-gray-500 uppercase font-semibold">Castrado</span>
-          <span class="text-sm font-semibold <%= pet.castrado ? 'text-emerald-600' : 'text-gray-900' %>"><%= pet.castrado === null || typeof pet.castrado === 'undefined' ? 'Não informado' : (pet.castrado ? 'Sim' : 'Não') %></span>
+      <p class="text-[10px] font-bold tracking-[0.14em] uppercase text-gray-400 mb-2">Ficha</p>
+      <div class="card profile-soft-card" style="padding:4px 16px">
+        <div class="pp-ficha">
+
+          <div class="pp-ficha-row">
+            <span class="pp-ficha-label">Raça</span>
+            <span class="pp-ficha-value"><%= pet.raca || 'SRD' %></span>
+          </div>
+
+          <div class="pp-ficha-row">
+            <span class="pp-ficha-label">Espécie</span>
+            <span class="pp-ficha-value" style="text-transform:capitalize">
+              <%= pet.tipo === 'outro' && pet.tipo_custom ? pet.tipo_custom : (pet.tipo || '—') %>
+            </span>
+          </div>
+
+          <div class="pp-ficha-row">
+            <span class="pp-ficha-label">Sexo</span>
+            <span class="pp-ficha-value">
+              <%= pet.sexo === 'femea' ? 'Fêmea' : pet.sexo === 'macho' ? 'Macho' : pet.sexo === 'nao_sei' ? 'Não informado' : '—' %>
+            </span>
+          </div>
+
+          <div class="pp-ficha-row">
+            <span class="pp-ficha-label">Nascimento</span>
+            <span class="pp-ficha-value">
+              <%= pet.data_nascimento ? new Date(pet.data_nascimento).toLocaleDateString('pt-BR') : '—' %>
+              <% if (typeof idadePet !== 'undefined' && idadePet) { %>
+                <span class="pp-ficha-value--muted" style="font-size:12px;margin-left:6px">
+                  (<%= idadePet.anos %>a <%= idadePet.meses %>m)
+                </span>
+              <% } %>
+            </span>
+          </div>
+
+          <div class="pp-ficha-row">
+            <span class="pp-ficha-label">Porte</span>
+            <span class="pp-ficha-value" style="text-transform:capitalize"><%= pet.porte || '—' %></span>
+          </div>
+
+          <div class="pp-ficha-row">
+            <span class="pp-ficha-label">Peso</span>
+            <span class="pp-ficha-value">
+              <% if (pet.peso) { %>
+                <%= pet.peso %> kg
+                <% if (typeof pesoIdeal !== 'undefined' && pesoIdeal) { %>
+                  <span style="font-size:11px;margin-left:6px;padding:1px 7px;border-radius:999px;font-weight:700;
+                    background:<%= pesoIdeal.status==='ideal' ? '#dcfce7' : pesoIdeal.status==='abaixo' ? '#fef9c3' : '#fee2e2' %>;
+                    color:<%= pesoIdeal.status==='ideal' ? '#166534' : pesoIdeal.status==='abaixo' ? '#854d0e' : '#991b1b' %>">
+                    <%= pesoIdeal.status === 'ideal' ? 'Ideal' : pesoIdeal.status === 'abaixo' ? 'Abaixo' : 'Acima' %>
+                  </span>
+                <% } %>
+              <% } else { %>—<% } %>
+            </span>
+          </div>
+
+          <div class="pp-ficha-row">
+            <span class="pp-ficha-label">Cor</span>
+            <span class="pp-ficha-value"><%= pet.cor || '—' %></span>
+          </div>
+
+          <div class="pp-ficha-row">
+            <span class="pp-ficha-label">Castrado</span>
+            <span class="pp-ficha-value <%= pet.castrado ? 'text-emerald-600' : '' %>">
+              <%= pet.castrado === null || typeof pet.castrado === 'undefined' ? '—' : (pet.castrado ? 'Sim' : 'Não') %>
+            </span>
+          </div>
+
+          <div class="pp-ficha-row">
+            <span class="pp-ficha-label">Microchip</span>
+            <span class="pp-ficha-value">
+              <% if (pet.microchip) { %>
+                <span style="font-family:monospace;font-size:13px"><%= pet.microchip %></span>
+                <button type="button" class="pp-ficha-copy" onclick="copiarTexto('<%= pet.microchip %>', this)"
+                        aria-label="Copiar microchip">
+                  <i class="fa-solid fa-copy" style="font-size:9px"></i> Copiar
+                </button>
+              <% } else { %>
+                <span class="pp-ficha-value--muted">Não informado</span>
+              <% } %>
+            </span>
+          </div>
+
+          <div class="pp-ficha-row">
+            <span class="pp-ficha-label">Pedigree</span>
+            <span class="pp-ficha-value">
+              <% if (pet.numero_pedigree) { %>
+                <span style="font-family:monospace;font-size:13px"><%= pet.numero_pedigree %></span>
+                <button type="button" class="pp-ficha-copy" onclick="copiarTexto('<%= pet.numero_pedigree %>', this)"
+                        aria-label="Copiar pedigree">
+                  <i class="fa-solid fa-copy" style="font-size:9px"></i> Copiar
+                </button>
+              <% } else { %>
+                <span class="pp-ficha-value--muted">—</span>
+              <% } %>
+            </span>
+          </div>
+
         </div>
       </div>
     </section>
 
-    <!-- Saúde -->
+    <!-- ════════════ SAÚDE E VETERINÁRIO (accordion) ════════════ -->
     <% if (pet.veterinario_nome || pet.veterinario_telefone || pet.alergias_medicacoes || pet.observacoes) { %>
-    <section class="mb-5">
-      <p class="text-[10px] font-bold tracking-[0.14em] uppercase text-gray-400 mb-2">Saúde e veterinário</p>
-      <div class="bg-white rounded-2xl shadow-sm p-4 space-y-3">
-        <% if (pet.veterinario_nome || pet.veterinario_telefone) { %>
-          <p class="text-sm text-gray-700">
-            <strong class="text-gray-900">Veterinário:</strong>
-            <%= pet.veterinario_nome || '—' %>
-            <% if (pet.veterinario_telefone) { %> · <%= pet.veterinario_telefone %><% } %>
-          </p>
-        <% } %>
+    <details class="pp-accordion mb-5" id="accSaude">
+      <summary class="pp-accordion-trigger" style="list-style:none">
+        <div style="width:30px;height:30px;border-radius:9px;background:rgba(245,158,11,0.1);
+                    color:#d97706;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:12px">
+          <i class="fa-solid fa-stethoscope"></i>
+        </div>
+        <span class="pp-accordion-title">Saúde e veterinário</span>
         <% if (pet.alergias_medicacoes) { %>
-          <p class="text-sm text-amber-700"><i class="fa-solid fa-triangle-exclamation mr-1"></i><%= pet.alergias_medicacoes %></p>
+          <span style="padding:2px 8px;border-radius:999px;font-size:10px;font-weight:700;
+                       background:#fef9c3;color:#854d0e;flex-shrink:0">Alergias</span>
+        <% } %>
+        <i class="fa-solid fa-chevron-down pp-accordion-chevron"></i>
+      </summary>
+      <div class="pp-accordion-body">
+        <% if (pet.alergias_medicacoes) { %>
+          <div style="padding:10px 12px;border-radius:10px;border:1.5px solid rgba(245,158,11,0.3);
+                      background:rgba(255,251,235,0.7);margin-bottom:12px">
+            <p style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;
+                      color:#92400e;margin-bottom:5px">
+              <i class="fa-solid fa-triangle-exclamation" style="margin-right:4px"></i>Alergias e medicações
+            </p>
+            <p style="font-size:13px;color:#78350f;line-height:1.5"><%= pet.alergias_medicacoes %></p>
+          </div>
+        <% } %>
+        <% if (pet.veterinario_nome || pet.veterinario_telefone) { %>
+          <div class="pp-ficha" style="margin-bottom:12px">
+            <% if (pet.veterinario_nome) { %>
+              <div class="pp-ficha-row">
+                <span class="pp-ficha-label">Veterinário</span>
+                <span class="pp-ficha-value"><%= pet.veterinario_nome %></span>
+              </div>
+            <% } %>
+            <% if (pet.veterinario_telefone) { %>
+              <div class="pp-ficha-row">
+                <span class="pp-ficha-label">Telefone vet</span>
+                <span class="pp-ficha-value">
+                  <a href="tel:<%= pet.veterinario_telefone %>"
+                     style="color:var(--accent);font-weight:700;text-decoration:none">
+                    <%= pet.veterinario_telefone %>
+                  </a>
+                </span>
+              </div>
+            <% } %>
+          </div>
         <% } %>
         <% if (pet.observacoes) { %>
-          <p class="text-sm text-gray-600"><strong class="text-gray-900">Observações:</strong> <%= pet.observacoes %></p>
+          <p style="font-size:13px;color:var(--text-dim);line-height:1.6"><%= pet.observacoes %></p>
         <% } %>
+        <% if (ehDono) { %>
+          <a href="/pets/<%= pet.id %>/editar#sec-saude"
+             style="display:inline-flex;align-items:center;gap:6px;margin-top:12px;
+                    font-size:12px;font-weight:700;color:var(--accent);text-decoration:none">
+            <i class="fa-solid fa-pen" style="font-size:10px"></i> Editar dados de saúde
+          </a>
+        <% } %>
+      </div>
+    </details>
+    <% } %>
+
+    <!-- ════════════ PRÓXIMOS EVENTOS / CALENDÁRIO ════════════ -->
+    <% if (ehDono && typeof calendario !== 'undefined' && calendario && calendario.length > 0) { %>
+    <section class="mb-5">
+      <p class="text-[10px] font-bold tracking-[0.14em] uppercase text-gray-400 mb-2">
+        Próximos eventos
+      </p>
+      <div class="card profile-soft-card" style="padding:4px 16px">
+        <div class="pp-event-list">
+          <% calendario.forEach(function(ev) {
+            var evDate = new Date(ev.data);
+            var hoje = new Date();
+            var diffDays = Math.ceil((evDate - hoje) / (1000 * 60 * 60 * 24));
+            var badgeClass = diffDays <= 3 ? 'urgente' : diffDays <= 7 ? 'proximo' : 'ok';
+            var badgeLabel = diffDays <= 0 ? 'Hoje' : diffDays === 1 ? 'Amanhã' : diffDays + ' dias';
+            var iconClass  = ev.cor === 'blue' ? 'blue' : ev.cor === 'green' ? 'green' : ev.cor === 'purple' ? 'purple' : 'amber';
+          %>
+          <div class="pp-event-row">
+            <div class="pp-event-icon <%= iconClass %>">
+              <i class="fa-solid <%= ev.icone %>"></i>
+            </div>
+            <div style="flex:1;min-width:0">
+              <p class="pp-event-title"><%= ev.titulo %></p>
+              <p class="pp-event-date">
+                <i class="fa-regular fa-calendar" style="font-size:10px;margin-right:3px"></i>
+                <%= evDate.toLocaleDateString('pt-BR', {day:'2-digit',month:'short',year:'numeric'}) %>
+              </p>
+            </div>
+            <span class="pp-event-badge <%= badgeClass %>"><%= badgeLabel %></span>
+          </div>
+          <% }); %>
+        </div>
+      </div>
+      <a href="/pets/<%= pet.id %>/saude"
+         style="display:flex;align-items:center;justify-content:center;gap:6px;
+                margin-top:8px;font-size:12px;font-weight:700;color:var(--accent);text-decoration:none">
+        Ver ficha completa <i class="fa-solid fa-arrow-right" style="font-size:10px"></i>
+      </a>
+    </section>
+    <% } %>
+
+    <!-- ════════════ NOTIFICAÇÕES DESTE PET ════════════ -->
+    <% if (ehDono) { %>
+    <section class="mb-5">
+      <p class="text-[10px] font-bold tracking-[0.14em] uppercase text-gray-400 mb-2">Notificações</p>
+      <div style="display:flex;flex-direction:column;gap:8px">
+
+        <!-- Link para central de notificações -->
+        <a href="/notificacoes" class="pp-notif-pref-row">
+          <div class="pp-notif-pref-icon">
+            <i class="fa-solid fa-bell"></i>
+          </div>
+          <div class="pp-notif-pref-text">
+            <p class="pp-notif-pref-title">Central de notificações</p>
+            <p class="pp-notif-pref-sub">Vacinas, consultas, ração, scans NFC e mais</p>
+          </div>
+          <i class="fa-solid fa-chevron-right" style="font-size:11px;color:var(--text-muted);flex-shrink:0"></i>
+        </a>
+
+        <!-- Notificação de ração -->
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;
+                    border-radius:10px;background:var(--ink-2);border:1px solid var(--border)">
+          <div style="width:34px;height:34px;border-radius:9px;background:rgba(96,165,250,0.12);
+                      color:#2563eb;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px">
+            <i class="fa-solid fa-bowl-food"></i>
+          </div>
+          <div style="flex:1">
+            <p style="font-size:13px;font-weight:700;color:var(--text)">Lembrete de ração</p>
+            <p style="font-size:11px;color:var(--text-dim);margin-top:1px">Configure quando reabastecer a ração de <%= pet.nome %></p>
+          </div>
+          <a href="/notificacoes/configurar?pet=<%= pet.id %>&tipo=racao"
+             style="font-size:11px;font-weight:700;color:var(--accent);text-decoration:none;
+                    padding:5px 10px;border-radius:8px;background:var(--accent-glow);
+                    border:1px solid rgba(242,96,32,0.15);flex-shrink:0">
+            Configurar
+          </a>
+        </div>
+
+        <!-- Notificação de pesagem -->
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;
+                    border-radius:10px;background:var(--ink-2);border:1px solid var(--border)">
+          <div style="width:34px;height:34px;border-radius:9px;background:rgba(34,197,94,0.1);
+                      color:#16a34a;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px">
+            <i class="fa-solid fa-weight-scale"></i>
+          </div>
+          <div style="flex:1">
+            <p style="font-size:13px;font-weight:700;color:var(--text)">Pesagem periódica</p>
+            <p style="font-size:11px;color:var(--text-dim);margin-top:1px">
+              <% if (pet.peso) { %>
+                Último peso: <%= pet.peso %> kg — receba lembrete mensal
+              <% } else { %>
+                Registre o peso e receba lembretes mensais
+              <% } %>
+            </p>
+          </div>
+          <a href="/pets/<%= pet.id %>/saude"
+             style="font-size:11px;font-weight:700;color:var(--accent);text-decoration:none;
+                    padding:5px 10px;border-radius:8px;background:var(--accent-glow);
+                    border:1px solid rgba(242,96,32,0.15);flex-shrink:0">
+            Registrar
+          </a>
+        </div>
+
+      </div>
+    </section>
+    <% } %>
+
+    <!-- ════════════ COMPARTILHAR / QR ════════════ -->
+    <% if (ehDono) { %>
+    <section class="mb-5">
+      <p class="text-[10px] font-bold tracking-[0.14em] uppercase text-gray-400 mb-2">Compartilhar</p>
+      <div class="card profile-soft-card" style="padding:16px">
+        <p style="font-size:13px;color:var(--text-dim);margin-bottom:12px;line-height:1.5">
+          Compartilhe o perfil de <strong style="color:var(--text)"><%= pet.nome %></strong> com o veterinário,
+          pet-sitter ou guarda-chuva emergencial.
+        </p>
+        <div class="pp-share-strip">
+          <button type="button" class="pp-share-btn"
+                  onclick="copiarLink('<%= 'https://' + (typeof req !== 'undefined' ? req.get('host') : 'airpet.com.br') + '/pets/' + pet.id %>')"
+                  id="copyLinkBtn">
+            <i class="fa-solid fa-link" style="font-size:11px"></i> Copiar link
+          </button>
+          <% if (pet.telefone_contato) { %>
+          <a href="https://wa.me/?text=<%= encodeURIComponent('Perfil do ' + pet.nome + ': https://' + (typeof req !== 'undefined' ? req.get('host') : 'airpet.com.br') + '/pets/' + pet.id) %>"
+             target="_blank" class="pp-share-btn whatsapp">
+            <i class="fa-brands fa-whatsapp" style="font-size:12px"></i> WhatsApp
+          </a>
+          <% } %>
+          <a href="/pets/<%= pet.id %>/qr" class="pp-share-btn">
+            <i class="fa-solid fa-qrcode" style="font-size:11px"></i> QR Code
+          </a>
+          <a href="/pets/<%= pet.id %>/editar" class="pp-share-btn primary">
+            <i class="fa-solid fa-pen" style="font-size:10px"></i> Editar perfil
+          </a>
+        </div>
       </div>
     </section>
     <% } %>
@@ -1157,6 +1418,34 @@
   var mf = document.getElementById('modalFotoRecebida');
   if (mf) { mf.addEventListener('click', function(e){ if(e.target===this) window.fecharModalFoto(); }); }
 })();
+
+/* ── Utilitários do perfil ── */
+window.copiarTexto = function(texto, btn) {
+  navigator.clipboard && navigator.clipboard.writeText(texto).then(function() {
+    var orig = btn.innerHTML;
+    btn.innerHTML = '<i class="fa-solid fa-check" style="font-size:9px"></i> Copiado';
+    btn.style.background = 'var(--green)';
+    btn.style.color = '#fff';
+    setTimeout(function() { btn.innerHTML = orig; btn.style.background = ''; btn.style.color = ''; }, 1800);
+  });
+};
+
+window.copiarLink = function(url) {
+  var btn = document.getElementById('copyLinkBtn');
+  navigator.clipboard && navigator.clipboard.writeText(url).then(function() {
+    var orig = btn ? btn.innerHTML : '';
+    if (btn) { btn.innerHTML = '<i class="fa-solid fa-check" style="font-size:10px"></i> Link copiado!'; }
+    setTimeout(function() { if (btn) btn.innerHTML = orig; }, 2000);
+  });
+};
+
+/* ── Accordion chevron no <details> ── */
+document.querySelectorAll('details.pp-accordion').forEach(function(el) {
+  el.addEventListener('toggle', function() {
+    var chev = el.querySelector('.pp-accordion-chevron');
+    if (chev) chev.style.transform = el.open ? 'rotate(180deg)' : '';
+  });
+});
 </script>
 
 <%- include('../partials/footer') %>
