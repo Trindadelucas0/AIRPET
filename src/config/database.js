@@ -93,21 +93,40 @@ function getPoolStats() {
 
 /**
  * Executa callback dentro de uma transacao (BEGIN / COMMIT / ROLLBACK).
+ *
+ * Proteções adicionais:
+ * - Emite ROLLBACK antes do BEGIN para limpar qualquer transação
+ *   abandonada que a conexão possa trazer do pool (evita o erro
+ *   "current transaction is aborted, commands ignored").
+ * - Se o ROLLBACK no catch falhar (conexão corrompida), a conexão é
+ *   destruída (release(true)) em vez de devolvida ao pool com estado inválido.
+ *
  * @param {(client: import('pg').PoolClient) => Promise<T>} fn
  * @returns {Promise<T>}
  */
 async function withTransaction(fn) {
   const client = await pool.connect();
+  let released = false;
   try {
+    // Limpa qualquer transação abandonada antes de iniciar a nova.
+    // ROLLBACK sem transação ativa emite apenas um WARNING no PostgreSQL.
+    try { await client.query('ROLLBACK'); } catch (_) {}
     await client.query('BEGIN');
     const result = await fn(client);
     await client.query('COMMIT');
     return result;
   } catch (err) {
-    await client.query('ROLLBACK');
+    try {
+      await client.query('ROLLBACK');
+    } catch (rbErr) {
+      // ROLLBACK falhou → conexão provavelmente corrompida; destruir em vez de devolver ao pool
+      logger.warn('DB', 'ROLLBACK falhou — conexão descartada para evitar estado inválido no pool', rbErr);
+      released = true;
+      client.release(true);
+    }
     throw err;
   } finally {
-    client.release();
+    if (!released) client.release();
   }
 }
 

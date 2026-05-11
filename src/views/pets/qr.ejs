@@ -1,0 +1,206 @@
+<% locals.titulo = 'QR Code — ' + pet.nome %>
+<% locals.extraHead = `
+<link rel="stylesheet" href="/css/pet-profile.css">
+<style>
+  .qr-wrap    { max-width:440px; margin:0 auto; padding:24px 16px 80px; }
+  .qr-topbar  { position:sticky; top:56px; z-index:40;
+                background:rgba(255,255,255,.94); backdrop-filter:blur(14px);
+                border-bottom:1px solid var(--border); }
+  .qr-topbar-inner { max-width:440px; margin:0 auto; padding:10px 16px;
+                     display:flex; align-items:center; gap:10px; }
+  .back-link  { font-size:13px; color:var(--text-dim); text-decoration:none;
+                display:inline-flex; align-items:center; gap:6px; transition:color .15s; }
+  .back-link:hover { color:var(--accent); text-decoration:none; }
+  .qr-title   { font-size:16px; font-weight:800; color:var(--text); flex:1;
+                white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+  .qr-card    { background:var(--ink-2); border:1px solid var(--border);
+                border-radius:20px; padding:24px; text-align:center; margin-bottom:16px; }
+
+  .qr-avatar  { width:72px; height:72px; border-radius:50%; object-fit:cover;
+                border:3px solid var(--border); margin:0 auto 12px; display:block; }
+  .qr-avatar-placeholder {
+    width:72px; height:72px; border-radius:50%;
+    background:var(--ink-3); border:3px solid var(--border);
+    margin:0 auto 12px; display:flex; align-items:center; justify-content:center;
+    font-size:28px;
+  }
+  .qr-pet-name { font-size:22px; font-weight:800; color:var(--text); margin-bottom:4px; }
+  .qr-pet-sub  { font-size:13px; color:var(--text-dim); margin-bottom:20px; }
+
+  .qr-image-wrap {
+    display:inline-block; padding:14px; border-radius:16px;
+    background:#fff; border:2px solid var(--border);
+    margin-bottom:16px;
+  }
+  .qr-image-wrap img { display:block; width:200px; height:200px; }
+
+  .qr-url {
+    font-size:11px; font-family:monospace; color:var(--text-dim);
+    background:var(--ink-3); border:1px solid var(--border);
+    border-radius:8px; padding:8px 12px; word-break:break-all;
+    margin-bottom:16px; text-align:left;
+  }
+
+  .qr-actions { display:flex; flex-direction:column; gap:10px; }
+  .qr-btn     {
+    display:inline-flex; align-items:center; justify-content:center; gap:8px;
+    padding:13px 16px; border-radius:12px; font-size:14px; font-weight:700;
+    text-decoration:none; cursor:pointer; border:none; width:100%;
+    transition:transform .1s, opacity .15s;
+  }
+  .qr-btn:active { transform:scale(.98); }
+  .qr-btn-primary { background:var(--accent); color:#fff; }
+  .qr-btn-ghost   { background:var(--ink-2); color:var(--text-dim);
+                    border:1.5px solid var(--border); }
+  .qr-btn-ghost:hover { border-color:var(--accent); color:var(--accent); text-decoration:none; }
+  .qr-btn-whatsapp{ background:#25d366; color:#fff; }
+  .qr-btn-whatsapp:hover { text-decoration:none; }
+
+  .qr-info-card {
+    background:var(--ink-3); border:1px solid var(--border);
+    border-radius:14px; padding:14px 16px;
+  }
+  .qr-info-row { display:flex; align-items:flex-start; gap:10px; margin-bottom:10px; }
+  .qr-info-row:last-child { margin-bottom:0; }
+  .qr-info-icon { width:30px; height:30px; border-radius:8px; flex-shrink:0;
+                  display:flex; align-items:center; justify-content:center; font-size:12px; }
+  .qr-info-title { font-size:13px; font-weight:700; color:var(--text); }
+  .qr-info-sub   { font-size:11px; color:var(--text-dim); margin-top:1px; line-height:1.4; }
+</style>
+` %>
+<%- include('../partials/header') %>
+<%- include('../partials/flash') %>
+
+<!-- TOPBAR -->
+<div class="qr-topbar">
+  <div class="qr-topbar-inner">
+    <a href="/pets/<%= pet.id %>" class="back-link">
+      <i class="fa-solid fa-arrow-left"></i>
+    </a>
+    <h1 class="qr-title">QR Code — <%= pet.nome %></h1>
+  </div>
+</div>
+
+<%
+  var petUrl = 'https://' + req.get('host') + '/pets/' + pet.id;
+  var qrApiUrl = 'https://api.qrserver.com/v1/create-qr-code/?data=' + encodeURIComponent(petUrl) + '&size=200x200&margin=0&color=0f172a';
+%>
+
+<main class="flex-1">
+  <div class="qr-wrap">
+
+    <!-- Card principal com QR -->
+    <div class="qr-card">
+      <% if (pet.foto) { %>
+        <img src="<%= pet.foto %>" alt="<%= pet.nome %>" class="qr-avatar">
+      <% } else { %>
+        <div class="qr-avatar-placeholder">🐾</div>
+      <% } %>
+
+      <h2 class="qr-pet-name"><%= pet.nome %></h2>
+      <p class="qr-pet-sub">
+        <%= pet.raca || (pet.tipo ? pet.tipo.charAt(0).toUpperCase() + pet.tipo.slice(1) : 'Pet') %>
+        <% if (pet.dono_nome) { %> · <span style="color:var(--text)"><%= pet.dono_nome %></span><% } %>
+      </p>
+
+      <!-- QR Code via API (sem npm) -->
+      <div class="qr-image-wrap" id="qrImageWrap">
+        <img src="<%= qrApiUrl %>" alt="QR Code de <%= pet.nome %>" id="qrImg"
+             onerror="this.parentNode.innerHTML='<p style=&quot;font-size:11px;color:var(--text-dim);padding:8px&quot;>QR gerado offline — veja o link abaixo</p>'">
+      </div>
+
+      <!-- URL em texto -->
+      <div class="qr-url" id="qrUrl"><%= petUrl %></div>
+
+      <!-- Ações -->
+      <div class="qr-actions">
+        <button type="button" class="qr-btn qr-btn-primary" onclick="copiarLink()" id="copyBtn">
+          <i class="fa-solid fa-link"></i> Copiar link do perfil
+        </button>
+
+        <button type="button" class="qr-btn qr-btn-ghost" onclick="baixarQr()">
+          <i class="fa-solid fa-download"></i> Baixar imagem do QR
+        </button>
+
+        <% if (pet.telefone_contato) { %>
+        <a href="https://wa.me/?text=<%= encodeURIComponent('Perfil do pet ' + pet.nome + ': ' + petUrl) %>"
+           target="_blank" class="qr-btn qr-btn-whatsapp">
+          <i class="fa-brands fa-whatsapp"></i> Enviar pelo WhatsApp
+        </a>
+        <% } %>
+
+        <a href="/pets/<%= pet.id %>" class="qr-btn qr-btn-ghost">
+          <i class="fa-solid fa-arrow-left" style="font-size:12px"></i> Voltar ao perfil
+        </a>
+      </div>
+    </div>
+
+    <!-- Para que serve -->
+    <div class="qr-info-card">
+      <div class="qr-info-row">
+        <div class="qr-info-icon" style="background:#eff6ff;color:#2563eb">
+          <i class="fa-solid fa-tag"></i>
+        </div>
+        <div>
+          <p class="qr-info-title">Imprima e cole na coleira</p>
+          <p class="qr-info-sub">Qualquer celular consegue escanear — sem app, sem cadastro.</p>
+        </div>
+      </div>
+      <div class="qr-info-row">
+        <div class="qr-info-icon" style="background:#f0fdf4;color:#16a34a">
+          <i class="fa-solid fa-stethoscope"></i>
+        </div>
+        <div>
+          <p class="qr-info-title">Compartilhe com seu veterinário</p>
+          <p class="qr-info-sub">O perfil mostra raça, peso, alergias e contato de emergência.</p>
+        </div>
+      </div>
+      <div class="qr-info-row">
+        <div class="qr-info-icon" style="background:#fff7ed;color:var(--accent)">
+          <i class="fa-solid fa-magnifying-glass"></i>
+        </div>
+        <div>
+          <p class="qr-info-title">Acelera o retorno em caso de fuga</p>
+          <p class="qr-info-sub">Quem encontrar pode ligar direto para o tutor com 1 toque.</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<script>
+window.copiarLink = function() {
+  var url = '<%= petUrl %>';
+  var btn = document.getElementById('copyBtn');
+  navigator.clipboard && navigator.clipboard.writeText(url).then(function() {
+    var orig = btn.innerHTML;
+    btn.innerHTML = '<i class="fa-solid fa-check"></i> Copiado!';
+    btn.style.background = '#22c55e';
+    setTimeout(function() { btn.innerHTML = orig; btn.style.background = ''; }, 2000);
+  });
+};
+
+window.baixarQr = function() {
+  var img = document.getElementById('qrImg');
+  if (!img || !img.src) return;
+  // Fetch via canvas para contornar restrições CORS do img src externo
+  fetch('<%= qrApiUrl %>')
+    .then(function(r) { return r.blob(); })
+    .then(function(blob) {
+      var blobUrl = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = 'qr-<%= pet.nome.toLowerCase().replace(/\s+/g, "-") %>.png';
+      a.click();
+      setTimeout(function() { URL.revokeObjectURL(blobUrl); }, 5000);
+    })
+    .catch(function() {
+      // Fallback: abre em nova aba
+      window.open('<%= qrApiUrl %>', '_blank');
+    });
+};
+</script>
+
+<%- include('../partials/footer') %>

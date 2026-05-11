@@ -650,6 +650,31 @@ const petController = {
   },
 
   /**
+   * Exibe a página com QR Code do perfil do pet.
+   * Rota: GET /pets/:id/qr
+   */
+  async mostrarQr(req, res) {
+    try {
+      const { id } = req.params;
+      const pet = await Pet.buscarPorId(id);
+      if (!pet) {
+        req.session.flash = { tipo: 'erro', mensagem: 'Pet não encontrado.' };
+        return res.redirect('/pets');
+      }
+      const ehDono = req.session.usuario && pet.usuario_id === req.session.usuario.id;
+      if (!ehDono) {
+        req.session.flash = { tipo: 'erro', mensagem: 'Acesso restrito ao dono do pet.' };
+        return res.redirect(`/pets/${id}`);
+      }
+      return res.render('pets/qr', { titulo: `QR Code — ${pet.nome}`, pet });
+    } catch (erro) {
+      logger.error('PET_CTRL', 'Erro ao exibir QR do pet', erro);
+      req.session.flash = { tipo: 'erro', mensagem: 'Erro ao gerar QR Code.' };
+      return res.redirect('/pets');
+    }
+  },
+
+  /**
    * API inline: alterna status do pet entre 'perdido' e 'seguro' sem trocar de página.
    * Rota: POST /pets/:id/toggle-status
    */

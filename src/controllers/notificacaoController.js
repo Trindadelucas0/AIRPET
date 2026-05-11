@@ -168,6 +168,56 @@ async function unsubscribe(req, res) {
   }
 }
 
+/**
+ * Exibe a tela de configuração de preferências de notificação.
+ * Rota: GET /notificacoes/configurar
+ */
+async function mostrarConfigurar(req, res) {
+  try {
+    const usuarioId = req.session.usuario.id;
+    const pets = await Pet.buscarPorUsuario(usuarioId);
+    const petId = req.query.pet ? parseInt(req.query.pet, 10) : null;
+    return res.render('notificacoes/configurar', {
+      titulo: 'Configurar notificações',
+      pets,
+      petFiltro: petId,
+    });
+  } catch (erro) {
+    logger.error('NotificacaoController', 'Erro ao carregar configurações de notificação', erro);
+    req.session.flash = { tipo: 'erro', mensagem: 'Erro ao carregar preferências.' };
+    return res.redirect('/notificacoes');
+  }
+}
+
+/**
+ * Salva as preferências de notificação (stub — persiste em sessão enquanto não há tabela dedicada).
+ * Rota: POST /notificacoes/configurar
+ */
+async function salvarConfigurar(req, res) {
+  try {
+    // Preserva preferências na sessão para uso imediato (futuro: tabela notificacao_preferencias)
+    req.session.notifPrefs = {
+      pet_id: req.body.pet_id || null,
+      notif_racao: req.body.notif_racao === '1',
+      racao_dias: parseInt(req.body.racao_dias, 10) || 30,
+      notif_peso: req.body.notif_peso === '1',
+      peso_dias: parseInt(req.body.peso_dias, 10) || 30,
+      notif_48h: req.body.notif_48h === '1',
+      notif_2h: req.body.notif_2h === '1',
+      resumo_semanal: req.body.resumo_semanal === '1',
+      horario_quieto: req.body.horario_quieto === '1',
+      quieto_inicio: parseInt(req.body.quieto_inicio, 10) || 23,
+      quieto_fim: parseInt(req.body.quieto_fim, 10) || 7,
+    };
+    req.session.flash = { tipo: 'sucesso', mensagem: 'Preferências de notificação salvas!' };
+    return res.redirect('/notificacoes/configurar' + (req.body.pet_id ? '?pet=' + req.body.pet_id : ''));
+  } catch (erro) {
+    logger.error('NotificacaoController', 'Erro ao salvar configurações de notificação', erro);
+    req.session.flash = { tipo: 'erro', mensagem: 'Erro ao salvar preferências.' };
+    return res.redirect('/notificacoes/configurar');
+  }
+}
+
 module.exports = {
   listar,
   marcarLida,
@@ -175,4 +225,6 @@ module.exports = {
   contarNaoLidas,
   subscribe,
   unsubscribe,
+  mostrarConfigurar,
+  salvarConfigurar,
 };

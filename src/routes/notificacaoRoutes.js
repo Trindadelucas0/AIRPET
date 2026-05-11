@@ -12,6 +12,10 @@ const {
 
 router.get('/', notificacaoController.listar);
 
+// Configuração de preferências de notificação
+router.get('/configurar', notificacaoController.mostrarConfigurar);
+router.post('/configurar', notificacaoController.salvarConfigurar);
+
 router.get('/api/count', notificacaoController.contarNaoLidas);
 
 router.post('/marcar-todas-lidas', ...validarNotifMarcarTodas, validarResultado, notificacaoController.marcarTodasLidas);

@@ -67,6 +67,9 @@ router.put('/:id', function (req, res, next) {
 // Página de saúde do pet
 router.get('/:id/saude', petController.mostrarSaude);
 
+// QR Code do perfil
+router.get('/:id/qr', petController.mostrarQr);
+
 // Toggle de status perdido/encontrado inline (sem trocar de página)
 router.post('/:id/toggle-status', petController.toggleStatus);
 

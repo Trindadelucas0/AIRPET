@@ -1,0 +1,368 @@
+<% locals.titulo = 'Configurar notificações' %>
+<% locals.extraHead = `
+<link rel="stylesheet" href="/css/pet-profile.css">
+<style>
+  .cfg-wrap   { max-width:540px; margin:0 auto; padding:16px 16px 80px; }
+  .cfg-topbar { position:sticky; top:56px; z-index:40;
+                background:rgba(255,255,255,.94); backdrop-filter:blur(14px);
+                border-bottom:1px solid var(--border); }
+  .cfg-topbar-inner { max-width:540px; margin:0 auto; padding:10px 16px;
+                      display:flex; align-items:center; gap:10px; }
+  .back-link  { font-size:13px; color:var(--text-dim); text-decoration:none;
+                display:inline-flex; align-items:center; gap:6px; transition:color .15s; }
+  .back-link:hover { color:var(--accent); text-decoration:none; }
+  .cfg-title  { font-size:16px; font-weight:800; color:var(--text); flex:1; }
+
+  .cfg-section  { background:var(--ink-2); border:1px solid var(--border);
+                  border-radius:16px; margin-bottom:12px; overflow:hidden; }
+  .cfg-section-header {
+    padding:14px 16px; border-bottom:1px solid var(--border);
+    display:flex; align-items:center; gap:10px;
+  }
+  .cfg-section-icon { width:32px; height:32px; border-radius:9px;
+                      display:flex; align-items:center; justify-content:center;
+                      font-size:13px; flex-shrink:0; }
+  .cfg-section-title { font-size:14px; font-weight:700; color:var(--text); flex:1; }
+  .cfg-section-sub   { font-size:11px; color:var(--text-dim); margin-top:1px; }
+
+  .cfg-row {
+    display:flex; align-items:center; gap:12px;
+    padding:12px 16px; border-bottom:1px solid var(--border);
+  }
+  .cfg-row:last-child { border-bottom:none; }
+  .cfg-row-text { flex:1; }
+  .cfg-row-label { font-size:13px; font-weight:600; color:var(--text); }
+  .cfg-row-sub   { font-size:11px; color:var(--text-dim); margin-top:1px; }
+
+  /* Toggle switch reutilizando tokens do pp */
+  .cfg-track { width:40px; height:22px; border-radius:999px; background:#cbd5e1;
+               position:relative; transition:background .2s; flex-shrink:0; cursor:pointer; }
+  .cfg-track.on { background:var(--accent); }
+  .cfg-thumb { position:absolute; top:3px; left:3px; width:16px; height:16px;
+               border-radius:999px; background:#fff; box-shadow:0 1px 3px rgba(0,0,0,.15);
+               transition:left .2s; }
+  .cfg-track.on .cfg-thumb { left:21px; }
+
+  .cfg-select { background:var(--ink-3); border:1px solid var(--border);
+                border-radius:8px; padding:5px 8px; font-size:12px; font-weight:600;
+                color:var(--text); outline:none; cursor:pointer; }
+
+  .cfg-pill { display:inline-flex; align-items:center; gap:4px;
+              padding:3px 9px; border-radius:999px; font-size:11px; font-weight:700;
+              background:var(--accent-glow); color:var(--accent);
+              border:1px solid rgba(242,96,32,0.15); }
+
+  .cfg-pet-chip {
+    display:inline-flex; align-items:center; gap:6px;
+    padding:6px 12px; border-radius:999px; font-size:12px; font-weight:700;
+    border:1.5px solid var(--border); background:var(--ink-2); cursor:pointer;
+    transition:all .15s;
+  }
+  .cfg-pet-chip.active { border-color:var(--accent); background:var(--accent-glow); color:var(--accent); }
+  .cfg-pet-chip img  { width:20px; height:20px; border-radius:50%; object-fit:cover; }
+  .cfg-pet-chip span { color:var(--text); }
+  .cfg-pet-chip.active span { color:var(--accent); }
+
+  .save-bar { position:fixed; left:0; right:0; bottom:0;
+              padding:10px 16px calc(env(safe-area-inset-bottom,0px) + 10px);
+              background:rgba(255,255,255,.97); backdrop-filter:blur(12px);
+              border-top:1px solid var(--border); z-index:50; }
+  .save-inner { max-width:540px; margin:0 auto; }
+  .save-btn   { width:100%; padding:13px; border-radius:12px; font-size:14px; font-weight:700;
+                background:var(--accent); color:#fff; border:none; cursor:pointer;
+                display:flex; align-items:center; justify-content:center; gap:8px;
+                transition:transform .1s; }
+  .save-btn:active { transform:scale(.98); }
+</style>
+` %>
+<%- include('../partials/header') %>
+<%- include('../partials/flash') %>
+
+<!-- TOPBAR -->
+<div class="cfg-topbar">
+  <div class="cfg-topbar-inner">
+    <a href="/notificacoes" class="back-link">
+      <i class="fa-solid fa-arrow-left"></i>
+    </a>
+    <h1 class="cfg-title">Notificações</h1>
+  </div>
+</div>
+
+<main class="flex-1">
+  <form class="cfg-wrap" id="cfgForm" method="POST" action="/notificacoes/configurar">
+    <input type="hidden" name="_method" value="PUT">
+
+    <!-- Filtro por pet -->
+    <% if (typeof pets !== 'undefined' && pets.length > 0) { %>
+    <section class="cfg-section">
+      <div class="cfg-section-header">
+        <div class="cfg-section-icon" style="background:var(--accent-glow);color:var(--accent)">
+          <i class="fa-solid fa-paw"></i>
+        </div>
+        <div>
+          <p class="cfg-section-title">Configurar por pet</p>
+          <p class="cfg-section-sub">As preferências abaixo se aplicam ao pet selecionado</p>
+        </div>
+      </div>
+      <div style="padding:12px 16px;display:flex;flex-wrap:wrap;gap:8px" id="petChips">
+        <% pets.forEach(function(p, idx) { %>
+          <button type="button"
+                  class="cfg-pet-chip <%= idx === 0 ? 'active' : '' %>"
+                  data-pet-id="<%= p.id %>"
+                  onclick="selecionarPet(this, '<%= p.id %>')">
+            <% if (p.foto) { %>
+              <img src="<%= p.foto %>" alt="<%= p.nome %>">
+            <% } else { %>
+              <span style="font-size:14px">🐾</span>
+            <% } %>
+            <span><%= p.nome %></span>
+          </button>
+        <% }); %>
+      </div>
+      <input type="hidden" name="pet_id" id="selectedPetId" value="<%= pets[0] ? pets[0].id : '' %>">
+    </section>
+    <% } %>
+
+    <!-- Crítico / Urgente -->
+    <section class="cfg-section">
+      <div class="cfg-section-header">
+        <div class="cfg-section-icon" style="background:#fee2e2;color:#b91c1c">
+          <i class="fa-solid fa-triangle-exclamation"></i>
+        </div>
+        <div>
+          <p class="cfg-section-title">Alertas críticos</p>
+          <p class="cfg-section-sub">Nunca bloqueados — chegam mesmo com o celular silencioso</p>
+        </div>
+      </div>
+      <div class="cfg-row">
+        <div class="cfg-row-text">
+          <p class="cfg-row-label">Pet perdido avistado perto de você</p>
+          <p class="cfg-row-sub">Notificação imediata quando um pet perdido está a menos de 2 km</p>
+        </div>
+        <span class="cfg-pill">Sempre ativo</span>
+      </div>
+      <div class="cfg-row">
+        <div class="cfg-row-text">
+          <p class="cfg-row-label">Tag NFC escaneada</p>
+          <p class="cfg-row-sub">Alguém leu a tag do seu pet — com localização</p>
+        </div>
+        <span class="cfg-pill">Sempre ativo</span>
+      </div>
+      <div class="cfg-row">
+        <div class="cfg-row-text">
+          <p class="cfg-row-label">Vacina vencendo hoje</p>
+          <p class="cfg-row-sub">Lembrete no próprio dia do vencimento</p>
+        </div>
+        <span class="cfg-pill">Sempre ativo</span>
+      </div>
+    </section>
+
+    <!-- Ração -->
+    <section class="cfg-section">
+      <div class="cfg-section-header">
+        <div class="cfg-section-icon" style="background:#eff6ff;color:#2563eb">
+          <i class="fa-solid fa-bowl-food"></i>
+        </div>
+        <div>
+          <p class="cfg-section-title">Lembrete de ração</p>
+          <p class="cfg-section-sub">Quando reabastecer o estoque</p>
+        </div>
+      </div>
+      <div class="cfg-row">
+        <div class="cfg-row-text">
+          <p class="cfg-row-label">Ativar lembrete de ração</p>
+          <p class="cfg-row-sub">Notificação periódica para repor a ração</p>
+        </div>
+        <div class="cfg-track" id="trackRacao" onclick="toggleSwitch(this,'racao')" role="switch" aria-checked="true">
+          <div class="cfg-thumb"></div>
+        </div>
+        <input type="hidden" name="notif_racao" id="valRacao" value="1">
+      </div>
+      <div class="cfg-row" id="rowRacaoFreq">
+        <div class="cfg-row-text">
+          <p class="cfg-row-label">Frequência</p>
+          <p class="cfg-row-sub">A cada quantos dias enviar o lembrete</p>
+        </div>
+        <select class="cfg-select" name="racao_dias">
+          <option value="15">15 dias</option>
+          <option value="20">20 dias</option>
+          <option value="30" selected>30 dias</option>
+          <option value="45">45 dias</option>
+          <option value="60">60 dias</option>
+        </select>
+      </div>
+    </section>
+
+    <!-- Pesagem -->
+    <section class="cfg-section">
+      <div class="cfg-section-header">
+        <div class="cfg-section-icon" style="background:#f0fdf4;color:#16a34a">
+          <i class="fa-solid fa-weight-scale"></i>
+        </div>
+        <div>
+          <p class="cfg-section-title">Pesagem periódica</p>
+          <p class="cfg-section-sub">Acompanhe o peso do pet regularmente</p>
+        </div>
+      </div>
+      <div class="cfg-row">
+        <div class="cfg-row-text">
+          <p class="cfg-row-label">Lembrete de pesagem</p>
+          <p class="cfg-row-sub">Lembrete para registrar o peso atualizado</p>
+        </div>
+        <div class="cfg-track on" id="trackPeso" onclick="toggleSwitch(this,'peso')" role="switch" aria-checked="true">
+          <div class="cfg-thumb"></div>
+        </div>
+        <input type="hidden" name="notif_peso" id="valPeso" value="1">
+      </div>
+      <div class="cfg-row" id="rowPesoFreq">
+        <div class="cfg-row-text">
+          <p class="cfg-row-label">Frequência</p>
+        </div>
+        <select class="cfg-select" name="peso_dias">
+          <option value="14">Quinzenal</option>
+          <option value="30" selected>Mensal</option>
+          <option value="60">Bimestral</option>
+          <option value="90">Trimestral</option>
+        </select>
+      </div>
+    </section>
+
+    <!-- Agenda (consultas, tosa, etc.) -->
+    <section class="cfg-section">
+      <div class="cfg-section-header">
+        <div class="cfg-section-icon" style="background:#faf5ff;color:#7c3aed">
+          <i class="fa-solid fa-calendar-check"></i>
+        </div>
+        <div>
+          <p class="cfg-section-title">Agenda e compromissos</p>
+          <p class="cfg-section-sub">Consultas, banho/tosa e vacinas agendadas</p>
+        </div>
+      </div>
+      <div class="cfg-row">
+        <div class="cfg-row-text">
+          <p class="cfg-row-label">Aviso 48h antes</p>
+          <p class="cfg-row-sub">Lembrete dois dias antes do compromisso</p>
+        </div>
+        <div class="cfg-track on" id="track48h" onclick="toggleSwitch(this,'notif_48h')" role="switch" aria-checked="true">
+          <div class="cfg-thumb"></div>
+        </div>
+        <input type="hidden" name="notif_48h" id="valNotif48h" value="1">
+      </div>
+      <div class="cfg-row">
+        <div class="cfg-row-text">
+          <p class="cfg-row-label">Aviso 2h antes</p>
+          <p class="cfg-row-sub">Lembrete de última hora para não perder</p>
+        </div>
+        <div class="cfg-track on" id="track2h" onclick="toggleSwitch(this,'notif_2h')" role="switch" aria-checked="true">
+          <div class="cfg-thumb"></div>
+        </div>
+        <input type="hidden" name="notif_2h" id="valNotif2h" value="1">
+      </div>
+    </section>
+
+    <!-- Resumo semanal -->
+    <section class="cfg-section">
+      <div class="cfg-section-header">
+        <div class="cfg-section-icon" style="background:#fff7ed;color:var(--accent)">
+          <i class="fa-solid fa-chart-line"></i>
+        </div>
+        <div>
+          <p class="cfg-section-title">Resumo semanal</p>
+          <p class="cfg-section-sub">Um e-mail todo domingo com o status do seu pet</p>
+        </div>
+      </div>
+      <div class="cfg-row">
+        <div class="cfg-row-text">
+          <p class="cfg-row-label">Receber resumo semanal</p>
+          <p class="cfg-row-sub">Vacinas próximas, peso, eventos da semana — tudo em 1 e-mail</p>
+        </div>
+        <div class="cfg-track on" id="trackResumo" onclick="toggleSwitch(this,'resumo_semanal')" role="switch" aria-checked="true">
+          <div class="cfg-thumb"></div>
+        </div>
+        <input type="hidden" name="resumo_semanal" id="valResumoSemanal" value="1">
+      </div>
+    </section>
+
+    <!-- Horário quieto -->
+    <section class="cfg-section">
+      <div class="cfg-section-header">
+        <div class="cfg-section-icon" style="background:#f1f5f9;color:#475569">
+          <i class="fa-solid fa-moon"></i>
+        </div>
+        <div>
+          <p class="cfg-section-title">Horário quieto</p>
+          <p class="cfg-section-sub">Silenciar notificações não-críticas neste período</p>
+        </div>
+      </div>
+      <div class="cfg-row">
+        <div class="cfg-row-text">
+          <p class="cfg-row-label">Ativar horário quieto</p>
+        </div>
+        <div class="cfg-track" id="trackQuieto" onclick="toggleSwitch(this,'horario_quieto')" role="switch" aria-checked="false">
+          <div class="cfg-thumb"></div>
+        </div>
+        <input type="hidden" name="horario_quieto" id="valHorarioQuieto" value="0">
+      </div>
+      <div class="cfg-row" id="rowQuietoRange" style="display:none">
+        <div class="cfg-row-text">
+          <p class="cfg-row-label">Das</p>
+        </div>
+        <select class="cfg-select" name="quieto_inicio" style="margin-right:6px">
+          <option value="22">22h</option><option value="23" selected>23h</option><option value="0">00h</option>
+        </select>
+        <span style="font-size:12px;color:var(--text-dim);margin-right:6px">até</span>
+        <select class="cfg-select" name="quieto_fim">
+          <option value="6">06h</option><option value="7" selected>07h</option><option value="8">08h</option>
+        </select>
+      </div>
+    </section>
+
+    <div class="save-bar">
+      <div class="save-inner">
+        <button type="submit" class="save-btn">
+          <i class="fa-solid fa-floppy-disk"></i> Salvar preferências
+        </button>
+      </div>
+    </div>
+  </form>
+</main>
+
+<script>
+function selecionarPet(btn, petId) {
+  document.querySelectorAll('.cfg-pet-chip').forEach(function(c) { c.classList.remove('active'); });
+  btn.classList.add('active');
+  document.getElementById('selectedPetId').value = petId;
+}
+
+function toggleSwitch(track, name) {
+  var isOn = track.classList.toggle('on');
+  track.setAttribute('aria-checked', isOn ? 'true' : 'false');
+  var input = document.getElementById('val' + name.charAt(0).toUpperCase() + name.slice(1).replace(/_([a-z])/g, function(m, c) { return c.toUpperCase(); }));
+  if (input) input.value = isOn ? '1' : '0';
+
+  // Mostrar/ocultar campos dependentes
+  if (name === 'racao') {
+    var row = document.getElementById('rowRacaoFreq');
+    if (row) row.style.display = isOn ? '' : 'none';
+  }
+  if (name === 'peso') {
+    var row2 = document.getElementById('rowPesoFreq');
+    if (row2) row2.style.display = isOn ? '' : 'none';
+  }
+  if (name === 'horario_quieto') {
+    var row3 = document.getElementById('rowQuietoRange');
+    if (row3) row3.style.display = isOn ? '' : 'none';
+  }
+}
+
+// Inicializar estado correto dos tracks no load
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('.cfg-track').forEach(function(track) {
+    if (track.classList.contains('on')) {
+      track.setAttribute('aria-checked', 'true');
+    }
+  });
+});
+</script>
+
+<%- include('../partials/footer') %>
