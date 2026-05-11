@@ -1,4 +1,4 @@
-<% locals.titulo = 'AIRPET — Proteja seu pet' %>
+<% locals.titulo = 'AIRPET — Cadastre seu pet e nunca mais o perca' %>
 <%- include('partials/header') %>
 <%- include('partials/flash') %>
 
@@ -16,6 +16,7 @@
     --accent-light: #ff7a3d;
     --accent-glow: rgba(242,96,32,0.14);
     --green: #22c55e;
+    --red: #ef4444;
     --radius: 20px;
   }
 
@@ -27,7 +28,6 @@
     font-family: 'DM Sans', sans-serif;
   }
 
-  /* Garante que o hamburguer mobile nunca apareca na landing */
   body.home-page #mobileMenuBtn,
   body.home-page #mobileMenu {
     display: none !important;
@@ -102,34 +102,34 @@
     align-items: center;
     gap: 8px;
     padding: 6px 14px;
-    background: rgba(242,96,32,0.1);
-    border: 1px solid rgba(242,96,32,0.25);
+    background: rgba(239,68,68,0.1);
+    border: 1px solid rgba(239,68,68,0.25);
     border-radius: 100px;
     font-size: 11px;
     font-weight: 600;
     letter-spacing: 0.12em;
     text-transform: uppercase;
-    color: var(--accent-light);
+    color: #f87171;
     margin-bottom: 28px;
   }
 
   .hero-dot {
     width: 6px; height: 6px;
     border-radius: 50%;
-    background: var(--green);
-    box-shadow: 0 0 0 3px rgba(34,197,94,0.25);
+    background: var(--red);
+    box-shadow: 0 0 0 3px rgba(239,68,68,0.25);
     animation: pulse-dot 2s ease-in-out infinite;
   }
 
   @keyframes pulse-dot {
-    0%, 100% { box-shadow: 0 0 0 3px rgba(34,197,94,0.25); }
-    50% { box-shadow: 0 0 0 6px rgba(34,197,94,0.1); }
+    0%, 100% { box-shadow: 0 0 0 3px rgba(239,68,68,0.25); }
+    50% { box-shadow: 0 0 0 6px rgba(239,68,68,0.1); }
   }
 
   .hero-title {
     font-family: var(--font-display);
-    font-size: clamp(72px, 8vw, 108px);
-    line-height: 0.95;
+    font-size: clamp(52px, 6.5vw, 96px);
+    line-height: 0.97;
     letter-spacing: 0.01em;
     color: var(--text);
     margin: 0 0 24px;
@@ -160,38 +160,65 @@
     font-weight: 400;
     color: var(--text-dim);
     line-height: 1.7;
-    max-width: 440px;
-    margin: 0 0 40px;
+    max-width: 460px;
+    margin: 0 0 36px;
+  }
+
+  .hero-cta-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    align-items: flex-start;
   }
 
   .hero-cta-row {
     display: flex;
     flex-wrap: wrap;
-    gap: 12px;
+    gap: 10px;
     align-items: center;
   }
 
-  .btn-primary-dark {
+  .hero-microcopy {
+    font-size: 12px;
+    color: var(--subtle);
+    margin: 0;
+    line-height: 1.5;
+  }
+
+  .hero-scan-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--text-dim);
+    text-decoration: none;
+    border-bottom: 1px dashed var(--muted);
+    padding-bottom: 1px;
+    transition: color 0.2s;
+  }
+  .hero-scan-link:hover { color: var(--text); text-decoration: none; }
+
+  .btn-primary {
     display: inline-flex; align-items: center; gap: 10px;
-    padding: 14px 28px;
+    padding: 15px 30px;
     background: var(--accent);
     color: #fff;
     border-radius: 12px;
     font-weight: 700;
-    font-size: 15px;
+    font-size: 16px;
     transition: all 0.2s;
     border: none; cursor: pointer;
     text-decoration: none;
-    box-shadow: 0 0 0 0 var(--accent-glow);
+    box-shadow: 0 4px 20px rgba(242,96,32,0.25);
   }
-  .btn-primary-dark:hover {
+  .btn-primary:hover {
     background: var(--accent-light);
     transform: translateY(-2px);
-    box-shadow: 0 8px 32px rgba(242,96,32,0.3);
+    box-shadow: 0 8px 32px rgba(242,96,32,0.35);
     color: #fff; text-decoration: none;
   }
 
-  .btn-ghost-dark {
+  .btn-outline {
     display: inline-flex; align-items: center; gap: 8px;
     padding: 14px 24px;
     background: transparent;
@@ -203,32 +230,33 @@
     transition: all 0.2s;
     text-decoration: none;
   }
-  .btn-ghost-dark:hover {
+  .btn-outline:hover {
     border-color: var(--subtle);
     color: var(--text);
     background: var(--ink-2);
     text-decoration: none;
   }
 
-  .btn-partner {
+  .btn-ghost {
     display: inline-flex; align-items: center; gap: 8px;
     padding: 14px 24px;
-    background: rgba(34,197,94,0.1);
-    color: var(--green);
+    background: transparent;
+    color: var(--text-dim);
     border-radius: 12px;
-    font-weight: 600;
-    font-size: 14px;
-    border: 1px solid rgba(34,197,94,0.2);
+    font-weight: 500;
+    font-size: 15px;
+    border: 1px solid var(--muted);
     transition: all 0.2s;
     text-decoration: none;
   }
-  .btn-partner:hover {
-    background: rgba(34,197,94,0.18);
-    color: #4ade80; text-decoration: none;
-    transform: translateY(-1px);
+  .btn-ghost:hover {
+    border-color: var(--subtle);
+    color: var(--text);
+    background: var(--ink-2);
+    text-decoration: none;
   }
 
-  /* ── HERO VISUAL ── */
+  /* ── HERO VISUAL: phone mostrando scan/alerta ── */
   .hero-visual {
     position: relative;
     display: flex;
@@ -236,108 +264,284 @@
   }
 
   .phone-mockup {
-    width: 280px;
-    height: 560px;
-    background: var(--ink-2);
+    width: 272px;
+    height: 540px;
+    background: #111827;
     border-radius: 36px;
-    border: 1.5px solid var(--ink-3);
+    border: 1.5px solid rgba(255,255,255,0.08);
     position: relative;
     overflow: hidden;
     box-shadow:
       0 0 0 1px rgba(255,255,255,0.04),
-      0 40px 80px rgba(0,0,0,0.6),
+      0 40px 80px rgba(0,0,0,0.55),
       0 0 80px var(--accent-glow);
     animation: float-phone 6s ease-in-out infinite;
   }
 
   @keyframes float-phone {
-    0%, 100% { transform: translateY(0px) rotate(2deg); }
-    50% { transform: translateY(-16px) rotate(2deg); }
+    0%, 100% { transform: translateY(0px) rotate(1.5deg); }
+    50% { transform: translateY(-14px) rotate(1.5deg); }
   }
 
   .phone-notch {
-    width: 100px; height: 28px;
-    background: var(--ink);
-    border-radius: 0 0 20px 20px;
+    width: 90px; height: 26px;
+    background: #111827;
+    border-radius: 0 0 18px 18px;
     margin: 0 auto;
     position: relative; z-index: 2;
   }
 
   .phone-screen {
-    padding: 0 14px;
-    position: relative;
+    padding: 6px 14px 14px;
   }
 
-  .phone-story-row {
-    display: flex; gap: 8px; padding: 12px 0 8px;
-    overflow: hidden;
+  /* Alerta no topo */
+  .phone-alert-bar {
+    background: rgba(239,68,68,0.15);
+    border: 1px solid rgba(239,68,68,0.3);
+    border-radius: 12px;
+    padding: 10px 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
   }
 
-  .phone-story-item {
-    width: 44px; flex-shrink: 0;
-    display: flex; flex-direction: column; align-items: center; gap: 4px;
-  }
-
-  .phone-story-ring {
-    width: 44px; height: 44px;
+  .phone-alert-icon {
+    width: 32px; height: 32px;
     border-radius: 50%;
-    background: var(--ink-3);
-    border: 2px solid var(--accent);
+    background: rgba(239,68,68,0.2);
     display: flex; align-items: center; justify-content: center;
-    font-size: 18px;
+    font-size: 16px;
+    flex-shrink: 0;
   }
 
-  .phone-story-name {
-    font-size: 8px; color: var(--text-dim);
+  .phone-alert-text-title {
+    font-size: 10px;
+    font-weight: 700;
+    color: #fca5a5;
     font-family: 'DM Sans', sans-serif;
+    line-height: 1.3;
   }
 
-  .phone-post {
-    background: var(--ink-3);
-    border-radius: 14px;
+  .phone-alert-text-sub {
+    font-size: 9px;
+    color: rgba(252,165,165,0.7);
+    font-family: 'DM Sans', sans-serif;
+    margin-top: 1px;
+  }
+
+  /* Mapa simulado */
+  .phone-map {
+    background: linear-gradient(135deg, #1a2234 0%, #1e2d3d 100%);
+    border-radius: 12px;
+    height: 130px;
+    position: relative;
     overflow: hidden;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .phone-map-grid {
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px);
+    background-size: 20px 20px;
+  }
+
+  .phone-map-pin {
+    position: relative; z-index: 2;
+    width: 36px; height: 36px;
+    background: var(--red);
+    border-radius: 50% 50% 50% 0;
+    transform: rotate(-45deg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 0 6px rgba(239,68,68,0.2);
+    animation: pin-pulse 2s ease-in-out infinite;
+  }
+
+  .phone-map-pin::after {
+    content: '🐶';
+    transform: rotate(45deg);
+    font-size: 14px;
+    position: absolute;
+  }
+
+  @keyframes pin-pulse {
+    0%, 100% { box-shadow: 0 0 0 6px rgba(239,68,68,0.2); }
+    50% { box-shadow: 0 0 0 12px rgba(239,68,68,0.08); }
+  }
+
+  .phone-map-label {
+    position: absolute;
+    bottom: 10px; left: 10px;
+    background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(8px);
+    border-radius: 8px;
+    padding: 4px 8px;
+    font-size: 9px;
+    color: #e5e7eb;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 600;
+  }
+
+  /* Botão CTA scan */
+  .phone-cta-btn {
+    background: var(--accent);
+    border-radius: 12px;
+    padding: 14px;
+    text-align: center;
     margin-bottom: 10px;
   }
 
-  .phone-post-header {
-    display: flex; align-items: center; gap: 8px; padding: 10px 12px 6px;
-  }
-
-  .phone-avatar {
-    width: 28px; height: 28px; border-radius: 50%;
-    background: var(--accent); opacity: 0.7;
-  }
-
-  .phone-post-name {
-    font-size: 10px; font-weight: 700; color: var(--text);
+  .phone-cta-btn-text {
+    font-size: 12px;
+    font-weight: 800;
+    color: #fff;
+    letter-spacing: 0.02em;
     font-family: 'DM Sans', sans-serif;
   }
 
-  .phone-post-img {
-    width: 100%; height: 120px;
-    background: linear-gradient(135deg, #2a2020 0%, #3d2d1a 100%);
+  .phone-cta-btn-sub {
+    font-size: 9px;
+    color: rgba(255,255,255,0.75);
+    font-family: 'DM Sans', sans-serif;
+    margin-top: 2px;
+  }
+
+  /* Ações rápidas */
+  .phone-actions-row {
+    display: flex;
+    gap: 8px;
+  }
+
+  .phone-action {
+    flex: 1;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 10px;
+    padding: 10px 6px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .phone-action-icon {
+    font-size: 16px;
+  }
+
+  .phone-action-label {
+    font-size: 8px;
+    color: rgba(255,255,255,0.5);
+    font-family: 'DM Sans', sans-serif;
+    text-align: center;
+    line-height: 1.3;
+  }
+
+  /* Flutuante: notificação lateral */
+  .phone-float-notif {
+    position: absolute;
+    top: 110px; right: -80px;
+    width: 160px;
+    background: var(--ink-2);
+    border: 1px solid var(--ink-3);
+    border-radius: 14px;
+    padding: 10px 12px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+    animation: float-notif 6s ease-in-out infinite 1s;
+  }
+
+  @keyframes float-notif {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-8px); }
+  }
+
+  .phone-float-notif-title {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    margin-bottom: 3px;
+  }
+
+  .phone-float-notif-sub {
+    font-size: 9px;
+    color: var(--text-dim);
+    font-family: 'DM Sans', sans-serif;
+    line-height: 1.4;
+  }
+
+  .phone-float-notif-dot {
+    display: inline-block;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--green);
+    margin-right: 4px;
+    vertical-align: middle;
+  }
+
+  /* ── PROOF STRIP ── */
+  .proof-strip {
+    background: var(--ink-2);
+    border-top: 1px solid var(--ink-3);
+    border-bottom: 1px solid var(--ink-3);
+  }
+
+  .proof-strip-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 28px 24px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: var(--ink-3);
+  }
+
+  @media (max-width: 600px) { .proof-strip-inner { grid-template-columns: 1fr; } }
+
+  .proof-item {
+    background: var(--ink-2);
+    padding: 24px 28px;
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+  }
+
+  .proof-icon {
+    width: 40px; height: 40px;
+    border-radius: 10px;
     display: flex; align-items: center; justify-content: center;
-    font-size: 36px;
+    font-size: 18px;
+    flex-shrink: 0;
   }
 
-  .phone-post-actions {
-    display: flex; gap: 12px; padding: 8px 12px;
+  .proof-icon-red { background: rgba(239,68,68,0.1); }
+  .proof-icon-orange { background: rgba(242,96,32,0.1); }
+  .proof-icon-green { background: rgba(34,197,94,0.1); }
+
+  .proof-text-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 3px;
+    line-height: 1.3;
   }
 
-  .phone-action-btn {
-    font-size: 12px; color: var(--text-dim);
-    display: flex; align-items: center; gap: 4px;
-    font-family: 'DM Sans', sans-serif;
-  }
-
-  .phone-post-2 .phone-post-img {
-    background: linear-gradient(135deg, #1a2a20 0%, #0d3020 100%);
+  .proof-text-sub {
+    font-size: 12px;
+    color: var(--text-dim);
+    line-height: 1.5;
   }
 
   /* ── STAT STRIP ── */
   .stat-strip {
-    background: var(--ink-2);
-    border-top: 1px solid var(--ink-3);
+    background: var(--ink);
     border-bottom: 1px solid var(--ink-3);
   }
 
@@ -349,12 +553,14 @@
     grid-template-columns: repeat(4, 1fr);
     gap: 1px;
     background: var(--ink-3);
+    border-radius: 20px;
+    overflow: hidden;
   }
 
   @media (max-width: 600px) { .stat-strip-inner { grid-template-columns: repeat(2, 1fr); } }
 
   .stat-item {
-    background: var(--ink-2);
+    background: var(--ink);
     padding: 28px 24px;
     text-align: center;
   }
@@ -376,11 +582,16 @@
     margin-top: 4px;
   }
 
-  /* ── HOW IT WORKS ── */
+  /* ── SHARED SECTION ── */
   .section-dark {
     background: var(--ink);
     padding: 100px 24px;
     position: relative;
+  }
+
+  .section-light {
+    background: var(--ink-2);
+    padding: 100px 24px;
   }
 
   .section-label {
@@ -417,6 +628,7 @@
     line-height: 1.7;
   }
 
+  /* ── HOW IT WORKS ── */
   .steps-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -443,7 +655,7 @@
     content: attr(data-num);
     font-family: var(--font-display);
     font-size: 120px;
-    color: rgba(255,255,255,0.025);
+    color: rgba(242,96,32,0.04);
     position: absolute;
     bottom: -20px; right: 16px;
     line-height: 1;
@@ -483,13 +695,141 @@
     line-height: 1.7;
   }
 
-  /* ── FEATURES ── */
-  .features-section {
+  /* ── EMOTIONAL SECTION ── */
+  .emotional-section {
+    background: var(--ink);
+    padding: 100px 24px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .emotional-section::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(239,68,68,0.3), transparent);
+  }
+
+  .emotional-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .emotional-title {
+    font-family: var(--font-display);
+    font-size: clamp(38px, 4.5vw, 64px);
+    line-height: 1.05;
+    color: var(--text);
+    margin: 0 0 56px;
+    max-width: 700px;
+    letter-spacing: 0.01em;
+  }
+
+  .emotional-title .accent-red {
+    color: #f87171;
+  }
+
+  .emotional-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2px;
+    background: var(--ink-3);
+    border-radius: 20px;
+    overflow: hidden;
+  }
+
+  @media (max-width: 700px) { .emotional-grid { grid-template-columns: 1fr; } }
+
+  .emotional-card {
+    padding: 44px 40px;
+  }
+
+  .emotional-card-pain {
+    background: #1c1010;
+  }
+
+  .emotional-card-solution {
+    background: var(--ink-2);
+  }
+
+  .emotional-card-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    border-radius: 100px;
+    padding: 4px 12px;
+    margin-bottom: 24px;
+  }
+
+  .label-pain {
+    background: rgba(239,68,68,0.15);
+    color: #fca5a5;
+    border: 1px solid rgba(239,68,68,0.2);
+  }
+
+  .label-solution {
+    background: rgba(34,197,94,0.1);
+    color: #4ade80;
+    border: 1px solid rgba(34,197,94,0.2);
+  }
+
+  .emotional-card-title {
+    font-size: 22px;
+    font-weight: 700;
+    margin-bottom: 14px;
+    line-height: 1.3;
+  }
+
+  .emotional-card-pain .emotional-card-title { color: #fca5a5; }
+  .emotional-card-solution .emotional-card-title { color: var(--text); }
+
+  .emotional-card-body {
+    font-size: 15px;
+    line-height: 1.75;
+  }
+
+  .emotional-card-pain .emotional-card-body { color: rgba(252,165,165,0.65); }
+  .emotional-card-solution .emotional-card-body { color: var(--text-dim); }
+
+  .emotional-steps {
+    margin-top: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .emotional-step {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+    color: var(--text-dim);
+  }
+
+  .emotional-step-num {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: rgba(34,197,94,0.15);
+    border: 1px solid rgba(34,197,94,0.25);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px;
+    font-weight: 700;
+    color: #4ade80;
+    flex-shrink: 0;
+  }
+
+  /* ── DIFFERENTIALS ── */
+  .diff-section {
     background: var(--ink-2);
     padding: 100px 24px;
   }
 
-  .features-grid {
+  .diff-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 2px;
@@ -499,17 +839,19 @@
     overflow: hidden;
   }
 
-  @media (max-width: 700px) { .features-grid { grid-template-columns: 1fr; } }
+  @media (max-width: 700px) { .diff-grid { grid-template-columns: 1fr; } }
 
-  .feature-card {
+  .diff-card {
     background: var(--ink-2);
     padding: 40px 36px;
     transition: background 0.3s;
+    position: relative;
+    overflow: hidden;
   }
 
-  .feature-card:hover { background: var(--ink-3); }
+  .diff-card:hover { background: var(--ink-3); }
 
-  .feature-pill {
+  .diff-pill {
     display: inline-flex; align-items: center; gap: 6px;
     padding: 4px 12px;
     border-radius: 100px;
@@ -520,29 +862,29 @@
     margin-bottom: 20px;
   }
 
+  .pill-red    { background: rgba(239,68,68,0.1); color: #f87171; }
   .pill-orange { background: rgba(242,96,32,0.12); color: var(--accent-light); }
-  .pill-blue   { background: rgba(100,80,255,0.12); color: #a78bfa; }
   .pill-green  { background: rgba(34,197,94,0.12); color: #4ade80; }
-  .pill-pink   { background: rgba(236,72,153,0.12); color: #f472b6; }
+  .pill-blue   { background: rgba(100,80,255,0.12); color: #a78bfa; }
 
-  .feature-title {
-    font-size: 22px;
+  .diff-icon-large {
+    font-size: 38px;
+    margin-bottom: 20px;
+    display: block;
+  }
+
+  .diff-title {
+    font-size: 21px;
     font-weight: 700;
     color: var(--text);
     margin-bottom: 10px;
     line-height: 1.3;
   }
 
-  .feature-desc {
+  .diff-desc {
     font-size: 14px;
     color: var(--text-dim);
     line-height: 1.7;
-  }
-
-  .feature-icon-large {
-    font-size: 40px;
-    margin-bottom: 24px;
-    display: block;
   }
 
   /* ── LOST PETS ── */
@@ -632,131 +974,64 @@
   }
   .lost-btn:hover { background: rgba(239,68,68,0.18); color: #fca5a5; text-decoration: none; }
 
-  /* ── PARTNER FUNNEL ── */
-  .partner-funnel-section {
+  /* ── PARTNER (compacto) ── */
+  .partner-compact-section {
     background: var(--ink-2);
-    padding: 100px 24px;
+    padding: 64px 24px;
     border-top: 1px solid var(--ink-3);
     border-bottom: 1px solid var(--ink-3);
   }
 
-  .partner-funnel-wrap {
-    max-width: 1200px;
+  .partner-compact-inner {
+    max-width: 900px;
     margin: 0 auto;
-    display: grid;
-    grid-template-columns: 1.2fr 1fr;
-    gap: 18px;
-  }
-
-  .partner-funnel-main,
-  .partner-funnel-side {
+    background: var(--ink);
     border: 1px solid var(--ink-3);
     border-radius: 20px;
-    background: var(--ink);
-    padding: 28px;
-  }
-
-  .partner-funnel-title {
-    font-family: var(--font-display);
-    font-size: clamp(42px, 5vw, 64px);
-    line-height: 1;
-    color: var(--text);
-    margin: 0 0 12px;
-  }
-
-  .partner-funnel-sub {
-    color: var(--text-dim);
-    font-size: 15px;
-    line-height: 1.7;
-    margin: 0 0 22px;
-    max-width: 640px;
-  }
-
-  .partner-points {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 10px;
-    margin-bottom: 18px;
-  }
-
-  .partner-point {
-    border: 1px solid var(--ink-3);
-    border-radius: 14px;
-    padding: 12px;
-    color: var(--text-dim);
-    font-size: 13px;
-  }
-
-  .partner-point i {
-    color: var(--accent);
-    margin-right: 7px;
-  }
-
-  .partner-proof {
-    border: 1px dashed rgba(242,96,32,0.35);
-    background: rgba(242,96,32,0.08);
-    border-radius: 14px;
-    padding: 12px;
-    font-size: 13px;
-    color: var(--text);
-    margin-bottom: 18px;
-  }
-
-  .partner-flow {
+    padding: 36px 40px;
     display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
     flex-wrap: wrap;
-    gap: 8px;
-    margin-bottom: 22px;
   }
 
-  .partner-step {
-    border: 1px solid var(--ink-3);
-    background: var(--ink-2);
-    border-radius: 999px;
-    padding: 7px 11px;
-    font-size: 12px;
-    color: var(--text-dim);
-  }
+  .partner-compact-text {}
 
-  .partner-cta-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
-  }
-
-  .partner-side-title {
+  .partner-compact-title {
     font-size: 20px;
-    font-weight: 800;
+    font-weight: 700;
     color: var(--text);
-    margin-bottom: 12px;
+    margin-bottom: 6px;
   }
 
-  .partner-side-list {
-    margin: 0;
-    padding: 0;
-    list-style: none;
-    display: grid;
-    gap: 10px;
-  }
-
-  .partner-side-list li {
-    border: 1px solid var(--ink-3);
-    border-radius: 12px;
-    padding: 11px;
+  .partner-compact-sub {
+    font-size: 14px;
     color: var(--text-dim);
-    font-size: 13px;
+    line-height: 1.6;
+    max-width: 460px;
   }
 
-  .partner-side-list strong {
-    color: var(--text);
+  .btn-partner {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 13px 22px;
+    background: rgba(34,197,94,0.1);
+    color: var(--green);
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 14px;
+    border: 1px solid rgba(34,197,94,0.2);
+    transition: all 0.2s;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .btn-partner:hover {
+    background: rgba(34,197,94,0.18);
+    color: #4ade80; text-decoration: none;
+    transform: translateY(-1px);
   }
 
-  @media (max-width: 900px) {
-    .partner-funnel-wrap { grid-template-columns: 1fr; }
-    .partner-points { grid-template-columns: 1fr; }
-  }
-
-  /* ── CTA ── */
+  /* ── CTA FINAL ── */
   .cta-section {
     background: var(--ink-2);
     padding: 100px 24px;
@@ -793,7 +1068,7 @@
 
   .cta-title {
     font-family: var(--font-display);
-    font-size: clamp(52px, 6vw, 80px);
+    font-size: clamp(44px, 5.5vw, 72px);
     color: var(--text);
     line-height: 1;
     margin-bottom: 16px;
@@ -826,6 +1101,7 @@
   .anim-2 { animation: fade-up 0.6s 0.25s both; }
   .anim-3 { animation: fade-up 0.6s 0.4s both; }
   .anim-4 { animation: fade-up 0.6s 0.55s both; }
+  .anim-5 { animation: fade-up 0.6s 0.7s both; }
 
   /* ── INSTALL CTA ── */
   .install-section {
@@ -904,128 +1180,156 @@
     <div>
       <div class="hero-badge anim-1">
         <span class="hero-dot"></span>
-        NFC + Rede Social para Pets
+        Cada minuto conta
       </div>
 
       <h1 class="hero-title anim-2">
-        A REDE QUE<br>
-        <span class="accent-word">PROTEGE</span><br>
-        SEU PET
+        CADASTRE<br>SEU PET.<br>
+        <span class="accent-word">NUNCA</span><br>
+        MAIS O PERCA.
       </h1>
 
       <p class="hero-sub anim-3">
-        Tags NFC inteligentes, localização em tempo real e uma comunidade apaixonada por pets. Tudo para manter seu companheiro sempre seguro.
+        Tag de identificação + alertas para quem está perto + contato direto com você — sem depender de sorte.
       </p>
 
-      <div class="hero-cta-row anim-4">
-        <a href="/tags/loja-tag" class="btn-primary-dark" style="background:#111827;">
-          <i class="fa-solid fa-tag"></i>
-          Adquirir TAG
-        </a>
-        <a href="/auth/registro" class="btn-primary-dark">
-          <i class="fa-solid fa-paw"></i>
-          Criar Conta Grátis
-        </a>
-        <a href="/auth/login" class="btn-ghost-dark">
-          <i class="fa-solid fa-right-to-bracket"></i>
-          Entrar
-        </a>
-        <a href="/parceiros/cadastro" class="btn-partner">
-          <i class="fa-solid fa-store"></i>
-          Ser parceiro
+      <div class="hero-cta-stack anim-4">
+        <div class="hero-cta-row">
+          <a href="/auth/registro" class="btn-primary">
+            <i class="fa-solid fa-paw"></i>
+            Cadastrar meu pet
+          </a>
+          <a href="/auth/login?next=/tags" class="btn-outline">
+            <i class="fa-solid fa-nfc-symbol"></i>
+            Já tenho a tag — ativar
+          </a>
+        </div>
+        <p class="hero-microcopy">
+          Grátis para começar &nbsp;·&nbsp; só pedimos foto, nome e raça — o resto você completa depois.
+        </p>
+        <a href="/mapa" class="hero-scan-link anim-5">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          Encontrei um pet perdido — ver como ajudar
         </a>
       </div>
-
-      <p style="margin-top: 20px; font-size: 12px; color: var(--subtle);">
-        Conta AIRPET grátis &nbsp;·&nbsp; TAG física e assinatura premium são pagas
-      </p>
     </div>
 
-    <!-- Right: Phone mockup -->
+    <!-- Right: Phone mockup - scan/alert flow -->
     <div class="hero-visual">
       <div class="phone-mockup">
         <div class="phone-notch"></div>
         <div class="phone-screen">
-          <div class="phone-story-row">
-            <div class="phone-story-item">
-              <div class="phone-story-ring">🐶</div>
-              <span class="phone-story-name">Rex</span>
-            </div>
-            <div class="phone-story-item">
-              <div class="phone-story-ring" style="border-color:#a78bfa">🐱</div>
-              <span class="phone-story-name">Mimi</span>
-            </div>
-            <div class="phone-story-item">
-              <div class="phone-story-ring" style="border-color:#4ade80">🐩</div>
-              <span class="phone-story-name">Bolinha</span>
-            </div>
-            <div class="phone-story-item">
-              <div class="phone-story-ring" style="border-color:#f472b6">🦜</div>
-              <span class="phone-story-name">Loro</span>
+
+          <!-- Alerta ativo -->
+          <div class="phone-alert-bar">
+            <div class="phone-alert-icon">🚨</div>
+            <div>
+              <div class="phone-alert-text-title">Pet perdido próximo</div>
+              <div class="phone-alert-text-sub">Buddy • 1,2 km de você</div>
             </div>
           </div>
 
-          <div class="phone-post">
-            <div class="phone-post-header">
-              <div class="phone-avatar"></div>
-              <div>
-                <div class="phone-post-name">João & Buddy</div>
-              </div>
+          <!-- Mapa simulado -->
+          <div class="phone-map">
+            <div class="phone-map-grid"></div>
+            <div class="phone-map-pin"></div>
+            <div class="phone-map-label">📍 Último ponto visto</div>
+          </div>
+
+          <!-- CTA principal pós-scan -->
+          <div class="phone-cta-btn">
+            <div class="phone-cta-btn-text">📞 Falar com o dono</div>
+            <div class="phone-cta-btn-sub">Toque para ligar ou mandar mensagem</div>
+          </div>
+
+          <!-- Ações rápidas -->
+          <div class="phone-actions-row">
+            <div class="phone-action">
+              <span class="phone-action-icon">📸</span>
+              <span class="phone-action-label">Enviar foto</span>
             </div>
-            <div class="phone-post-img">🐾</div>
-            <div class="phone-post-actions">
-              <span class="phone-action-btn"><i class="fa-regular fa-heart"></i> 42</span>
-              <span class="phone-action-btn"><i class="fa-regular fa-comment"></i> 7</span>
-              <span class="phone-action-btn"><i class="fa-solid fa-retweet"></i> 3</span>
+            <div class="phone-action">
+              <span class="phone-action-icon">🗺️</span>
+              <span class="phone-action-label">Marcar local</span>
+            </div>
+            <div class="phone-action">
+              <span class="phone-action-icon">📤</span>
+              <span class="phone-action-label">Compartilhar</span>
             </div>
           </div>
 
-          <div class="phone-post phone-post-2">
-            <div class="phone-post-header">
-              <div class="phone-avatar" style="background:#a78bfa"></div>
-              <div>
-                <div class="phone-post-name">Ana & Mel</div>
-              </div>
-            </div>
-            <div class="phone-post-img">🌿</div>
-            <div class="phone-post-actions">
-              <span class="phone-action-btn"><i class="fa-solid fa-heart" style="color:#f26020"></i> 89</span>
-              <span class="phone-action-btn"><i class="fa-regular fa-comment"></i> 12</span>
-            </div>
-          </div>
         </div>
+      </div>
+
+      <!-- Notificação flutuante -->
+      <div class="phone-float-notif">
+        <div class="phone-float-notif-title">
+          <span class="phone-float-notif-dot"></span>
+          Alerta publicado
+        </div>
+        <div class="phone-float-notif-sub">Comunidade próxima sendo notificada</div>
       </div>
     </div>
   </div>
 </section>
 
 
+<!-- ═══════════════ PROOF STRIP ═══════════════ -->
+<div class="proof-strip">
+  <div class="proof-strip-inner">
+    <div class="proof-item reveal">
+      <div class="proof-icon proof-icon-red">📡</div>
+      <div>
+        <div class="proof-text-title">Alerta visível em minutos</div>
+        <div class="proof-text-sub">A equipe analisa e publica — nenhum alerta fica invisível.</div>
+      </div>
+    </div>
+    <div class="proof-item reveal reveal-delay-1">
+      <div class="proof-icon proof-icon-orange">🗺️</div>
+      <div>
+        <div class="proof-text-title">Rede de olhos por raio</div>
+        <div class="proof-text-sub">Tutores próximos são avisados automaticamente pelo app.</div>
+      </div>
+    </div>
+    <div class="proof-item reveal reveal-delay-2">
+      <div class="proof-icon proof-icon-green">📲</div>
+      <div>
+        <div class="proof-text-title">Scan = ação imediata</div>
+        <div class="proof-text-sub">Quem escaneia a tag vê o botão de contato sem instalar nada.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
 <!-- ═══════════════ STAT STRIP ═══════════════ -->
 <% if (typeof statsCarregamentoFalhou !== 'undefined' && statsCarregamentoFalhou) { %>
-<div class="max-w-5xl mx-auto px-4 sm:px-6 pt-4" role="status">
-  <div class="rounded-2xl border border-amber-200/80 bg-amber-50/95 px-4 py-3 text-sm text-amber-900 flex items-start gap-3 shadow-sm">
-    <i class="fa-solid fa-circle-info mt-0.5 text-amber-600 flex-shrink-0" aria-hidden="true"></i>
-    <p class="m-0 leading-relaxed">Não foi possível carregar os números da comunidade agora. O resto do site continua disponível.</p>
+<div style="max-width:1100px; margin:0 auto; padding:20px 24px 0;">
+  <div style="border-radius:14px; border:1px solid #fde68a; background:#fffbeb; padding:12px 16px; font-size:13px; color:#92400e; display:flex; align-items:flex-start; gap:10px;">
+    <i class="fa-solid fa-circle-info" style="margin-top:1px; flex-shrink:0;"></i>
+    <span>Não foi possível carregar os números da comunidade agora. O resto do site continua disponível.</span>
   </div>
 </div>
 <% } %>
 <div class="stat-strip">
-  <div class="stat-strip-inner">
-    <div class="stat-item reveal">
-      <div class="stat-number" data-target="<%= (stats && typeof stats.usuarios !== 'undefined') ? stats.usuarios : 0 %>">0</div>
-      <div class="stat-label">Tutores ativos</div>
-    </div>
-    <div class="stat-item reveal reveal-delay-1">
-      <div class="stat-number" data-target="<%= (stats && typeof stats.pets !== 'undefined') ? stats.pets : 0 %>">0</div>
-      <div class="stat-label">Pets protegidos</div>
-    </div>
-    <div class="stat-item reveal reveal-delay-2">
-      <div class="stat-number" data-target="<%= (stats && typeof stats.petshops !== 'undefined') ? stats.petshops : 0 %>">0</div>
-      <div class="stat-label">Parceiros</div>
-    </div>
-    <div class="stat-item reveal reveal-delay-3">
-      <div class="stat-number" data-target="<%= (petsPerdidosRecentes && petsPerdidosRecentes.length) ? petsPerdidosRecentes.length : 0 %>">0</div>
-      <div class="stat-label">Alertas recentes</div>
+  <div style="max-width:1200px; margin:0 auto; padding:32px 24px;">
+    <div class="stat-strip-inner">
+      <div class="stat-item reveal">
+        <div class="stat-number" data-target="<%= (stats && typeof stats.usuarios !== 'undefined') ? stats.usuarios : 0 %>">0</div>
+        <div class="stat-label">Tutores ativos</div>
+      </div>
+      <div class="stat-item reveal reveal-delay-1">
+        <div class="stat-number" data-target="<%= (stats && typeof stats.pets !== 'undefined') ? stats.pets : 0 %>">0</div>
+        <div class="stat-label">Pets protegidos</div>
+      </div>
+      <div class="stat-item reveal reveal-delay-2">
+        <div class="stat-number" data-target="<%= (stats && typeof stats.petshops !== 'undefined') ? stats.petshops : 0 %>">0</div>
+        <div class="stat-label">Parceiros</div>
+      </div>
+      <div class="stat-item reveal reveal-delay-3">
+        <div class="stat-number" data-target="<%= (petsPerdidosRecentes && petsPerdidosRecentes.length) ? petsPerdidosRecentes.length : 0 %>">0</div>
+        <div class="stat-label">Alertas recentes</div>
+      </div>
     </div>
   </div>
 </div>
@@ -1037,79 +1341,138 @@
     <div class="reveal">
       <div class="section-label">Como funciona</div>
       <h2 class="section-title">SIMPLES.<br>RÁPIDO. SEGURO.</h2>
-      <p class="section-sub">Em 3 passos seu pet estará protegido com tecnologia NFC de ponta.</p>
+      <p class="section-sub">Três passos e seu pet está identificado e protegido pela comunidade.</p>
     </div>
 
     <div class="steps-grid reveal">
       <div class="step-card" data-num="01">
-        <div class="step-icon"><i class="fa-solid fa-nfc-symbol"></i></div>
+        <div class="step-icon"><i class="fa-solid fa-paw"></i></div>
         <div class="step-num">Passo 01</div>
-        <div class="step-title">Adquira a Tag NFC</div>
-        <p class="step-desc">Receba a tag inteligente AIRPET em casa. Compra única da tag física, com plano premium por assinatura para recursos avançados.</p>
+        <div class="step-title">Cadastre em 3 toques</div>
+        <p class="step-desc">Foto, nome e raça. Pronto — seu pet já está no sistema. Vacinas, contatos extras e histórico médico você adiciona quando quiser.</p>
       </div>
       <div class="step-card" data-num="02">
-        <div class="step-icon"><i class="fa-solid fa-dog"></i></div>
+        <div class="step-icon"><i class="fa-solid fa-nfc-symbol"></i></div>
         <div class="step-num">Passo 02</div>
-        <div class="step-title">Cadastre seu pet</div>
-        <p class="step-desc">Crie o perfil completo do seu pet com fotos, raça, vacinas e contatos de emergência. Leva menos de 2 minutos.</p>
+        <div class="step-title">Ative a tag com um código</div>
+        <p class="step-desc">É um passo a passo visual — sem status técnico. Cole o código da embalagem ou escaneie o QR e a tag fica vinculada ao perfil do pet.</p>
       </div>
       <div class="step-card" data-num="03">
-        <div class="step-icon"><i class="fa-solid fa-shield-heart"></i></div>
+        <div class="step-icon"><i class="fa-solid fa-people-pulling"></i></div>
         <div class="step-num">Passo 03</div>
-        <div class="step-title">Fique tranquilo</div>
-        <p class="step-desc">Se seu pet se perder, qualquer pessoa com smartphone lê a tag e acessa os dados de contato. Instantâneo.</p>
+        <div class="step-title">Se perder, a cidade ajuda</div>
+        <p class="step-desc">O alerta aparece para a comunidade e para tutores próximos. Quem encontrar escaneia a tag e vê um botão direto para falar com você.</p>
+      </div>
+    </div>
+
+    <!-- Tag upsell sutil após os passos -->
+    <div style="margin-top:32px; text-align:center;" class="reveal">
+      <p style="font-size:14px; color:var(--text-dim);">
+        Ainda não tem a tag física?
+        <a href="/tags/loja-tag" style="color:var(--accent-light); text-decoration:none; border-bottom:1px dashed var(--accent-light);">Ver planos e preços →</a>
+      </p>
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════ SITUAÇÃO REAL (EMOCIONAL) ═══════════════ -->
+<section class="emotional-section">
+  <div class="emotional-inner">
+    <div class="reveal">
+      <h2 class="emotional-title">
+        O pior medo de quem tem pet<br>
+        não é <span class="accent-red">"postar foto"</span>.<br>
+        É não saber onde ele está.
+      </h2>
+    </div>
+    <div class="emotional-grid reveal">
+      <div class="emotional-card emotional-card-pain">
+        <span class="emotional-card-label label-pain">
+          <i class="fa-solid fa-circle-exclamation"></i>
+          Sem o AIRPET
+        </span>
+        <h3 class="emotional-card-title">Cada hora sem resposta pesa mais</h3>
+        <p class="emotional-card-body">
+          Você grita o nome, posta nos grupos, espera alguém ver. O alerta fica preso esperando aprovação. As pessoas que poderiam ajudar não sabem que seu pet sumiu. Cada minuto que passa reduz as chances de reencontro.
+        </p>
+      </div>
+      <div class="emotional-card emotional-card-solution">
+        <span class="emotional-card-label label-solution">
+          <i class="fa-solid fa-circle-check"></i>
+          Com o AIRPET
+        </span>
+        <h3 class="emotional-card-title">A rede age enquanto você procura</h3>
+        <p class="emotional-card-body">
+          Você publica o alerta e ele entra na fila de aprovação — a equipe analisa em minutos.
+        </p>
+        <div class="emotional-steps">
+          <div class="emotional-step">
+            <div class="emotional-step-num">1</div>
+            <span>Alerta visível para a comunidade após aprovação</span>
+          </div>
+          <div class="emotional-step">
+            <div class="emotional-step-num">2</div>
+            <span>Tutores próximos avisados automaticamente pelo app</span>
+          </div>
+          <div class="emotional-step">
+            <div class="emotional-step-num">3</div>
+            <span>Quem achar escaneia a tag — botão de contato direto, sem instalar nada</span>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 </section>
 
 
-<!-- ═══════════════ FEATURES ═══════════════ -->
-<section class="features-section">
+<!-- ═══════════════ DIFERENCIAIS ═══════════════ -->
+<section class="diff-section">
   <div style="max-width:1200px; margin:0 auto;">
     <div class="reveal">
-      <div class="section-label">Funcionalidades</div>
-      <h2 class="section-title">TUDO QUE<br>SEU PET MERECE</h2>
+      <div class="section-label">Por que o AIRPET funciona</div>
+      <h2 class="section-title">CADA DETALHE<br>IMPORTA.</h2>
+      <p class="section-sub">Projetado para os momentos em que cada segundo conta.</p>
     </div>
 
-    <div class="features-grid reveal">
-      <div class="feature-card">
-        <span class="feature-icon-large">📡</span>
-        <div class="feature-pill pill-orange">Proteção</div>
-        <h3 class="feature-title">Tag NFC inteligente</h3>
-        <p class="feature-desc">Qualquer smartphone lê a tag sem app. Dados do pet e contatos de emergência acessíveis em segundos, sempre.</p>
+    <div class="diff-grid reveal">
+      <div class="diff-card">
+        <span class="diff-icon-large">🗺️</span>
+        <div class="diff-pill pill-orange">Proximidade</div>
+        <h3 class="diff-title">Rede de alertas por raio</h3>
+        <p class="diff-desc">Tutores cadastrados próximos ao ponto de desaparecimento são notificados automaticamente pelo app — sem nenhuma ação extra de sua parte.</p>
       </div>
-      <div class="feature-card">
-        <span class="feature-icon-large">📍</span>
-        <div class="feature-pill pill-blue">Localização</div>
-        <h3 class="feature-title">Mapa em tempo real</h3>
-        <p class="feature-desc">Veja onde seu pet foi visto pela comunidade. Recurso avançado disponível no plano premium da TAG.</p>
+      <div class="diff-card">
+        <span class="diff-icon-large">📲</span>
+        <div class="diff-pill pill-red">Identificação</div>
+        <h3 class="diff-title">Tag que qualquer um entende</h3>
+        <p class="diff-desc">Quem achar o pet escaneia a tag com a câmera do celular e vê um botão enorme para ligar ou mandar mensagem para você — sem instalar app, sem cadastro.</p>
       </div>
-      <div class="feature-card">
-        <span class="feature-icon-large">🐾</span>
-        <div class="feature-pill pill-green">Comunidade</div>
-        <h3 class="feature-title">Feed social para pets</h3>
-        <p class="feature-desc">Compartilhe momentos, siga outros pets, reposte e curta. Uma rede social feita especialmente para quem ama animais.</p>
+      <div class="diff-card">
+        <span class="diff-icon-large">⚡</span>
+        <div class="diff-pill pill-blue">Agilidade</div>
+        <h3 class="diff-title">Publicação sem burocracia</h3>
+        <p class="diff-desc">O alerta entra na fila de análise assim que você publica. A equipe AIRPET revisa em minutos — emergência não espera dias em aprovação.</p>
       </div>
-      <div class="feature-card">
-        <span class="feature-icon-large">🏪</span>
-        <div class="feature-pill pill-pink">Parceiros</div>
-        <h3 class="feature-title">Petshops parceiros</h3>
-        <p class="feature-desc">Encontre petshops e clínicas próximas, veja promoções exclusivas e agende serviços direto pelo app.</p>
+      <div class="diff-card">
+        <span class="diff-icon-large">🔗</span>
+        <div class="diff-pill pill-green">Alcance</div>
+        <h3 class="diff-title">Link e QR compartilháveis</h3>
+        <p class="diff-desc">Cada alerta gera um link único para você postar em grupos de WhatsApp e redes sociais. Qualquer pessoa pode ajudar, mesmo fora do app.</p>
       </div>
     </div>
   </div>
 </section>
 
 
-<!-- ═══════════════ PETS PERDIDOS ═══════════════ -->
+<!-- ═══════════════ PETS PERDIDOS (comunidade) ═══════════════ -->
 <% if (typeof petsPerdidosRecentes !== 'undefined' && petsPerdidosRecentes && petsPerdidosRecentes.length > 0) { %>
 <section class="lost-section">
   <div style="max-width:1200px; margin:0 auto;">
     <div class="reveal">
       <div class="section-label">Alerta da comunidade</div>
-      <h2 class="section-title">PETS PERDIDOS</h2>
-      <p class="section-sub">Ajude a reunir esses pets com suas famílias. Cada compartilhamento pode salvar uma vida.</p>
+      <h2 class="section-title">PETS<br>AGUARDANDO<br>RETORNO</h2>
+      <p class="section-sub">Ajude a reunir esses pets com suas famílias. Cada compartilhamento pode fazer a diferença.</p>
     </div>
 
     <div class="lost-grid reveal">
@@ -1138,53 +1501,30 @@
 </section>
 <% } %>
 
-<!-- ═══════════════ PARTNER FUNNEL ═══════════════ -->
-<section class="partner-funnel-section">
-  <div class="partner-funnel-wrap reveal">
-    <div class="partner-funnel-main">
-      <div class="section-label">Para parceiros</div>
-      <h2 class="partner-funnel-title">TRANSFORME SEU PETSHOP EM VITRINE DIGITAL</h2>
-      <p class="partner-funnel-sub">
-        No AIRPET, seu petshop ganha visibilidade, recebe agendamentos e publica promocoes para uma comunidade que ja ama pets.
+
+<!-- ═══════════════ PARCEIROS (compacto) ═══════════════ -->
+<section class="partner-compact-section">
+  <div class="partner-compact-inner reveal">
+    <div class="partner-compact-text">
+      <div class="partner-compact-title">
+        <i class="fa-solid fa-store" style="color:var(--green); margin-right:8px;"></i>
+        Seu petshop ou clínica no AIRPET
+      </div>
+      <p class="partner-compact-sub">
+        Página profissional, agendamentos, promoções no feed e visibilidade para quem já ama pets. Cadastro rápido — a equipe valida e libera o painel.
       </p>
-
-      <div class="partner-points">
-        <div class="partner-point"><i class="fa-solid fa-bullhorn"></i>Divulgue servicos e ofertas no feed da comunidade.</div>
-        <div class="partner-point"><i class="fa-solid fa-calendar-check"></i>Organize atendimento com agenda e status de pedidos.</div>
-        <div class="partner-point"><i class="fa-solid fa-ranking-star"></i>Aumente descoberta local com perfil profissional.</div>
-        <div class="partner-point"><i class="fa-solid fa-users"></i>Converta audiencia em clientes recorrentes.</div>
-      </div>
-
-      <div class="partner-proof">
-        <strong>Fluxo simples:</strong> cadastro rapido, validacao do time AIRPET e painel pronto para operar e vender.
-      </div>
-
-      <div class="partner-flow">
-        <span class="partner-step">1. Cadastro parceiro</span>
-        <span class="partner-step">2. Analise da equipe</span>
-        <span class="partner-step">3. Painel liberado</span>
-      </div>
-
-      <div class="partner-cta-row">
-        <a href="/parceiros/cadastro" class="btn-primary-dark">
-          <i class="fa-solid fa-store"></i>
-          Quero ser parceiro
-        </a>
-        <a href="/petshop-panel/auth/login" class="btn-ghost-dark">
-          <i class="fa-solid fa-right-to-bracket"></i>
-          Entrar no painel parceiro
-        </a>
-      </div>
     </div>
-
-    <aside class="partner-funnel-side">
-      <h3 class="partner-side-title">Ideal para</h3>
-      <ul class="partner-side-list">
-        <li><strong>Petshops locais:</strong> aumentar movimento com promocoes no feed.</li>
-        <li><strong>Clinicas e banho/tosa:</strong> organizar agenda e reduzir desencontro.</li>
-        <li><strong>Equipe comercial:</strong> acompanhar servicos, posts e resposta do publico.</li>
-      </ul>
-    </aside>
+    <div style="display:flex; gap:10px; flex-wrap:wrap; flex-shrink:0;">
+      <a href="/parceiros/cadastro" class="btn-partner">
+        <i class="fa-solid fa-store"></i>
+        Quero ser parceiro
+      </a>
+      <a href="/petshop-panel/auth/login" style="display:inline-flex; align-items:center; gap:6px; font-size:13px; color:var(--text-dim); text-decoration:none; padding:13px 18px; border:1px solid var(--ink-3); border-radius:12px; background:transparent; transition:all 0.2s;"
+         onmouseover="this.style.background='var(--ink-3)'" onmouseout="this.style.background='transparent'">
+        <i class="fa-solid fa-right-to-bracket"></i>
+        Login parceiro
+      </a>
+    </div>
   </div>
 </section>
 
@@ -1195,37 +1535,32 @@
     <div class="cta-icon">
       <i class="fa-solid fa-shield-heart"></i>
     </div>
-    <h2 class="cta-title">PROTEJA SEU PET AGORA</h2>
+    <h2 class="cta-title">LEVA MENOS<br>DE UM MINUTO.</h2>
     <p class="cta-sub">
-      Junte-se a milhares de donos que já confiam no AIRPET para manter seus companheiros sempre seguros e conectados.
+      Sem formulário longo. Sem complicação. Só o essencial agora — foto, nome e raça. O resto fica para depois.
     </p>
     <div style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap;">
-      <a href="/tags/loja-tag" class="btn-ghost-dark">
-        <i class="fa-solid fa-tag"></i>
-        Adquirir TAG
-      </a>
-      <a href="/auth/registro" class="btn-primary-dark" style="font-size:17px; padding:16px 36px;">
+      <a href="/auth/registro" class="btn-primary" style="font-size:17px; padding:16px 38px;">
         <i class="fa-solid fa-paw"></i>
-        Criar conta grátis
+        Cadastrar meu pet
         <i class="fa-solid fa-arrow-right" style="font-size:13px;"></i>
       </a>
-      <a href="/petshop-panel/auth/login" class="btn-ghost-dark">
-        <i class="fa-solid fa-door-open"></i>
-        Login parceiro
-      </a>
     </div>
-    <p style="margin-top:14px; font-size:12px; color: var(--subtle);">
-      Cadastro gratuito para entrar na plataforma. TAG física e recursos premium possuem cobrança.
+    <p style="margin-top:16px; font-size:12px; color: var(--subtle);">
+      Conta gratuita para entrar. TAG física e recursos premium possuem cobrança.
+      &nbsp;·&nbsp;
+      <a href="/parceiros/cadastro" style="color:var(--subtle); text-decoration:underline;">Sou clínica/petshop</a>
     </p>
   </div>
 </section>
+
 
 <!-- ═══════════════ INSTALL MOBILE ═══════════════ -->
 <section class="install-section">
   <div class="install-inner reveal">
     <h3 class="install-title">Instale no seu celular</h3>
     <p class="install-sub">
-      Escolha seu sistema e adicione o AIRPET na tela inicial para abrir mais rapido, como app.
+      Adicione o AIRPET na tela inicial para abrir mais rápido — funciona como app, sem passar pela loja.
     </p>
     <div class="install-actions">
       <button type="button" class="install-btn" data-install-platform="android">
@@ -1256,7 +1591,7 @@
         observer.unobserve(entry.target);
       }
     });
-  }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+  }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
   reveals.forEach(function (el) { observer.observe(el); });
 
   // Stat counter
