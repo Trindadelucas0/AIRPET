@@ -147,6 +147,16 @@ router.get('/privacidade', (req, res) => res.render('privacidade', { titulo: 'Po
 /** Atalho: quem acessa /planos cai na página real em /tags/planos */
 router.get('/planos', (req, res) => res.redirect(302, '/tags/planos'));
 
+// === Perfil publico do pet (sem auth) ===
+// URL canonica: /p/:slug. Redirects 301 das URLs antigas (/pets/:id e
+// /explorar/pet/:id) declarados ANTES de aplicar o middleware estaAutenticado
+// nas respectivas rotas, para que o redirect rode tambem para visitantes
+// anonimos (caso contrario o middleware mandaria para a tela de login).
+const petPublicController = require('../controllers/petPublicController');
+router.get('/p/:slug', petPublicController.mostrarPerfil);
+router.get('/pets/:id(\\d+)', petPublicController.redirecionarPorId);
+router.get('/explorar/pet/:id(\\d+)', petPublicController.redirecionarPorId);
+
 // Rotas públicas
 router.use('/auth', authRoutes);
 router.use('/tag', nfcRoutes);
@@ -198,19 +208,30 @@ router.put(
   perfilController.atualizar
 );
 
+// === GALERIA DEPRECATED (mantida em modo legado) ===
+// A galeria "solta" (`fotos_perfil_pet`) foi colapsada no sistema de posts:
+// agora TODA foto e um post (publicacoes + post_media), vinculado a um pet
+// especifico. Os endpoints abaixo retornam 410 Gone com mensagem orientando
+// o usuario a publicar um post no perfil do pet. A pagina /perfil/galeria
+// renderiza tela informativa via perfilController.mostrarGaleriaPagina.
 router.get('/api/perfil/galeria', estaAutenticado, perfilController.listarGaleria);
-const { uploadPerfilGaleria } = require('../utils/upload');
-router.post(
-  '/perfil/galeria',
-  estaAutenticado,
-  uploadPerfilGaleria.single('foto'),
-  persistSingle('perfil-galeria'),
-  ...validarPerfilGaleriaPost,
-  ...validarPerfilGaleriaBody,
-  validarResultado,
-  perfilController.adicionarFotoGaleria
-);
-router.delete('/perfil/galeria/:id', estaAutenticado, perfilController.removerFotoGaleria);
+router.post('/perfil/galeria', estaAutenticado, (req, res) => {
+  res.status(410).json({
+    sucesso: false,
+    mensagem: 'A galeria foi unificada com os posts. Crie um post no perfil do pet.',
+    proximaAcao: '/feed',
+  });
+});
+router.delete('/perfil/galeria/:id', estaAutenticado, (req, res) => {
+  res.status(410).json({
+    sucesso: false,
+    mensagem: 'A galeria foi unificada com os posts. Apague o post diretamente no perfil do pet.',
+  });
+});
+// Ignora silenciosamente referencias a validators legados para nao deixar
+// imports orfaos no escopo (lint stays happy).
+void validarPerfilGaleriaPost;
+void validarPerfilGaleriaBody;
 
 // API publica de racas (usada pelo autocomplete no cadastro de pet)
 router.get('/api/racas', require('../controllers/perfilController').buscarRacas);

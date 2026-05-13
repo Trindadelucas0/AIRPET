@@ -1,0 +1,71 @@
+<%
+/**
+ * pet-verified-badge.ejs — Selo de seguranca AIRPET para a foto do pet.
+ *
+ * Renderiza um overlay discreto no canto inferior-direito da foto do pet,
+ * com dois indicadores opcionais:
+ *   - selo verde "verificado" (`pet.verificado`)
+ *   - cadeado "tag NFC ativa" (`pet.tem_tag_ativa`)
+ *
+ * Quando os dois sao true, exibe UM unico emblema combinado para nao poluir.
+ * Quando o pet nao tem nenhuma das duas, NAO renderiza nada.
+ *
+ * Uso:
+ *   <%- include('../partials/pet-verified-badge', { pet, size: 'md' }) %>
+ *
+ * Parametros:
+ *   - pet   (obj)  : objeto pet contendo `verificado` e/ou `tem_tag_ativa`.
+ *   - size  (str)  : 'xs' | 'sm' | 'md' | 'lg'. default 'md'.
+ *   - inline(bool) : se true, renderiza inline (uso em chips/badges horizontais)
+ *                    em vez de overlay absoluto. default false.
+ */
+var __pet = (typeof pet !== 'undefined') ? pet : null;
+var __size = (typeof size !== 'undefined') ? size : 'md';
+var __inline = (typeof inline !== 'undefined') ? inline : false;
+
+if (__pet) {
+  var __tem_tag = !!(__pet.tem_tag_ativa || __pet.temTagAtiva);
+  var __verif   = !!(__pet.verificado || __pet.verified);
+
+  if (__tem_tag || __verif) {
+    var __sizes = {
+      xs: { box: 14, font: 8,  ring: 1.5 },
+      sm: { box: 18, font: 10, ring: 2 },
+      md: { box: 24, font: 12, ring: 2 },
+      lg: { box: 30, font: 15, ring: 2.5 }
+    };
+    var __s = __sizes[__size] || __sizes.md;
+
+    var __combinado = __tem_tag && __verif;
+    var __title;
+    var __icone;
+    var __bgClass;
+    if (__combinado) {
+      __title = 'Pet verificado AIRPET — tag NFC ativa';
+      __icone = 'fa-shield-check';
+      __bgClass = 'pet-seal--green';
+    } else if (__verif) {
+      __title = 'Pet verificado AIRPET';
+      __icone = 'fa-circle-check';
+      __bgClass = 'pet-seal--green';
+    } else {
+      __title = 'Tag NFC ativa neste pet';
+      __icone = 'fa-lock';
+      __bgClass = 'pet-seal--blue';
+    }
+
+    var __posClasses = __inline
+      ? 'pet-seal pet-seal--inline'
+      : 'pet-seal pet-seal--overlay';
+%>
+<span class="<%= __posClasses %> <%= __bgClass %>"
+      role="img"
+      aria-label="<%= __title %>"
+      title="<%= __title %>"
+      style="--seal-size: <%= __s.box %>px; --seal-font: <%= __s.font %>px; --seal-ring: <%= __s.ring %>px;">
+  <i class="fa-solid <%= __icone %>" aria-hidden="true"></i>
+</span>
+<%
+  }
+}
+%>

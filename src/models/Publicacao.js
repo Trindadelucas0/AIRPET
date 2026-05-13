@@ -36,6 +36,22 @@ const Publicacao = {
 
   async criar(dados) {
     const { usuario_id, pet_id, foto, legenda, texto, repost_id, tipo } = dados;
+
+    /*
+     * Regra de produto AIRPET: toda foto/post pertence a UM pet especifico.
+     * Pet_id e obrigatorio em posts originais (com foto).
+     *
+     * Exceptions:
+     *   - reposts (repost_id presente) podem nao ter pet_id (estao replicando
+     *     conteudo de outro autor; o pet original esta no post raiz).
+     */
+    const ehRepost = !!repost_id;
+    if (!ehRepost && (pet_id == null || pet_id === '')) {
+      const err = new Error('PET_ID_OBRIGATORIO');
+      err.code = 'PET_ID_OBRIGATORIO';
+      throw err;
+    }
+
     const resultado = await query(
       `INSERT INTO publicacoes (usuario_id, pet_id, foto, legenda, texto, repost_id, tipo)
        VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,

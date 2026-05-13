@@ -105,8 +105,15 @@ async function autoDeleteSeNecessario(usuarioId) {
   return antiga;
 }
 
-async function validarPetDonoOuFalhar(petId, usuarioId, mensagem = 'Pet não encontrado ou você não é o dono.') {
-  if (!petId) return null;
+async function validarPetDonoOuFalhar(petId, usuarioId, mensagem = 'Pet não encontrado ou você não é o dono.', { obrigatorio = false } = {}) {
+  if (!petId) {
+    if (obrigatorio) {
+      const erro = new Error('Escolha um pet para publicar.');
+      erro.code = 'PET_ID_OBRIGATORIO';
+      throw erro;
+    }
+    return null;
+  }
   const pet = await Pet.buscarPorId(petId);
   if (!pet || pet.usuario_id !== usuarioId) {
     const erro = new Error(mensagem);
@@ -540,7 +547,7 @@ const explorarController = {
       }
       const textoLimpo = String(texto || '').trim();
       const petId = pet_id ? parseInt(pet_id, 10) : null;
-      await validarPetDonoOuFalhar(petId, uid);
+      await validarPetDonoOuFalhar(petId, uid, undefined, { obrigatorio: true });
 
       const requestHash = buildPostRequestHash({
         texto: textoLimpo,
@@ -588,6 +595,9 @@ const explorarController = {
       await saveIdempotentResponse(uid, idempotencyKey, requestHash, 200, payload);
       res.json(payload);
     } catch (err) {
+      if (err && err.code === 'PET_ID_OBRIGATORIO') {
+        return res.status(400).json({ sucesso: false, mensagem: err.message || 'Escolha um pet para publicar.' });
+      }
       if (err && err.code === 'PET_NAO_PERTENCE') {
         return res.status(400).json({ sucesso: false, mensagem: 'Pet não encontrado ou você não é o dono.' });
       }
@@ -1070,9 +1080,7 @@ const explorarController = {
       if (!texto && mediaFiles.length === 0) {
         return res.status(400).json({ sucesso: false, mensagem: 'Escreva algo ou envie mídia.' });
       }
-      if (petId) {
-        await validarPetDonoOuFalhar(petId, uid, 'Pet inválido para publicação.');
-      }
+      await validarPetDonoOuFalhar(petId, uid, 'Pet inválido para publicação.', { obrigatorio: true });
 
       const idempotencyKey = String(req.get('Idempotency-Key') || req.get('X-Idempotency-Key') || '').trim().slice(0, 120);
       const requestHash = buildPostRequestHash({
@@ -1146,6 +1154,9 @@ const explorarController = {
       await saveIdempotentResponse(uid, idempotencyKey, requestHash, 200, payload);
       return res.json(payload);
     } catch (err) {
+      if (err && err.code === 'PET_ID_OBRIGATORIO') {
+        return res.status(400).json({ sucesso: false, mensagem: err.message || 'Escolha um pet para publicar.' });
+      }
       if (err && err.code === 'PET_NAO_PERTENCE') {
         return res.status(400).json({ sucesso: false, mensagem: err.message || 'Pet inválido para publicação.' });
       }

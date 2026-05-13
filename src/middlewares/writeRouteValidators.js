@@ -331,7 +331,12 @@ const validarExplorarPostV1 = [
   camposPermitidos(['texto', 'text', 'pet_id']),
   body('texto').optional({ checkFalsy: true }).trim().isLength({ max: 8000 }),
   body('text').optional({ checkFalsy: true }).trim().isLength({ max: 8000 }),
-  body('pet_id').optional({ checkFalsy: true }).trim().isLength({ max: 20 }),
+  // Regra de produto AIRPET: todo post pertence a um pet do tutor.
+  body('pet_id')
+    .notEmpty().withMessage('Escolha um pet para publicar.')
+    .bail()
+    .trim()
+    .isLength({ max: 20 }),
   body().custom((_, { req }) => {
     const t = String(req.body?.texto || req.body?.text || '').trim();
     if (!t && !req.file) throw new Error('Escreva algo ou envie uma imagem.');
@@ -343,7 +348,11 @@ const validarExplorarPostV2 = [
   camposPermitidos(['text', 'texto', 'pet_id', 'taggedUserIds']),
   body('text').optional({ checkFalsy: true }).trim().isLength({ max: 8000 }),
   body('texto').optional({ checkFalsy: true }).trim().isLength({ max: 8000 }),
-  body('pet_id').optional({ checkFalsy: true }).trim().isLength({ max: 20 }),
+  body('pet_id')
+    .notEmpty().withMessage('Escolha um pet para publicar.')
+    .bail()
+    .trim()
+    .isLength({ max: 20 }),
   body('taggedUserIds')
     .optional()
     .custom((v) => {

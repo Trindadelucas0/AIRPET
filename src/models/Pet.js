@@ -12,6 +12,44 @@
  */
 
 const { query, pool } = require('../config/database');
+const { slugify, gerarSufixoSlug, gerarSlugPet } = require('../utils/slug');
+
+/**
+ * Trecho SQL compartilhado: enriquece a linha do pet com dois flags
+ * derivados, usados em todo lugar onde o avatar e exibido (cards, perfis,
+ * feed) para renderizar o selo+cadeado.
+ *
+ *   tem_tag_ativa = existe linha em nfc_tags com status='active' para o pet.
+ *   verificado    = MVP equivalente a tem_tag_ativa. Evoluir quando houver
+ *                   passo de verificacao adicional (KYC, e-mail, etc.).
+ */
+const PET_VERIFICATION_FIELDS = `
+  EXISTS (
+    SELECT 1 FROM nfc_tags nt
+    WHERE nt.pet_id = p.id AND nt.status = 'active'
+  ) AS tem_tag_ativa,
+  EXISTS (
+    SELECT 1 FROM nfc_tags nt
+    WHERE nt.pet_id = p.id AND nt.status = 'active'
+  ) AS verificado
+`;
+
+/**
+ * Tenta gerar um slug unico (no maximo `tentativas` vezes).
+ * Se colidir todas as vezes, lanca — caso virtualmente impossivel
+ * (sufixo de 24 bits aleatorios por tentativa).
+ */
+async function gerarSlugUnico(nome, executor = pool, tentativas = 6) {
+  for (let i = 0; i < tentativas; i += 1) {
+    const candidato = gerarSlugPet(nome);
+    const ja = await executor.query(
+      `SELECT 1 FROM pets WHERE slug = $1 LIMIT 1`,
+      [candidato]
+    );
+    if (ja.rowCount === 0) return candidato;
+  }
+  throw new Error('Nao foi possivel gerar slug unico para o pet apos varias tentativas.');
+}
 
 const Pet = {
 
@@ -19,19 +57,11 @@ const Pet = {
    * Cadastra um novo pet no sistema.
    * O campo usuario_id vincula o pet ao seu dono/tutor.
    *
+   * Gera automaticamente `slug` (URL publica em /p/:slug) baseado no nome
+   * com sufixo aleatorio curto. O slug permanece estavel se o nome mudar.
+   *
    * @param {object} dados - Dados do pet a ser criado
-   * @param {string} dados.usuario_id - UUID do dono/tutor
-   * @param {string} dados.nome - Nome do pet
-   * @param {string} dados.especie - Espécie (ex: 'cachorro', 'gato')
-   * @param {string} dados.raca - Raça do pet
-   * @param {string} dados.cor - Cor predominante
-   * @param {string} dados.porte - Porte (pequeno, médio, grande)
-   * @param {string} dados.sexo - Sexo ('macho' ou 'fêmea')
-   * @param {number} dados.idade - Idade em anos
-   * @param {number} dados.peso - Peso em kg
-   * @param {string} dados.foto - Caminho da foto do pet
-   * @param {string} dados.descricao - Descrição livre / observações
-   * @returns {Promise<object>} O registro do pet recém-criado
+   * @returns {Promise<object>} O registro do pet recem-criado
    */
   async criar(dados) {
     const {
@@ -40,14 +70,16 @@ const Pet = {
       microchip, numero_pedigree, castrado, alergias_medicacoes, veterinario_nome, veterinario_telefone, observacoes
     } = dados;
 
+    const slug = await gerarSlugUnico(nome);
+
     const resultado = await query(
       `INSERT INTO pets
         (usuario_id, nome, tipo, tipo_custom, raca, cor, porte, sexo, data_nascimento, peso, foto, descricao_emocional, telefone_contato,
-         microchip, numero_pedigree, castrado, alergias_medicacoes, veterinario_nome, veterinario_telefone, observacoes)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
+         microchip, numero_pedigree, castrado, alergias_medicacoes, veterinario_nome, veterinario_telefone, observacoes, slug)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
        RETURNING *`,
       [usuario_id, nome, tipo, tipo_custom, raca, cor, porte, sexo, data_nascimento, peso, foto, descricao_emocional, telefone_contato,
-        microchip || null, numero_pedigree || null, castrado ?? null, alergias_medicacoes || null, veterinario_nome || null, veterinario_telefone || null, observacoes || null]
+        microchip || null, numero_pedigree || null, castrado ?? null, alergias_medicacoes || null, veterinario_nome || null, veterinario_telefone || null, observacoes || null, slug]
     );
 
     return resultado.rows[0];
@@ -55,14 +87,16 @@ const Pet = {
 
   /**
    * Busca um pet pelo ID, incluindo o nome do dono via JOIN.
-   * Retorna também o campo "dono_nome" para exibição na interface.
+   * Retorna também o campo "dono_nome" para exibição na interface
+   * e os flags `tem_tag_ativa` / `verificado` usados pelo selo de seguranca.
    *
-   * @param {string} id - UUID do pet
+   * @param {string} id - ID numerico do pet
    * @returns {Promise<object|undefined>} Pet com dados do dono ou undefined
    */
   async buscarPorId(id) {
     const resultado = await query(
-      `SELECT p.*, u.nome AS dono_nome
+      `SELECT p.*, u.nome AS dono_nome,
+              ${PET_VERIFICATION_FIELDS}
        FROM pets p
        JOIN usuarios u ON u.id = p.usuario_id
        WHERE p.id = $1`,
@@ -70,6 +104,37 @@ const Pet = {
     );
 
     return resultado.rows[0];
+  },
+
+  /**
+   * Busca um pet pelo slug publico (URL /p/:slug).
+   * Mesmos enriquecimentos que buscarPorId.
+   */
+  async buscarPorSlug(slug) {
+    if (!slug) return undefined;
+    const resultado = await query(
+      `SELECT p.*, u.nome AS dono_nome,
+              ${PET_VERIFICATION_FIELDS}
+       FROM pets p
+       JOIN usuarios u ON u.id = p.usuario_id
+       WHERE p.slug = $1`,
+      [String(slug).toLowerCase()]
+    );
+    return resultado.rows[0];
+  },
+
+  /**
+   * Garante que o pet possui slug; gera e persiste se faltar.
+   * Util para pets antigos pre-migration que ainda nao tenham backfill.
+   */
+  async garantirSlug(petId) {
+    const r = await query(`SELECT id, nome, slug FROM pets WHERE id = $1`, [petId]);
+    const row = r.rows[0];
+    if (!row) return null;
+    if (row.slug) return row.slug;
+    const slug = await gerarSlugUnico(row.nome);
+    await query(`UPDATE pets SET slug = $2 WHERE id = $1`, [petId, slug]);
+    return slug;
   },
 
   /**
@@ -81,9 +146,11 @@ const Pet = {
    */
   async buscarPorUsuario(usuarioId) {
     const resultado = await query(
-      `SELECT * FROM pets
-       WHERE usuario_id = $1
-       ORDER BY data_criacao DESC`,
+      `SELECT p.*,
+              ${PET_VERIFICATION_FIELDS}
+       FROM pets p
+       WHERE p.usuario_id = $1
+       ORDER BY p.data_criacao DESC`,
       [usuarioId]
     );
 
@@ -98,7 +165,8 @@ const Pet = {
    */
   async listarTodos() {
     const resultado = await query(
-      `SELECT p.*, u.nome AS dono_nome
+      `SELECT p.*, u.nome AS dono_nome,
+              ${PET_VERIFICATION_FIELDS}
        FROM pets p
        JOIN usuarios u ON u.id = p.usuario_id
        ORDER BY p.data_criacao DESC`
@@ -230,7 +298,8 @@ const Pet = {
   async buscarPorNomeComDonoESeguidores(termo, limite = 20, usuarioId = null) {
     const uid = usuarioId != null ? parseInt(usuarioId, 10) : null;
     let sql = `
-      SELECT p.id, p.nome, p.foto, p.tipo, p.raca,
+      SELECT p.id, p.nome, p.foto, p.tipo, p.raca, p.slug,
+             ${PET_VERIFICATION_FIELDS},
              u.id AS dono_id, u.nome AS dono_nome, u.cor_perfil AS dono_cor_perfil, u.foto_perfil AS dono_foto_perfil,
              (SELECT COUNT(*)::int FROM seguidores_pets WHERE pet_id = p.id) AS total_seguidores`;
     if (uid) {
@@ -250,7 +319,8 @@ const Pet = {
 
   async listarRecomendadosParaSeguir(usuarioId, max = 8) {
     const resultado = await query(
-      `SELECT p.id, p.nome, p.foto, p.tipo, p.raca,
+      `SELECT p.id, p.nome, p.foto, p.tipo, p.raca, p.slug,
+              ${PET_VERIFICATION_FIELDS},
               u.id AS dono_id, u.nome AS dono_nome, u.cor_perfil AS dono_cor_perfil,
               (SELECT COUNT(*)::int FROM seguidores_pets WHERE pet_id = p.id) AS total_seguidores,
               (SELECT COUNT(*)::int FROM seguidores_pets WHERE pet_id = p.id AND usuario_id = $1) > 0 AS seguindo
@@ -267,7 +337,8 @@ const Pet = {
 
   async listarProximosPorLocalizacaoDono(usuarioIdReferencia, usuarioIdLogado, limite = 8) {
     const resultado = await query(
-      `SELECT p.id, p.nome, p.foto, p.tipo, p.raca,
+      `SELECT p.id, p.nome, p.foto, p.tipo, p.raca, p.slug,
+              ${PET_VERIFICATION_FIELDS},
               u.id AS dono_id, u.nome AS dono_nome, u.cor_perfil AS dono_cor_perfil,
               (SELECT COUNT(*)::int FROM seguidores_pets WHERE pet_id = p.id) AS total_seguidores,
               (SELECT COUNT(*)::int FROM seguidores_pets WHERE pet_id = p.id AND usuario_id = $2) > 0 AS seguindo

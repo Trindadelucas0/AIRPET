@@ -6,7 +6,29 @@
   <title><%= typeof titulo !== 'undefined' ? titulo + ' | ' + (typeof appName !== 'undefined' ? appName : 'AIRPET') : (typeof appName !== 'undefined' ? appName : 'AIRPET') + ' — Proteja seu Pet' %></title>
 
   <meta name="theme-color" content="<%= typeof themeColor !== 'undefined' ? themeColor : '#ec5a1c' %>">
-  <meta name="description" content="AIRPET — Rede social e protecao inteligente para seu pet via NFC">
+  <meta name="description" content="<%= typeof metaDescription !== 'undefined' && metaDescription ? metaDescription : 'AIRPET — Rede social e protecao inteligente para seu pet via NFC' %>">
+
+  <%# OpenGraph / Twitter Card — usados em perfis publicos (/p/:slug e /u/:apelido).
+      Cada view pode definir ogTitle/ogDescription/ogImage/ogUrl/ogType no res.render. %>
+  <% var __ogTitle = (typeof ogTitle !== 'undefined' && ogTitle) ? ogTitle : (typeof titulo !== 'undefined' ? titulo + ' | AIRPET' : 'AIRPET'); %>
+  <% var __ogDesc  = (typeof ogDescription !== 'undefined' && ogDescription) ? ogDescription : (typeof metaDescription !== 'undefined' && metaDescription ? metaDescription : 'AIRPET — identidade digital e seguranca para o seu pet.'); %>
+  <% var __ogType  = (typeof ogType !== 'undefined' && ogType) ? ogType : 'website'; %>
+  <% var __ogUrl   = (typeof ogUrl !== 'undefined' && ogUrl) ? ogUrl : ''; %>
+  <% var __ogImage = (typeof ogImage !== 'undefined' && ogImage) ? ogImage : ''; %>
+  <meta property="og:type" content="<%= __ogType %>">
+  <meta property="og:site_name" content="<%= typeof appName !== 'undefined' ? appName : 'AIRPET' %>">
+  <meta property="og:title" content="<%= __ogTitle %>">
+  <meta property="og:description" content="<%= __ogDesc %>">
+  <% if (__ogUrl) { %><meta property="og:url" content="<%= __ogUrl %>"><% } %>
+  <% if (__ogImage) { %>
+    <meta property="og:image" content="<%= __ogImage %>">
+    <meta property="og:image:alt" content="<%= __ogTitle %>">
+  <% } %>
+  <meta name="twitter:card" content="<%= __ogImage ? 'summary_large_image' : 'summary' %>">
+  <meta name="twitter:title" content="<%= __ogTitle %>">
+  <meta name="twitter:description" content="<%= __ogDesc %>">
+  <% if (__ogImage) { %><meta name="twitter:image" content="<%= __ogImage %>"><% } %>
+  <% if (typeof canonicalUrl !== 'undefined' && canonicalUrl) { %><link rel="canonical" href="<%= canonicalUrl %>"><% } %>
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -37,6 +59,7 @@
   <link rel="stylesheet" href="/css/theme-override.css">
   <link rel="stylesheet" href="/css/airpet-modals.css">
   <link rel="stylesheet" href="/css/airpet-loading.css">
+  <link rel="stylesheet" href="/css/pet-seal.css">
   <!-- RequestCoordinator + SWR-like cache (client-side performance) -->
   <script src="/js/airpet/requestCoordinator.js"></script>
   <script src="/js/airpet/loadingHub.js"></script>
