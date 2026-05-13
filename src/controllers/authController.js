@@ -23,6 +23,8 @@ const bcrypt = require('bcrypt');
 const crypto = require('crypto');
 const logger = require('../utils/logger');
 const emailService = require('../services/emailService');
+const Pet = require('../models/Pet');
+const { PASSWORD_RESET_TTL_MS, PASSWORD_RESET_TTL_MINUTES } = require('../emails/authTiming');
 
 const resetTokens = new Map();
 
@@ -147,9 +149,20 @@ const authController = {
       logger.info('AUTH_CTRL', `Novo usuário registrado: ${resultado.usuario.email}`);
 
       try {
+        let petsBoasVindas;
+        try {
+          const lista = await Pet.buscarPorUsuario(resultado.usuario.id);
+          if (lista && lista.length) {
+            const p = lista[0];
+            petsBoasVindas = [{ nome: p.nome, tipo: p.tipo, tipo_custom: p.tipo_custom, foto: p.foto }];
+          }
+        } catch (_petErr) {
+          petsBoasVindas = undefined;
+        }
         await emailService.enviarBoasVindas({
           to: resultado.usuario.email,
           nome: resultado.usuario.nome,
+          pets: petsBoasVindas,
         });
       } catch (emailErro) {
         logger.error('AUTH_CTRL', 'Falha ao enviar e-mail de boas-vindas', emailErro);
@@ -284,7 +297,7 @@ const authController = {
 
       if (usuario) {
         const token = crypto.randomBytes(32).toString('hex');
-        resetTokens.set(token, { userId: usuario.id, expira: Date.now() + 3600000 });
+        resetTokens.set(token, { userId: usuario.id, expira: Date.now() + PASSWORD_RESET_TTL_MS });
 
         const linkRedefinir = `${process.env.BASE_URL || 'http://localhost:3000'}/auth/redefinir-senha/${token}`;
         logger.info('AUTH_CTRL', `Token de recuperação gerado para ${email}`);
@@ -294,6 +307,7 @@ const authController = {
             to: email,
             nome: usuario.nome,
             linkRedefinir,
+            minutosValidade: PASSWORD_RESET_TTL_MINUTES,
           });
         } catch (emailErro) {
           logger.error('AUTH_CTRL', 'Falha ao enviar e-mail de redefinição de senha', emailErro);
