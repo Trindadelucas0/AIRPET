@@ -10,8 +10,8 @@
  * Quando os dois sao true, exibe UM unico emblema combinado para nao poluir.
  * Quando o pet nao tem nenhuma das duas, NAO renderiza nada.
  *
- * Uso:
- *   <%- include('../partials/pet-verified-badge', { pet, size: 'md' }) %>
+ * Uso: include relativo ao partial, passando objeto com pet e size (xs|sm|md|lg).
+ * Nao documente aqui a sintaxe literal de tag EJS (o parser confunde com codigo).
  *
  * Parametros:
  *   - pet   (obj)  : objeto pet contendo `verificado` e/ou `tem_tag_ativa`.

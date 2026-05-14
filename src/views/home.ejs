@@ -1477,12 +1477,13 @@
 
     <div class="lost-grid reveal">
       <% petsPerdidosRecentes.slice(0, 6).forEach(function(pet) { %>
-      <div class="lost-card">
+      <div class="lost-card pet-photo-wrap">
         <% if (pet.pet_foto) { %>
           <img src="<%= pet.pet_foto %>" alt="<%= pet.pet_nome %>" class="lost-img">
         <% } else { %>
           <div class="lost-img">🐾</div>
         <% } %>
+        <%- include('partials/pet-verified-badge', { pet: { tem_tag_ativa: pet.pet_tem_tag_ativa, verificado: pet.pet_verificado }, size: 'md' }) %>
         <div class="lost-badge">
           <span class="lost-ping"></span>
           Perdido

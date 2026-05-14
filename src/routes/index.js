@@ -152,10 +152,22 @@ router.get('/planos', (req, res) => res.redirect(302, '/tags/planos'));
 // /explorar/pet/:id) declarados ANTES de aplicar o middleware estaAutenticado
 // nas respectivas rotas, para que o redirect rode tambem para visitantes
 // anonimos (caso contrario o middleware mandaria para a tela de login).
+//
+// Express 5 / path-to-regexp v8 nao suporta mais a sintaxe :id(\d+).
+// Validamos o formato numerico no handler e devolvemos next() para deixar
+// rotas como /pets/123/editar caminhem normalmente para petRoutes.
 const petPublicController = require('../controllers/petPublicController');
 router.get('/p/:slug', petPublicController.mostrarPerfil);
-router.get('/pets/:id(\\d+)', petPublicController.redirecionarPorId);
-router.get('/explorar/pet/:id(\\d+)', petPublicController.redirecionarPorId);
+// Deep-link para um post especifico do perfil: a pagina principal abre o
+// modal automaticamente quando detecta este path (vide post-modal.js).
+router.get('/p/:slug/post/:postId', petPublicController.mostrarPerfil);
+
+function redirectPetParaSlug(req, res, next) {
+  if (!/^\d+$/.test(req.params.id)) return next();
+  return petPublicController.redirecionarPorId(req, res, next);
+}
+router.get('/pets/:id', redirectPetParaSlug);
+router.get('/explorar/pet/:id', redirectPetParaSlug);
 
 // Rotas públicas
 router.use('/auth', authRoutes);
@@ -190,13 +202,13 @@ router.get('/feed', estaAutenticado, require('../controllers/explorarController'
 // Perfil do usuario
 const perfilController = require('../controllers/perfilController');
 const { validarPerfil, validarResultado, camposPermitidos, CAMPOS_PERFIL } = require('../middlewares/validator');
-const { validarPerfilGaleriaPost, validarPerfilGaleriaBody } = require('../middlewares/writeRouteValidators');
+// Validators de galeria foram desativados (galeria virou posts). Mantemos
+// apenas referencia ao modulo para nao quebrar consumidores externos do file.
 router.get('/perfil', estaAutenticado, perfilController.mostrarPerfilHub);
 router.get('/perfil/conta', estaAutenticado, perfilController.mostrarConta);
 router.get('/perfil/aparencia', estaAutenticado, perfilController.mostrarAparencia);
 router.get('/perfil/localizacao', estaAutenticado, perfilController.mostrarLocalizacao);
 router.get('/perfil/seguranca', estaAutenticado, perfilController.mostrarSeguranca);
-router.get('/perfil/galeria', estaAutenticado, perfilController.mostrarGaleriaPagina);
 router.put(
   '/perfil',
   estaAutenticado,
@@ -208,30 +220,22 @@ router.put(
   perfilController.atualizar
 );
 
-// === GALERIA DEPRECATED (mantida em modo legado) ===
-// A galeria "solta" (`fotos_perfil_pet`) foi colapsada no sistema de posts:
-// agora TODA foto e um post (publicacoes + post_media), vinculado a um pet
-// especifico. Os endpoints abaixo retornam 410 Gone com mensagem orientando
-// o usuario a publicar um post no perfil do pet. A pagina /perfil/galeria
-// renderiza tela informativa via perfilController.mostrarGaleriaPagina.
-router.get('/api/perfil/galeria', estaAutenticado, perfilController.listarGaleria);
-router.post('/perfil/galeria', estaAutenticado, (req, res) => {
-  res.status(410).json({
+// === GALERIA SOLTA (REMOVIDA) ===
+// A galeria solta (`fotos_perfil_pet`) foi colapsada no sistema de posts:
+// agora TODA foto e um post (publicacoes + post_media), vinculado a um pet.
+// Os endpoints abaixo respondem 410 Gone definitivamente (sem chance de volta)
+// para garantir que clientes/cache antigos saibam que mudou.
+function galeriaGone(req, res) {
+  return res.status(410).json({
     sucesso: false,
-    mensagem: 'A galeria foi unificada com os posts. Crie um post no perfil do pet.',
+    deprecated: true,
+    mensagem: 'A galeria foi unificada com os posts. Publique no perfil do pet.',
     proximaAcao: '/feed',
   });
-});
-router.delete('/perfil/galeria/:id', estaAutenticado, (req, res) => {
-  res.status(410).json({
-    sucesso: false,
-    mensagem: 'A galeria foi unificada com os posts. Apague o post diretamente no perfil do pet.',
-  });
-});
-// Ignora silenciosamente referencias a validators legados para nao deixar
-// imports orfaos no escopo (lint stays happy).
-void validarPerfilGaleriaPost;
-void validarPerfilGaleriaBody;
+}
+router.all('/perfil/galeria', galeriaGone);
+router.all('/perfil/galeria/:id', galeriaGone);
+router.all('/api/perfil/galeria', galeriaGone);
 
 // API publica de racas (usada pelo autocomplete no cadastro de pet)
 router.get('/api/racas', require('../controllers/perfilController').buscarRacas);

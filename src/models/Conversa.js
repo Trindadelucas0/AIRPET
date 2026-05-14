@@ -52,6 +52,9 @@ const Conversa = {
               pp.status AS alerta_status,
               p.nome AS pet_nome,
               p.foto AS pet_foto,
+              p.slug AS pet_slug,
+              EXISTS (SELECT 1 FROM nfc_tags nt WHERE nt.pet_id = p.id AND nt.status = 'active') AS pet_tem_tag_ativa,
+              EXISTS (SELECT 1 FROM nfc_tags nt WHERE nt.pet_id = p.id AND nt.status = 'active') AS pet_verificado,
               ini.nome AS iniciador_nome,
               tut.nome AS tutor_nome
        FROM conversas c

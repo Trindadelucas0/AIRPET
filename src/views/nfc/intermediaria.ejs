@@ -38,12 +38,13 @@
         <% } %>
       </div>
       <div class="flex flex-col sm:flex-row gap-4 items-center sm:items-start">
-        <div class="w-28 h-28 rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 shrink-0">
+        <div class="w-28 h-28 rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 shrink-0 pet-photo-wrap" style="position:relative;">
           <% if (pet.foto) { %>
             <img src="<%= pet.foto %>" alt="<%= pet.nome %>" class="w-full h-full object-cover">
           <% } else { %>
             <div class="w-full h-full flex items-center justify-center text-slate-400"><i class="fa-solid fa-paw text-4xl"></i></div>
           <% } %>
+          <%- include('../partials/pet-verified-badge', { pet: pet, size: 'md' }) %>
         </div>
         <div class="flex-1 text-center sm:text-left">
           <div class="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wide px-3 py-1 rounded-full <%= perdido ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700' %>">

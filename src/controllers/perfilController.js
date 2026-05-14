@@ -1,10 +1,7 @@
 const Usuario = require('../models/Usuario');
-const Pet = require('../models/Pet');
-const FotoPerfilPet = require('../models/FotoPerfilPet');
 const Raca = require('../models/Raca');
 const logger = require('../utils/logger');
 const { multerPublicUrl } = require('../middlewares/persistUploadMiddleware');
-const storageService = require('../services/storageService');
 const { profileVersionMs, stripUsuario } = require('../utils/syncContract');
 
 const PERFIS_RETURN_ALLOWED = new Set([
@@ -13,7 +10,6 @@ const PERFIS_RETURN_ALLOWED = new Set([
   '/perfil/aparencia',
   '/perfil/localizacao',
   '/perfil/seguranca',
-  '/perfil/galeria',
 ]);
 
 function sanitizeReturnTo(raw) {
@@ -22,21 +18,6 @@ function sanitizeReturnTo(raw) {
   return PERFIS_RETURN_ALLOWED.has(t) ? t : '/perfil';
 }
 
-function montarGaleriaPorPet(linhas) {
-  const porPet = {};
-  linhas.forEach((f) => {
-    if (!porPet[f.pet_id]) {
-      porPet[f.pet_id] = { pet_nome: f.pet_nome, pet_foto: f.pet_foto, fotos: [] };
-    }
-    porPet[f.pet_id].fotos.push({ id: f.id, foto: f.foto });
-  });
-  return Object.entries(porPet).map(([pet_id, v]) => ({
-    pet_id: parseInt(pet_id, 10),
-    pet_nome: v.pet_nome,
-    pet_foto: v.pet_foto,
-    fotos: v.fotos,
-  }));
-}
 
 function renderErroPerfil(res, mensagem) {
   return res.status(500).render('perfil/erro', {
@@ -137,28 +118,6 @@ const perfilController = {
     }
   },
 
-  async mostrarGaleriaPagina(req, res) {
-    try {
-      const uid = req.session.usuario.id;
-      const [meusPets, linhas] = await Promise.all([
-        Pet.buscarPorUsuario(uid),
-        FotoPerfilPet.listarPorUsuario(uid),
-      ]);
-      const galeria = montarGaleriaPorPet(linhas);
-      return res.render('perfil/galeria', {
-        titulo: 'Galeria dos pets',
-        perfil: req.session.usuario,
-        meusPets,
-        galeria,
-        settingsSectionTitle: 'Galeria dos pets',
-        extraHead: '<link rel="stylesheet" href="/css/perfil-settings.css">',
-      });
-    } catch (erro) {
-      logger.error('PERFIL_CTRL', 'Erro ao carregar galeria', erro);
-      return renderErroPerfil(res);
-    }
-  },
-
   async atualizar(req, res) {
     try {
       const id = req.session.usuario.id;
@@ -228,55 +187,6 @@ const perfilController = {
       const wantsJson = req.get('Accept') && req.get('Accept').includes('application/json');
       if (wantsJson) return res.status(500).json({ sucesso: false, mensagem: 'Erro ao atualizar perfil.' });
       return res.redirect(sanitizeReturnTo((req.body || {}).return_to));
-    }
-  },
-
-  async listarGaleria(req, res) {
-    try {
-      const uid = req.session.usuario.id;
-      const linhas = await FotoPerfilPet.listarPorUsuario(uid);
-      const galeria = montarGaleriaPorPet(linhas);
-      res.json({ galeria });
-    } catch (erro) {
-      logger.error('PERFIL_CTRL', 'Erro ao listar galeria', erro);
-      res.status(500).json({ galeria: [] });
-    }
-  },
-
-  async adicionarFotoGaleria(req, res) {
-    try {
-      const uid = req.session.usuario.id;
-      const pet_id = parseInt(req.body.pet_id, 10);
-      if (!pet_id) return res.status(400).json({ sucesso: false, mensagem: 'Pet inválido.' });
-      const pet = await Pet.buscarPorId(pet_id);
-      if (!pet || pet.usuario_id !== uid) return res.status(403).json({ sucesso: false, mensagem: 'Pet não encontrado ou não é seu.' });
-      const total = await FotoPerfilPet.contarPorPet(uid, pet_id);
-      if (total >= FotoPerfilPet.MAX_FOTOS_POR_PET) {
-        return res.status(400).json({ sucesso: false, mensagem: `Máximo de ${FotoPerfilPet.MAX_FOTOS_POR_PET} fotos por pet.` });
-      }
-      if (!req.file) return res.status(400).json({ sucesso: false, mensagem: 'Nenhuma imagem enviada.' });
-      const foto = multerPublicUrl(req.file, 'perfil-galeria');
-      if (!foto) return res.status(400).json({ sucesso: false, mensagem: 'Não foi possível salvar a imagem.' });
-      const registro = await FotoPerfilPet.criar(uid, pet_id, foto);
-      res.json({ sucesso: true, id: registro.id, foto: registro.foto });
-    } catch (erro) {
-      logger.error('PERFIL_CTRL', 'Erro ao adicionar foto galeria', erro);
-      res.status(500).json({ sucesso: false, mensagem: 'Erro ao salvar.' });
-    }
-  },
-
-  async removerFotoGaleria(req, res) {
-    try {
-      const uid = req.session.usuario.id;
-      const id = parseInt(req.params.id, 10);
-      if (!id) return res.status(400).json({ sucesso: false });
-      const registro = await FotoPerfilPet.deletar(id, uid);
-      if (!registro) return res.status(404).json({ sucesso: false });
-      await storageService.removeByPublicUrl(registro.foto);
-      res.json({ sucesso: true });
-    } catch (erro) {
-      logger.error('PERFIL_CTRL', 'Erro ao remover foto galeria', erro);
-      res.status(500).json({ sucesso: false });
     }
   },
 

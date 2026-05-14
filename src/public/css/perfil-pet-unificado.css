@@ -1,0 +1,477 @@
+/*
+ * perfil-pet-unificado.css
+ *
+ * Estilos do perfil unificado do pet em /p/:slug.
+ * Header com capa e avatar (selo+cadeado overlay), abas sticky, grid 3
+ * colunas estilo Instagram, modal de post no padrao feed.
+ */
+
+.pp-hero {
+  position: relative;
+  height: 180px;
+  background:
+    radial-gradient(120% 120% at 88% -20%, rgba(255, 255, 255, .22) 0%, rgba(255, 255, 255, 0) 52%),
+    linear-gradient(130deg, #ff8d5a 0%, #ec5a1c 44%, #b53e10 100%);
+  overflow: hidden;
+}
+
+@media (min-width: 768px) {
+  .pp-hero { height: 260px; }
+}
+
+.pp-hero--has-cover { background: #111827; }
+.pp-hero__cover {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+}
+.pp-hero__overlay {
+  position: absolute; inset: 0;
+  background: linear-gradient(180deg, rgba(0,0,0,.05) 0%, rgba(0,0,0,.42) 100%);
+}
+
+.pp-hero__edit-cover {
+  position: absolute;
+  top: 12px; right: 12px;
+  background: rgba(255, 255, 255, .18);
+  border: 1px solid rgba(255, 255, 255, .26);
+  backdrop-filter: blur(8px);
+  color: #fff;
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: .02em;
+  padding: 7px 12px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: background .15s ease;
+}
+.pp-hero__edit-cover:hover { background: rgba(255, 255, 255, .26); }
+
+/* === Header identidade (avatar + nome + tutor + acoes) === */
+.pp-identity {
+  position: relative;
+  padding: 0 16px 12px;
+  margin-top: -56px;
+}
+
+.pp-identity-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.pp-avatar-wrap {
+  position: relative;
+  width: 108px;
+  height: 108px;
+  border-radius: 999px;
+  overflow: visible;
+  flex-shrink: 0;
+}
+
+.pp-avatar-wrap > img,
+.pp-avatar-wrap > .pp-avatar-fallback {
+  width: 100%;
+  height: 100%;
+  border-radius: 999px;
+  object-fit: cover;
+  box-shadow: 0 8px 22px rgba(15, 23, 42, .18);
+  border: 4px solid #fff;
+  background: #fff;
+}
+
+.pp-avatar-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #ff8d5a, #ec5a1c);
+  color: #fff;
+  font-size: 38px;
+}
+
+.pp-actions {
+  flex: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+  padding-bottom: 4px;
+}
+
+.pp-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 16px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: transform .15s ease, box-shadow .15s ease, background .15s ease;
+  background: #fff;
+  color: #111827;
+  border-color: #e5e7eb;
+}
+
+.pp-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 14px rgba(15,23,42,.08); }
+
+.pp-btn--primary {
+  background: linear-gradient(135deg, #ff8d5a, #ec5a1c);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 8px 20px rgba(236,90,28,.25);
+}
+
+.pp-btn--secondary {
+  background: #f1f5f9;
+  color: #334155;
+  border-color: #e2e8f0;
+}
+
+.pp-btn--ghost {
+  background: transparent;
+  color: #475569;
+}
+
+.pp-btn--icon {
+  width: 38px; height: 38px;
+  padding: 0;
+  justify-content: center;
+}
+
+.pp-name-block {
+  margin-top: 14px;
+}
+
+.pp-name {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 900;
+  color: #0f172a;
+  letter-spacing: -0.01em;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.pp-status-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px 3px 8px;
+  font-size: 11px;
+  font-weight: 800;
+  border-radius: 999px;
+  letter-spacing: .02em;
+  text-transform: uppercase;
+}
+
+.pp-status-chip--seguro {
+  background: rgba(34,197,94,0.12); color: #166534; border: 1px solid rgba(34,197,94,0.25);
+}
+
+.pp-status-chip--perdido {
+  background: rgba(239, 68, 68, 0.12); color: #991b1b; border: 1px solid rgba(239, 68, 68, 0.25);
+  animation: ppPulseRed 1.8s ease-in-out infinite;
+}
+
+@keyframes ppPulseRed {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, .45); }
+  50% { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
+}
+
+.pp-meta {
+  margin-top: 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 13px;
+  color: #64748b;
+}
+.pp-meta-dot { color: #cbd5e1; }
+
+.pp-tutor-line {
+  margin-top: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #475569;
+  text-decoration: none;
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+}
+.pp-tutor-line:hover { background: #f8fafc; }
+.pp-tutor-avatar {
+  width: 22px; height: 22px; border-radius: 999px; object-fit: cover; background: #f1f5f9;
+}
+
+.pp-stats {
+  margin-top: 16px;
+  display: flex;
+  gap: 24px;
+  font-size: 13px;
+  color: #475569;
+}
+.pp-stat strong { color: #0f172a; font-weight: 900; }
+
+/* === Abas === */
+.pp-tabs {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  overflow-x: auto;
+  gap: 0;
+  background: rgba(255, 255, 255, .96);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid #e5e7eb;
+  margin-top: 16px;
+  scrollbar-width: none;
+}
+.pp-tabs::-webkit-scrollbar { display: none; }
+
+.pp-tab {
+  flex: 1 0 auto;
+  text-align: center;
+  padding: 14px 16px 12px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #64748b;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  text-decoration: none;
+  transition: color .15s ease, border-color .15s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+.pp-tab i { font-size: 12px; }
+.pp-tab:hover { color: #0f172a; }
+.pp-tab--active {
+  color: #ec5a1c;
+  border-bottom-color: #ec5a1c;
+}
+
+/* === Grid de posts (Instagram-like) === */
+.pp-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 3px;
+  padding: 3px 0;
+}
+
+@media (min-width: 640px) {
+  .pp-grid { gap: 6px; padding: 6px; }
+}
+
+.pp-grid__cell {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  background: #f1f5f9;
+  cursor: pointer;
+}
+.pp-grid__cell > img {
+  width: 100%; height: 100%; object-fit: cover;
+  transition: transform .3s ease;
+}
+.pp-grid__cell:hover > img { transform: scale(1.05); }
+
+.pp-grid__overlay {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  gap: 18px;
+  background: rgba(15, 23, 42, .42);
+  color: #fff;
+  font-weight: 800;
+  opacity: 0;
+  transition: opacity .15s ease;
+}
+.pp-grid__cell:hover .pp-grid__overlay { opacity: 1; }
+.pp-grid__overlay span { display: inline-flex; align-items: center; gap: 4px; }
+
+.pp-grid__multi-icon {
+  position: absolute;
+  top: 8px; right: 8px;
+  color: #fff;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,.5));
+  font-size: 14px;
+}
+
+.pp-grid__pin {
+  position: absolute;
+  top: 8px; left: 8px;
+  color: #f59e0b;
+  font-size: 12px;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,.6));
+}
+
+.pp-empty {
+  padding: 60px 20px;
+  text-align: center;
+  color: #94a3b8;
+}
+.pp-empty i {
+  font-size: 42px;
+  display: block;
+  margin-bottom: 10px;
+  color: #cbd5e1;
+}
+.pp-empty h3 { font-size: 16px; color: #475569; margin: 4px 0 4px; font-weight: 800; }
+.pp-empty p { font-size: 13px; }
+
+/* === Painel das abas Sobre/Saude/NFC/Scans === */
+.pp-panel {
+  padding: 18px 16px 80px;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.pp-card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 18px;
+  margin-bottom: 14px;
+}
+
+.pp-card-title {
+  font-size: 13px;
+  font-weight: 800;
+  color: #0f172a;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.pp-card-title i { color: #ec5a1c; }
+
+.pp-kv {
+  display: grid;
+  grid-template-columns: minmax(120px, max-content) 1fr;
+  gap: 6px 18px;
+  font-size: 14px;
+}
+.pp-kv dt { color: #64748b; font-weight: 600; }
+.pp-kv dd { color: #0f172a; margin: 0; font-weight: 600; }
+
+.pp-anonymous-cta {
+  margin: 16px;
+  padding: 16px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%);
+  border: 1px solid #fed7aa;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.pp-anonymous-cta__txt {
+  font-size: 13px; color: #9a3412; flex: 1;
+}
+.pp-anonymous-cta__btn {
+  background: #ec5a1c; color: #fff;
+  font-weight: 800; font-size: 13px;
+  padding: 8px 14px; border-radius: 999px;
+  text-decoration: none;
+}
+
+/* ------------------------------------------------------------------ */
+/* Destaques (stories) — circulos rotativos no topo do grid           */
+/* ------------------------------------------------------------------ */
+.pp-highlights {
+  display: flex;
+  gap: 18px;
+  padding: 14px 16px 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.pp-highlights::-webkit-scrollbar { display: none; }
+
+.pp-highlight {
+  flex: 0 0 auto;
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  text-decoration: none; color: inherit;
+  width: 76px;
+}
+.pp-highlight__ring {
+  width: 72px; height: 72px; border-radius: 999px;
+  padding: 3px;
+  background: conic-gradient(from 180deg, #ec5a1c, #f97316, #fb923c, #ec5a1c);
+  box-shadow: 0 4px 10px rgba(236, 90, 28, .18);
+}
+.pp-highlight__inner {
+  width: 100%; height: 100%; border-radius: 999px;
+  background: #fff; padding: 2px;
+}
+.pp-highlight__img {
+  width: 100%; height: 100%; border-radius: 999px;
+  object-fit: cover; display: block;
+}
+.pp-highlight__label {
+  font-size: 11px; font-weight: 700; color: #475569;
+  max-width: 76px; text-align: center;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+/* ------------------------------------------------------------------ */
+/* Timeline da aba "Sobre"                                            */
+/* ------------------------------------------------------------------ */
+.pp-timeline {
+  list-style: none;
+  padding: 0; margin: 4px 0 0;
+  position: relative;
+}
+.pp-timeline::before {
+  content: '';
+  position: absolute;
+  left: 14px; top: 6px; bottom: 6px;
+  width: 2px;
+  background: linear-gradient(180deg, #f8fafc 0%, #e2e8f0 12%, #e2e8f0 88%, #f8fafc 100%);
+  border-radius: 2px;
+}
+.pp-timeline__item {
+  position: relative;
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 10px 0 10px 0;
+}
+.pp-timeline__dot {
+  flex: 0 0 30px;
+  width: 30px; height: 30px;
+  border-radius: 999px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px;
+  z-index: 1;
+  box-shadow: 0 0 0 3px #fff;
+}
+.pp-timeline__body { flex: 1; min-width: 0; }
+.pp-timeline__head {
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: 8px;
+  font-size: 14px;
+  color: #0f172a;
+}
+.pp-timeline__head time {
+  font-size: 11px; color: #94a3b8; font-weight: 600;
+  flex-shrink: 0;
+}
+.pp-timeline__desc {
+  display: block;
+  font-size: 13px; color: #475569;
+  margin: 2px 0 0; line-height: 1.45;
+  text-decoration: none;
+}
+a.pp-timeline__desc:hover { color: #ec5a1c; }

@@ -83,8 +83,12 @@
 </div>
 
 <%
-  var petUrl = 'https://' + req.get('host') + '/pets/' + pet.id;
-  var qrApiUrl = 'https://api.qrserver.com/v1/create-qr-code/?data=' + encodeURIComponent(petUrl) + '&size=200x200&margin=0&color=0f172a';
+  // petProfileUrl vem do controller; fallback usa BASE_URL (res.locals em app.js).
+  var _base = (typeof BASE_URL === 'string' && BASE_URL) ? BASE_URL.replace(/\/$/, '') : '';
+  var petUrl = (typeof petProfileUrl === 'string' && petProfileUrl)
+    ? petProfileUrl
+    : (_base + '/p/' + (pet.slug || pet.id));
+  var qrApiUrl = 'https://api.qrserver.com/v1/create-qr-code/?data=' + encodeURIComponent(petUrl) + '&size=400x400&margin=2&color=0f172a';
 %>
 
 <main class="flex-1">
@@ -115,22 +119,28 @@
 
       <!-- Ações -->
       <div class="qr-actions">
-        <button type="button" class="qr-btn qr-btn-primary" onclick="copiarLink()" id="copyBtn">
-          <i class="fa-solid fa-link"></i> Copiar link do perfil
+        <button type="button" class="qr-btn qr-btn-primary" onclick="compartilharPet()" id="shareBtn">
+          <i class="fa-solid fa-share-nodes"></i> Compartilhar perfil
+        </button>
+
+        <button type="button" class="qr-btn qr-btn-ghost" onclick="copiarLink()" id="copyBtn">
+          <i class="fa-solid fa-link"></i> Copiar link
         </button>
 
         <button type="button" class="qr-btn qr-btn-ghost" onclick="baixarQr()">
           <i class="fa-solid fa-download"></i> Baixar imagem do QR
         </button>
 
-        <% if (pet.telefone_contato) { %>
+        <button type="button" class="qr-btn qr-btn-ghost" onclick="imprimirEtiqueta()">
+          <i class="fa-solid fa-print"></i> Imprimir etiqueta
+        </button>
+
         <a href="https://wa.me/?text=<%= encodeURIComponent('Perfil do pet ' + pet.nome + ': ' + petUrl) %>"
            target="_blank" class="qr-btn qr-btn-whatsapp">
           <i class="fa-brands fa-whatsapp"></i> Enviar pelo WhatsApp
         </a>
-        <% } %>
 
-        <a href="/pets/<%= pet.id %>" class="qr-btn qr-btn-ghost">
+        <a href="/p/<%= pet.slug || pet.id %>" class="qr-btn qr-btn-ghost">
           <i class="fa-solid fa-arrow-left" style="font-size:12px"></i> Voltar ao perfil
         </a>
       </div>
@@ -171,35 +181,82 @@
 </main>
 
 <script>
+var PET_SHARE_URL = '<%= petUrl %>';
+var PET_SHARE_TITLE = '<%= pet.nome %> no AIRPET';
+var PET_SHARE_TEXT = 'Conheça o perfil do <%= pet.nome %> no AIRPET';
+var QR_API_URL = '<%= qrApiUrl %>';
+var PET_SLUG = '<%= pet.slug || pet.id %>';
+
 window.copiarLink = function() {
-  var url = '<%= petUrl %>';
   var btn = document.getElementById('copyBtn');
-  navigator.clipboard && navigator.clipboard.writeText(url).then(function() {
+  if (!navigator.clipboard) return;
+  navigator.clipboard.writeText(PET_SHARE_URL).then(function() {
     var orig = btn.innerHTML;
     btn.innerHTML = '<i class="fa-solid fa-check"></i> Copiado!';
     btn.style.background = '#22c55e';
-    setTimeout(function() { btn.innerHTML = orig; btn.style.background = ''; }, 2000);
+    btn.style.color = '#fff';
+    setTimeout(function() {
+      btn.innerHTML = orig;
+      btn.style.background = '';
+      btn.style.color = '';
+    }, 2000);
+  });
+};
+
+window.compartilharPet = function() {
+  var btn = document.getElementById('shareBtn');
+  if (navigator.share) {
+    navigator.share({ title: PET_SHARE_TITLE, text: PET_SHARE_TEXT, url: PET_SHARE_URL })
+      .catch(function(){ /* usuario cancelou */ });
+    return;
+  }
+  // fallback: copia link
+  if (!navigator.clipboard) {
+    window.prompt('Copie o link do perfil:', PET_SHARE_URL);
+    return;
+  }
+  navigator.clipboard.writeText(PET_SHARE_URL).then(function() {
+    var orig = btn.innerHTML;
+    btn.innerHTML = '<i class="fa-solid fa-check"></i> Link copiado!';
+    setTimeout(function() { btn.innerHTML = orig; }, 2000);
   });
 };
 
 window.baixarQr = function() {
-  var img = document.getElementById('qrImg');
-  if (!img || !img.src) return;
-  // Fetch via canvas para contornar restrições CORS do img src externo
-  fetch('<%= qrApiUrl %>')
+  fetch(QR_API_URL)
     .then(function(r) { return r.blob(); })
     .then(function(blob) {
       var blobUrl = URL.createObjectURL(blob);
       var a = document.createElement('a');
       a.href = blobUrl;
-      a.download = 'qr-<%= pet.nome.toLowerCase().replace(/\s+/g, "-") %>.png';
+      a.download = 'qr-airpet-' + PET_SLUG + '.png';
       a.click();
       setTimeout(function() { URL.revokeObjectURL(blobUrl); }, 5000);
     })
-    .catch(function() {
-      // Fallback: abre em nova aba
-      window.open('<%= qrApiUrl %>', '_blank');
-    });
+    .catch(function() { window.open(QR_API_URL, '_blank'); });
+};
+
+window.imprimirEtiqueta = function() {
+  var w = window.open('', '_blank', 'width=420,height=600');
+  if (!w) return;
+  var html = '<!doctype html><html><head><meta charset="utf-8"><title>Etiqueta AIRPET</title>' +
+             '<style>body{font-family:system-ui,sans-serif;margin:0;padding:24px;text-align:center;color:#0f172a}' +
+             '.etq{border:2px dashed #cbd5e1;border-radius:16px;padding:18px;max-width:300px;margin:0 auto}' +
+             '.etq h2{margin:0 0 4px;font-size:20px}.etq p{margin:0 0 10px;font-size:12px;color:#64748b}' +
+             '.etq img{width:220px;height:220px;display:block;margin:8px auto}' +
+             '.etq .url{font-size:10px;color:#94a3b8;word-break:break-all;margin-top:6px;font-family:monospace}' +
+             '.brand{margin-top:12px;font-size:11px;font-weight:700;letter-spacing:1px;color:#f97316}' +
+             '@media print{body{padding:0}.etq{border:none}}</style></head><body>' +
+             '<div class="etq"><h2>' + PET_SHARE_TITLE + '</h2>' +
+             '<p>Escaneie para ver o perfil deste pet</p>' +
+             '<img src="' + QR_API_URL + '" alt="QR">' +
+             '<div class="url">' + PET_SHARE_URL + '</div>' +
+             '<div class="brand">AIRPET</div></div>' +
+             '<script>window.onload=function(){setTimeout(function(){window.print();},400);}<\/script>' +
+             '</body></html>';
+  w.document.open();
+  w.document.write(html);
+  w.document.close();
 };
 </script>
 

@@ -497,7 +497,7 @@
       <div class="divide-y divide-gray-100">
         <% petsRecomendados.slice(0, 5).forEach(function(pet) { %>
           <div class="flex items-center gap-3 px-4 py-3 hover:bg-gray-50/70 transition-colors">
-            <a href="/pets/<%= pet.id %>" class="shrink-0">
+            <a href="/p/<%= pet.slug || pet.id %>" class="shrink-0 pet-photo-wrap" style="width:40px;height:40px;">
               <% if (pet.foto) { %>
                 <img src="<%= pet.foto %>" alt="<%= pet.nome %>" class="w-10 h-10 rounded-full object-cover ring-2 ring-primary-100 shadow-sm">
               <% } else { %>
@@ -505,9 +505,10 @@
                   <i class="fa-solid fa-paw text-primary-400 text-sm"></i>
                 </div>
               <% } %>
+              <%- include('partials/pet-verified-badge', { pet: pet, size: 'xs' }) %>
             </a>
             <div class="flex-1 min-w-0">
-              <a href="/pets/<%= pet.id %>" class="font-semibold text-sm text-gray-900 hover:text-primary-600 hover:underline truncate block"><%= pet.nome %></a>
+              <a href="/p/<%= pet.slug || pet.id %>" class="font-semibold text-sm text-gray-900 hover:text-primary-600 hover:underline truncate block"><%= pet.nome %></a>
               <p class="text-xs text-gray-400 truncate mt-0.5"><%= pet.raca || pet.tipo || '' %> · <%= pet.total_seguidores %> seguidor<%= pet.total_seguidores !== 1 ? 'es' : '' %></p>
             </div>
             <button class="btn-seguir-pet-sidebar btn-seguir-explorar shrink-0 px-3.5 py-2 text-xs font-bold rounded-xl border-2 border-primary-500 text-primary-500 hover:bg-primary-500 hover:text-white transition-all shadow-sm"

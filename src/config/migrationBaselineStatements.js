@@ -1111,7 +1111,11 @@ const migrations = [
     END IF;
   END $$;`,
 
-  // Capa do perfil e galeria de fotos por pet no perfil do tutor
+  // [DEPRECATED] Tabela `fotos_perfil_pet` (galeria solta) foi colapsada no
+  // sistema de posts (publicacoes + post_media). A migration
+  // `1775900000000_drop_fotos_perfil_pet.mjs` remove a tabela definitivamente.
+  // Mantido aqui apenas para garantir que ambientes antigos consigam aplicar
+  // a migration de migracao (1775800000000) antes do DROP final.
   `CREATE TABLE IF NOT EXISTS fotos_perfil_pet (
     id SERIAL PRIMARY KEY,
     usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,

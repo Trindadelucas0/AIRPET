@@ -1,0 +1,50 @@
+<%
+/*
+ * aba-scans.ejs — Painel "Scans" — somente dono.
+ * Lista de leituras NFC recebidas. Cada scan eh um sinal de uso real
+ * da tag.
+ */
+var lista = (typeof scans !== 'undefined' && Array.isArray(scans)) ? scans : [];
+var alerta = (typeof alertaAtivo !== 'undefined') ? alertaAtivo : null;
+function _fmtData(d) {
+  if (!d) return '';
+  try { return new Date(d).toLocaleString('pt-BR'); } catch (_) { return ''; }
+}
+%>
+
+<div class="pp-panel">
+  <% if (alerta) { %>
+    <div class="pp-card" style="border-color:#fecaca;background:linear-gradient(135deg,#fee2e2 0%,#fff 60%);">
+      <div class="pp-card-title" style="color:#b91c1c;"><i class="fa-solid fa-triangle-exclamation" style="color:#dc2626;"></i> Alerta de pet perdido ativo</div>
+      <p style="font-size:13px;color:#7f1d1d;margin:0 0 10px;">
+        <%= pet.nome %> esta marcado como perdido. Toda leitura da tag e priorizada.
+      </p>
+      <a href="/alerta/<%= alerta.id %>" class="pp-btn pp-btn--secondary">
+        <i class="fa-solid fa-eye"></i> Ver alerta publico
+      </a>
+    </div>
+  <% } %>
+
+  <div class="pp-card">
+    <div class="pp-card-title"><i class="fa-solid fa-location-dot"></i> Ultimas leituras da tag</div>
+    <% if (lista.length === 0) { %>
+      <p style="font-size:13px;color:#94a3b8;margin:0;">
+        Nenhuma leitura registrada ainda. Quando alguem escanear a tag, voce vera aqui.
+      </p>
+    <% } else { %>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <% lista.forEach(function(s) { %>
+          <div style="display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid #f1f5f9;">
+            <span style="width:28px;height:28px;border-radius:999px;background:#fff7ed;color:#ea580c;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+              <i class="fa-solid fa-location-dot" style="font-size:12px;"></i>
+            </span>
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:13px;color:#0f172a;font-weight:700;"><%= s.cidade || 'Local nao informado' %></div>
+              <div style="font-size:11px;color:#64748b;"><%= _fmtData(s.data) %></div>
+            </div>
+          </div>
+        <% }); %>
+      </div>
+    <% } %>
+  </div>
+</div>

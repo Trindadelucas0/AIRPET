@@ -1,0 +1,50 @@
+<%
+/*
+ * aba-nfc.ejs — Painel "Tags NFC" — somente dono.
+ * Resume tags ativas e historico de tags vinculadas ao pet.
+ */
+var ativas = (typeof tagsAtivas !== 'undefined' && Array.isArray(tagsAtivas)) ? tagsAtivas : [];
+var historico = (typeof tagsHistorico !== 'undefined' && Array.isArray(tagsHistorico)) ? tagsHistorico : [];
+%>
+
+<div class="pp-panel">
+  <div class="pp-card">
+    <div class="pp-card-title"><i class="fa-solid fa-tag"></i> Tags NFC ativas</div>
+    <% if (ativas.length === 0) { %>
+      <p style="font-size:13px;color:#94a3b8;margin:0 0 12px;">
+        Este pet ainda nao tem tag NFC ativa. Sem tag, nao ha selo de seguranca nem caminho de retorno em caso de extravio.
+      </p>
+      <a href="/tags" class="pp-btn pp-btn--primary">
+        <i class="fa-solid fa-shopping-cart"></i> Comprar tag AIRPET
+      </a>
+    <% } else { %>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <% ativas.forEach(function(t) { %>
+          <div style="display:flex;align-items:center;gap:12px;padding:12px;border-radius:12px;background:linear-gradient(135deg,#dcfce7,#fff);border:1px solid #bbf7d0;">
+            <span style="width:36px;height:36px;border-radius:999px;background:#22c55e;color:#fff;display:flex;align-items:center;justify-content:center;">
+              <i class="fa-solid fa-shield-halved"></i>
+            </span>
+            <div style="flex:1;min-width:0;">
+              <div style="font-weight:800;color:#0f172a;font-size:14px;font-family:monospace;"><%= t.tag_code %></div>
+              <div style="font-size:11px;color:#15803d;font-weight:700;text-transform:uppercase;letter-spacing:.04em;">Ativa</div>
+            </div>
+          </div>
+        <% }); %>
+      </div>
+    <% } %>
+  </div>
+
+  <% if (historico.length > 0) { %>
+    <div class="pp-card">
+      <div class="pp-card-title"><i class="fa-solid fa-clock-rotate-left"></i> Historico</div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <% historico.forEach(function(t) { %>
+          <div style="display:flex;align-items:center;gap:10px;font-size:13px;color:#64748b;padding:6px 0;border-bottom:1px solid #f1f5f9;">
+            <span style="font-family:monospace;color:#0f172a;font-weight:700;"><%= t.tag_code %></span>
+            <span style="margin-left:auto;font-size:11px;text-transform:uppercase;letter-spacing:.04em;"><%= t.status %></span>
+          </div>
+        <% }); %>
+      </div>
+    </div>
+  <% } %>
+</div>

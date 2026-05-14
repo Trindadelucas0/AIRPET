@@ -14,7 +14,20 @@ export const shorthands = undefined;
  */
 export async function up(pgm) {
   pgm.sql(`
-    DO $$ BEGIN
+    DO $$
+    DECLARE
+      tabela_existe BOOLEAN;
+    BEGIN
+      SELECT EXISTS (
+        SELECT 1 FROM information_schema.tables
+        WHERE table_schema = 'public' AND table_name = 'fotos_perfil_pet'
+      ) INTO tabela_existe;
+
+      IF NOT tabela_existe THEN
+        -- Ambiente greenfield (baseline ja nao cria a tabela). Nada a migrar.
+        RETURN;
+      END IF;
+
       IF NOT EXISTS (
         SELECT 1 FROM information_schema.columns
         WHERE table_schema = 'public'
@@ -32,7 +45,17 @@ export async function up(pgm) {
     DECLARE
       r RECORD;
       novo_id INTEGER;
+      tabela_existe BOOLEAN;
     BEGIN
+      SELECT EXISTS (
+        SELECT 1 FROM information_schema.tables
+        WHERE table_schema = 'public' AND table_name = 'fotos_perfil_pet'
+      ) INTO tabela_existe;
+
+      IF NOT tabela_existe THEN
+        RETURN;
+      END IF;
+
       FOR r IN
         SELECT id, usuario_id, pet_id, foto, criado_em
         FROM fotos_perfil_pet

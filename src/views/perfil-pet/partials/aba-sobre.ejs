@@ -1,0 +1,146 @@
+<%
+/*
+ * aba-sobre.ejs — Painel "Sobre" do perfil do pet.
+ *
+ * Mostra dados publicos do pet (raca, porte, descricao emocional) e
+ * dados privados (microchip mascarado, telefone) APENAS para o dono.
+ *
+ * Tambem lista os parceiros (petshops vinculados), que sao publicos.
+ */
+function _mascarar(s) {
+  if (!s) return null;
+  var str = String(s);
+  if (str.length <= 4) return '••••';
+  return str.slice(0, 2) + ' •••• ' + str.slice(-2);
+}
+var ps = (typeof petshopsVinculados !== 'undefined' && Array.isArray(petshopsVinculados)) ? petshopsVinculados : [];
+var _timeline = (typeof timeline !== 'undefined' && Array.isArray(timeline)) ? timeline : [];
+
+function _fmtData(d) {
+  if (!d) return '';
+  var dt = new Date(d);
+  if (isNaN(dt.getTime())) return '';
+  var dia = String(dt.getDate()).padStart(2, '0');
+  var mes = String(dt.getMonth() + 1).padStart(2, '0');
+  var ano = dt.getFullYear();
+  return dia + '/' + mes + '/' + ano;
+}
+var _coresTimeline = {
+  amber:  { bg: '#fef3c7', fg: '#b45309' },
+  green:  { bg: '#dcfce7', fg: '#15803d' },
+  red:    { bg: '#fee2e2', fg: '#b91c1c' },
+  orange: { bg: '#ffedd5', fg: '#c2410c' },
+  blue:   { bg: '#dbeafe', fg: '#1d4ed8' },
+  pink:   { bg: '#fce7f3', fg: '#be185d' }
+};
+%>
+
+<div class="pp-panel">
+  <div class="pp-card">
+    <div class="pp-card-title"><i class="fa-solid fa-paw"></i> Quem e <%= pet.nome %></div>
+    <% if (pet.descricao_emocional) { %>
+      <p style="font-size:15px;color:#0f172a;line-height:1.55;margin:0 0 14px;">
+        <%= pet.descricao_emocional %>
+      </p>
+    <% } else { %>
+      <p style="font-size:13px;color:#94a3b8;margin:0 0 14px;">Sem descricao por enquanto.</p>
+    <% } %>
+
+    <dl class="pp-kv">
+      <% if (pet.raca) { %><dt>Raca</dt><dd><%= pet.raca %></dd><% } %>
+      <% if (pet.tipo) { %><dt>Especie</dt><dd><%= pet.tipo_custom || pet.tipo %></dd><% } %>
+      <% if (pet.porte) { %><dt>Porte</dt><dd><%= pet.porte %></dd><% } %>
+      <% if (pet.sexo) { %><dt>Sexo</dt><dd><%= pet.sexo %></dd><% } %>
+      <% if (typeof idadePet !== 'undefined' && idadePet) { %>
+        <dt>Idade</dt>
+        <dd><%= idadePet.anos %> ano<%= idadePet.anos === 1 ? '' : 's' %> e <%= idadePet.meses %> meses</dd>
+      <% } %>
+      <% if (pet.cor) { %><dt>Cor</dt><dd><%= pet.cor %></dd><% } %>
+      <% if (pet.peso) { %><dt>Peso</dt><dd><%= pet.peso %> kg</dd><% } %>
+      <% if (pet.castrado != null) { %><dt>Castrado</dt><dd><%= pet.castrado ? 'Sim' : 'Nao' %></dd><% } %>
+    </dl>
+  </div>
+
+  <% if (ehDono) { %>
+    <div class="pp-card">
+      <div class="pp-card-title"><i class="fa-solid fa-id-badge"></i> Documentos e contato</div>
+      <dl class="pp-kv">
+        <% if (pet.microchip) { %><dt>Microchip</dt><dd><%= pet.microchip %></dd><% } %>
+        <% if (pet.numero_pedigree) { %><dt>Pedigree</dt><dd><%= pet.numero_pedigree %></dd><% } %>
+        <% if (pet.telefone_contato) { %><dt>Telefone</dt><dd><%= pet.telefone_contato %></dd><% } %>
+        <% if (pet.veterinario_nome) { %><dt>Veterinario</dt><dd><%= pet.veterinario_nome %></dd><% } %>
+        <% if (pet.veterinario_telefone) { %><dt>Vet (tel)</dt><dd><%= pet.veterinario_telefone %></dd><% } %>
+      </dl>
+      <% if (!pet.microchip && !pet.numero_pedigree && !pet.telefone_contato && !pet.veterinario_nome) { %>
+        <p style="font-size:13px;color:#94a3b8;margin:0;">
+          Voce ainda nao preencheu nenhum documento ou contato.
+          <a href="/pets/<%= pet.id %>/editar" style="color:#ec5a1c;font-weight:700;">Editar pet</a>.
+        </p>
+      <% } %>
+    </div>
+  <% } else { %>
+    <% if (pet.microchip || pet.numero_pedigree) { %>
+      <div class="pp-card">
+        <div class="pp-card-title"><i class="fa-solid fa-id-badge"></i> Documentos</div>
+        <dl class="pp-kv">
+          <% if (pet.microchip) { %><dt>Microchip</dt><dd><%= _mascarar(pet.microchip) %></dd><% } %>
+          <% if (pet.numero_pedigree) { %><dt>Pedigree</dt><dd><%= _mascarar(pet.numero_pedigree) %></dd><% } %>
+        </dl>
+        <p style="font-size:11px;color:#94a3b8;margin:10px 0 0;">Numeros mascarados por privacidade.</p>
+      </div>
+    <% } %>
+  <% } %>
+
+  <% if (_timeline.length > 0) { %>
+    <div class="pp-card">
+      <div class="pp-card-title"><i class="fa-solid fa-clock-rotate-left"></i> Linha do tempo</div>
+      <ol class="pp-timeline">
+        <% _timeline.forEach(function(ev) {
+             var cor = _coresTimeline[ev.cor] || _coresTimeline.blue;
+        %>
+          <li class="pp-timeline__item">
+            <span class="pp-timeline__dot" style="background:<%= cor.bg %>;color:<%= cor.fg %>;">
+              <i class="fa-solid <%= ev.icone || 'fa-circle' %>"></i>
+            </span>
+            <div class="pp-timeline__body">
+              <div class="pp-timeline__head">
+                <strong><%= ev.titulo %></strong>
+                <time><%= _fmtData(ev.data) %></time>
+              </div>
+              <% if (ev.descricao) { %>
+                <% if (ev.postId) { %>
+                  <a href="/p/<%= pet.slug %>/post/<%= ev.postId %>" class="pp-timeline__desc"><%= ev.descricao %></a>
+                <% } else { %>
+                  <p class="pp-timeline__desc"><%= ev.descricao %></p>
+                <% } %>
+              <% } %>
+            </div>
+          </li>
+        <% }); %>
+      </ol>
+    </div>
+  <% } %>
+
+  <% if (ps.length > 0) { %>
+    <div class="pp-card">
+      <div class="pp-card-title"><i class="fa-solid fa-store"></i> Parceiros do pet</div>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <% ps.forEach(function(link) { %>
+          <a href="/petshops/<%= link.petshop_slug || link.petshop_id %>"
+             style="display:flex;align-items:center;gap:12px;padding:10px;border-radius:12px;border:1px solid #f1f5f9;text-decoration:none;color:inherit;">
+            <% if (link.logo_url) { %>
+              <img src="<%= link.logo_url %>" alt="" style="width:36px;height:36px;border-radius:999px;object-fit:cover;">
+            <% } else { %>
+              <span style="width:36px;height:36px;border-radius:999px;background:#fef3c7;color:#b45309;display:flex;align-items:center;justify-content:center;"><i class="fa-solid fa-store"></i></span>
+            <% } %>
+            <div style="flex:1;min-width:0;">
+              <div style="font-weight:800;color:#0f172a;font-size:14px;"><%= link.petshop_nome %></div>
+              <div style="font-size:11px;color:#94a3b8;">Vinculado</div>
+            </div>
+            <i class="fa-solid fa-chevron-right" style="color:#94a3b8;font-size:12px;"></i>
+          </a>
+        <% }); %>
+      </div>
+    </div>
+  <% } %>
+</div>

@@ -13,7 +13,7 @@ const PetPetshopLinkRequest = require('../models/PetPetshopLinkRequest');
 const PetPetshopLink = require('../models/PetPetshopLink');
 const Vacina = require('../models/Vacina');
 const RegistroSaude = require('../models/RegistroSaude');
-const FotoPerfilPet = require('../models/FotoPerfilPet');
+const Publicacao = require('../models/Publicacao');
 const petshopPublishingService = require('../services/petshopPublishingService');
 const { multerPublicUrl } = require('../middlewares/persistUploadMiddleware');
 const petshopScheduleService = require('../services/petshopScheduleService');
@@ -60,17 +60,27 @@ async function carregarPacotePetsVinculados(petshopId) {
   const petIds = (petsVinculados || []).map((p) => p.pet_id);
   if (!petIds.length) return [];
 
-  const [vacinas, registrosSaude, fotosPerfilPet, appointmentsPetshop] = await Promise.all([
+  // Galeria solta (fotos_perfil_pet) foi colapsada no sistema de posts.
+  // "Documentos" do pet (na visao do petshop) agora vem dos posts com midia.
+  const [vacinas, registrosSaude, appointmentsPetshop, ...postsPorPetArr] = await Promise.all([
     Vacina.buscarPorPets(petIds),
     RegistroSaude.buscarPorPets(petIds),
-    FotoPerfilPet.listarPorPets(petIds),
     PetshopAppointment.listarPorPetshop(petshopId),
+    ...petIds.map((id) => Publicacao.buscarPorPet(id, null, 20)),
   ]);
 
   const vacinasPorPet = groupByPet(vacinas, 'pet_id');
   const registrosPorPet = groupByPet(registrosSaude, 'pet_id');
-  const fotosPorPet = groupByPet(fotosPerfilPet, 'pet_id');
   const historicoPorPet = groupByPet(appointmentsPetshop, 'pet_id');
+  const fotosPorPet = petIds.reduce((acc, id, idx) => {
+    acc[id] = (postsPorPetArr[idx] || []).filter((p) => p.media_url).map((p) => ({
+      id: p.id,
+      foto: p.media_url,
+      legenda: p.legenda || '',
+      criado_em: p.criado_em,
+    }));
+    return acc;
+  }, {});
 
   return (petsVinculados || []).map((pet) => ({
     ...pet,

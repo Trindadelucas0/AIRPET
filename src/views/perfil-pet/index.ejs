@@ -1,0 +1,245 @@
+<%
+/*
+ * /p/:slug — Perfil unificado do pet.
+ *
+ * Renderiza header com capa + avatar (selo+cadeado overlay), nome+status,
+ * tutor, acoes contextuais, abas (Posts | Sobre | Saude | Tags | Scans) e
+ * o painel da aba ativa. As 3 ultimas abas so existem para o dono.
+ *
+ * Variaveis recebidas (do petPublicController):
+ *   pet, dono, posts, ehDono, ehVisitanteAnonimo, estaSeguindo,
+ *   totalSeguidores, totalSeguindo, petshopsVinculados, abaAtiva,
+ *   calendarioSaude, tagsAtivas, tagsHistorico, scans, alertaAtivo,
+ *   idadePet, totalCurtidasAgregado, canonicalUrl
+ */
+var abas = [
+  { id: 'posts', label: 'Posts',  icone: 'fa-th',           sempre: true  },
+  { id: 'sobre', label: 'Sobre',  icone: 'fa-circle-info',  sempre: true  },
+  { id: 'saude', label: 'Saude',  icone: 'fa-stethoscope',  sempre: false },
+  { id: 'nfc',   label: 'Tags',   icone: 'fa-tag',          sempre: false },
+  { id: 'scans', label: 'Scans',  icone: 'fa-location-dot', sempre: false }
+];
+var abaAtual = typeof abaAtiva !== 'undefined' && abaAtiva ? abaAtiva : 'posts';
+locals.extraHead = '<link rel="stylesheet" href="/css/perfil-pet-unificado.css">';
+%>
+<%- include('../partials/header') %>
+<%- include('../partials/flash') %>
+
+<main class="flex-1 pb-24 md:pb-6">
+  <div class="max-w-2xl mx-auto">
+
+    <%# ====== HERO COM CAPA ====== %>
+    <section class="pp-hero <%= pet.foto_capa ? 'pp-hero--has-cover' : '' %>">
+      <% if (pet.foto_capa) { %>
+        <img src="<%= pet.foto_capa %>" alt="" class="pp-hero__cover">
+        <div class="pp-hero__overlay"></div>
+      <% } %>
+      <% if (ehDono) { %>
+        <button type="button" class="pp-hero__edit-cover" id="btnEditarCapaPet">
+          <i class="fa-solid fa-camera"></i> Editar capa
+        </button>
+        <input type="file" id="inputCapaPet" accept="image/*" class="hidden">
+      <% } %>
+    </section>
+
+    <%# ====== IDENTIDADE (avatar + acoes + nome + tutor + stats) ====== %>
+    <section class="pp-identity">
+      <div class="pp-identity-row">
+        <div class="pp-avatar-wrap pet-photo-wrap">
+          <% if (pet.foto) { %>
+            <img src="<%= pet.foto %>" alt="<%= pet.nome %>">
+          <% } else { %>
+            <span class="pp-avatar-fallback"><i class="fa-solid fa-paw"></i></span>
+          <% } %>
+          <%- include('../partials/pet-verified-badge', { pet: pet, size: 'lg' }) %>
+        </div>
+
+        <div class="pp-actions">
+          <% if (ehVisitanteAnonimo) { %>
+            <a href="/auth/login?return_to=/p/<%= pet.slug %>" class="pp-btn pp-btn--primary">
+              <i class="fa-solid fa-right-to-bracket"></i> Entrar para seguir
+            </a>
+          <% } else if (!ehDono) { %>
+            <button type="button" id="btnFollowPet" data-pet-id="<%= pet.id %>"
+                    data-following="<%= estaSeguindo ? 'true' : 'false' %>"
+                    class="pp-btn <%= estaSeguindo ? '' : 'pp-btn--primary' %>">
+              <i class="fa-solid fa-paw"></i>
+              <span><%= estaSeguindo ? 'Seguindo' : 'Seguir' %></span>
+            </button>
+          <% } else { %>
+            <a href="/pets/<%= pet.id %>/editar" class="pp-btn pp-btn--secondary">
+              <i class="fa-solid fa-pen"></i> Editar pet
+            </a>
+            <button type="button" id="btnNovoPost" class="pp-btn pp-btn--primary" data-pet-id="<%= pet.id %>">
+              <i class="fa-solid fa-plus"></i> Novo post
+            </button>
+          <% } %>
+          <button type="button" id="btnSharePet" class="pp-btn pp-btn--ghost pp-btn--icon" title="Compartilhar perfil"
+                  data-url="<%= typeof canonicalUrl !== 'undefined' ? canonicalUrl : '' %>"
+                  data-nome="<%= pet.nome %>">
+            <i class="fa-solid fa-share-nodes"></i>
+          </button>
+          <% if (ehDono) { %>
+          <a href="/pets/<%= pet.id %>/qr" class="pp-btn pp-btn--ghost pp-btn--icon" title="QR Code do pet">
+            <i class="fa-solid fa-qrcode"></i>
+          </a>
+          <% } %>
+        </div>
+      </div>
+
+      <div class="pp-name-block">
+        <h1 class="pp-name">
+          <%= pet.nome %>
+          <% if (pet.status === 'perdido') { %>
+            <span class="pp-status-chip pp-status-chip--perdido">
+              <i class="fa-solid fa-triangle-exclamation"></i> Perdido
+            </span>
+          <% } else { %>
+            <span class="pp-status-chip pp-status-chip--seguro">
+              <i class="fa-solid fa-shield-halved"></i> Seguro
+            </span>
+          <% } %>
+        </h1>
+
+        <div class="pp-meta">
+          <% if (pet.raca) { %><span><%= pet.raca %></span><% } %>
+          <% if (pet.raca && pet.tipo) { %><span class="pp-meta-dot">·</span><% } %>
+          <% if (pet.tipo) { %><span><%= pet.tipo_custom || pet.tipo %></span><% } %>
+          <% if ((pet.raca || pet.tipo) && pet.sexo) { %><span class="pp-meta-dot">·</span><% } %>
+          <% if (pet.sexo) { %><span><%= pet.sexo %></span><% } %>
+          <% if (typeof idadePet !== 'undefined' && idadePet) { %>
+            <span class="pp-meta-dot">·</span>
+            <span><%= idadePet.anos %> ano<%= idadePet.anos === 1 ? '' : 's' %></span>
+          <% } %>
+        </div>
+
+        <% if (dono) { %>
+          <a href="/explorar/perfil/<%= dono.id %>" class="pp-tutor-line">
+            <% if (dono.foto_perfil) { %>
+              <img src="<%= dono.foto_perfil %>" alt="" class="pp-tutor-avatar">
+            <% } else { %>
+              <span class="pp-tutor-avatar" style="display:flex;align-items:center;justify-content:center;background:#f1f5f9;color:#64748b;font-size:11px;font-weight:800;">
+                <%= (dono.nome || '?').charAt(0).toUpperCase() %>
+              </span>
+            <% } %>
+            <span>Tutor: <strong><%= dono.nome %></strong></span>
+          </a>
+        <% } %>
+
+        <div class="pp-stats">
+          <span class="pp-stat"><strong><%= posts ? posts.length : 0 %></strong> posts</span>
+          <button type="button" id="btnVerSeguidores" class="pp-stat" style="background:transparent;border:0;cursor:pointer;padding:0;color:inherit;font:inherit;">
+            <strong><%= totalSeguidores || 0 %></strong> seguidores
+          </button>
+          <% if (typeof totalCurtidasAgregado !== 'undefined' && totalCurtidasAgregado > 0) { %>
+            <span class="pp-stat"><strong><%= totalCurtidasAgregado %></strong> curtidas</span>
+          <% } %>
+        </div>
+      </div>
+    </section>
+
+    <% if (ehVisitanteAnonimo) { %>
+    <div class="pp-anonymous-cta">
+      <i class="fa-solid fa-paw" style="font-size:24px;color:#ec5a1c;"></i>
+      <div class="pp-anonymous-cta__txt">
+        <strong>Veja mais sobre <%= pet.nome %> no AIRPET</strong> — curta posts, siga e ative sua propria tag NFC.
+      </div>
+      <a href="/auth/login?return_to=/p/<%= pet.slug %>" class="pp-anonymous-cta__btn">Entrar</a>
+    </div>
+    <% } %>
+
+    <%# ====== ABAS ====== %>
+    <nav class="pp-tabs" role="tablist">
+      <% abas.forEach(function(aba) {
+        if (!aba.sempre && !ehDono) return;
+        var url = '/p/' + pet.slug + (aba.id === 'posts' ? '' : '?tab=' + aba.id);
+      %>
+        <a href="<%= url %>" class="pp-tab <%= abaAtual === aba.id ? 'pp-tab--active' : '' %>" data-tab="<%= aba.id %>">
+          <i class="fa-solid <%= aba.icone %>"></i> <span><%= aba.label %></span>
+        </a>
+      <% }); %>
+    </nav>
+
+    <%# ====== DESTAQUES (Stories) ====== %>
+    <%
+      var _destaques = (typeof destaques !== 'undefined' && Array.isArray(destaques)) ? destaques : [];
+    %>
+    <% if (abaAtual === 'posts' && _destaques.length > 0) { %>
+      <div class="pp-highlights" aria-label="Destaques">
+        <% _destaques.forEach(function(d) { %>
+          <a href="/p/<%= pet.slug %>/post/<%= d.id %>" class="pp-highlight" data-post-id="<%= d.id %>">
+            <span class="pp-highlight__ring">
+              <span class="pp-highlight__inner">
+                <img class="pp-highlight__img" src="<%= d.media_url %>" alt="<%= d.legenda || 'Destaque' %>">
+              </span>
+            </span>
+            <span class="pp-highlight__label">
+              <%= d.legenda ? (d.legenda.length > 16 ? d.legenda.slice(0,16) + '…' : d.legenda) : 'Fixado' %>
+            </span>
+          </a>
+        <% }); %>
+      </div>
+    <% } %>
+
+    <%# ====== CONTEUDO DA ABA ATIVA ====== %>
+    <% if (abaAtual === 'posts') { %>
+      <%- include('./partials/aba-posts', { pet: pet, posts: posts, ehDono: ehDono }) %>
+    <% } else if (abaAtual === 'sobre') { %>
+      <%- include('./partials/aba-sobre', { pet: pet, dono: dono, ehDono: ehDono, idadePet: typeof idadePet !== 'undefined' ? idadePet : null, petshopsVinculados: petshopsVinculados, timeline: typeof timeline !== 'undefined' ? timeline : [] }) %>
+    <% } else if (abaAtual === 'saude' && ehDono) { %>
+      <%- include('./partials/aba-saude', { pet: pet, calendarioSaude: typeof calendarioSaude !== 'undefined' ? calendarioSaude : [] }) %>
+    <% } else if (abaAtual === 'nfc' && ehDono) { %>
+      <%- include('./partials/aba-nfc', { pet: pet, tagsAtivas: typeof tagsAtivas !== 'undefined' ? tagsAtivas : [], tagsHistorico: typeof tagsHistorico !== 'undefined' ? tagsHistorico : [] }) %>
+    <% } else if (abaAtual === 'scans' && ehDono) { %>
+      <%- include('./partials/aba-scans', { pet: pet, scans: typeof scans !== 'undefined' ? scans : [], alertaAtivo: typeof alertaAtivo !== 'undefined' ? alertaAtivo : null }) %>
+    <% } else { %>
+      <%- include('./partials/aba-posts', { pet: pet, posts: posts, ehDono: ehDono }) %>
+    <% } %>
+
+  </div>
+
+  <%# Modais reutilizados (post detail, comentarios, seguidores) %>
+  <%- include('../partials/post-detail-modal') %>
+</main>
+
+<script src="/js/airpet-post-detail-organic.js"></script>
+<script src="/js/post-modal.js"></script>
+<script>
+  /*
+   * Boot da pagina:
+   *   - Web Share API + fallback de clipboard para o botao "Compartilhar".
+   *   - Hook do "Novo post" abre o composer dentro do contexto deste pet.
+   */
+  (function () {
+    var btnShare = document.getElementById('btnSharePet');
+    if (btnShare) {
+      btnShare.addEventListener('click', async function () {
+        var url = btnShare.getAttribute('data-url') || window.location.href;
+        var nome = btnShare.getAttribute('data-nome') || 'meu pet';
+        var dados = { title: nome + ' | AIRPET', text: 'Conheca ' + nome + ' no AIRPET', url: url };
+        try {
+          if (navigator.share) {
+            await navigator.share(dados);
+            return;
+          }
+        } catch (_) {}
+        try {
+          await navigator.clipboard.writeText(url);
+          alert('Link copiado: ' + url);
+        } catch (_) {
+          window.prompt('Copie o link:', url);
+        }
+      });
+    }
+
+    var btnNovoPost = document.getElementById('btnNovoPost');
+    if (btnNovoPost) {
+      btnNovoPost.addEventListener('click', function () {
+        var petId = btnNovoPost.getAttribute('data-pet-id');
+        window.location.href = '/feed?compose=1&pet_id=' + encodeURIComponent(petId);
+      });
+    }
+  })();
+</script>
+
+<%- include('../partials/footer') %>

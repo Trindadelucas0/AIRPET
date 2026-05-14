@@ -801,17 +801,18 @@
                   <span><i class="fa-solid fa-circle-dollar mr-1"></i>Patrocinado</span>
                 </div>
                 <div class="post-header">
-                  <% if (post.pet_id) { %><a href="/explorar/pet/<%= post.pet_id %>" class="post-avatar-wrap"><% } else { %><span class="post-avatar-wrap"><% } %>
+                  <% if (post.pet_id) { %><a href="/p/<%= post.pet_slug || post.pet_id %>" class="post-avatar-wrap pet-photo-wrap"><% } else { %><span class="post-avatar-wrap pet-photo-wrap"><% } %>
                   <% if (post.pet_foto) { %>
                     <img src="<%= post.pet_foto %>" class="post-avatar post-pet-avatar" alt="">
                   <% } else { %>
                     <div class="post-avatar-initial post-pet-initial" style="background:var(--ink-4)">🐾</div>
                   <% } %>
+                  <%- include('partials/pet-verified-badge', { pet: { tem_tag_ativa: post.pet_tem_tag_ativa, verificado: post.pet_verificado }, size: 'xs' }) %>
                   <% if (post.pet_id) { %></a><% } else { %></span><% } %>
                   <div class="post-meta">
                     <div class="post-title-stack">
                       <% if (post.pet_id) { %>
-                        <a href="/explorar/pet/<%= post.pet_id %>" class="post-pet-name"><span class="post-pet-emoji" aria-hidden="true">🐾</span><%= post.pet_nome || 'Pet' %></a>
+                        <a href="/p/<%= post.pet_slug || post.pet_id %>" class="post-pet-name"><span class="post-pet-emoji" aria-hidden="true">🐾</span><%= post.pet_nome || 'Pet' %></a>
                         <% if (post.autor_nome) { %>
                           <div class="post-tutor-line"><span class="post-tutor-prefix">por</span><span class="post-tutor-name" style="text-decoration:none;cursor:default;"><%= post.autor_nome %></span></div>
                         <% } %>
@@ -886,16 +887,17 @@
                 <% var feedHasPet = post.pet_id && post.pet_nome; %>
                 <div class="post-header">
                   <% if (feedHasPet) { %>
-                  <a href="/explorar/pet/<%= post.pet_id %>" class="post-avatar-wrap">
+                  <a href="/p/<%= post.pet_slug || post.pet_id %>" class="post-avatar-wrap pet-photo-wrap">
                     <% if (post.pet_foto) { %>
                       <img src="<%= post.pet_foto %>" class="post-avatar post-pet-avatar" alt="">
                     <% } else { %>
                       <div class="post-avatar-initial post-pet-initial">🐾</div>
                     <% } %>
+                    <%- include('partials/pet-verified-badge', { pet: { tem_tag_ativa: post.pet_tem_tag_ativa, verificado: post.pet_verificado }, size: 'xs' }) %>
                   </a>
                   <div class="post-meta">
                     <div class="post-title-stack">
-                      <a href="/explorar/pet/<%= post.pet_id %>" class="post-pet-name"><span class="post-pet-emoji" aria-hidden="true">🐾</span><%= post.pet_nome %></a>
+                      <a href="/p/<%= post.pet_slug || post.pet_id %>" class="post-pet-name"><span class="post-pet-emoji" aria-hidden="true">🐾</span><%= post.pet_nome %></a>
                       <div class="post-tutor-line">
                         <span class="post-tutor-prefix">por</span>
                         <a href="/explorar/perfil/<%= post.usuario_id %>" class="post-tutor-name"><%= post.autor_nome %></a>

@@ -116,7 +116,7 @@ const Notificacao = {
        FROM notificacoes
        WHERE tipo = 'alerta'
          AND pet_id = $1
-         AND COALESCE(data_criacao, data) >= NOW() - make_interval(hours => $2::numeric)`,
+         AND COALESCE(data_criacao, data) >= NOW() - make_interval(hours => $2::int)`,
       [petId, horasDesde]
     );
     return resultado.rows.map(row => row.usuario_id);

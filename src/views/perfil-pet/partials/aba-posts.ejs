@@ -1,0 +1,90 @@
+<%
+/*
+ * aba-posts.ejs — Grid 3 colunas estilo Instagram do perfil do pet.
+ *
+ * Cada celula dispara o post-modal.js (data-post-id), que abre o feed
+ * tipo lightbox. Posts fixados ganham um pin no canto superior esquerdo;
+ * posts com mais de 1 midia ganham o icone de carrossel no canto superior
+ * direito.
+ *
+ * Embutimos `data-explorar-meta` em cada celula com o mesmo formato usado
+ * por `airpet-post-detail-organic.js`. Assim o modal de detalhe (partial
+ * post-detail-modal) eh reaproveitado sem duplicar logica.
+ */
+var postsArr = (typeof posts !== 'undefined' && Array.isArray(posts)) ? posts : [];
+function _postHasMedia(p) {
+  if (!p) return false;
+  if (p.foto && String(p.foto).trim()) return true;
+  if (Array.isArray(p.media) && p.media.length > 0) return true;
+  return false;
+}
+var postsComMidia = postsArr.filter(_postHasMedia);
+%>
+
+<% if (postsComMidia.length === 0) { %>
+  <div class="pp-empty">
+    <i class="fa-regular fa-images"></i>
+    <h3>Nenhum post ainda</h3>
+    <% if (ehDono) { %>
+      <p><%= pet.nome %> ainda nao tem fotos. Crie o primeiro post para comecar a contar a historia.</p>
+    <% } else { %>
+      <p><%= pet.nome %> ainda nao publicou nenhuma foto.</p>
+    <% } %>
+  </div>
+<% } else { %>
+  <div class="pp-grid" id="petPostsGrid" data-pet-slug="<%= pet.slug %>">
+    <% postsComMidia.forEach(function(post) {
+      var thumb = post.foto || (post.media && post.media[0] && post.media[0].media_url);
+      var totalMidia = post.total_media || (Array.isArray(post.media) ? post.media.length : 0);
+      var temMulti = totalMidia > 1;
+      var meta = {
+        kind: 'organic',
+        postId: post.id,
+        foto: post.foto || '',
+        texto: post.texto || post.legenda || '',
+        criado_em: post.criado_em || '',
+        autor_nome: post.autor_nome || (dono && dono.nome) || '',
+        usuario_id: post.usuario_id,
+        foto_perfil: post.foto_perfil || '',
+        cor_perfil: post.cor_perfil || '#ec5a1c',
+        pet_id: pet.id,
+        pet_nome: pet.nome,
+        pet_foto: pet.foto || '',
+        fixada: !!post.fixada,
+        tipo: post.tipo || 'original',
+        orig_id: post.orig_id || null,
+        orig_foto: post.orig_foto || '',
+        orig_texto: post.orig_texto || '',
+        orig_legenda: post.orig_legenda || '',
+        orig_autor_nome: post.orig_autor_nome || '',
+        orig_pet_id: post.orig_pet_id || null,
+        orig_pet_nome: post.orig_pet_nome || '',
+        orig_pet_foto: post.orig_pet_foto || '',
+        comments: true,
+      };
+      var metaJson = encodeURIComponent(JSON.stringify(meta));
+    %>
+      <button type="button" class="pp-grid__cell"
+              data-post-id="<%= post.id %>"
+              data-pet-slug="<%= pet.slug %>"
+              data-explorar-meta="<%= metaJson %>"
+              aria-label="Abrir post de <%= pet.nome %>">
+        <img src="<%= thumb %>" alt="" loading="lazy">
+        <% if (post.fixada) { %>
+          <i class="fa-solid fa-thumbtack pp-grid__pin" aria-hidden="true" title="Fixado"></i>
+        <% } %>
+        <% if (temMulti) { %>
+          <i class="fa-solid fa-clone pp-grid__multi-icon" aria-hidden="true" title="Multiplas midias"></i>
+        <% } %>
+        <div class="pp-grid__overlay">
+          <% if (post.total_curtidas) { %>
+            <span><i class="fa-solid fa-heart"></i><%= post.total_curtidas %></span>
+          <% } %>
+          <% if (post.total_comentarios) { %>
+            <span><i class="fa-solid fa-comment"></i><%= post.total_comentarios %></span>
+          <% } %>
+        </div>
+      </button>
+    <% }); %>
+  </div>
+<% } %>

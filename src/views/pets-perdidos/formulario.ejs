@@ -60,11 +60,14 @@
 
     <!-- Pet hero -->
     <div class="alert-hero">
-      <% if (pet.foto) { %>
-        <img src="<%= pet.foto %>" class="alert-hero-avatar" alt="<%= pet.nome %>">
-      <% } else { %>
-        <div class="alert-hero-init">🐾</div>
-      <% } %>
+      <span class="pet-photo-wrap" style="display:inline-flex;">
+        <% if (pet.foto) { %>
+          <img src="<%= pet.foto %>" class="alert-hero-avatar" alt="<%= pet.nome %>">
+        <% } else { %>
+          <div class="alert-hero-init">🐾</div>
+        <% } %>
+        <%- include('../partials/pet-verified-badge', { pet: pet, size: 'md' }) %>
+      </span>
       <div>
         <div class="alert-hero-name"><%= pet.nome %></div>
         <div class="alert-hero-sub"><%= pet.tipo ? pet.tipo.charAt(0).toUpperCase()+pet.tipo.slice(1) : 'Pet' %> · <%= pet.raca || 'Sem raça' %></div>

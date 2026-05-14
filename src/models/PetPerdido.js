@@ -173,7 +173,9 @@ const PetPerdido = {
   async listarRecentesAprovadosParaHome(limite = 3) {
     const lim = Math.min(Math.max(parseInt(limite, 10) || 3, 1), 20);
     const resultado = await query(
-      `SELECT pp.*, p.nome AS pet_nome, p.foto AS pet_foto, p.raca AS pet_raca
+      `SELECT pp.*, p.nome AS pet_nome, p.foto AS pet_foto, p.raca AS pet_raca, p.slug AS pet_slug,
+              EXISTS (SELECT 1 FROM nfc_tags nt WHERE nt.pet_id = p.id AND nt.status='active') AS pet_tem_tag_ativa,
+              EXISTS (SELECT 1 FROM nfc_tags nt WHERE nt.pet_id = p.id AND nt.status='active') AS pet_verificado
        FROM pets_perdidos pp
        JOIN pets p ON p.id = pp.pet_id
        WHERE pp.status = 'aprovado'

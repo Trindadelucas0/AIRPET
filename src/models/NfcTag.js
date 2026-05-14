@@ -247,7 +247,30 @@ const NfcTag = {
       [id, petId]
     );
 
-    return resultado.rows[0];
+    const tag = resultado.rows[0];
+
+    // Emite automaticamente o badge "pet_verificado" para o dono do pet.
+    // Idempotente: depende de UNIQUE (user_id, badge_code) em user_badges.
+    if (tag) {
+      try {
+        await executor.query(
+          `INSERT INTO user_badges (user_id, badge_id, earned_at)
+           SELECT p.usuario_id, b.id, NOW()
+           FROM pets p
+           CROSS JOIN badges b
+           WHERE p.id = $1
+             AND b.code = 'pet_verificado'
+           ON CONFLICT (user_id, badge_id) DO NOTHING`,
+          [petId]
+        );
+      } catch (errBadge) {
+        // Nunca quebrar a ativacao da tag por erro na emissao do badge.
+        // Loga apenas via console para nao introduzir dependencia circular com logger.
+        try { console.warn('[NFC_TAG] Falha ao emitir badge pet_verificado:', errBadge.message); } catch (_) {}
+      }
+    }
+
+    return tag;
   },
 
   /**

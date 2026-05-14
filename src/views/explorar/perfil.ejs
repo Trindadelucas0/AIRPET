@@ -214,8 +214,8 @@
               <div class="flex items-start gap-3 min-w-max pr-1">
               <% pets.forEach(function(pet) { %>
                 <div class="w-[96px] sm:w-[108px]">
-                  <a href="/explorar/pet/<%= pet.id %>" class="block group">
-                    <div class="mx-auto w-[72px] h-[72px] sm:w-[82px] sm:h-[82px] rounded-full p-[2px] bg-gradient-to-br from-primary-500 via-pink-500 to-purple-500 shadow-sm">
+                  <a href="/p/<%= pet.slug || pet.id %>" class="block group">
+                    <div class="mx-auto w-[72px] h-[72px] sm:w-[82px] sm:h-[82px] rounded-full p-[2px] bg-gradient-to-br from-primary-500 via-pink-500 to-purple-500 shadow-sm pet-photo-wrap">
                       <div class="w-full h-full rounded-full overflow-hidden bg-white p-[2px]">
                         <div class="w-full h-full rounded-full overflow-hidden bg-gray-100">
                       <% if (pet.foto) { %>
@@ -227,17 +227,11 @@
                       <% } %>
                         </div>
                       </div>
+                      <%- include('../partials/pet-verified-badge', { pet: pet, size: 'sm' }) %>
                     </div>
                     <p class="mt-2 text-[12px] font-bold text-gray-800 truncate text-center"><%= pet.nome %></p>
                     <p class="text-[10px] text-gray-500 truncate text-center"><%= pet.raca || 'Sem raça' %></p>
                   </a>
-                  <% if (eMeuPerfil) { %>
-                    <a href="/pets/<%= pet.id %>"
-                       class="mt-1 inline-flex w-full items-center justify-center gap-1 rounded-full border border-primary-200 bg-primary-50 px-2 py-1 text-[10px] font-semibold text-primary-700 hover:bg-primary-100 transition-all whitespace-nowrap">
-                      <i class="fa-solid fa-up-right-from-square text-[9px]"></i>
-                      Painel
-                    </a>
-                  <% } %>
                 </div>
               <% }); %>
               </div>
@@ -253,7 +247,7 @@
         </div>
       </section>
 
-      <!-- ═══ Fotos dos pets (galeria por pet) ═══ -->
+      <!-- ═══ Fotos dos pets — agora derivadas de Publicacao (todo upload e post) ═══ -->
       <% if (typeof galeriaPorPet !== 'undefined' && galeriaPorPet && galeriaPorPet.length > 0) { %>
         <section class="mt-6 mb-2 profile-reveal" style="animation-delay: .14s">
           <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">
@@ -263,18 +257,48 @@
             <% galeriaPorPet.forEach(function(item) { %>
               <div class="rounded-xl border border-gray-100 overflow-hidden">
                 <div class="px-3 py-2 bg-gray-50 border-b border-gray-100 flex items-center gap-2">
-                  <% if (item.pet_foto) { %>
-                    <img src="<%= item.pet_foto %>" alt="" class="w-6 h-6 rounded-full object-cover">
-                  <% } else { %>
-                    <span class="w-6 h-6 rounded-full bg-primary-100 flex items-center justify-center text-[10px] text-primary-600"><i class="fa-solid fa-paw"></i></span>
-                  <% } %>
-                  <span class="text-sm font-bold text-gray-800"><%= item.pet_nome %></span>
+                  <a href="/p/<%= item.pet_slug || item.pet_id %>" class="flex items-center gap-2 hover:underline">
+                    <span class="pet-photo-wrap inline-flex items-center justify-center" style="width:24px;height:24px;">
+                      <% if (item.pet_foto) { %>
+                        <img src="<%= item.pet_foto %>" alt="" class="w-6 h-6 rounded-full object-cover">
+                      <% } else { %>
+                        <span class="w-6 h-6 rounded-full bg-primary-100 flex items-center justify-center text-[10px] text-primary-600"><i class="fa-solid fa-paw"></i></span>
+                      <% } %>
+                      <%- include('../partials/pet-verified-badge', { pet: item, size: 'xs' }) %>
+                    </span>
+                    <span class="text-sm font-bold text-gray-800"><%= item.pet_nome %></span>
+                  </a>
                 </div>
-                <div class="grid grid-cols-3 sm:grid-cols-4 gap-1 p-2">
+                <div class="grid grid-cols-3 sm:grid-cols-4 gap-1 p-2" id="tutorPostsGrid_<%= item.pet_id %>">
                   <% (item.fotos || []).forEach(function(f) { %>
-                    <a href="<%= f.foto %>" target="_blank" rel="noopener" class="block aspect-square rounded-lg overflow-hidden bg-gray-100">
-                      <img src="<%= f.foto %>" alt="" class="w-full h-full object-cover">
-                    </a>
+                    <%
+                      var meta = {
+                        kind: 'organic',
+                        postId: f.id,
+                        foto: f.foto,
+                        texto: '',
+                        criado_em: '',
+                        autor_nome: perfil.nome,
+                        usuario_id: perfil.id,
+                        foto_perfil: perfil.foto_perfil || '',
+                        cor_perfil: perfil.cor_perfil || '#ec5a1c',
+                        pet_id: item.pet_id,
+                        pet_nome: item.pet_nome,
+                        pet_foto: item.pet_foto || '',
+                        fixada: false,
+                        tipo: 'original',
+                        comments: true,
+                      };
+                      var metaJson = encodeURIComponent(JSON.stringify(meta));
+                    %>
+                    <button type="button"
+                            class="pp-grid__cell block aspect-square rounded-lg overflow-hidden bg-gray-100 relative"
+                            data-post-id="<%= f.id %>"
+                            data-pet-slug="<%= item.pet_slug || item.pet_id %>"
+                            data-explorar-meta="<%= metaJson %>"
+                            aria-label="Abrir post de <%= item.pet_nome %>">
+                      <img src="<%= f.foto %>" alt="" class="w-full h-full object-cover" loading="lazy">
+                    </button>
                   <% }); %>
                 </div>
               </div>
@@ -650,6 +674,7 @@
 <%- include('../partials/footer') %>
 
 <script src="/js/airpet-post-detail-organic.js"></script>
+<script src="/js/post-modal.js"></script>
 <script>
 (function () {
   'use strict';

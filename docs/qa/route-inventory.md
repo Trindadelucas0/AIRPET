@@ -20,7 +20,6 @@ Legenda de risco: **Alta** (auth/admin/dados sensiveis), **Media** (fluxos de ne
 | `POST` | `/api/localizacao` | Sessao obrigatoria | JSON/API | Media | `src/routes/localizacaoRoutes.js` |
 | `GET` | `/api/localizacao/:pet_id` | Sessao obrigatoria | JSON/API | Media | `src/routes/localizacaoRoutes.js` |
 | `GET` | `/api/monitoramento` | Admin | JSON/API | Alta | `src/routes/adminRoutes.js` |
-| `GET` | `/api/perfil/galeria` | Sessao obrigatoria | JSON/API | Alta | `src/routes/index.js` |
 | `GET` | `/api/pets/:id/alerta-ativo` | Sessao obrigatoria | JSON/API | Media | `src/routes/index.js` |
 | `GET` | `/api/petshops/mapa` | Publica | JSON/API | Media | `src/routes/index.js` |
 | `GET` | `/api/racas` | Publica | JSON/API | Media | `src/routes/index.js` |
@@ -130,9 +129,6 @@ Legenda de risco: **Alta** (auth/admin/dados sensiveis), **Media** (fluxos de ne
 | `PUT` | `/perfil` | Sessao obrigatoria | HTML/SSR | Alta | `src/routes/index.js` |
 | `GET` | `/perfil/aparencia` | Sessao obrigatoria | HTML/SSR | Alta | `src/routes/index.js` |
 | `GET` | `/perfil/conta` | Sessao obrigatoria | HTML/SSR | Alta | `src/routes/index.js` |
-| `GET` | `/perfil/galeria` | Sessao obrigatoria | HTML/SSR | Alta | `src/routes/index.js` |
-| `POST` | `/perfil/galeria` | Sessao obrigatoria | HTML/SSR | Alta | `src/routes/index.js` |
-| `DELETE` | `/perfil/galeria/:id` | Sessao obrigatoria | HTML/SSR | Alta | `src/routes/index.js` |
 | `GET` | `/perfil/localizacao` | Sessao obrigatoria | HTML/SSR | Alta | `src/routes/index.js` |
 | `GET` | `/perfil/seguranca` | Sessao obrigatoria | HTML/SSR | Alta | `src/routes/index.js` |
 | `GET` | `/pets` | Admin | HTML/SSR | Alta | `src/routes/adminRoutes.js` |

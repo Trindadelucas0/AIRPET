@@ -351,8 +351,6 @@ function aplicarSpansExplorarMosaico(posts, seed) {
   });
 }
 
-const FotoPerfilPet = require('../models/FotoPerfilPet');
-
 const explorarController = {
 
   async feedSeguidos(req, res) {
@@ -998,18 +996,40 @@ const explorarController = {
         return res.redirect('/explorar');
       }
 
-      const [pets, galeriaLinhas, totalPosts] = await Promise.all([
+      const [pets, totalPosts] = await Promise.all([
         Pet.buscarPorUsuario(id),
-        FotoPerfilPet.listarPorUsuario(id),
         Publicacao.contarAtivas(id),
       ]);
 
-      const galeriaPorPet = {};
-      (galeriaLinhas || []).forEach((f) => {
-        if (!galeriaPorPet[f.pet_id]) galeriaPorPet[f.pet_id] = { pet_nome: f.pet_nome, pet_foto: f.pet_foto, fotos: [] };
-        galeriaPorPet[f.pet_id].fotos.push({ id: f.id, foto: f.foto });
-      });
-      const galeriaPorPetLista = Object.entries(galeriaPorPet).map(([pet_id, v]) => ({ pet_id: parseInt(pet_id, 10), pet_nome: v.pet_nome, pet_foto: v.pet_foto, fotos: v.fotos }));
+      /*
+       * "Fotos dos pets" agora vem do sistema de posts (publicacoes).
+       * Para cada pet, carregamos os posts mais recentes que tenham midia
+       * e montamos um grid agrupado por pet. Reusa o modal de detalhe.
+       */
+      let galeriaPorPetLista = [];
+      try {
+        const POSTS_POR_PET = 9;
+        const porPet = await Promise.all((pets || []).map(async (p) => {
+          const lista = await Publicacao.buscarPorPet(p.id, uid, POSTS_POR_PET);
+          const comFoto = (lista || [])
+            .filter((post) => post && post.foto && String(post.foto).trim())
+            .map((post) => ({ id: post.id, foto: post.foto }));
+          if (!comFoto.length) return null;
+          return {
+            pet_id: p.id,
+            pet_nome: p.nome,
+            pet_slug: p.slug,
+            pet_foto: p.foto,
+            tem_tag_ativa: !!p.tem_tag_ativa,
+            verificado: !!p.verificado,
+            fotos: comFoto,
+          };
+        }));
+        galeriaPorPetLista = porPet.filter(Boolean);
+      } catch (e) {
+        logger.error('EXPLORAR', 'Erro ao montar galeria-de-posts do perfil', e);
+        galeriaPorPetLista = [];
+      }
 
       res.render('explorar/perfil', {
         titulo: usuario.nome,

@@ -145,7 +145,7 @@
         <div class="pet-card" style="animation-delay:<%= idx * 60 %>ms">
 
           <!-- Photo -->
-          <a href="/pets/<%= pet.id %>">
+          <a href="/p/<%= pet.slug || pet.id %>" class="pet-photo-wrap" style="display:block;position:relative;">
             <% if (pet.foto) { %>
               <img src="<%= pet.foto %>" class="pet-card-photo" alt="<%= pet.nome %>" loading="lazy">
             <% } else { %>
@@ -153,6 +153,7 @@
                 <%= pet.tipo === 'gato' ? '🐱' : pet.tipo === 'passaro' ? '🦜' : '🐾' %>
               </div>
             <% } %>
+            <%- include('../partials/pet-verified-badge', { pet: pet, size: 'md' }) %>
           </a>
 
           <!-- Status badge -->
@@ -174,8 +175,8 @@
                 if (anos >= 0) { %> · <%= anos %> ano<%= anos !== 1 ? 's' : '' %><% } } %>
             </div>
             <div class="pet-card-actions">
-              <a href="/pets/<%= pet.id %>" class="pet-action-btn primary">
-                <i class="fa-solid fa-paw"></i> Ver
+              <a href="/p/<%= pet.slug || pet.id %>" class="pet-action-btn primary">
+                <i class="fa-solid fa-paw"></i> Ver perfil
               </a>
               <a href="/pets/<%= pet.id %>/editar" class="pet-action-btn ghost">
                 <i class="fa-solid fa-pen"></i>

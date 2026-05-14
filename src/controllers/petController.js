@@ -666,7 +666,12 @@ const petController = {
         req.session.flash = { tipo: 'erro', mensagem: 'Acesso restrito ao dono do pet.' };
         return res.redirect(`/pets/${id}`);
       }
-      return res.render('pets/qr', { titulo: `QR Code — ${pet.nome}`, pet });
+      const petProfileUrl = `${req.protocol}://${req.get('host')}/p/${pet.slug || pet.id}`;
+      return res.render('pets/qr', {
+        titulo: `QR Code — ${pet.nome}`,
+        pet,
+        petProfileUrl,
+      });
     } catch (erro) {
       logger.error('PET_CTRL', 'Erro ao exibir QR do pet', erro);
       req.session.flash = { tipo: 'erro', mensagem: 'Erro ao gerar QR Code.' };

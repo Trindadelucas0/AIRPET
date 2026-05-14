@@ -9,7 +9,7 @@
       <i class="fa-solid fa-arrow-left text-sm"></i>
     </a>
     <% if (conversa) { %>
-      <div class="w-10 h-10 rounded-full overflow-hidden bg-gray-100 flex-shrink-0">
+      <a href="/p/<%= conversa.pet_slug || '' %>" class="w-10 h-10 rounded-full overflow-hidden bg-gray-100 flex-shrink-0 pet-photo-wrap" style="position:relative;">
         <% if (conversa.pet_foto) { %>
           <img src="<%= conversa.pet_foto %>" alt="<%= conversa.pet_nome %>" class="w-full h-full object-cover">
         <% } else { %>
@@ -17,7 +17,8 @@
             <i class="fa-solid fa-paw text-gray-300"></i>
           </div>
         <% } %>
-      </div>
+        <%- include('../partials/pet-verified-badge', { pet: { tem_tag_ativa: conversa.pet_tem_tag_ativa, verificado: conversa.pet_verificado }, size: 'xs' }) %>
+      </a>
       <div class="min-w-0 flex-1">
         <p class="text-sm font-bold text-gray-900 truncate"><%= conversa.pet_nome || 'Chat' %></p>
         <p class="text-xs text-gray-500">

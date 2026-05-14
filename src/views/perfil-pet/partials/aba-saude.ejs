@@ -1,0 +1,45 @@
+<%
+/*
+ * aba-saude.ejs — Painel "Saude" — somente dono.
+ * Mostra calendario de vacinas/consultas proximas e link para a tela
+ * completa de saude (que continua em /pets/:id/saude por enquanto).
+ */
+var cal = (typeof calendarioSaude !== 'undefined' && Array.isArray(calendarioSaude)) ? calendarioSaude : [];
+function _fmtData(d) {
+  if (!d) return '';
+  try { return new Date(d).toLocaleDateString('pt-BR'); } catch (_) { return ''; }
+}
+%>
+
+<div class="pp-panel">
+  <div class="pp-card">
+    <div class="pp-card-title"><i class="fa-solid fa-stethoscope"></i> Proximos cuidados</div>
+
+    <% if (cal.length === 0) { %>
+      <p style="font-size:13px;color:#94a3b8;margin:0;">
+        Sem vacinas, consultas ou registros pendentes nos proximos dias.
+      </p>
+    <% } else { %>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <% cal.forEach(function(item) { %>
+          <div style="display:flex;align-items:center;gap:12px;padding:10px;border-radius:12px;background:#f8fafc;border:1px solid #e2e8f0;">
+            <span style="width:34px;height:34px;border-radius:999px;background:#fff;display:flex;align-items:center;justify-content:center;color:#ec5a1c;">
+              <i class="fa-solid <%= item.icone || 'fa-syringe' %>"></i>
+            </span>
+            <div style="flex:1;min-width:0;">
+              <div style="font-weight:800;color:#0f172a;font-size:14px;"><%= item.titulo %></div>
+              <div style="font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:.04em;"><%= item.tipo %></div>
+            </div>
+            <div style="font-size:12px;font-weight:700;color:#0f172a;"><%= _fmtData(item.data) %></div>
+          </div>
+        <% }); %>
+      </div>
+    <% } %>
+
+    <div style="margin-top:14px;display:flex;justify-content:flex-end;">
+      <a href="/pets/<%= pet.id %>/saude" class="pp-btn pp-btn--secondary">
+        <i class="fa-solid fa-notes-medical"></i> Abrir saude completa
+      </a>
+    </div>
+  </div>
+</div>
