@@ -158,6 +158,21 @@
                   rows="2" maxlength="200"
                   placeholder="Uma frase sobre a personalidade do pet…"><%= pet.descricao_emocional||'' %></textarea>
       </div>
+
+      <div class="pp-field">
+        <label class="pp-label" for="bio_pet">Bio pública do pet <span style="font-weight:400;text-transform:none;letter-spacing:0">(opcional, até 160 caracteres)</span></label>
+        <textarea class="pp-input" id="bio_pet" name="bio_pet"
+                  rows="2" maxlength="160"
+                  placeholder="Em primeira pessoa: “Eu sou o Thor, adoro bolinha…”"><%= (pet.bio_pet || '').trim() %></textarea>
+        <p style="font-size:11px;color:var(--text-muted);margin-top:6px;">Aparece no perfil público <code>/p/<%= pet.slug %></code> e em compartilhamentos.</p>
+      </div>
+
+      <label class="pp-toggle" style="margin-top:8px;" role="switch"
+             aria-checked="<%= pet.privado ? 'true' : 'false' %>">
+        <input type="checkbox" name="privado" value="on" <%= pet.privado ? 'checked' : '' %>
+               style="width:18px;height:18px;accent-color:var(--accent);">
+        <span class="pp-toggle-label" style="margin-left:10px;">Perfil privado — só quem segue o pet vê posts e destaques</span>
+      </label>
     </section>
 
     <!-- ── MEDIDAS ── -->

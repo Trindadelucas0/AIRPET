@@ -1,0 +1,67 @@
+<%
+locals.extraHead = `
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,600;1,9..40,400&display=swap" rel="stylesheet">
+<style>
+  .fp-page { max-width: 640px; margin: 0 auto; padding: 0 16px 96px; font-family: "DM Sans", sans-serif; }
+  .fp-topbar { position: sticky; top: 56px; z-index: 20; background: rgba(255,255,255,.94); backdrop-filter: blur(8px); border-bottom: 1px solid #d9e2f1; padding: 10px 0 12px; margin: 0 -16px 16px; padding-left: 16px; padding-right: 16px; }
+  .fp-tabs { display: flex; gap: 8px; margin-top: 8px; }
+  .fp-tab { flex: 1; text-align: center; padding: 10px 12px; border-radius: 12px; font-size: 13px; font-weight: 700; text-decoration: none; color: #596a89; border: 1px solid #e2e8f0; background: #fff; }
+  .fp-tab--active { color: #fff; background: #ec5a1c; border-color: #ec5a1c; }
+  .fp-card { background: #fff; border: 1px solid #d9e2f1; border-radius: 16px; overflow: hidden; margin-bottom: 14px; box-shadow: 0 6px 14px rgba(36,55,90,.07); }
+  .fp-card a { text-decoration: none; color: inherit; display: block; }
+  .fp-card img { width: 100%; max-height: 220px; object-fit: cover; display: block; background: #f1f5f9; }
+  .fp-card-body { padding: 12px 14px 14px; }
+  .fp-store { font-size: 12px; color: #64748b; font-weight: 600; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
+  .fp-store img { width: 28px; height: 28px; border-radius: 8px; object-fit: cover; }
+  .fp-title { font-size: 16px; font-weight: 800; color: #1f2c44; line-height: 1.25; }
+  .fp-badge { display: inline-block; margin-top: 8px; font-size: 11px; font-weight: 700; padding: 4px 8px; border-radius: 999px; background: #f1f5f9; color: #475569; }
+  .fp-preco { margin-top: 8px; font-size: 18px; font-weight: 800; color: #ec5a1c; }
+  .fp-empty { text-align: center; padding: 40px 16px; color: #64748b; font-size: 14px; }
+</style>
+`;
+var feedAba = typeof feedAbaAtiva !== 'undefined' ? feedAbaAtiva : 'parceiros';
+%>
+<%- include('partials/header') %>
+<%- include('partials/flash') %>
+
+<main class="fp-page flex-1">
+  <div class="fp-topbar">
+    <h1 style="margin:0;font-size:18px;font-weight:800;color:#1f2c44;">Feed</h1>
+    <nav class="fp-tabs" aria-label="Tipo de feed">
+      <a href="/feed" class="fp-tab <%= feedAba === 'pets' ? 'fp-tab--active' : '' %>">Pets</a>
+      <a href="/feed/parceiros" class="fp-tab <%= feedAba === 'parceiros' ? 'fp-tab--active' : '' %>">Parceiros</a>
+    </nav>
+    <p style="margin:10px 0 0;font-size:12px;color:#64748b;">Ofertas, posts e serviços dos petshops parceiros — separado do feed social.</p>
+  </div>
+
+  <% if (!cards || !cards.length) { %>
+    <div class="fp-empty">Nenhuma publicação de parceiros por aqui ainda. Ative sua localização no perfil ou explore <a href="/petshops">petshops</a>.</div>
+  <% } else { %>
+    <% cards.forEach(function(c) {
+      var slug = c.petshop_slug || c.petshop_id;
+      var href = '/petshops/' + slug;
+    %>
+      <article class="fp-card">
+        <a href="<%= href %>">
+          <% if (c.foto_url) { %>
+            <img src="<%= c.foto_url %>" alt="" loading="lazy">
+          <% } %>
+          <div class="fp-card-body">
+            <div class="fp-store">
+              <% if (c.petshop_logo_url) { %>
+                <img src="<%= c.petshop_logo_url %>" alt="">
+              <% } %>
+              <span><%= c.petshop_nome || 'Parceiro' %></span>
+            </div>
+            <div class="fp-title"><%= c.titulo || 'Publicação' %></div>
+            <% if (c.badge) { %><span class="fp-badge"><%= c.badge %></span><% } %>
+            <% if (c.preco != null && Number(c.preco) > 0) { %>
+              <div class="fp-preco">R$ <%= Number(c.preco).toFixed(2).replace('.', ',') %></div>
+            <% } %>
+          </div>
+        </a>
+      </article>
+    <% }); %>
+  <% } %>
+</main>

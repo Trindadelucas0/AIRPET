@@ -4,7 +4,7 @@ const { performance } = require('node:perf_hooks');
 const path = require('path');
 const multer = require('multer');
 
-const { estaAutenticado } = require('../middlewares/authMiddleware');
+const { estaAutenticado, estaAutenticadoAPI } = require('../middlewares/authMiddleware');
 const { limiterGeral } = require('../middlewares/rateLimiter');
 const { persistFields, persistSingle } = require('../middlewares/persistUploadMiddleware');
 
@@ -157,10 +157,16 @@ router.get('/planos', (req, res) => res.redirect(302, '/tags/planos'));
 // Validamos o formato numerico no handler e devolvemos next() para deixar
 // rotas como /pets/123/editar caminhem normalmente para petRoutes.
 const petPublicController = require('../controllers/petPublicController');
+const hashtagController = require('../controllers/hashtagController');
 router.get('/p/:slug', petPublicController.mostrarPerfil);
 // Deep-link para um post especifico do perfil: a pagina principal abre o
 // modal automaticamente quando detecta este path (vide post-modal.js).
 router.get('/p/:slug/post/:postId', petPublicController.mostrarPerfil);
+
+/** Hashtag pública (descoberta sem login na página; seguir exige sessão). */
+router.get('/h/:slug', hashtagController.pagina);
+router.post('/h/:slug/seguir', estaAutenticadoAPI, hashtagController.seguir);
+router.delete('/h/:slug/seguir', estaAutenticadoAPI, hashtagController.deixarDeSeguir);
 
 function redirectPetParaSlug(req, res, next) {
   if (!/^\d+$/.test(req.params.id)) return next();
@@ -198,6 +204,7 @@ router.use('/agenda', estaAutenticado, agendaRoutes);
 router.use('/perdidos', estaAutenticado, petPerdidoRoutes);
 router.use('/explorar', estaAutenticado, explorarRoutes);
 router.get('/feed', estaAutenticado, require('../controllers/explorarController').feedSeguidos);
+router.get('/feed/parceiros', estaAutenticado, require('../controllers/explorarController').feedParceiros);
 
 // Perfil do usuario
 const perfilController = require('../controllers/perfilController');

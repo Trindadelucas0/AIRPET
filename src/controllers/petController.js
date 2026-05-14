@@ -386,7 +386,9 @@ const petController = {
       }
 
       const { nome, tipo, tipo_custom, raca, cor, porte, sexo, dataNascimento, peso, descricao, telefoneContato,
-        microchip, numero_pedigree, foto_cropped, castrado: castradoBody, alergias_medicacoes, veterinario_nome, veterinario_telefone, observacoes } = req.body;
+        microchip, numero_pedigree, foto_cropped, castrado: castradoBody, alergias_medicacoes, veterinario_nome, veterinario_telefone, observacoes,
+        bio_pet, privado,
+      } = req.body;
       const castrado = castradoBody === 'sim' || castradoBody === 'on' ? true : (castradoBody === 'nao' ? false : null);
 
       await Pet.atualizar(id, {
@@ -408,6 +410,8 @@ const petController = {
         veterinario_nome,
         veterinario_telefone,
         observacoes,
+        bio_pet,
+        privado,
       });
 
       /* Se uma nova foto foi enviada via multer, atualiza a foto separadamente */

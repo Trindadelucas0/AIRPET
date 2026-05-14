@@ -1150,6 +1150,12 @@ const migrations = [
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='pets' AND column_name='foto_capa') THEN
       ALTER TABLE pets ADD COLUMN foto_capa TEXT;
     END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='pets' AND column_name='bio_pet') THEN
+      ALTER TABLE pets ADD COLUMN bio_pet VARCHAR(160);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='pets' AND column_name='privado') THEN
+      ALTER TABLE pets ADD COLUMN privado BOOLEAN NOT NULL DEFAULT false;
+    END IF;
   END $$;`,
 
   // 27. Seguidores de pets
@@ -1397,6 +1403,18 @@ const migrations = [
     earned_at TIMESTAMP DEFAULT NOW(),
     UNIQUE (user_id, badge_id)
   );`,
+
+  `DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'user_badges' AND column_name = 'pet_id') THEN
+      ALTER TABLE user_badges ADD COLUMN pet_id INTEGER REFERENCES pets(id) ON DELETE CASCADE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'user_badges' AND column_name = 'contexto') THEN
+      ALTER TABLE user_badges ADD COLUMN contexto VARCHAR(80);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'user_badges' AND column_name = 'expira_em') THEN
+      ALTER TABLE user_badges ADD COLUMN expira_em TIMESTAMPTZ;
+    END IF;
+  END $$;`,
 
   // Boost manual aplicado por admin em usuário ou post
   `CREATE TABLE IF NOT EXISTS manual_boosts (

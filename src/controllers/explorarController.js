@@ -11,7 +11,6 @@ const SeguidorPet = require('../models/SeguidorPet');
 const PetPetshopLink = require('../models/PetPetshopLink');
 const Petshop = require('../models/Petshop');
 const PetshopFollower = require('../models/PetshopFollower');
-const PetshopProduct = require('../models/PetshopProduct');
 const PetshopPublication = require('../models/PetshopPublication');
 const PetshopPostLike = require('../models/PetshopPostLike');
 const PetshopPostComment = require('../models/PetshopPostComment');
@@ -23,6 +22,10 @@ const PostMention = require('../models/PostMention');
 const CommentMention = require('../models/CommentMention');
 const PostTag = require('../models/PostTag');
 const PostMedia = require('../models/PostMedia');
+const Story = require('../models/Story');
+const PetDoMes = require('../models/PetDoMes');
+const Grupo = require('../models/Grupo');
+const socialPostHooks = require('../services/socialPostHooks');
 const { multerPublicUrl } = require('../middlewares/persistUploadMiddleware');
 
 function getNotificacaoService() {
@@ -361,10 +364,7 @@ const explorarController = {
       const offset = (page - 1) * limite;
 
       const postsOrganicos = await Publicacao.feedSeguindoPets(uid, limite, offset);
-      const patrocinados = await Publicacao.buscarPatrocinadosPetAtivos(uid, 8);
-      const promocoesElegiveis = await PetshopProduct.listarPromocoesElegiveisFeed(uid, 1);
-      const postsComPatrocinados = mesclarPostsComPatrocinados(postsOrganicos, patrocinados, page);
-      const posts = mesclarPostsComPromocoes(postsComPatrocinados, promocoesElegiveis, page);
+      const posts = postsOrganicos;
 
       const [pets, totalPosts, totalFixadas, recomendacoes, petsRecomendados] = await Promise.all([
         Pet.buscarPorUsuario(uid),
@@ -397,12 +397,46 @@ const explorarController = {
         recomendacoes,
         petsRecomendados,
         petshopsProximos,
-        promocoesFeed: promocoesElegiveis,
+        feedAbaAtiva: 'pets',
       });
     } catch (err) {
       logger.error('EXPLORAR', 'Erro no feed de seguidos', err);
       req.session.flash = { tipo: 'erro', mensagem: 'Erro ao carregar o feed.' };
       res.redirect('/pets');
+    }
+  },
+
+  async feedParceiros(req, res) {
+    try {
+      const uid = usuarioAtor(req).id;
+      const u = await Usuario.buscarPorId(uid);
+      let lat = null;
+      let lng = null;
+      if (u && u.ultima_lat != null && u.ultima_lng != null) {
+        const la = parseFloat(u.ultima_lat);
+        const lo = parseFloat(u.ultima_lng);
+        if (Number.isFinite(la) && Number.isFinite(lo)) {
+          lat = la;
+          lng = lo;
+        }
+      }
+      const cards = await PetshopPublication.listarCardsPublicacoesParaExplorar({
+        usuarioId: uid,
+        lat,
+        lng,
+        limite: 40,
+      });
+      const pets = await Pet.buscarPorUsuario(uid);
+      res.render('feed-parceiros', {
+        titulo: 'Parceiros',
+        cards: cards || [],
+        pets,
+        feedAbaAtiva: 'parceiros',
+      });
+    } catch (err) {
+      logger.error('EXPLORAR', 'Erro no feed parceiros', err);
+      req.session.flash = { tipo: 'erro', mensagem: 'Erro ao carregar o feed de parceiros.' };
+      res.redirect('/feed');
     }
   },
 
@@ -586,6 +620,17 @@ const explorarController = {
       const usuariosMencionados = await PostMention.resolverUsuariosPorNome(nomesMencionados);
       await PostMention.criarEmLote(post.id, uid, usuariosMencionados.map((u) => u.id));
       await notificarMencoes(textoLimpo, uid, post.id, 'publicacao');
+
+      await socialPostHooks.aposCriarPublicacao({
+        postId: post.id,
+        petId: petId || null,
+        autorUserId: uid,
+        texto: textoLimpo || null,
+        legenda: textoLimpo || null,
+        lat: req.body?.lat,
+        lng: req.body?.lng,
+        local_nome: req.body?.local_nome,
+      });
 
       const completo = await Publicacao.buscarPorId(post.id, uid);
       const totalPosts = await Publicacao.contarAtivas(uid);
@@ -1161,6 +1206,17 @@ const explorarController = {
         }
       }
 
+      await socialPostHooks.aposCriarPublicacao({
+        postId: post.id,
+        petId: petId || null,
+        autorUserId: uid,
+        texto: texto || null,
+        legenda: texto || null,
+        lat: req.body?.lat,
+        lng: req.body?.lng,
+        local_nome: req.body?.local_nome,
+      });
+
       const completo = await Publicacao.buscarPorId(post.id, uid);
       const payload = {
         sucesso: true,
@@ -1541,6 +1597,155 @@ const explorarController = {
     } catch (err) {
       logger.error('EXPLORAR', 'Erro ao registrar visualização', err);
       return res.status(500).json({ sucesso: false });
+    }
+  },
+
+  async petDoMesPagina(req, res) {
+    try {
+      const uid = usuarioAtor(req).id;
+      const edicao = await PetDoMes.buscarOuCriarEdicaoMesAtual();
+      if (!edicao) {
+        req.session.flash = { tipo: 'erro', mensagem: 'Não foi possível carregar a edição do mês.' };
+        return res.redirect('/explorar');
+      }
+      const ranking = await PetDoMes.listarRanking(edicao.id, 20);
+      const linhas = await Promise.all(
+        ranking.map(async (r) => {
+          const pet = await Pet.buscarPorId(r.pet_id);
+          return pet ? { pet_id: r.pet_id, votos: r.votos, pet } : null;
+        })
+      );
+      const meu = await PetDoMes.usuarioVoto(edicao.id, uid);
+      const meusPets = await Pet.buscarPorUsuario(uid);
+      const seguidos = await SeguidorPet.listarPetsSeguidos(uid, 80);
+      const vistos = new Set();
+      const pets = [];
+      (meusPets || []).forEach((p) => {
+        if (p && !vistos.has(p.id)) {
+          vistos.add(p.id);
+          pets.push(p);
+        }
+      });
+      (seguidos || []).forEach((row) => {
+        const id = row.id;
+        if (id && !vistos.has(id)) {
+          vistos.add(id);
+          pets.push({ id, nome: row.nome, foto: row.foto, slug: row.slug || null, usuario_id: row.dono_id });
+        }
+      });
+      res.render('explorar/pet-do-mes', {
+        titulo: 'Pet do mês',
+        edicao,
+        ranking: linhas.filter(Boolean),
+        meuVotoPetId: meu ? meu.pet_id : null,
+        pets,
+      });
+    } catch (err) {
+      logger.error('EXPLORAR', 'pet do mês', err);
+      req.session.flash = { tipo: 'erro', mensagem: 'Erro ao carregar Pet do mês.' };
+      res.redirect('/explorar');
+    }
+  },
+
+  async petDoMesVotar(req, res) {
+    try {
+      const uid = req.session?.usuario?.id;
+      if (!uid) return res.status(401).json({ sucesso: false, mensagem: 'Faça login.' });
+      const petId = parseInt(req.body?.pet_id, 10);
+      if (!petId) return res.status(400).json({ sucesso: false, mensagem: 'Escolha um pet.' });
+      const pet = await Pet.buscarPorId(petId);
+      if (!pet) return res.status(400).json({ sucesso: false, mensagem: 'Pet inválido.' });
+      const dono = parseInt(pet.usuario_id, 10) === parseInt(uid, 10);
+      const segue = dono ? true : await SeguidorPet.estaSeguindo(uid, petId);
+      if (!segue) {
+        return res.status(403).json({ sucesso: false, mensagem: 'Vote apenas em pets que você segue ou seus próprios pets.' });
+      }
+      const edicao = await PetDoMes.buscarOuCriarEdicaoMesAtual();
+      if (!edicao || edicao.estado !== 'aberta') {
+        return res.status(400).json({ sucesso: false, mensagem: 'Votação encerrada.' });
+      }
+      await PetDoMes.votar(edicao.id, petId, uid);
+      return res.json({ sucesso: true });
+    } catch (err) {
+      logger.error('EXPLORAR', 'voto pet do mês', err);
+      return res.status(500).json({ sucesso: false, mensagem: 'Erro ao registrar voto.' });
+    }
+  },
+
+  async gruposPagina(req, res) {
+    try {
+      const uid = usuarioAtor(req).id;
+      const grupos = await Grupo.listarPublicos(30);
+      const meus = await Grupo.idsGruposDoUsuario(uid);
+      const set = new Set(meus);
+      res.render('explorar/grupos', {
+        titulo: 'Grupos',
+        grupos: (grupos || []).map((g) => Object.assign({}, g, { sou_membro: set.has(g.id) })),
+      });
+    } catch (err) {
+      logger.error('EXPLORAR', 'grupos', err);
+      req.session.flash = { tipo: 'erro', mensagem: 'Erro ao carregar grupos.' };
+      res.redirect('/explorar');
+    }
+  },
+
+  async grupoEntrar(req, res) {
+    try {
+      const uid = req.session?.usuario?.id;
+      if (!uid) return res.status(401).json({ sucesso: false, mensagem: 'Faça login.' });
+      const slug = String(req.params.slug || '').toLowerCase().trim();
+      const g = await Grupo.buscarPorSlug(slug);
+      if (!g) return res.status(404).json({ sucesso: false, mensagem: 'Grupo não encontrado.' });
+      await Grupo.entrar(g.id, uid);
+      const atualizado = await Grupo.buscarPorSlug(slug);
+      return res.json({ sucesso: true, membros_count: atualizado ? atualizado.membros_count : g.membros_count });
+    } catch (err) {
+      logger.error('EXPLORAR', 'grupo entrar', err);
+      return res.status(500).json({ sucesso: false, mensagem: 'Erro ao entrar no grupo.' });
+    }
+  },
+
+  async storiesSeguidos(req, res) {
+    try {
+      const uid = req.session?.usuario?.id;
+      if (!uid) return res.status(401).json({ sucesso: false, mensagem: 'Não autenticado.' });
+      const stories = await Story.listarAtivosParaPetsSeguidos(uid, 40);
+      return res.json({ sucesso: true, stories });
+    } catch (err) {
+      logger.error('EXPLORAR', 'stories', err);
+      return res.status(500).json({ sucesso: false, stories: [] });
+    }
+  },
+
+  async criarStory(req, res) {
+    try {
+      const uid = req.session?.usuario?.id;
+      if (!uid) return res.status(401).json({ sucesso: false, mensagem: 'Faça login.' });
+      const petId = req.body?.pet_id ? parseInt(req.body.pet_id, 10) : null;
+      const foto = multerPublicUrl(req.file, 'posts');
+      if (!foto) return res.status(400).json({ sucesso: false, mensagem: 'Envie uma imagem.' });
+      await validarPetDonoOuFalhar(petId, uid, 'Pet inválido.', { obrigatorio: true });
+      const legenda = req.body?.legenda != null ? String(req.body.legenda).trim().slice(0, 280) : null;
+      const story = await Story.criar({
+        pet_id: petId,
+        autor_user_id: uid,
+        media_url: foto,
+        media_type: 'image',
+        legenda: legenda || null,
+      });
+      return res.json({ sucesso: true, story });
+    } catch (err) {
+      if (err && err.code === 'LIMITE_STORIES') {
+        return res.status(429).json({ sucesso: false, mensagem: 'Limite de stories nas últimas 24h para este pet.' });
+      }
+      if (err && err.code === 'PET_ID_OBRIGATORIO') {
+        return res.status(400).json({ sucesso: false, mensagem: err.message || 'Escolha um pet.' });
+      }
+      if (err && err.code === 'PET_NAO_PERTENCE') {
+        return res.status(400).json({ sucesso: false, mensagem: err.message || 'Pet inválido.' });
+      }
+      logger.error('EXPLORAR', 'criar story', err);
+      return res.status(500).json({ sucesso: false, mensagem: 'Erro ao publicar story.' });
     }
   },
 

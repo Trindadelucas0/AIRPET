@@ -16,6 +16,9 @@ const TITULO_MAP = {
   comentario: 'Novo Comentário',
   repost: 'Novo Repost',
   seguidor: 'Novo Seguidor',
+  tag_post: 'Marcação em post',
+  tag_post_resposta: 'Marcação em post',
+  post_pet: 'Novo post de um pet que você segue',
 };
 
 function normalizarLinkNotificacao(link) {

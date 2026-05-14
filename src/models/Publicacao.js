@@ -34,6 +34,19 @@ function repostouCol(uid) {
   return `, (SELECT COUNT(*)::int FROM reposts WHERE publicacao_id = p.id AND usuario_id = ${parseInt(uid)}) > 0 AS repostou`;
 }
 
+/** Posts de pets com `privado` só para dono do pet ou seguidor do pet (visitante vê só pets públicos). */
+function sqlVisibilidadePet(viewerId) {
+  const vid = viewerId != null ? parseInt(viewerId, 10) : NaN;
+  if (Number.isFinite(vid) && vid > 0) {
+    return `(
+      p.pet_id IS NULL OR NOT COALESCE(pet.privado, false)
+      OR pet.usuario_id = ${vid}
+      OR EXISTS (SELECT 1 FROM seguidores_pets sp WHERE sp.pet_id = p.pet_id AND sp.usuario_id = ${vid})
+    )`;
+  }
+  return `(p.pet_id IS NULL OR NOT COALESCE(pet.privado, false))`;
+}
+
 const Publicacao = {
 
   async criar(dados) {
@@ -72,6 +85,7 @@ const Publicacao = {
   async feedGeral(limite = 20, offset = 0, usuarioAtualId = null) {
     const resultado = await query(
       `SELECT ${SELECT_COLS} ${curtiuCol(usuarioAtualId)} ${repostouCol(usuarioAtualId)} ${FROM_JOINS}
+       WHERE ${sqlVisibilidadePet(usuarioAtualId)}
        ORDER BY p.fixada DESC, p.criado_em DESC
        LIMIT $1 OFFSET $2`,
       [limite, offset]
@@ -94,6 +108,7 @@ const Publicacao = {
          p.usuario_id IN (SELECT seguido_id FROM seguidores WHERE seguidor_id = $1)
          OR p.usuario_id = $1
        )
+       AND ${sqlVisibilidadePet(usuarioId)}
        ${cursorFilter}
        ORDER BY p.id DESC
        LIMIT $2`,
@@ -105,8 +120,9 @@ const Publicacao = {
   async feedSeguindo(usuarioId, limite = 20, offset = 0) {
     const resultado = await query(
       `SELECT ${SELECT_COLS} ${curtiuCol(usuarioId)} ${repostouCol(usuarioId)} ${FROM_JOINS}
-       WHERE p.usuario_id IN (SELECT seguido_id FROM seguidores WHERE seguidor_id = $1)
-          OR p.usuario_id = $1
+       WHERE (p.usuario_id IN (SELECT seguido_id FROM seguidores WHERE seguidor_id = $1)
+          OR p.usuario_id = $1)
+       AND ${sqlVisibilidadePet(usuarioId)}
        ORDER BY p.fixada DESC, p.criado_em DESC
        LIMIT $2 OFFSET $3`,
       [usuarioId, limite, offset]
@@ -143,28 +159,31 @@ const Publicacao = {
          END AS prioridade_relacao
        ${FROM_JOINS}
        WHERE (
-         p.pet_id IS NOT NULL
-         AND (
-           p.pet_id IN (SELECT pet_id FROM seguidores_pets WHERE usuario_id = $1)
-           OR EXISTS (
-             SELECT 1
-             FROM petshop_followers pf
-             JOIN pet_petshop_links l3 ON l3.petshop_id = pf.petshop_id AND l3.ativo = true
-             WHERE pf.usuario_id = $1
-               AND l3.pet_id = p.pet_id
-           )
-           OR EXISTS (
-             SELECT 1
-             FROM pet_petshop_links lnk
-             JOIN pet_petshop_links my_link ON my_link.petshop_id = lnk.petshop_id AND my_link.ativo = true
-             JOIN pets my_pet ON my_pet.id = my_link.pet_id
-             WHERE lnk.ativo = true
-               AND lnk.pet_id = p.pet_id
-               AND my_pet.usuario_id = $1
+         (
+           p.pet_id IS NOT NULL
+           AND (
+             p.pet_id IN (SELECT pet_id FROM seguidores_pets WHERE usuario_id = $1)
+             OR EXISTS (
+               SELECT 1
+               FROM petshop_followers pf
+               JOIN pet_petshop_links l3 ON l3.petshop_id = pf.petshop_id AND l3.ativo = true
+               WHERE pf.usuario_id = $1
+                 AND l3.pet_id = p.pet_id
+             )
+             OR EXISTS (
+               SELECT 1
+               FROM pet_petshop_links lnk
+               JOIN pet_petshop_links my_link ON my_link.petshop_id = lnk.petshop_id AND my_link.ativo = true
+               JOIN pets my_pet ON my_pet.id = my_link.pet_id
+               WHERE lnk.ativo = true
+                 AND lnk.pet_id = p.pet_id
+                 AND my_pet.usuario_id = $1
+             )
            )
          )
+         OR p.usuario_id = $1
        )
-       OR p.usuario_id = $1
+       AND ${sqlVisibilidadePet(usuarioId)}
        ORDER BY p.fixada DESC, prioridade_relacao DESC, p.criado_em DESC, p.id DESC
        LIMIT $2 OFFSET $3`,
       [usuarioId, limite, offset]
@@ -180,6 +199,7 @@ const Publicacao = {
          AND u.ultima_localizacao IS NOT NULL
          AND eu.ultima_localizacao IS NOT NULL
          AND ST_DWithin(u.ultima_localizacao, eu.ultima_localizacao, 50000)
+         AND ${sqlVisibilidadePet(usuarioId)}
        ORDER BY p.criado_em DESC
        LIMIT $2 OFFSET $3`,
       [usuarioId, limite, offset]
@@ -196,6 +216,7 @@ const Publicacao = {
          AND u.ultima_localizacao IS NOT NULL
          AND eu.ultima_localizacao IS NOT NULL
          AND ST_DWithin(u.ultima_localizacao, eu.ultima_localizacao, 50000)
+         AND ${sqlVisibilidadePet(usuarioId)}
        ORDER BY
          (COALESCE(ps.like_count, 0) + COALESCE(ps.comment_count, 0) * 2 + COALESCE(ps.repost_count, 0)) DESC,
          p.criado_em DESC,
@@ -209,6 +230,7 @@ const Publicacao = {
   async feedGeralPorEngajamento(limite = 20, offset = 0, usuarioAtualId = null) {
     const resultado = await query(
       `SELECT ${SELECT_COLS} ${curtiuCol(usuarioAtualId)} ${repostouCol(usuarioAtualId)} ${FROM_JOINS}
+       WHERE ${sqlVisibilidadePet(usuarioAtualId)}
        ORDER BY
          (COALESCE(ps.like_count, 0) + COALESCE(ps.comment_count, 0) * 2 + COALESCE(ps.repost_count, 0)) DESC,
          p.criado_em DESC,
@@ -225,6 +247,7 @@ const Publicacao = {
        WHERE p.usuario_id != $1
          AND u.cidade IS NOT NULL
          AND LOWER(u.cidade) = LOWER((SELECT cidade FROM usuarios WHERE id = $1))
+         AND ${sqlVisibilidadePet(usuarioId)}
        ORDER BY
          CASE WHEN LOWER(u.bairro) = LOWER((SELECT bairro FROM usuarios WHERE id = $1)) THEN 0 ELSE 1 END,
          p.criado_em DESC
@@ -238,6 +261,7 @@ const Publicacao = {
     const resultado = await query(
       `SELECT ${SELECT_COLS} ${curtiuCol(usuarioAtualId)} ${repostouCol(usuarioAtualId)} ${FROM_JOINS}
        WHERE p.usuario_id = $1
+       AND ${sqlVisibilidadePet(usuarioAtualId)}
        ORDER BY p.fixada DESC, p.criado_em DESC
        LIMIT $2`,
       [usuarioId, limite]
@@ -249,6 +273,7 @@ const Publicacao = {
     const resultado = await query(
       `SELECT ${SELECT_COLS} ${curtiuCol(usuarioAtualId)} ${repostouCol(usuarioAtualId)} ${FROM_JOINS}
        WHERE p.pet_id = $1
+       AND ${sqlVisibilidadePet(usuarioAtualId)}
        ORDER BY p.fixada DESC, p.criado_em DESC
        LIMIT $2`,
       [petId, limite]

@@ -113,6 +113,17 @@ locals.extraHead = '<link rel="stylesheet" href="/css/perfil-pet-unificado.css">
           <% } %>
         </div>
 
+        <% if (typeof perfilRestrito !== 'undefined' && perfilRestrito) { %>
+          <div class="pp-private-banner" style="margin-top:12px;padding:12px 14px;border-radius:12px;background:rgba(15,23,42,0.06);border:1px solid rgba(15,23,42,0.08);font-size:13px;line-height:1.45;color:#334155;">
+            <i class="fa-solid fa-lock" style="margin-right:8px;color:#64748b;"></i>
+            Este perfil é <strong>privado</strong>. Siga o pet para ver posts e destaques.
+          </div>
+        <% } else if (pet.bio_pet && String(pet.bio_pet).trim()) { %>
+          <p class="pp-bio-pet" style="margin-top:12px;font-size:15px;line-height:1.45;color:#1e293b;font-style:italic;">
+            “<%= pet.bio_pet.trim() %>”
+          </p>
+        <% } %>
+
         <% if (dono) { %>
           <a href="/explorar/perfil/<%= dono.id %>" class="pp-tutor-line">
             <% if (dono.foto_perfil) { %>
@@ -127,7 +138,7 @@ locals.extraHead = '<link rel="stylesheet" href="/css/perfil-pet-unificado.css">
         <% } %>
 
         <div class="pp-stats">
-          <span class="pp-stat"><strong><%= posts ? posts.length : 0 %></strong> posts</span>
+          <span class="pp-stat"><strong><%= (typeof perfilRestrito !== 'undefined' && perfilRestrito) ? '—' : (posts ? posts.length : 0) %></strong> posts</span>
           <button type="button" id="btnVerSeguidores" class="pp-stat" style="background:transparent;border:0;cursor:pointer;padding:0;color:inherit;font:inherit;">
             <strong><%= totalSeguidores || 0 %></strong> seguidores
           </button>

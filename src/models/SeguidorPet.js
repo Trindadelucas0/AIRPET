@@ -71,6 +71,18 @@ const SeguidorPet = {
     );
     return resultado.rows;
   },
+
+  /** Usuários que seguem o pet, exceto o dono (para notificações de novo post). */
+  async listarUsuarioIdsQueSeguemPetExcetoDono(petId) {
+    const resultado = await query(
+      `SELECT sp.usuario_id
+       FROM seguidores_pets sp
+       JOIN pets p ON p.id = sp.pet_id
+       WHERE sp.pet_id = $1 AND sp.usuario_id <> p.usuario_id`,
+      [petId]
+    );
+    return resultado.rows.map((r) => r.usuario_id);
+  },
 };
 
 module.exports = SeguidorPet;

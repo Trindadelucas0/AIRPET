@@ -1,0 +1,87 @@
+<% locals.titulo = titulo || 'Pet do mês' %>
+<%- include('../partials/header') %>
+<%- include('../partials/flash') %>
+
+<main class="flex-1 max-w-lg mx-auto px-4 py-6 pb-24">
+  <h1 class="text-2xl font-black text-gray-900 tracking-tight">Pet do mês</h1>
+  <p class="text-sm text-gray-500 mt-1">Edição de <%= edicao.mes_ref %> · estado: <%= edicao.estado %></p>
+
+  <section class="mt-8 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+    <h2 class="font-bold text-gray-900">Seu voto</h2>
+    <p class="text-xs text-gray-500 mt-1">Um voto por mês (pode mudar de pet até o fim da edição).</p>
+    <form id="formVoto" class="mt-4 flex flex-col gap-3">
+      <select name="pet_id" id="selPet" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm">
+        <option value="">Escolha um pet</option>
+        <% (pets || []).forEach(function(p) { %>
+          <option value="<%= p.id %>" <%= meuVotoPetId === p.id ? 'selected' : '' %>><%= p.nome %></option>
+        <% }); %>
+      </select>
+      <button type="submit" class="rounded-xl bg-orange-500 text-white font-semibold py-2.5 text-sm">Registrar voto</button>
+    </form>
+    <p id="votoMsg" class="text-sm mt-2 hidden"></p>
+  </section>
+
+  <section class="mt-8">
+    <h2 class="font-bold text-gray-900 mb-3">Ranking</h2>
+    <ol class="space-y-2">
+      <% (ranking || []).forEach(function(row, i) { %>
+        <li class="flex items-center gap-3 rounded-xl border border-gray-100 bg-white px-3 py-2">
+          <span class="text-lg font-black text-orange-500 w-6"><%= i + 1 %></span>
+          <% if (row.pet && row.pet.foto) { %>
+            <img src="<%= row.pet.foto %>" alt="" class="w-10 h-10 rounded-full object-cover">
+          <% } %>
+          <div class="flex-1 min-w-0">
+            <a href="/p/<%= row.pet.slug %>" class="font-semibold text-gray-900 truncate block"><%= row.pet.nome %></a>
+            <span class="text-xs text-gray-500"><%= row.votos %> votos</span>
+          </div>
+        </li>
+      <% }); %>
+      <% if (!(ranking || []).length) { %>
+        <li class="text-sm text-gray-500">Ainda não há votos nesta edição.</li>
+      <% } %>
+    </ol>
+  </section>
+
+  <p class="mt-8 text-center text-sm">
+    <a href="/explorar" class="text-orange-600 font-semibold">Voltar ao explorar</a>
+  </p>
+</main>
+
+<script>
+(function(){
+  var form = document.getElementById('formVoto');
+  if (!form) return;
+  form.addEventListener('submit', function(ev){
+    ev.preventDefault();
+    var sel = document.getElementById('selPet');
+    var petId = sel && sel.value;
+    if (!petId) return;
+    var msg = document.getElementById('votoMsg');
+    fetch('/explorar/pet-do-mes/votar', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest',
+      },
+      body: JSON.stringify({ pet_id: parseInt(petId, 10) })
+    }).then(function (r) {
+      if (r.status === 401) {
+        window.location.href = '/auth/login?return_to=/explorar/pet-do-mes';
+        return null;
+      }
+      return r.json().catch(function () { return { sucesso: false, mensagem: 'Resposta inválida.' }; });
+    }).then(function (j) {
+      if (!j) return;
+      if (msg) {
+        msg.classList.remove('hidden');
+        msg.textContent = j.sucesso ? 'Voto registrado.' : (j.mensagem || 'Erro.');
+        msg.className = 'text-sm mt-2 ' + (j.sucesso ? 'text-green-600' : 'text-red-600');
+      }
+      if (j.sucesso) location.reload();
+    });
+  });
+})();
+</script>
+<%- include('../partials/footer') %>

@@ -58,6 +58,15 @@ function verificarBearerJWT(req) {
   }
 }
 
+/** Fetch/XHR que pede JSON não deve receber redirect HTML do middleware web. */
+function clienteEsperaJson(req) {
+  const accept = String(req.headers.accept || '');
+  if (accept.includes('application/json')) return true;
+  const xrw = String(req.get('x-requested-with') || '').toLowerCase();
+  if (xrw === 'xmlhttprequest') return true;
+  return false;
+}
+
 /**
  * estaAutenticado — Middleware para rotas WEB
  *
@@ -89,6 +98,13 @@ async function estaAutenticado(req, res, next) {
             mensagem: 'Sua conta nao existe mais no AIRPET. Voce pode criar uma nova conta agora.',
           };
         }
+        if (clienteEsperaJson(req)) {
+          return res.status(401).json({
+            sucesso: false,
+            motivo: 'usuario_inexistente',
+            mensagem: 'Sua conta nao existe mais. Faca login ou crie uma nova conta.',
+          });
+        }
         return res.redirect('/auth/registro');
       }
       return next();
@@ -109,6 +125,13 @@ async function estaAutenticado(req, res, next) {
             mensagem: 'Sua conta nao existe mais no AIRPET. Voce pode criar uma nova conta agora.',
           };
         }
+        if (clienteEsperaJson(req)) {
+          return res.status(401).json({
+            sucesso: false,
+            motivo: 'usuario_inexistente',
+            mensagem: 'Sua conta nao existe mais. Faca login ou crie uma nova conta.',
+          });
+        }
         return res.redirect('/auth/registro');
       }
 
@@ -122,12 +145,21 @@ async function estaAutenticado(req, res, next) {
     }
 
     if (req.session) req.session.flash = { tipo: 'erro', mensagem: 'Voce precisa estar logado para acessar esta pagina.' };
+    if (clienteEsperaJson(req)) {
+      return res.status(401).json({
+        sucesso: false,
+        mensagem: 'Autenticacao necessaria. Faca login para continuar.',
+      });
+    }
     const returnUrl = (req.originalUrl || req.url || '').trim();
     const q = returnUrl && returnUrl.startsWith('/') ? '?returnUrl=' + encodeURIComponent(returnUrl) : '';
     return res.redirect('/auth/login' + q);
   } catch (erro) {
     logger.error('AUTH_MW', 'Erro inesperado no middleware estaAutenticado', erro);
     if (req.session) req.session.flash = { tipo: 'erro', mensagem: 'Erro de autenticacao. Faca login novamente.' };
+    if (clienteEsperaJson(req)) {
+      return res.status(401).json({ sucesso: false, mensagem: 'Erro de autenticacao. Faca login novamente.' });
+    }
     return res.redirect('/auth/login');
   }
 }

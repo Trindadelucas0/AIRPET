@@ -139,4 +139,23 @@ router.delete('/pet/:id/seguidor/:usuarioId', estaAutenticadoAPI, explorarContro
 
 router.get('/busca', explorarController.paginaBusca);
 
+router.get('/pet-do-mes', explorarController.petDoMesPagina);
+router.post('/pet-do-mes/votar', postRateLimit, explorarController.petDoMesVotar);
+
+router.get('/grupos', explorarController.gruposPagina);
+router.post('/grupos/:slug/entrar', postRateLimit, explorarController.grupoEntrar);
+
+router.get('/api/stories', explorarController.storiesSeguidos);
+router.post('/api/stories', postRateLimit, function (req, res, next) {
+  upload.single('foto')(req, res, function (err) {
+    if (err) {
+      const msg = err.code === 'LIMIT_FILE_SIZE'
+        ? 'Imagem muito grande (máx. 10 MB).'
+        : 'Envie uma imagem válida (JPEG, PNG, GIF ou WebP).';
+      return res.status(400).json({ sucesso: false, mensagem: msg });
+    }
+    next();
+  });
+}, persistSingle('posts'), explorarController.criarStory);
+
 module.exports = router;

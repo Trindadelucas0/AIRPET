@@ -33,6 +33,7 @@ const PontoMapa = require('../models/PontoMapa');
 const Petshop = require('../models/Petshop');
 const PetPerdido = require('../models/PetPerdido');
 const TagScan = require('../models/TagScan');
+const PetCheckin = require('../models/PetCheckin');
 const petEventBus = require('../services/petEventBus');
 const logger = require('../utils/logger');
 
@@ -230,12 +231,15 @@ async function buscarPinsSocial(req, res) {
 
   try {
     const usuarioId = req.session.usuario.id;
+    const { query } = require('../config/database');
 
-    const resultado = await require('../config/database').query(
-      `SELECT DISTINCT ON (t.pet_id)
+    const [resultado, checkinRows] = await Promise.all([
+      query(
+        `SELECT DISTINCT ON (t.pet_id)
          t.pet_id,
          p.nome AS pet_nome,
          p.foto AS pet_foto,
+         p.slug AS pet_slug,
          p.status AS pet_status,
          ts.latitude,
          ts.longitude,
@@ -252,26 +256,68 @@ async function buscarPinsSocial(req, res) {
          AND ts.data > NOW() - INTERVAL '30 days'
        ORDER BY t.pet_id, ts.data DESC
        LIMIT 100`,
-      [usuarioId]
-    );
+        [usuarioId]
+      ),
+      PetCheckin.listarPinsPublicosSeguidos(usuarioId, 100),
+    ]);
 
-    const features = resultado.rows.map((row) => {
-      const lat = parseFloat(row.latitude);
-      const lng = parseFloat(row.longitude);
+    const byPet = new Map();
+
+    for (const row of resultado.rows) {
       const scanData = row.data ? new Date(row.data) : null;
-      const horasAtras = scanData ? Math.round((Date.now() - scanData.getTime()) / 3600000) : null;
+      const ts = scanData ? scanData.getTime() : 0;
+      byPet.set(row.pet_id, { source: 'scan', row, ts });
+    }
+
+    for (const c of checkinRows) {
+      const ts = new Date(c.criado_em).getTime();
+      const prev = byPet.get(c.pet_id);
+      if (!prev || ts >= prev.ts) {
+        byPet.set(c.pet_id, { source: 'checkin', row: c, ts });
+      }
+    }
+
+    const features = [...byPet.values()].map((entry) => {
+      if (entry.source === 'scan') {
+        const row = entry.row;
+        const lat = parseFloat(row.latitude);
+        const lng = parseFloat(row.longitude);
+        const scanData = row.data ? new Date(row.data) : null;
+        const horasAtras = scanData ? Math.round((Date.now() - scanData.getTime()) / 3600000) : null;
+        return {
+          type: 'Feature',
+          geometry: { type: 'Point', coordinates: [lng, lat] },
+          properties: {
+            id: row.pet_id,
+            tipo: 'pet_seguido',
+            nome: row.pet_nome || 'Pet',
+            foto: row.pet_foto || null,
+            pet_status: row.pet_status || 'ativo',
+            cidade: row.cidade || null,
+            data: scanData ? scanData.toISOString() : null,
+            horas_atras: horasAtras,
+            slug: row.pet_slug || null,
+          },
+        };
+      }
+      const c = entry.row;
+      const lat = parseFloat(c.lat);
+      const lng = parseFloat(c.lng);
+      const when = new Date(c.criado_em);
+      const horasAtras = Math.round((Date.now() - when.getTime()) / 3600000);
       return {
         type: 'Feature',
         geometry: { type: 'Point', coordinates: [lng, lat] },
         properties: {
-          id: row.pet_id,
-          tipo: 'pet_seguido',
-          nome: row.pet_nome || 'Pet',
-          foto: row.pet_foto || null,
-          pet_status: row.pet_status || 'ativo',
-          cidade: row.cidade || null,
-          data: scanData ? scanData.toISOString() : null,
+          id: c.pet_id,
+          tipo: 'pet_checkin',
+          nome: c.pet_nome || 'Pet',
+          foto: c.pet_foto || null,
+          pet_status: 'ativo',
+          cidade: c.local_nome || null,
+          data: when.toISOString(),
           horas_atras: horasAtras,
+          slug: c.pet_slug || null,
         },
       };
     });

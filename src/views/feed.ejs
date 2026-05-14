@@ -66,6 +66,30 @@
         letter-spacing: -0.015em;
       }
 
+      .feed-tabs {
+        display: flex;
+        gap: 8px;
+        margin-top: 10px;
+        max-width: 360px;
+      }
+      .feed-tab {
+        flex: 1;
+        text-align: center;
+        padding: 9px 10px;
+        border-radius: 12px;
+        font-size: 13px;
+        font-weight: 700;
+        text-decoration: none;
+        color: var(--feed-muted);
+        border: 1px solid var(--feed-border);
+        background: var(--feed-surface);
+      }
+      .feed-tab--active {
+        color: #fff;
+        background: #ec5a1c;
+        border-color: #ec5a1c;
+      }
+
       .feed-welcome {
         font-size: 12px;
         color: var(--feed-muted);
@@ -647,6 +671,74 @@
 
       #feedContainer .mention { color: var(--accent); font-weight: 600; }
       .autocomplete-dropdown { position: absolute; bottom: 100%; left: 0; right: 0; max-height: 160px; overflow-y: auto; background: var(--ink-2); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 18px 48px rgba(15,23,42,0.1); z-index: 10; margin-bottom: 4px; }
+
+      /* Stories (24h) */
+      .feed-stories-strip {
+        display: flex; gap: 14px; overflow-x: auto; padding: 10px 4px 14px;
+        margin-bottom: 4px; scrollbar-width: thin;
+        -webkit-overflow-scrolling: touch;
+      }
+      .feed-stories-strip::-webkit-scrollbar { height: 4px; }
+      .feed-stories-strip::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+      .story-bubble {
+        flex: 0 0 auto; width: 72px; text-align: center; cursor: pointer;
+        font-size: 11px; color: var(--text-dim); text-decoration: none; border: none; background: none; padding: 0;
+      }
+      .story-bubble:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 12px; }
+      .story-ring {
+        width: 64px; height: 64px; margin: 0 auto 6px; border-radius: 50%;
+        padding: 3px;
+        background: linear-gradient(135deg, #f97316, #ec4899, #a855f7);
+        display: flex; align-items: center; justify-content: center;
+      }
+      .story-ring--new {
+        background: var(--border);
+        border: 2px dashed var(--accent);
+        padding: 2px;
+      }
+      .story-ring-inner {
+        width: 100%; height: 100%; border-radius: 50%; overflow: hidden;
+        background: var(--feed-surface); display: flex; align-items: center; justify-content: center;
+        border: 2px solid var(--feed-surface);
+      }
+      .story-ring-inner img { width: 100%; height: 100%; object-fit: cover; }
+      .story-new-plus {
+        font-size: 22px; font-weight: 800; color: var(--accent); line-height: 1;
+      }
+      #storyComposerModal, #storyViewerModal {
+        position: fixed; inset: 0; z-index: 2000; display: none;
+        align-items: center; justify-content: center; padding: 16px;
+        background: rgba(15,23,42,0.55);
+      }
+      #storyComposerModal.is-open, #storyViewerModal.is-open { display: flex; }
+      .story-modal-card {
+        width: 100%; max-width: 400px; background: var(--feed-surface);
+        border-radius: 16px; border: 1px solid var(--feed-border);
+        box-shadow: 0 24px 64px rgba(0,0,0,0.2); max-height: 90vh; overflow: auto;
+      }
+      .story-modal-head {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 14px 16px; border-bottom: 1px solid var(--feed-border);
+        font-weight: 700; font-size: 16px; color: var(--feed-text);
+      }
+      .story-modal-body { padding: 16px; }
+      .story-viewer-inner {
+        max-width: 420px; width: 100%; background: #0f172a; border-radius: 16px; overflow: hidden;
+        position: relative; max-height: 85vh;
+      }
+      .story-viewer-inner img {
+        width: 100%; display: block; max-height: 70vh; object-fit: contain; background: #000;
+        position: relative; z-index: 1;
+      }
+      #storyTapPrev, #storyTapNext {
+        position: absolute; top: 0; bottom: 0; width: 30%; z-index: 3;
+        border: none; background: transparent; cursor: pointer; padding: 0;
+      }
+      #storyTapPrev { left: 0; }
+      #storyTapNext { right: 0; }
+      #storyViewerClose { z-index: 6 !important; }
+      #storyProgressWrap { pointer-events: none; }
+      .story-viewer-cap { padding: 12px 14px; color: #e2e8f0; font-size: 14px; }
     </style>
   `;
 %>
@@ -659,13 +751,20 @@
 <% var sugestoesPets = typeof sugestoesPets !== 'undefined' ? sugestoesPets : (typeof petsRecomendados !== 'undefined' ? petsRecomendados : []); %>
 <% var petshopsProximos = typeof petshopsProximos !== 'undefined' ? petshopsProximos : (typeof petshopDestaques !== 'undefined' ? petshopDestaques : []); %>
 <% var hasMore = typeof hasMore !== 'undefined' ? hasMore : (typeof temMais !== 'undefined' ? temMais : false); %>
+<% var feedAba = typeof feedAbaAtiva !== 'undefined' ? feedAbaAtiva : 'pets'; %>
 
 <main class="feed-page flex-1 pb-24 md:pb-6">
 
   <!-- Top bar -->
   <div class="feed-topbar">
     <div class="feed-topbar-inner">
-      <h1>Feed</h1>
+      <div>
+        <h1>Feed</h1>
+        <nav class="feed-tabs" aria-label="Tipo de feed">
+          <a href="/feed" class="feed-tab <%= feedAba === 'pets' ? 'feed-tab--active' : '' %>">Pets</a>
+          <a href="/feed/parceiros" class="feed-tab <%= feedAba === 'parceiros' ? 'feed-tab--active' : '' %>">Parceiros</a>
+        </nav>
+      </div>
       <div class="feed-welcome">
         <% if (isLogado) { %>
           <% var primeiroNome = (usuario.nome || '').split(' ')[0] || ''; %>
@@ -688,6 +787,18 @@
           Buscar pets ou pessoas...
         </a>
       </div>
+
+      <% if (isLogado && feedAba === 'pets' && meusPets && meusPets.length) { %>
+      <section class="composer" style="padding-bottom:10px;margin-bottom:12px;" aria-label="Stories">
+        <div style="font-size:12px;font-weight:700;color:var(--text-dim);margin:0 4px 8px;letter-spacing:0.02em;">Stories</div>
+        <div class="feed-stories-strip" id="feedStoriesStrip">
+          <button type="button" class="story-bubble" id="btnAbrirStoryComposer" title="Nova story">
+            <span class="story-ring story-ring--new"><span class="story-ring-inner"><span class="story-new-plus">+</span></span></span>
+            <span style="color:var(--accent);font-weight:600;">Novo</span>
+          </button>
+        </div>
+      </section>
+      <% } %>
 
       <!-- Composer -->
       <% if (isLogado) { %>
@@ -1056,6 +1167,10 @@
           <i class="fa-solid fa-magnifying-glass" style="font-size:13px;"></i>
           Buscar pets ou pessoas...
         </a>
+        <div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:10px;font-size:12px;font-weight:600;">
+          <a href="/explorar/pet-do-mes" style="color:var(--accent);text-decoration:none;">Pet do mês</a>
+          <a href="/explorar/grupos" style="color:var(--accent);text-decoration:none;">Grupos</a>
+        </div>
       </div>
 
       <!-- Sugestões de usuários -->
@@ -1120,6 +1235,56 @@
     </aside>
 
   </div>
+
+  <% if (isLogado && feedAba === 'pets' && meusPets && meusPets.length) { %>
+  <div id="storyComposerModal" role="dialog" aria-modal="true" aria-labelledby="storyComposerTitle">
+    <div class="story-modal-card">
+      <div class="story-modal-head">
+        <span id="storyComposerTitle">Nova story</span>
+        <button type="button" id="storyComposerClose" class="composer-tool-btn" aria-label="Fechar"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="story-modal-body">
+        <p style="font-size:12px;color:var(--text-dim);margin:0 0 12px;">Fica visível por 24 horas para quem segue o pet.</p>
+        <label style="display:block;font-size:12px;font-weight:600;margin-bottom:6px;color:var(--feed-text);">Pet</label>
+        <select id="storyPetId" style="width:100%;margin-bottom:14px;padding:10px 12px;border-radius:10px;border:1px solid var(--feed-border);background:var(--feed-surface-soft);color:var(--feed-text);font-size:14px;">
+          <% meusPets.forEach(function(p) { %>
+            <option value="<%= p.id %>"><%= p.nome %></option>
+          <% }); %>
+        </select>
+        <label style="display:block;font-size:12px;font-weight:600;margin-bottom:6px;color:var(--feed-text);">Foto</label>
+        <input type="file" id="storyFotoInput" accept="image/*" style="margin-bottom:12px;font-size:13px;width:100%;">
+        <div id="storyFotoPreviewWrap" class="hidden mb-3">
+          <img id="storyFotoPreview" src="" alt="" style="max-height:180px;width:100%;object-fit:cover;border-radius:12px;">
+        </div>
+        <label style="display:block;font-size:12px;font-weight:600;margin-bottom:6px;color:var(--feed-text);">Legenda (opcional)</label>
+        <textarea id="storyLegenda" maxlength="280" rows="2" placeholder="Uma frase…" style="width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--feed-border);resize:vertical;font-family:inherit;font-size:14px;"></textarea>
+        <button type="button" id="storyEnviarBtn" class="btn-post" style="width:100%;margin-top:16px;justify-content:center;">
+          <i class="fa-solid fa-circle-notch fa-spin hidden" id="storyEnviarSpinner"></i>
+          <span id="storyEnviarLabel">Publicar story</span>
+        </button>
+        <p id="storyComposerMsg" class="hidden" style="margin-top:10px;font-size:13px;"></p>
+      </div>
+    </div>
+  </div>
+  <div id="storyViewerModal" role="dialog" aria-modal="true" aria-label="Story">
+    <div class="story-viewer-inner" id="storyViewerInnerBox">
+      <div id="storyProgressWrap" style="position:absolute;top:0;left:0;right:0;z-index:5;padding:10px 10px 0;display:flex;gap:3px;">
+        <div id="storyProgTrack" style="flex:1;height:3px;background:rgba(255,255,255,0.35);border-radius:2px;overflow:hidden;">
+          <div id="storyProgFill" style="height:100%;width:0;background:#fff;border-radius:2px;"></div>
+        </div>
+      </div>
+      <button type="button" id="storyViewerClose" style="position:absolute;top:10px;right:10px;z-index:6;width:36px;height:36px;border-radius:50%;border:none;background:rgba(0,0,0,0.5);color:#fff;cursor:pointer;" aria-label="Fechar"><i class="fa-solid fa-xmark"></i></button>
+      <button type="button" id="storyTapPrev" aria-label="Story anterior"></button>
+      <button type="button" id="storyTapNext" aria-label="Próximo story"></button>
+      <img id="storyViewerImg" src="" alt="">
+      <div class="story-viewer-cap" style="position:relative;z-index:2;">
+        <a id="storyViewerPetLink" href="#" style="color:#fb923c;font-weight:700;text-decoration:none;"></a>
+        <p id="storyViewerLegenda" style="margin:8px 0 0;font-size:13px;opacity:0.9;"></p>
+      </div>
+    </div>
+  </div>
+  <% } %>
+
 </main>
 
 <div id="commentModal" class="airpet-modal airpet-modal--comments hidden" aria-hidden="true">
@@ -2006,6 +2171,261 @@
         .finally(function () { isPublishingPost = false; });
     });
   }
+
+  // ── Stories (24h): faixa + modal publicar + viewer com fila e tempo ──
+  (function storiesFeedInit() {
+    var strip = document.getElementById('feedStoriesStrip');
+    var modal = document.getElementById('storyComposerModal');
+    if (!strip || !modal) return;
+
+    var viewer = document.getElementById('storyViewerModal');
+    var storyFile = null;
+    var btnNovo = document.getElementById('btnAbrirStoryComposer');
+    var btnFechar = document.getElementById('storyComposerClose');
+    var sf = document.getElementById('storyFotoInput');
+    var pvw = document.getElementById('storyFotoPreviewWrap');
+    var pimg = document.getElementById('storyFotoPreview');
+    var legEl = document.getElementById('storyLegenda');
+    var petSel = document.getElementById('storyPetId');
+    var btnEnviar = document.getElementById('storyEnviarBtn');
+    var spin = document.getElementById('storyEnviarSpinner');
+    var msg = document.getElementById('storyComposerMsg');
+
+    var storyQueue = [];
+    var storyIdx = 0;
+    var storyTick = null;
+    var STORY_MS = 6000;
+
+    function clearStoryTimer() {
+      if (storyTick) {
+        clearTimeout(storyTick);
+        storyTick = null;
+      }
+    }
+
+    function resetProgressBar() {
+      var fill = document.getElementById('storyProgFill');
+      if (!fill) return;
+      fill.style.transition = 'none';
+      fill.style.width = '0%';
+      void fill.offsetWidth;
+      fill.style.transition = 'width ' + (STORY_MS / 1000) + 's linear';
+      fill.style.width = '100%';
+    }
+
+    function scheduleAdvance() {
+      clearStoryTimer();
+      resetProgressBar();
+      storyTick = setTimeout(goNextStory, STORY_MS);
+    }
+
+    function renderStoryAt(i) {
+      if (i < 0 || i >= storyQueue.length) return;
+      var s = storyQueue[i];
+      var imgEl = document.getElementById('storyViewerImg');
+      var link = document.getElementById('storyViewerPetLink');
+      var cap = document.getElementById('storyViewerLegenda');
+      if (imgEl) imgEl.src = s.media_url || '';
+      if (link) {
+        link.textContent = s.pet_nome || 'Pet';
+        link.href = s.pet_slug ? '/p/' + encodeURIComponent(s.pet_slug) : '/explorar/pet/' + s.pet_id;
+      }
+      if (cap) cap.textContent = s.legenda || '';
+      scheduleAdvance();
+    }
+
+    function openViewerWithQueue(list, startIndex) {
+      if (!viewer || !Array.isArray(list) || !list.length) return;
+      storyQueue = list.slice();
+      storyIdx = Math.max(0, Math.min(startIndex || 0, storyQueue.length - 1));
+      viewer.classList.add('is-open');
+      document.body.style.overflow = 'hidden';
+      renderStoryAt(storyIdx);
+    }
+
+    function goNextStory() {
+      clearStoryTimer();
+      storyIdx += 1;
+      if (storyIdx >= storyQueue.length) {
+        closeViewer();
+        return;
+      }
+      renderStoryAt(storyIdx);
+    }
+
+    function goPrevStory() {
+      clearStoryTimer();
+      if (storyIdx <= 0) {
+        closeViewer();
+        return;
+      }
+      storyIdx -= 1;
+      renderStoryAt(storyIdx);
+    }
+
+    function showModal() {
+      var np = document.getElementById('novoPetId');
+      if (petSel && np && np.value) petSel.value = np.value;
+      modal.classList.add('is-open');
+      document.body.style.overflow = 'hidden';
+    }
+    function hideModal() {
+      modal.classList.remove('is-open');
+      if (!viewer || !viewer.classList.contains('is-open')) document.body.style.overflow = '';
+    }
+
+    if (btnNovo) btnNovo.addEventListener('click', showModal);
+    if (btnFechar) btnFechar.addEventListener('click', hideModal);
+    modal.addEventListener('click', function (e) { if (e.target === modal) hideModal(); });
+
+    if (sf) {
+      sf.addEventListener('change', function () {
+        var file = this.files[0];
+        storyFile = file || null;
+        if (!file) {
+          if (pvw) pvw.classList.add('hidden');
+          if (pimg) pimg.src = '';
+          return;
+        }
+        var reader = new FileReader();
+        reader.onload = function (ev) {
+          if (pimg) pimg.src = ev.target.result;
+          if (pvw) pvw.classList.remove('hidden');
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    if (btnEnviar) {
+      btnEnviar.addEventListener('click', function () {
+        var petId = petSel ? petSel.value : '';
+        if (!petId) { alert('Escolha um pet.'); return; }
+        if (!storyFile) { alert('Escolha uma foto para a story.'); return; }
+        var fd = new FormData();
+        fd.append('pet_id', petId);
+        fd.append('foto', storyFile);
+        if (legEl && legEl.value.trim()) fd.append('legenda', legEl.value.trim());
+
+        btnEnviar.disabled = true;
+        if (spin) spin.classList.remove('hidden');
+        if (msg) { msg.classList.add('hidden'); }
+
+        fetch('/explorar/api/stories', {
+          method: 'POST',
+          body: fd,
+          credentials: 'same-origin',
+          headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+        })
+          .then(function (r) { return r.json(); })
+          .then(function (d) {
+            if (d.sucesso) {
+              hideModal();
+              if (sf) sf.value = '';
+              storyFile = null;
+              if (pvw) pvw.classList.add('hidden');
+              if (pimg) pimg.src = '';
+              if (legEl) legEl.value = '';
+              loadFeedStories();
+            } else if (msg) {
+              msg.classList.remove('hidden');
+              msg.style.color = '#ef4444';
+              msg.textContent = (d && d.mensagem) ? d.mensagem : 'Erro ao publicar.';
+            } else {
+              alert((d && d.mensagem) || 'Erro ao publicar.');
+            }
+          })
+          .catch(function () { alert('Erro de rede ao publicar story.'); })
+          .finally(function () {
+            btnEnviar.disabled = false;
+            if (spin) spin.classList.add('hidden');
+          });
+      });
+    }
+
+    function closeViewer() {
+      if (!viewer) return;
+      clearStoryTimer();
+      var fill = document.getElementById('storyProgFill');
+      if (fill) {
+        fill.style.transition = 'none';
+        fill.style.width = '0%';
+      }
+      viewer.classList.remove('is-open');
+      storyQueue = [];
+      if (!modal.classList.contains('is-open')) document.body.style.overflow = '';
+    }
+
+    var btnVwClose = document.getElementById('storyViewerClose');
+    if (btnVwClose) btnVwClose.addEventListener('click', closeViewer);
+    if (viewer) viewer.addEventListener('click', function (e) { if (e.target === viewer) closeViewer(); });
+
+    var tapP = document.getElementById('storyTapPrev');
+    var tapN = document.getElementById('storyTapNext');
+    if (tapP) tapP.addEventListener('click', function (e) { e.stopPropagation(); goPrevStory(); });
+    if (tapN) tapN.addEventListener('click', function (e) { e.stopPropagation(); goNextStory(); });
+
+    document.addEventListener('keydown', function (ev) {
+      if (ev.key !== 'Escape') return;
+      if (viewer && viewer.classList.contains('is-open')) {
+        closeViewer();
+        ev.preventDefault();
+        return;
+      }
+      if (modal.classList.contains('is-open')) {
+        hideModal();
+        ev.preventDefault();
+      }
+    });
+
+    var lastStoriesList = [];
+
+    function appendStoryBubble(s, idx) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'story-bubble';
+      b.setAttribute('data-story', '1');
+      b.setAttribute('title', s.pet_nome || 'Story');
+      var ring = document.createElement('span');
+      ring.className = 'story-ring';
+      var inner = document.createElement('span');
+      inner.className = 'story-ring-inner';
+      if (s.media_url) {
+        var im = document.createElement('img');
+        im.src = s.media_url;
+        im.alt = '';
+        inner.appendChild(im);
+      } else {
+        inner.innerHTML = '<span style="font-size:20px;">🐾</span>';
+      }
+      ring.appendChild(inner);
+      b.appendChild(ring);
+      var lbl = document.createElement('span');
+      lbl.style.cssText = 'display:block;max-width:72px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+      lbl.textContent = s.pet_nome || '';
+      b.appendChild(lbl);
+      b.addEventListener('click', function () {
+        openViewerWithQueue(lastStoriesList, idx);
+      });
+      strip.appendChild(b);
+    }
+
+    function loadFeedStories() {
+      fetch('/explorar/api/stories', {
+        headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+        credentials: 'same-origin',
+      })
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+          if (!d.sucesso || !Array.isArray(d.stories)) return;
+          lastStoriesList = d.stories;
+          strip.querySelectorAll('.story-bubble[data-story]').forEach(function (b) { b.remove(); });
+          d.stories.forEach(function (s, idx) { appendStoryBubble(s, idx); });
+        })
+        .catch(function () {});
+    }
+
+    loadFeedStories();
+  })();
 
   function buildFeedMeta(p) {
     var pCor = p.cor_perfil || '#ec5a1c';

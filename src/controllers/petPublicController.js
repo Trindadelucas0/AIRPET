@@ -39,6 +39,8 @@ function baseUrl(req) {
 }
 
 function descricaoOg(pet) {
+  const bio = (pet.bio_pet && String(pet.bio_pet).trim()) ? String(pet.bio_pet).trim() : '';
+  if (bio) return `${bio.slice(0, 200)}${bio.length > 200 ? '…' : ''}`;
   const partes = [];
   if (pet.raca) partes.push(pet.raca);
   if (pet.tipo) partes.push(pet.tipo);
@@ -269,14 +271,18 @@ const petPublicController = {
 
       const totalCurtidasAgregado = (posts || []).reduce((acc, p) => acc + (parseInt(p.total_curtidas, 10) || 0), 0);
 
+      const perfilRestrito = !!(pet.privado && !ehDono && !estaSeguindo);
+
       // Destaques estilo Stories: ate 3 posts fixados (que possuem midia)
-      const destaques = (posts || [])
-        .filter((p) => p.fixada && p.media_url)
-        .slice(0, 3);
+      const destaques = perfilRestrito
+        ? []
+        : (posts || [])
+          .filter((p) => p.fixada && p.media_url)
+          .slice(0, 3);
 
       // Timeline cronologica (so calculada se a aba 'sobre' for renderizada,
       // mas como o partial e leve, geramos sempre para nao re-fetchar)
-      const timeline = await buildTimeline(pet, posts, ehDono);
+      const timeline = perfilRestrito ? [] : await buildTimeline(pet, posts, ehDono);
 
       const url = `${baseUrl(req)}/p/${pet.slug}`;
       const ogImage = pet.foto || pet.foto_capa || null;
@@ -298,6 +304,7 @@ const petPublicController = {
         abaAtiva,
         idadePet: calcularIdade(pet.data_nascimento),
         totalCurtidasAgregado,
+        perfilRestrito,
         ...contextoDono,
         canonicalUrl: url,
         ogUrl: url,

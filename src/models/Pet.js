@@ -67,19 +67,24 @@ const Pet = {
     const {
       usuario_id, nome, tipo, tipo_custom, raca, cor,
       porte, sexo, data_nascimento, peso, foto, descricao_emocional, telefone_contato,
-      microchip, numero_pedigree, castrado, alergias_medicacoes, veterinario_nome, veterinario_telefone, observacoes
+      microchip, numero_pedigree, castrado, alergias_medicacoes, veterinario_nome, veterinario_telefone, observacoes,
+      bio_pet, privado,
     } = dados;
 
     const slug = await gerarSlugUnico(nome);
+    const bioPetRaw = bio_pet != null ? String(bio_pet).trim().slice(0, 160) : null;
+    const bioPet = bioPetRaw === '' ? null : bioPetRaw;
+    const priv = privado === true || privado === 'true' || privado === 'on' || privado === '1';
 
     const resultado = await query(
       `INSERT INTO pets
         (usuario_id, nome, tipo, tipo_custom, raca, cor, porte, sexo, data_nascimento, peso, foto, descricao_emocional, telefone_contato,
-         microchip, numero_pedigree, castrado, alergias_medicacoes, veterinario_nome, veterinario_telefone, observacoes, slug)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
+         microchip, numero_pedigree, castrado, alergias_medicacoes, veterinario_nome, veterinario_telefone, observacoes, slug, bio_pet, privado)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23)
        RETURNING *`,
       [usuario_id, nome, tipo, tipo_custom, raca, cor, porte, sexo, data_nascimento, peso, foto, descricao_emocional, telefone_contato,
-        microchip || null, numero_pedigree || null, castrado ?? null, alergias_medicacoes || null, veterinario_nome || null, veterinario_telefone || null, observacoes || null, slug]
+        microchip || null, numero_pedigree || null, castrado ?? null, alergias_medicacoes || null, veterinario_nome || null, veterinario_telefone || null, observacoes || null, slug,
+        bioPet || null, priv]
     );
 
     return resultado.rows[0];
@@ -186,8 +191,13 @@ const Pet = {
     const {
       nome, tipo, tipo_custom, raca, cor,
       porte, sexo, data_nascimento, peso, descricao_emocional, telefone_contato,
-      microchip, numero_pedigree, castrado, alergias_medicacoes, veterinario_nome, veterinario_telefone, observacoes
+      microchip, numero_pedigree, castrado, alergias_medicacoes, veterinario_nome, veterinario_telefone, observacoes,
+      bio_pet, privado,
     } = dados;
+
+    const bioPetRaw = bio_pet != null ? String(bio_pet).trim().slice(0, 160) : null;
+    const bioPet = bioPetRaw === '' ? null : bioPetRaw;
+    const priv = privado === true || privado === 'true' || privado === 'on' || privado === '1';
 
     const resultado = await query(
       `UPDATE pets
@@ -209,11 +219,14 @@ const Pet = {
            veterinario_nome = $17,
            veterinario_telefone = $18,
            observacoes = $19,
+           bio_pet = $20,
+           privado = $21,
            data_atualizacao = NOW()
        WHERE id = $1
        RETURNING *`,
       [id, nome, tipo, tipo_custom, raca, cor, porte, sexo, data_nascimento, peso, descricao_emocional, telefone_contato,
-        microchip || null, numero_pedigree || null, castrado ?? null, alergias_medicacoes || null, veterinario_nome || null, veterinario_telefone || null, observacoes || null]
+        microchip || null, numero_pedigree || null, castrado ?? null, alergias_medicacoes || null, veterinario_nome || null, veterinario_telefone || null, observacoes || null,
+        bioPet, priv]
     );
 
     return resultado.rows[0];
@@ -328,6 +341,7 @@ const Pet = {
        JOIN usuarios u ON u.id = p.usuario_id
        WHERE p.usuario_id != $1
          AND p.id NOT IN (SELECT pet_id FROM seguidores_pets WHERE usuario_id = $1)
+         AND COALESCE(p.privado, false) = false
        ORDER BY (SELECT COUNT(*) FROM seguidores_pets WHERE pet_id = p.id) DESC, p.data_criacao DESC
        LIMIT $2`,
       [usuarioId, max]
@@ -351,6 +365,7 @@ const Pet = {
          AND u.id != $2
          AND ST_DWithin(u.ultima_localizacao, ref.ultima_localizacao, 50000)
          AND p.id NOT IN (SELECT pet_id FROM seguidores_pets WHERE usuario_id = $2)
+         AND COALESCE(p.privado, false) = false
        ORDER BY ST_Distance(u.ultima_localizacao, ref.ultima_localizacao) ASC
        LIMIT $3`,
       [usuarioIdReferencia, usuarioIdLogado, limite]
