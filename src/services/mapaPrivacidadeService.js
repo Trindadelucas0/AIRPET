@@ -39,10 +39,9 @@ function labelLocal(cidade) {
 /**
  * Pin público de último scan (tag_scans): não é rastreamento contínuo, só último avistamento ofuscado.
  *
- * - Pet **perdido** (`pets.status = 'perdido'` ou alerta aprovado em `pets_perdidos`, ver `tem_alerta_perdido_aprovado`):
- *   sempre elegível, **mesmo** com perfil privado (recuperação).
- * - Demais pets: elegíveis se o perfil **não** for privado (`privado === false`).
- * O campo legado `mostrar_ultimo_avistamento_mapa` **não** entra nesta regra.
+ * - Pet **perdido** ou alerta aprovado: sempre no mapa (recuperação), mesmo perfil privado.
+ * - Demais: perfil **não** privado e sem opt-out explícito em `mostrar_ultimo_avistamento_mapa`
+ *   (coluna em `pets`; só oculta quando `false` explícito).
  */
 function petScanElegivelMapaPublico(row) {
   if (!row) return false;
@@ -50,7 +49,9 @@ function petScanElegivelMapaPublico(row) {
     row.tem_alerta_perdido_aprovado === true ||
     row.tem_alerta_perdido_aprovado === 't';
   if (row.pet_status === 'perdido' || alertaAprovado) return true;
-  return !row.privado;
+  if (row.privado === true || row.privado === 't') return false;
+  if (row.mostrar_ultimo_avistamento_mapa === false || row.mostrar_ultimo_avistamento_mapa === 'f') return false;
+  return true;
 }
 
 module.exports = {

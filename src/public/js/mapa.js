@@ -266,7 +266,7 @@
     avistamentos: true,
     pontos: false,
     pet_scans: true,
-    social: false,
+    social: typeof document !== 'undefined' && document.body && document.body.getAttribute('data-logado') === 'true',
     heatmap: false
   };
   var locMarker = null;
@@ -926,4 +926,5 @@
 
   /* ─── Iniciar ─── */
   fetchPins();
+  if (activeLayers.social) fetchSocialPins();
 })();

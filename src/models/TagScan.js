@@ -121,6 +121,7 @@ const TagScan = {
          p.slug AS pet_slug,
          p.status AS pet_status,
          COALESCE(p.privado, false) AS privado,
+         COALESCE(p.mostrar_ultimo_avistamento_mapa, true) AS mostrar_ultimo_avistamento_mapa,
          EXISTS (
            SELECT 1 FROM pets_perdidos pp
            WHERE pp.pet_id = p.id AND pp.status = 'aprovado'
@@ -136,8 +137,10 @@ const TagScan = {
          AND t.pet_id IS NOT NULL
          AND ts.latitude IS NOT NULL
          AND ts.longitude IS NOT NULL
-         AND ts.latitude BETWEEN $1 AND $3
-         AND ts.longitude BETWEEN $2 AND $4
+         AND ts.latitude BETWEEN LEAST($1::double precision, $3::double precision)
+                            AND GREATEST($1::double precision, $3::double precision)
+         AND ts.longitude BETWEEN LEAST($2::double precision, $4::double precision)
+                             AND GREATEST($2::double precision, $4::double precision)
          AND ts.data > NOW() - INTERVAL '30 days'
        ORDER BY t.pet_id, ts.data DESC
        LIMIT 200`,
@@ -162,8 +165,10 @@ const TagScan = {
          AND t.pet_id IS NOT NULL
          AND ts.latitude IS NOT NULL
          AND ts.longitude IS NOT NULL
-         AND ts.latitude BETWEEN $1 AND $3
-         AND ts.longitude BETWEEN $2 AND $4
+         AND ts.latitude BETWEEN LEAST($1::double precision, $3::double precision)
+                            AND GREATEST($1::double precision, $3::double precision)
+         AND ts.longitude BETWEEN LEAST($2::double precision, $4::double precision)
+                             AND GREATEST($2::double precision, $4::double precision)
          AND ts.data > NOW() - INTERVAL '30 days'
          AND (
            p.status = 'perdido'

@@ -226,8 +226,9 @@ async function buscarPins(req, res) {
 }
 
 /**
- * buscarPinsSocial — Retorna última localização dos pets que o usuário segue
+ * buscarPinsSocial — Última localização dos pets que o usuário segue **e dos próprios pets** (dono).
  *
+ * Dono vê o pin mesmo com perfil privado ou sem “mostrar para seguidores”; seguidores mantêm as regras antigas.
  * Rota: GET /mapa/api/pins/social (requer autenticação)
  */
 async function buscarPinsSocial(req, res) {
@@ -255,26 +256,33 @@ async function buscarPinsSocial(req, res) {
        FROM tag_scans ts
        JOIN nfc_tags t ON t.id = ts.tag_id
        JOIN pets p ON p.id = t.pet_id
-       JOIN seguidores_pets sp ON sp.pet_id = t.pet_id
-       WHERE sp.usuario_id = $1
-         AND t.status = 'active'
+       WHERE t.status = 'active'
          AND ts.latitude IS NOT NULL
          AND ts.longitude IS NOT NULL
          AND ts.data > NOW() - INTERVAL '30 days'
-         AND NOT COALESCE(p.privado, false)
          AND (
-           COALESCE(p.mostrar_ultimo_scan_seguidores, true) = true
-           OR p.status = 'perdido'
-           OR EXISTS (
-             SELECT 1 FROM pets_perdidos pp
-             WHERE pp.pet_id = p.id AND pp.status = 'aprovado'
+           p.usuario_id = $1
+           OR (
+             EXISTS (
+               SELECT 1 FROM seguidores_pets sp
+               WHERE sp.pet_id = t.pet_id AND sp.usuario_id = $1
+             )
+             AND NOT COALESCE(p.privado, false)
+             AND (
+               COALESCE(p.mostrar_ultimo_scan_seguidores, true) = true
+               OR p.status = 'perdido'
+               OR EXISTS (
+                 SELECT 1 FROM pets_perdidos pp
+                 WHERE pp.pet_id = p.id AND pp.status = 'aprovado'
+               )
+             )
            )
          )
        ORDER BY t.pet_id, ts.data DESC
-       LIMIT 100`,
+       LIMIT 120`,
         [usuarioId]
       ),
-      PetCheckin.listarPinsPublicosSeguidos(usuarioId, 100),
+      PetCheckin.listarPinsPublicosSeguidos(usuarioId, 120),
     ]);
 
     const byPet = new Map();

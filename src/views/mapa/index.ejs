@@ -98,7 +98,7 @@
       <%- include('../partials/map-layer-button', { layer: 'pet_scans', icon: 'fa-solid fa-paw', label: 'Pets no mapa', isActive: true }) %>
       <%- include('../partials/map-layer-button', { layer: 'heatmap', icon: 'fa-solid fa-fire-flame-curved', label: 'Calor', isActive: false }) %>
       <% if (locals.usuario) { %>
-        <%- include('../partials/map-layer-button', { layer: 'social', icon: 'fa-solid fa-heart', label: 'Seguindo', isActive: false }) %>
+        <%- include('../partials/map-layer-button', { layer: 'social', icon: 'fa-solid fa-heart', label: 'Seguindo', isActive: true }) %>
       <% } %>
       <button type="button" id="btnToggleLocalizar" class="ml-auto flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold border border-gray-200 whitespace-nowrap transition-all text-gray-600 hover:bg-gray-50 md:hidden">
         <i class="fa-solid fa-magnifying-glass-location"></i> Localizar regiao
