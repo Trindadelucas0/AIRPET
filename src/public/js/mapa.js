@@ -85,6 +85,7 @@
   /* ─── Pin personalizado com foto do pet ─── */
   function makePetPhotoIcon(foto, petStatus, horasAtras) {
     var borderColor;
+    var fotoUrl = normalizeAssetUrl(foto);
     if (petStatus === 'perdido') {
       borderColor = '#dc2626'; // vermelho: perdido
     } else if (horasAtras !== null && horasAtras > 48) {
@@ -100,9 +101,9 @@
         : '0 0 0 2px rgba(22,163,74,0.2), 0 2px 8px rgba(0,0,0,.28)';
 
     var inner;
-    if (foto) {
+    if (fotoUrl) {
       // Escapa a URL para uso seguro dentro do HTML inline
-      var safeUrl = foto.replace(/"/g, '&quot;');
+      var safeUrl = fotoUrl.replace(/"/g, '&quot;');
       var fallbackHtml = '<div style=\\"background:' + borderColor + ';width:100%;height:100%;display:flex;align-items:center;justify-content:center;border-radius:50%\\"><i class=\\"fa-solid fa-paw\\" style=\\"color:#fff;font-size:14px\\"></i></div>';
       inner = '<img src="' + safeUrl + '" loading="lazy" '
         + 'style="width:100%;height:100%;object-fit:cover;border-radius:50%" '
@@ -183,8 +184,9 @@
         ? '<span style="display:inline-flex;align-items:center;gap:4px;background:#fee2e2;color:#b91c1c;font-size:10px;font-weight:700;padding:2px 8px;border-radius:999px;letter-spacing:.04em;animation:petPinRing 1.4s ease-in-out infinite">'
           + '<i class="fa-solid fa-triangle-exclamation" style="font-size:9px"></i> PERDIDO</span> '
         : '';
-      var fotoHtml = props.foto
-        ? '<img src="' + props.foto.replace(/"/g, '&quot;') + '" loading="lazy" style="width:52px;height:52px;border-radius:12px;object-fit:cover;flex-shrink:0;border:2px solid #f3f4f6">'
+      var fotoUrl = normalizeAssetUrl(props.foto);
+      var fotoHtml = fotoUrl
+        ? '<img src="' + fotoUrl.replace(/"/g, '&quot;') + '" loading="lazy" style="width:52px;height:52px;border-radius:12px;object-fit:cover;flex-shrink:0;border:2px solid #f3f4f6">'
         : '<div style="width:52px;height:52px;border-radius:12px;background:#f97316;display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="fa-solid fa-paw" style="color:#fff;font-size:20px"></i></div>';
       var localLabel = props.label_local || props.cidade || 'Região aproximada';
       var localHtml = '<p style="font-size:12px;color:#6b7280;margin-top:3px"><i class="fa-solid fa-map-pin" style="color:#ec5a1c;font-size:10px;margin-right:3px"></i>Última vez visto em: ' + esc(localLabel) + '</p>';
@@ -223,8 +225,9 @@
         + '<a href="' + esc(props.perfil_url || '#') + '" style="display:flex;align-items:center;justify-content:center;gap:6px;padding:10px;border-radius:12px;background:#10b981;color:#fff;font-weight:600;font-size:13px;text-decoration:none;width:100%"><i class="fa-solid fa-store"></i> Ver petshop</a>';
 
     } else if (tipo === 'pet_perdido') {
-      var pfoto = props.foto
-        ? '<img src="' + props.foto.replace(/"/g, '&quot;') + '" loading="lazy" style="width:52px;height:52px;border-radius:12px;object-fit:cover;flex-shrink:0;border:2px solid #fecaca">'
+      var perdFoto = normalizeAssetUrl(props.foto);
+      var pfoto = perdFoto
+        ? '<img src="' + perdFoto.replace(/"/g, '&quot;') + '" loading="lazy" style="width:52px;height:52px;border-radius:12px;object-fit:cover;flex-shrink:0;border:2px solid #fecaca">'
         : '<div style="width:52px;height:52px;border-radius:12px;background:#dc2626;display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="fa-solid fa-triangle-exclamation" style="color:#fff;font-size:20px"></i></div>';
       html = '<div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:14px">'
         + pfoto
@@ -322,6 +325,23 @@
     return true;
   }
 
+  /** Caminhos relativos (ex.: uploads/...) falham em /mapa — usar URL absoluta ao path. */
+  function normalizeAssetUrl(u) {
+    if (u == null || u === '') return null;
+    var s = String(u).trim();
+    if (!s) return null;
+    if (/^https?:\/\//i.test(s)) return s;
+    if (s.charAt(0) === '/') return s;
+    return '/' + s.replace(/^\.?\//, '');
+  }
+
+  function parseGeomLatLng(lat, lng) {
+    var la = typeof lat === 'number' ? lat : parseFloat(lat);
+    var lo = typeof lng === 'number' ? lng : parseFloat(lng);
+    if (!Number.isFinite(la) || !Number.isFinite(lo)) return null;
+    return { lat: la, lng: lo };
+  }
+
   /* ─── Renderiza features GeoJSON no mapa ─── */
   function renderFeatures(data, tipoOverride) {
     var features = data && (data.features || data) ? (data.features || data) : [];
@@ -336,18 +356,41 @@
 
       var tipo = props.tipo || props.categoria || 'default';
       var id   = props.id + '_' + tipo;
-      if (loadedIds[id]) return;
+
+      var latRaw, lngRaw;
+      if (geom && geom.coordinates) {
+        lngRaw = geom.coordinates[0];
+        latRaw = geom.coordinates[1];
+      } else {
+        latRaw = props.latitude;
+        lngRaw = props.longitude;
+      }
+      var coord = parseGeomLatLng(latRaw, lngRaw);
+      if (!coord) return;
+
+      if (loadedIds[id]) {
+        if ((tipo === 'pet_scan' || tipo === 'pet_seguido') && markers[id]) {
+          var mUp = markers[id];
+          var iconUp = makePetPhotoIcon(props.foto, props.pet_status, props.horas_atras);
+          mUp.setLatLng([coord.lat, coord.lng]);
+          mUp.setIcon(iconUp);
+          mUp._airpetProps = props;
+          mUp._airpetLat = coord.lat;
+          mUp._airpetLng = coord.lng;
+          mUp.off('click');
+          mUp.on('click', function () {
+            abrirBottomSheet(buildBottomSheetHtml(props, coord.lat, coord.lng));
+          });
+          if (isLayerVisible(tipo) && clusterGroup && !clusterGroup.hasLayer(mUp)) {
+            clusterGroup.addLayer(mUp);
+          }
+        }
+        return;
+      }
       loadedIds[id] = true;
 
-      var lat, lng;
-      if (geom && geom.coordinates) {
-        lng = geom.coordinates[0];
-        lat = geom.coordinates[1];
-      } else {
-        lat = props.latitude;
-        lng = props.longitude;
-      }
-      if (!lat || !lng) return;
+      var lat = coord.lat;
+      var lng = coord.lng;
 
       var icon;
       if (tipo === 'pet_scan' || tipo === 'pet_seguido') {
@@ -565,7 +608,9 @@
     es.addEventListener('nfc_scan', function (e) {
       try {
         var data = JSON.parse(e.data);
-        if (data && data.lat && data.lng) {
+        var la = data && parseFloat(data.lat);
+        var lo = data && parseFloat(data.lng);
+        if (Number.isFinite(la) && Number.isFinite(lo)) {
           upsertPetScanPin(data);
         }
       } catch (_) {}

@@ -57,6 +57,23 @@ const TagScan = {
   },
 
   /**
+   * Histórico de leituras da tag para o tutor (inclui scans sem GPS).
+   * Usado nas abas "Scans" / últimas leituras; o mapa usa {@link buscarPorPet}.
+   */
+  async listarHistoricoPorPet(petId, limite = 40) {
+    const resultado = await query(
+      `SELECT ts.*, t.tag_code
+       FROM tag_scans ts
+       JOIN nfc_tags t ON t.id = ts.tag_id
+       WHERE t.pet_id = $1
+       ORDER BY ts.data DESC
+       LIMIT $2`,
+      [petId, limite]
+    );
+    return resultado.rows;
+  },
+
+  /**
    * Busca o scan mais recente de um pet (com coordenadas).
    */
   async ultimoScanPet(petId) {

@@ -10,6 +10,16 @@ function _fmtData(d) {
   if (!d) return '';
   try { return new Date(d).toLocaleString('pt-BR'); } catch (_) { return ''; }
 }
+function _labelScan(s) {
+  var c = s.cidade != null ? String(s.cidade).trim() : '';
+  if (c) return c;
+  var lat = s.latitude;
+  var lng = s.longitude;
+  if (lat != null && lng != null && lat !== '' && lng !== '') {
+    return 'No mapa (coordenadas aproximadas)';
+  }
+  return 'Leitura registrada (localizacao nao informada)';
+}
 %>
 
 <div class="pp-panel">
@@ -39,7 +49,7 @@ function _fmtData(d) {
               <i class="fa-solid fa-location-dot" style="font-size:12px;"></i>
             </span>
             <div style="flex:1;min-width:0;">
-              <div style="font-size:13px;color:#0f172a;font-weight:700;"><%= s.cidade || 'Local nao informado' %></div>
+              <div style="font-size:13px;color:#0f172a;font-weight:700;"><%= _labelScan(s) %></div>
               <div style="font-size:11px;color:#64748b;"><%= _fmtData(s.data) %></div>
             </div>
           </div>

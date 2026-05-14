@@ -65,7 +65,7 @@ function calcularIdade(dataNascimento) {
 
 async function buildContextoDono(pet, req) {
   const [scans, tags, alertaAtivo] = await Promise.all([
-    TagScan.buscarPorPet(pet.id, 20),
+    TagScan.listarHistoricoPorPet(pet.id, 40),
     NfcTag.buscarPorUsuario(req.session.usuario.id).then((lista) => lista.filter((t) => t.pet_id === pet.id)),
     PetPerdido.buscarAtivoPorPet(pet.id).catch(() => null),
   ]);

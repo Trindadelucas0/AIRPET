@@ -277,7 +277,7 @@ const petController = {
       let ultimoScanPerdido = null;
       if (ehDono) {
         [scans, tags, fotosRecebidas, alertaAtivo] = await Promise.all([
-          TagScan.buscarPorPet(id, 20),
+          TagScan.listarHistoricoPorPet(id, 40),
           NfcTag.buscarPorUsuario(req.session.usuario.id).then(lista => lista.filter(t => t.pet_id === parseInt(id, 10))),
           Localizacao.buscarComFotosPorPet(id, 20),
           PetPerdido.buscarAtivoPorPet(id),
