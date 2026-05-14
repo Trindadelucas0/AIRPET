@@ -173,7 +173,7 @@
 
     <p class="text-center text-slate-500 text-xs leading-relaxed px-2">
       <i class="fa-solid fa-lock mr-1"></i>
-      Sua localizacao pode ser compartilhada para ajudar no resgate. Nenhum dado sensivel e exibido publicamente.
+      Ao abrir este link, registamos uma <strong class="text-slate-600">zona aproximada</strong> pela rede (sem pedir GPS). Pode usar o botão azul para enviar a sua localização precisa, se quiser.
     </p>
   </div>
 </main>
@@ -205,18 +205,6 @@
       }
     }
     doFetch().catch(function () {});
-  }
-
-  if (navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition(
-      function(pos) {
-        enviarLocalizacao(pos.coords.latitude, pos.coords.longitude, false);
-      },
-      function(err) {
-        console.warn('[NFC] Geoloc auto falhou:', err.code, err.message);
-      },
-      { enableHighAccuracy: true, timeout: 12000 }
-    );
   }
 
   var btn = document.getElementById('btnLocalizacao');

@@ -89,6 +89,8 @@ const nfcService = {
   async processarScan(tagCode, dadosScan) {
     logger.info('NfcService', `Processando scan da tag: ${tagCode}`);
 
+    var registrouAproximacaoIp = false;
+
     /**
      * PASSO 1: Busca a tag pelo código NFC.
      * O método buscarPorTagCode já faz LEFT JOIN com pets e usuarios,
@@ -103,6 +105,7 @@ const nfcService = {
         pet: null,
         tela: 'nao-encontrada',
         petPerdido: false,
+        registrouAproximacaoIp: false,
       };
     }
 
@@ -210,6 +213,10 @@ const nfcService = {
          * nova localização do pet (origem: 'nfc'). Foto no mapa vem do JOIN com pets.
          */
         if (tag.pet_id && dadosScan.latitude && dadosScan.longitude) {
+          if (dadosScan.geo_source === 'ip_aproximado') {
+            registrouAproximacaoIp = true;
+          }
+
           await Localizacao.registrar({
             pet_id: tag.pet_id,
             latitude: dadosScan.latitude,
@@ -217,9 +224,11 @@ const nfcService = {
             origem: 'nfc',
             foto_url: null,
             cidade: dadosScan.cidade || null,
+            ip: dadosScan.ip || null,
           });
 
           // Projeta no event store unificado (falha silenciosa — não bloqueia fluxo)
+          var confIp = dadosScan.geo_source === 'ip_aproximado' ? 35 : 100;
           PetTrackingEvent.registrar({
             pet_id: tag.pet_id,
             event_type: 'nfc_scan',
@@ -227,8 +236,14 @@ const nfcService = {
             latitude: dadosScan.latitude,
             longitude: dadosScan.longitude,
             cidade: dadosScan.cidade || null,
+            confidence: confIp,
             visibility: 'owner',
-            metadata: { tag_code: tagCode, ip: dadosScan.ip, user_agent: dadosScan.user_agent },
+            metadata: {
+              tag_code: tagCode,
+              ip: dadosScan.ip,
+              user_agent: dadosScan.user_agent,
+              geo_source: dadosScan.geo_source || 'gps_ou_manual',
+            },
           }).catch((err) => {
             logger.error('NfcService', 'Falha ao projetar evento NFC no tracking store', err);
           });
@@ -429,6 +444,7 @@ const nfcService = {
       planoExpiraEm: planoInfo?.validUntil || null,
       planoSlug: planoInfo?.planSlug || 'basico',
       planoNome: planoInfo?.nomePlano || 'AIRPET Essencial',
+      registrouAproximacaoIp,
     };
   },
 };

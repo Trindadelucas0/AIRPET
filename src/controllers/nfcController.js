@@ -32,6 +32,7 @@ const Localizacao = require('../models/Localizacao');
 const notificacaoService = require('../services/notificacaoService');
 const logger = require('../utils/logger');
 const { multerPublicUrl } = require('../middlewares/persistUploadMiddleware');
+const ipGeolocation = require('../utils/ipGeolocation');
 
 const nfcController = {
 
@@ -77,19 +78,29 @@ const nfcController = {
 
       logger.info('NFC_CTRL', `Scan recebido para tag: ${tag_code} | IP: ${ip}`);
 
-      /*
-       * Chama o serviço NFC para processar o scan.
-       * O serviço retorna um objeto com:
-       *   - tela: string indicando qual view renderizar
-       *   - tag: dados da tag NFC
-       *   - pet: dados do pet (se tag ativa)
-       *   - dono: dados do dono (se tag ativa)
-       *   - erro: mensagem de erro (se houver)
-       */
-      const resultado = await nfcService.processarScan(tag_code, {
-        ip,
-        user_agent,
-      });
+      const dadosScan = { ip, user_agent };
+      const cookieNm = ipGeolocation.cookieNameForTagIpGeo(tag_code);
+      const skipIpGeo = req.cookies && req.cookies[cookieNm] === '1';
+      if (!skipIpGeo) {
+        const approx = await ipGeolocation.lookupApproximate(ip);
+        if (approx) {
+          dadosScan.latitude = approx.latitude;
+          dadosScan.longitude = approx.longitude;
+          dadosScan.cidade = approx.cidade;
+          dadosScan.geo_source = 'ip_aproximado';
+        }
+      }
+
+      const resultado = await nfcService.processarScan(tag_code, dadosScan);
+
+      if (resultado.registrouAproximacaoIp) {
+        res.cookie(cookieNm, '1', {
+          maxAge: 25 * 60 * 1000,
+          httpOnly: true,
+          sameSite: 'lax',
+          secure: process.env.NODE_ENV === 'production',
+        });
+      }
 
       /*
        * Decide qual view renderizar baseado no campo 'tela'
