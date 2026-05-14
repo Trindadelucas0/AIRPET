@@ -67,6 +67,9 @@ router.put('/:id', function (req, res, next) {
 // Página de saúde do pet
 router.get('/:id/saude', petController.mostrarSaude);
 
+// Histórico de avistamentos (mapa, coords aproximadas) — tutor autenticado
+router.get('/:id/mapa-avistamentos', petController.listarAvistamentosMapa);
+
 // QR Code do perfil
 router.get('/:id/qr', petController.mostrarQr);
 

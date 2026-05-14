@@ -193,11 +193,14 @@ const Pet = {
       porte, sexo, data_nascimento, peso, descricao_emocional, telefone_contato,
       microchip, numero_pedigree, castrado, alergias_medicacoes, veterinario_nome, veterinario_telefone, observacoes,
       bio_pet, privado,
+      mostrar_ultimo_avistamento_mapa,
     } = dados;
 
     const bioPetRaw = bio_pet != null ? String(bio_pet).trim().slice(0, 160) : null;
     const bioPet = bioPetRaw === '' ? null : bioPetRaw;
     const priv = privado === true || privado === 'true' || privado === 'on' || privado === '1';
+    let mostrarMapa = mostrar_ultimo_avistamento_mapa === true || mostrar_ultimo_avistamento_mapa === 'true' || mostrar_ultimo_avistamento_mapa === 'on' || mostrar_ultimo_avistamento_mapa === '1';
+    if (priv) mostrarMapa = false;
 
     const resultado = await query(
       `UPDATE pets
@@ -221,12 +224,13 @@ const Pet = {
            observacoes = $19,
            bio_pet = $20,
            privado = $21,
+           mostrar_ultimo_avistamento_mapa = $22,
            data_atualizacao = NOW()
        WHERE id = $1
        RETURNING *`,
       [id, nome, tipo, tipo_custom, raca, cor, porte, sexo, data_nascimento, peso, descricao_emocional, telefone_contato,
         microchip || null, numero_pedigree || null, castrado ?? null, alergias_medicacoes || null, veterinario_nome || null, veterinario_telefone || null, observacoes || null,
-        bioPet, priv]
+        bioPet, priv, mostrarMapa]
     );
 
     return resultado.rows[0];

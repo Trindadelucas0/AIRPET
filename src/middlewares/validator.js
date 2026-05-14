@@ -179,7 +179,7 @@ const CAMPOS_REDEFINIR_SENHA = ['senha', 'confirmar_senha'];
 const CAMPOS_PET_FORM = [
   'nome', 'tipo', 'tipo_custom', 'raca', 'cor', 'porte', 'sexo', 'dataNascimento', 'peso', 'descricao',
   'telefoneContato', 'microchip', 'numero_pedigree', 'castrado', 'alergias_medicacoes', 'veterinario_nome', 'veterinario_telefone',
-  'observacoes', '_method',
+  'observacoes', 'bio_pet', 'privado', 'mostrar_ultimo_avistamento_mapa', 'foto_cropped', '_method',
 ];
 
 const validarPet = [
@@ -211,6 +211,9 @@ const validarPet = [
   body('veterinario_nome').optional({ checkFalsy: true }).trim().isLength({ max: 120 }),
   body('veterinario_telefone').optional({ checkFalsy: true }).trim().isLength({ max: 30 }),
   body('observacoes').optional({ checkFalsy: true }).trim().isLength({ max: 2000 }),
+  body('bio_pet').optional({ checkFalsy: true }).trim().isLength({ max: 160 }),
+  body('privado').optional(),
+  body('mostrar_ultimo_avistamento_mapa').optional(),
 ];
 
 const validarPerfil = [

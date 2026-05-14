@@ -35,6 +35,7 @@ const PetPerdido = require('../models/PetPerdido');
 const TagScan = require('../models/TagScan');
 const PetCheckin = require('../models/PetCheckin');
 const petEventBus = require('../services/petEventBus');
+const mapaPrivacidadeService = require('../services/mapaPrivacidadeService');
 const logger = require('../utils/logger');
 
 const SSE_MAX_CONNECTIONS = 500;
@@ -176,15 +177,17 @@ async function buscarPins(req, res) {
       }
     });
 
-    /* Última localização da tag por pet (scan NFC) dentro da bbox */
+    /* Última localização da tag por pet (scan NFC) dentro da bbox — coords públicas aproximadas */
     (petScans || []).forEach((row) => {
-      // Regra de visibilidade: no mapa público, exibir scan apenas de pets perdidos.
-      if (row.pet_status !== 'perdido') return;
-      const lat = parseFloat(row.latitude);
-      const lng = parseFloat(row.longitude);
-      if (isNaN(lat) || isNaN(lng)) return;
+      if (!mapaPrivacidadeService.petScanElegivelMapaPublico(row)) return;
+      const latRaw = parseFloat(row.latitude);
+      const lngRaw = parseFloat(row.longitude);
+      if (Number.isNaN(latRaw) || Number.isNaN(lngRaw)) return;
+      const { lat, lng } = mapaPrivacidadeService.obfuscateLatLng(latRaw, lngRaw, row.pet_id);
+      if (lat == null || lng == null) return;
       const scanData = row.data ? new Date(row.data) : null;
       const horasAtras = scanData ? (Date.now() - scanData.getTime()) / 3600000 : null;
+      const slug = row.pet_slug || null;
       features.push({
         type: 'Feature',
         geometry: {
@@ -198,6 +201,9 @@ async function buscarPins(req, res) {
           foto: row.pet_foto || null,
           pet_status: row.pet_status || 'ativo',
           cidade: row.cidade || null,
+          label_local: mapaPrivacidadeService.labelLocal(row.cidade),
+          slug,
+          perfil_url: slug ? `/p/${slug}` : `/pets/${row.pet_id}`,
           data: scanData ? scanData.toISOString() : null,
           horas_atras: horasAtras !== null ? Math.round(horasAtras) : null,
         },
@@ -241,6 +247,8 @@ async function buscarPinsSocial(req, res) {
          p.foto AS pet_foto,
          p.slug AS pet_slug,
          p.status AS pet_status,
+         COALESCE(p.privado, false) AS privado,
+         COALESCE(p.mostrar_ultimo_avistamento_mapa, false) AS mostrar_ultimo_avistamento_mapa,
          ts.latitude,
          ts.longitude,
          ts.cidade,
@@ -280,10 +288,15 @@ async function buscarPinsSocial(req, res) {
     const features = [...byPet.values()].map((entry) => {
       if (entry.source === 'scan') {
         const row = entry.row;
-        const lat = parseFloat(row.latitude);
-        const lng = parseFloat(row.longitude);
+        const latRaw = parseFloat(row.latitude);
+        const lngRaw = parseFloat(row.longitude);
         const scanData = row.data ? new Date(row.data) : null;
         const horasAtras = scanData ? Math.round((Date.now() - scanData.getTime()) / 3600000) : null;
+        const { lat, lng } = mapaPrivacidadeService.obfuscateLatLng(latRaw, lngRaw, row.pet_id);
+        if (lat == null || lng == null) {
+          return null;
+        }
+        const slug = row.pet_slug || null;
         return {
           type: 'Feature',
           geometry: { type: 'Point', coordinates: [lng, lat] },
@@ -294,17 +307,22 @@ async function buscarPinsSocial(req, res) {
             foto: row.pet_foto || null,
             pet_status: row.pet_status || 'ativo',
             cidade: row.cidade || null,
+            label_local: mapaPrivacidadeService.labelLocal(row.cidade),
             data: scanData ? scanData.toISOString() : null,
             horas_atras: horasAtras,
-            slug: row.pet_slug || null,
+            slug,
+            perfil_url: slug ? `/p/${slug}` : `/pets/${row.pet_id}`,
           },
         };
       }
       const c = entry.row;
-      const lat = parseFloat(c.lat);
-      const lng = parseFloat(c.lng);
+      const latRaw = parseFloat(c.lat);
+      const lngRaw = parseFloat(c.lng);
+      const { lat, lng } = mapaPrivacidadeService.obfuscateLatLng(latRaw, lngRaw, c.pet_id);
+      if (lat == null || lng == null) return null;
       const when = new Date(c.criado_em);
       const horasAtras = Math.round((Date.now() - when.getTime()) / 3600000);
+      const slug = c.pet_slug || null;
       return {
         type: 'Feature',
         geometry: { type: 'Point', coordinates: [lng, lat] },
@@ -315,12 +333,14 @@ async function buscarPinsSocial(req, res) {
           foto: c.pet_foto || null,
           pet_status: 'ativo',
           cidade: c.local_nome || null,
+          label_local: mapaPrivacidadeService.labelLocal(c.local_nome),
           data: when.toISOString(),
           horas_atras: horasAtras,
-          slug: c.pet_slug || null,
+          slug,
+          perfil_url: slug ? `/p/${slug}` : `/pets/${c.pet_id}`,
         },
       };
-    });
+    }).filter(Boolean);
 
     return res.status(200).json({ type: 'FeatureCollection', features });
   } catch (erro) {
@@ -376,9 +396,7 @@ async function streamMapaSSE(req, res) {
 
   function onNfcScan(data) {
     if (closed) return;
-    // Regra de visibilidade: no mapa público via SSE, só transmite pets perdidos.
-    if (data.petStatus !== 'perdido') return;
-    // Filtrar pela bbox se fornecida
+    if (!data || !data.visivelMapaPublico) return;
     if (hasBbox) {
       const lat = data.lat;
       const lng = data.lng;

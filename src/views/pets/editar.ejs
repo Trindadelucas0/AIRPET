@@ -173,6 +173,19 @@
                style="width:18px;height:18px;accent-color:var(--accent);">
         <span class="pp-toggle-label" style="margin-left:10px;">Perfil privado — só quem segue o pet vê posts e destaques</span>
       </label>
+
+      <label class="pp-toggle" style="margin-top:14px;" role="switch"
+             aria-checked="<%= pet.mostrar_ultimo_avistamento_mapa ? 'true' : 'false' %>">
+        <input type="checkbox" name="mostrar_ultimo_avistamento_mapa" value="on"
+               <%= pet.mostrar_ultimo_avistamento_mapa ? 'checked' : '' %>
+               <%= pet.privado ? 'disabled' : '' %>
+               style="width:18px;height:18px;accent-color:var(--accent);">
+        <span class="pp-toggle-label" style="margin-left:10px;">Mostrar último avistamento no mapa público</span>
+      </label>
+      <p style="font-size:11px;color:var(--text-muted);margin-top:6px;margin-left:28px;max-width:520px;">
+        Quando alguém escanear a tag com localização, aparece um ponto <strong>aproximado</strong> no mapa AIRPET (não é GPS do pet).
+        Com perfil privado, esta opção fica desligada automaticamente.
+      </p>
     </section>
 
     <!-- ── MEDIDAS ── -->

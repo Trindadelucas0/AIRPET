@@ -212,6 +212,44 @@
       .btn-post:hover { background: var(--accent-light); transform: translateY(-1px); }
       .btn-post:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
+      @media (max-width: 480px) {
+        .composer { padding: 14px 12px; margin-bottom: 12px; }
+        .composer-top { gap: 10px; }
+        .composer textarea.composer-textarea {
+          min-height: 96px;
+          font-size: 16px;
+          padding: 12px;
+        }
+        .composer-actions {
+          flex-direction: column-reverse;
+          align-items: stretch;
+          gap: 12px;
+          padding-top: 12px;
+        }
+        .composer-actions > div:last-child {
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+          width: 100%;
+        }
+        .composer-tools { flex-wrap: wrap; }
+        .composer-tool-btn {
+          width: 44px;
+          height: 44px;
+          font-size: 17px;
+          border-radius: 10px;
+        }
+        .btn-post {
+          width: 100%;
+          justify-content: center;
+          min-height: 48px;
+          padding: 12px 18px;
+          font-size: 16px;
+        }
+        .feed-tabs { flex-wrap: wrap; gap: 6px; }
+        .feed-tab { min-height: 44px; padding: 10px 14px; font-size: 13px; }
+      }
+
       /* ── POST CARD ── */
       .post-card {
         background: var(--feed-surface);
@@ -389,6 +427,12 @@
         object-fit: cover;
         display: block;
         cursor: zoom-in;
+      }
+
+      .post-photo--fofinhos {
+        outline: 3px solid #f59e0b;
+        outline-offset: -2px;
+        border-radius: 12px;
       }
 
       /* Repost embed */
@@ -829,6 +873,7 @@
               rows="3"
               placeholder="O que está acontecendo com seu pet?"
               maxlength="500"
+              aria-label="Texto da nova publicação"
             ></textarea>
           </div>
         </div>
@@ -849,6 +894,10 @@
             <% }); %>
           </select>
         </div>
+        <label class="flex items-start gap-2 mt-2" style="font-size:12px;color:var(--text-dim);cursor:pointer;">
+          <input type="checkbox" id="feedPostFofinhosMoldura" value="1" style="margin-top:3px;">
+          <span>Moldura <strong style="color:var(--accent);">Pets mais fofinhos</strong> na foto (se o pet já puder concorrer).</span>
+        </label>
         <% } %>
 
         <div class="composer-actions">
@@ -1168,8 +1217,7 @@
           Buscar pets ou pessoas...
         </a>
         <div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:10px;font-size:12px;font-weight:600;">
-          <a href="/explorar/pet-do-mes" style="color:var(--accent);text-decoration:none;">Pet do mês</a>
-          <a href="/explorar/grupos" style="color:var(--accent);text-decoration:none;">Grupos</a>
+          <a href="/explorar/pet-do-mes" style="color:var(--accent);text-decoration:none;">Pets mais fofinhos</a>
         </div>
       </div>
 
@@ -1403,7 +1451,11 @@
   }
 
   function renderMencoesFeed(texto) {
-    return escapeHtml(texto).replace(/@(\S+)/g, '<span class="mention" data-user="$1">@$1</span>');
+    var esc = escapeHtml(texto);
+    if (typeof window !== 'undefined' && window.AIRPET_socialTextoLinkify && typeof window.AIRPET_socialTextoLinkify.linkifyHashtagsInEscaped === 'function') {
+      esc = window.AIRPET_socialTextoLinkify.linkifyHashtagsInEscaped(esc);
+    }
+    return esc.replace(/@(\S+)/g, '<span class="mention" data-user="$1">@$1</span>');
   }
 
   var postDetailCommentPostId = null;
@@ -2142,6 +2194,8 @@
       if (texto) fd.append('texto', texto);
       if (petId) fd.append('pet_id', petId);
       if (fotoBlob) fd.append('foto', fotoBlob);
+      var moldChk = document.getElementById('feedPostFofinhosMoldura');
+      if (moldChk && moldChk.checked) fd.append('fofinhos_moldura', '1');
 
       var busyLabel = '<i class="fa-solid fa-paw fa-bounce" aria-hidden="true"></i> <span class="airpet-inline-dots">Publicando</span>';
       var work = function () {
@@ -2298,6 +2352,7 @@
 
     if (btnEnviar) {
       btnEnviar.addEventListener('click', function () {
+        if (btnEnviar.getAttribute('data-story-send') === '1') return;
         var petId = petSel ? petSel.value : '';
         if (!petId) { alert('Escolha um pet.'); return; }
         if (!storyFile) { alert('Escolha uma foto para a story.'); return; }
@@ -2306,9 +2361,21 @@
         fd.append('foto', storyFile);
         if (legEl && legEl.value.trim()) fd.append('legenda', legEl.value.trim());
 
-        btnEnviar.disabled = true;
-        if (spin) spin.classList.remove('hidden');
-        if (msg) { msg.classList.add('hidden'); }
+        btnEnviar.setAttribute('data-story-send', '1');
+        setTimeout(function () { btnEnviar.removeAttribute('data-story-send'); }, 900);
+
+        if (msg) {
+          msg.classList.add('hidden');
+          msg.textContent = '';
+        }
+        if (spin) spin.classList.add('hidden');
+
+        hideModal();
+        if (sf) sf.value = '';
+        storyFile = null;
+        if (pvw) pvw.classList.add('hidden');
+        if (pimg) pimg.src = '';
+        if (legEl) legEl.value = '';
 
         fetch('/explorar/api/stories', {
           method: 'POST',
@@ -2319,25 +2386,13 @@
           .then(function (r) { return r.json(); })
           .then(function (d) {
             if (d.sucesso) {
-              hideModal();
-              if (sf) sf.value = '';
-              storyFile = null;
-              if (pvw) pvw.classList.add('hidden');
-              if (pimg) pimg.src = '';
-              if (legEl) legEl.value = '';
               loadFeedStories();
-            } else if (msg) {
-              msg.classList.remove('hidden');
-              msg.style.color = '#ef4444';
-              msg.textContent = (d && d.mensagem) ? d.mensagem : 'Erro ao publicar.';
             } else {
-              alert((d && d.mensagem) || 'Erro ao publicar.');
+              alert((d && d.mensagem) ? d.mensagem : 'Não foi possível publicar a story.');
             }
           })
-          .catch(function () { alert('Erro de rede ao publicar story.'); })
-          .finally(function () {
-            btnEnviar.disabled = false;
-            if (spin) spin.classList.add('hidden');
+          .catch(function () {
+            alert('Erro de rede ao publicar a story. Tente de novo.');
           });
       });
     }
@@ -2494,7 +2549,7 @@
       h += '<div class="post-text line-clamp-3 post-text-body">' + escapeHtml(txt) + '</div>';
       h += '<div style="padding:0 18px 10px;"><button type="button" class="btn-ver-mais hidden" style="font-size:12px;color:var(--accent);font-weight:600;background:transparent;border:none;cursor:pointer;padding:0;">ver mais</button></div>';
     }
-    if (p.foto) h += '<img src="' + escapeHtml(p.foto) + '" class="post-photo" loading="lazy" alt="">';
+    if (p.foto) h += '<img src="' + escapeHtml(p.foto) + '" class="post-photo' + (p.fofinhos_moldura ? ' post-photo--fofinhos' : '') + '" loading="lazy" alt="">';
     h += '<div class="post-actions">';
     h += '<button type="button" class="post-action-btn btn-comentar" data-post-id="' + p.id + '"><i class="fa-regular fa-comment"></i><span class="count-comentarios"></span></button>';
     h += '<button type="button" class="post-action-btn btn-repost" data-post-id="' + p.id + '"><i class="fa-solid fa-retweet"></i><span class="count-reposts"></span></button>';

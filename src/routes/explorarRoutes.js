@@ -139,11 +139,17 @@ router.delete('/pet/:id/seguidor/:usuarioId', estaAutenticadoAPI, explorarContro
 
 router.get('/busca', explorarController.paginaBusca);
 
+router.get('/pets-mais-fofinhos', (req, res) => {
+  const q = req.url.indexOf('?') >= 0 ? req.url.slice(req.url.indexOf('?')) : '';
+  res.redirect(302, '/explorar/pet-do-mes' + q);
+});
+
 router.get('/pet-do-mes', explorarController.petDoMesPagina);
 router.post('/pet-do-mes/votar', postRateLimit, explorarController.petDoMesVotar);
 
-router.get('/grupos', explorarController.gruposPagina);
-router.post('/grupos/:slug/entrar', postRateLimit, explorarController.grupoEntrar);
+router.get('/grupos', (req, res) => {
+  res.redirect(302, '/explorar');
+});
 
 router.get('/api/stories', explorarController.storiesSeguidos);
 router.post('/api/stories', postRateLimit, function (req, res, next) {

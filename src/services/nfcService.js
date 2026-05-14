@@ -39,6 +39,7 @@ const Notificacao = require('../models/Notificacao');
 const PetPerdido = require('../models/PetPerdido');
 const PetTrackingEvent = require('../models/PetTrackingEvent');
 const petEventBus = require('./petEventBus');
+const mapaPrivacidadeService = require('./mapaPrivacidadeService');
 const petshopRecoveryIntegrationService = require('./petshopRecoveryIntegrationService');
 const tagEntitlementService = require('./tagEntitlementService');
 const pushService = require('./pushService');
@@ -109,7 +110,7 @@ const nfcService = {
      * Grava informações como localização GPS, IP e user agent
      * para rastreabilidade e análise posterior.
      */
-    await TagScan.registrar({
+    const scanRegistro = await TagScan.registrar({
       tag_id: tag.id,
       tag_code: tagCode,
       latitude: dadosScan.latitude || null,
@@ -249,17 +250,35 @@ const nfcService = {
               logger.error('NfcService', 'Falha ao verificar proximidade de pets perdidos', err);
             });
 
-          // Emite evento global para o mapa público (SSE do mapa via EventEmitter)
-          petEventBus.emitGlobal('nfc_scan_global', {
-            petId: tag.pet_id,
-            nome: tag.pet_nome || (dadosPet && dadosPet.nome) || null,
-            foto: dadosPet && dadosPet.foto ? dadosPet.foto : null,
-            petStatus: dadosPet && dadosPet.status ? dadosPet.status : 'ativo',
-            lat: dadosScan.latitude,
-            lng: dadosScan.longitude,
-            cidade: dadosScan.cidade || null,
-            ts: Date.now(),
+          const scanIso = scanRegistro && scanRegistro.data
+            ? new Date(scanRegistro.data).toISOString()
+            : new Date().toISOString();
+          const visivelMapaPublico = dadosPet && mapaPrivacidadeService.petScanElegivelMapaPublico({
+            pet_status: dadosPet.status,
+            privado: dadosPet.privado,
+            mostrar_ultimo_avistamento_mapa: dadosPet.mostrar_ultimo_avistamento_mapa,
           });
+          const pub = mapaPrivacidadeService.obfuscateLatLng(
+            dadosScan.latitude,
+            dadosScan.longitude,
+            tag.pet_id
+          );
+          if (visivelMapaPublico && pub.lat != null && pub.lng != null) {
+            petEventBus.emitGlobal('nfc_scan_global', {
+              petId: tag.pet_id,
+              nome: tag.pet_nome || (dadosPet && dadosPet.nome) || null,
+              foto: dadosPet && dadosPet.foto ? dadosPet.foto : null,
+              petStatus: dadosPet && dadosPet.status ? dadosPet.status : 'ativo',
+              lat: pub.lat,
+              lng: pub.lng,
+              cidade: dadosScan.cidade || null,
+              labelLocal: mapaPrivacidadeService.labelLocal(dadosScan.cidade),
+              slug: dadosPet && dadosPet.slug ? dadosPet.slug : null,
+              visivelMapaPublico: true,
+              ts: Date.now(),
+              data: scanIso,
+            });
+          }
 
           logger.info('NfcService', `Localização registrada para pet: ${tag.pet_id}`);
 

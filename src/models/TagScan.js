@@ -101,7 +101,10 @@ const TagScan = {
          t.pet_id,
          p.nome AS pet_nome,
          p.foto AS pet_foto,
+         p.slug AS pet_slug,
          p.status AS pet_status,
+         COALESCE(p.privado, false) AS privado,
+         COALESCE(p.mostrar_ultimo_avistamento_mapa, false) AS mostrar_ultimo_avistamento_mapa,
          ts.latitude,
          ts.longitude,
          ts.cidade,
@@ -118,6 +121,37 @@ const TagScan = {
          AND ts.data > NOW() - INTERVAL '30 days'
        ORDER BY t.pet_id, ts.data DESC
        LIMIT 200`,
+      [swLat, swLng, neLat, neLng]
+    );
+    return resultado.rows;
+  },
+
+  /**
+   * Agrega scans recentes em células grosseiras (~km) para heatmap público (sem identificar pets).
+   */
+  async listarHeatmapCelulasNaBox(swLat, swLng, neLat, neLng) {
+    const resultado = await query(
+      `SELECT
+         ROUND(ts.latitude::numeric, 2) AS lat,
+         ROUND(ts.longitude::numeric, 2) AS lng,
+         COUNT(*)::int AS weight
+       FROM tag_scans ts
+       JOIN nfc_tags t ON t.id = ts.tag_id
+       JOIN pets p ON p.id = t.pet_id
+       WHERE t.status = 'active'
+         AND t.pet_id IS NOT NULL
+         AND ts.latitude IS NOT NULL
+         AND ts.longitude IS NOT NULL
+         AND ts.latitude BETWEEN $1 AND $3
+         AND ts.longitude BETWEEN $2 AND $4
+         AND ts.data > NOW() - INTERVAL '30 days'
+         AND (
+           p.status = 'perdido'
+           OR (COALESCE(p.mostrar_ultimo_avistamento_mapa, false) = true AND COALESCE(p.privado, false) = false)
+         )
+       GROUP BY 1, 2
+       ORDER BY weight DESC
+       LIMIT 400`,
       [swLat, swLng, neLat, neLng]
     );
     return resultado.rows;

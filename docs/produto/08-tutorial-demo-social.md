@@ -1,10 +1,10 @@
-# Tutorial — demo social (hashtag, pet do mês, grupos, stories)
+# Tutorial — demo social (hashtag, pet do mês, stories)
 
 Este guia explica **como abrir no app (web AIRPET)** as rotas de demonstração e o que foi semeado no banco.
 
 ## 1. Aplicar dados de teste no PostgreSQL
 
-Os dados demo vêm da migration **`1776220000000_seed_social_demo_hashtags_grupo_votos.mjs`** (e das migrations anteriores que criam tabelas `hashtags`, `grupos`, `pet_do_mes_*`, etc.).
+Os dados demo vêm da migration **`1776220000000_seed_social_demo_hashtags_grupo_votos.mjs`** (e das migrations anteriores que criam tabelas `hashtags`, `pet_do_mes_*`, etc.). A feature de grupos sociais foi removida do app; a migration **`1776240000000_drop_grupo_social.mjs`** remove as tabelas `grupos` / `grupo_membros` após o seed.
 
 No diretório do projeto, com `.env` apontando para o banco:
 
@@ -18,7 +18,6 @@ O que essa migration tenta criar (idempotente):
 |------|---------|
 | Hashtags | `airpetdemo` e `petdormindo` |
 | Post na hashtag | Liga a hashtag **`airpetdemo`** à **publicação mais recente** que tenha `pet_id` (se existir alguma) |
-| Grupo | `pets-do-airpet` — nome “Pets do AIRPET” |
 | Voto demo | Um voto na edição **Pet do mês** do mês atual, usando o **primeiro usuário** e o **primeiro pet** do banco (se existirem) |
 
 Se ainda não houver **nenhuma** `publicacoes` com pet, a página `/h/airpetdemo` abre com **0 posts** (mas a hashtag existe). Publique um post no feed com `#airpetdemo` na legenda para aparecer ali.
@@ -48,15 +47,6 @@ Rota de API usada pelo formulário:
 
 - `POST /explorar/pet-do-mes/votar` — corpo JSON `{ "pet_id": <número> }`
 
-### Grupos
-
-1. Logado, abra **`/explorar/grupos`** (ou o link **“Grupos”** na lateral do `/feed`).
-2. No grupo **“Pets do AIRPET”**, clique em **Entrar**.
-
-Rota:
-
-- `POST /explorar/grupos/pets-do-airpet/entrar`
-
 ### Stories (tempo para passar)
 
 1. Abra **`/feed`** (aba **Pets**).
@@ -69,7 +59,6 @@ Rota:
 |---------|----------------|
 | 404 na hashtag | Rode `npm run db:migrate` e use slug **`airpetdemo`**. |
 | Botão seguir hashtag não muda | Precisa estar **logado** na mesma origem (mesmo host/porta). O fetch envia `Accept: application/json` para receber JSON em vez de redirect HTML. |
-| Grupos vazios | Migration do grupo (`177621` ou `177622`) não aplicada ou slug diferente — use **`pets-do-airpet`**. |
 | Voto recusado | Só vale para pet **seu** ou que **você segue**; veja mensagem em vermelho na página. |
 
 ## 4. Referência rápida de URLs
@@ -78,7 +67,6 @@ Rota:
 |-----|----------------|
 | `/h/airpetdemo` | Não (só ver) |
 | `/explorar/pet-do-mes` | Sim |
-| `/explorar/grupos` | Sim |
 | `/feed` | Sim (stories + composer) |
 
-Documentação de produto relacionada: [06 — Hashtags](./06-hashtags-descoberta.md), [07 — Pet do mês, mapa, grupos](./07-prestigio-mapa-grupos.md), [05 — Stories](./05-stories-desafios.md).
+Documentação de produto relacionada: [06 — Hashtags](./06-hashtags-descoberta.md), [07 — Pet do mês e mapa](./07-prestigio-mapa-grupos.md), [05 — Stories](./05-stories-desafios.md).

@@ -1033,3 +1033,31 @@ body.admin-shell {
     animation: slide-up 0.2s ease;
   }
 }
+
+/* ── Mobile global (legibilidade + safe area + evitar zoom iOS em inputs) ── */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  overflow-x: clip;
+}
+
+@media (max-width: 480px) {
+  .air-page-container {
+    padding-left: max(12px, env(safe-area-inset-left, 0px));
+    padding-right: max(12px, env(safe-area-inset-right, 0px));
+  }
+
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="search"],
+  input[type="tel"],
+  input[type="url"],
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}

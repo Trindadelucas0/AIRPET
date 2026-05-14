@@ -1,4 +1,5 @@
 const { query } = require('../config/database');
+const logger = require('../utils/logger');
 const Petshop = require('./Petshop');
 const PetshopPost = require('./PetshopPost');
 const PetshopProduct = require('./PetshopProduct');
@@ -12,17 +13,22 @@ function safeDateToMs(v) {
 async function buscarWhatsappPorPetshopIds(petshopIds) {
   const ids = [...new Set((petshopIds || []).map((id) => Number(id)).filter((id) => Number.isInteger(id) && id > 0))];
   if (!ids.length) return new Map();
-  const result = await query(
-    `SELECT petshop_id, whatsapp_publico
-     FROM petshop_profiles
-     WHERE petshop_id = ANY($1::int[])`,
-    [ids]
-  );
-  const map = new Map();
-  (result.rows || []).forEach((row) => {
-    map.set(Number(row.petshop_id), row.whatsapp_publico || null);
-  });
-  return map;
+  try {
+    const result = await query(
+      `SELECT petshop_id, whatsapp_publico
+       FROM petshop_profiles
+       WHERE petshop_id = ANY($1::int[])`,
+      [ids]
+    );
+    const map = new Map();
+    (result.rows || []).forEach((row) => {
+      map.set(Number(row.petshop_id), row.whatsapp_publico || null);
+    });
+    return map;
+  } catch (err) {
+    logger.error('PETSHOP_PUBLICATION', 'buscarWhatsappPorPetshopIds', err);
+    return new Map();
+  }
 }
 
 async function preencherContagensEngajamento(publicacoes = []) {
@@ -81,29 +87,38 @@ async function preencherContagensEngajamento(publicacoes = []) {
     promises.push(Promise.resolve({ rows: [] }), Promise.resolve({ rows: [] }));
   }
 
-  const [likesPost, commentsPost, likesProduct, commentsProduct] = await Promise.all(promises);
-  const mapLikesPost = new Map((likesPost.rows || []).map((r) => [Number(r.publication_id), Number(r.total)]));
-  const mapCommentsPost = new Map((commentsPost.rows || []).map((r) => [Number(r.publication_id), Number(r.total)]));
-  const mapLikesProduct = new Map((likesProduct.rows || []).map((r) => [Number(r.publication_id), Number(r.total)]));
-  const mapCommentsProduct = new Map((commentsProduct.rows || []).map((r) => [Number(r.publication_id), Number(r.total)]));
+  try {
+    const [likesPost, commentsPost, likesProduct, commentsProduct] = await Promise.all(promises);
+    const mapLikesPost = new Map((likesPost.rows || []).map((r) => [Number(r.publication_id), Number(r.total)]));
+    const mapCommentsPost = new Map((commentsPost.rows || []).map((r) => [Number(r.publication_id), Number(r.total)]));
+    const mapLikesProduct = new Map((likesProduct.rows || []).map((r) => [Number(r.publication_id), Number(r.total)]));
+    const mapCommentsProduct = new Map((commentsProduct.rows || []).map((r) => [Number(r.publication_id), Number(r.total)]));
 
-  return publicacoes.map((item) => {
-    if (item.sourceType === 'petshop_post') {
-      return {
-        ...item,
-        like_count: mapLikesPost.get(Number(item.sourceId)) || 0,
-        comment_count: mapCommentsPost.get(Number(item.sourceId)) || 0,
-      };
-    }
-    if (item.sourceType === 'petshop_product') {
-      return {
-        ...item,
-        like_count: mapLikesProduct.get(Number(item.sourceId)) || 0,
-        comment_count: mapCommentsProduct.get(Number(item.sourceId)) || 0,
-      };
-    }
-    return item;
-  });
+    return publicacoes.map((item) => {
+      if (item.sourceType === 'petshop_post') {
+        return {
+          ...item,
+          like_count: mapLikesPost.get(Number(item.sourceId)) || 0,
+          comment_count: mapCommentsPost.get(Number(item.sourceId)) || 0,
+        };
+      }
+      if (item.sourceType === 'petshop_product') {
+        return {
+          ...item,
+          like_count: mapLikesProduct.get(Number(item.sourceId)) || 0,
+          comment_count: mapCommentsProduct.get(Number(item.sourceId)) || 0,
+        };
+      }
+      return item;
+    });
+  } catch (err) {
+    logger.error('PETSHOP_PUBLICATION', 'preencherContagensEngajamento', err);
+    return publicacoes.map((item) => ({
+      ...item,
+      like_count: 0,
+      comment_count: 0,
+    }));
+  }
 }
 
 function mapPostToUnified(post, petshopMeta) {
@@ -213,29 +228,12 @@ async function listarPublicacoesParaGradePorPetshop(petshopId, opts = {}) {
 }
 
 /**
- * Lista cards (publicações) para o feed do `explorar`.
- * Por enquanto, retorna apenas o conteúdo base (sem likes/comments persistidos).
- * A priorização é feita via relacionamento local (vinculado > seguindo > descoberta)
- * e, quando há geo, por distância.
+ * SQL dos posts de petshop para o feed de parceiros / explorar.
+ * @returns {{ sql: string, params: unknown[] }}
  */
-async function listarCardsPublicacoesParaExplorar({ usuarioId, lat, lng, limite = 20 } = {}) {
-  const limitSeguro = Number.isInteger(limite) && limite > 0 ? limite : 20;
-  const hasGeo = Number.isFinite(lat) && Number.isFinite(lng) && lat !== 0 && lng !== 0;
-
-  // 1) Promoções do tipo "produto" (is_promocao = true).
-  const promLimit = Math.max(6, Math.floor(limitSeguro * 0.6));
-  const promocoes = await PetshopProduct.listarPromocoesProximas({
-    usuarioId,
-    lat,
-    lng,
-    limite: promLimit,
-  });
-
-  // 2) Posts normais (petshop_posts).
-  const postsLimit = Math.max(4, limitSeguro - (promocoes || []).length);
-
-  const params = [];
-  let sql = `
+function sqlPetshopPostsParaFeedCards(useGeo, usuarioId, lat, lng, postsLimit) {
+  if (useGeo) {
+    const sql = `
     SELECT
       pp.id,
       pp.titulo,
@@ -249,12 +247,10 @@ async function listarCardsPublicacoesParaExplorar({ usuarioId, lat, lng, limite 
       p.nome AS petshop_nome,
       p.slug AS petshop_slug,
       p.logo_url AS petshop_logo_url,
-      ${hasGeo ? `
-        ST_Distance(
-          p.localizacao,
-          ST_SetSRID(ST_MakePoint($2, $1), 4326)::geography
-        ) AS distancia_metros
-      ` : 'NULL::numeric AS distancia_metros'},
+      ST_Distance(
+        p.localizacao,
+        ST_SetSRID(ST_MakePoint($2, $1), 4326)::geography
+      ) AS distancia_metros,
       CASE
         WHEN EXISTS (
           SELECT 1
@@ -277,24 +273,17 @@ async function listarCardsPublicacoesParaExplorar({ usuarioId, lat, lng, limite 
       AND pp.approval_status = 'aprovado'
       AND pp.post_type = 'normal'
       AND p.ativo = true
-  `;
-
-  if (hasGeo) {
-    sql += `
       AND ST_DWithin(
         p.localizacao,
         ST_SetSRID(ST_MakePoint($2, $1), 4326)::geography,
         50000
       )
+    ORDER BY relationship_level ASC, distancia_metros ASC NULLS LAST, COALESCE(pp.publicado_em, pp.data_criacao) DESC
+    LIMIT $4
     `;
-    sql += `
-      ORDER BY relationship_level ASC, distancia_metros ASC NULLS LAST, COALESCE(pp.publicado_em, pp.data_criacao) DESC
-      LIMIT $4
-    `;
-    params.push(lat, lng, usuarioId, postsLimit);
-  } else {
-    // branch sem geo: usamos $1 como usuarioId.
-    sql = `
+    return { sql, params: [lat, lng, usuarioId, postsLimit] };
+  }
+  const sql = `
       SELECT
         pp.id,
         pp.titulo,
@@ -334,10 +323,54 @@ async function listarCardsPublicacoesParaExplorar({ usuarioId, lat, lng, limite 
       ORDER BY relationship_level ASC, COALESCE(pp.publicado_em, pp.data_criacao) DESC
       LIMIT $2
     `;
-    params.push(usuarioId, postsLimit);
+  return { sql, params: [usuarioId, postsLimit] };
+}
+
+/**
+ * Lista cards (publicações) para o feed do `explorar`.
+ * Por enquanto, retorna apenas o conteúdo base (sem likes/comments persistidos).
+ * A priorização é feita via relacionamento local (vinculado > seguindo > descoberta)
+ * e, quando há geo, por distância.
+ */
+async function listarCardsPublicacoesParaExplorar({ usuarioId, lat, lng, limite = 20 } = {}) {
+  const limitSeguro = Number.isInteger(limite) && limite > 0 ? limite : 20;
+  const hasGeo = Number.isFinite(lat) && Number.isFinite(lng) && lat !== 0 && lng !== 0;
+
+  // 1) Promoções do tipo "produto" (is_promocao = true).
+  const promLimit = Math.max(6, Math.floor(limitSeguro * 0.6));
+  let promocoes = [];
+  try {
+    promocoes = await PetshopProduct.listarPromocoesProximas({
+      usuarioId,
+      lat,
+      lng,
+      limite: promLimit,
+    });
+  } catch (err) {
+    logger.error('PETSHOP_PUBLICATION', 'listarPromocoesProximas (feed parceiros)', err);
   }
 
-  const postsRows = await query(sql, params);
+  // 2) Posts normais (petshop_posts).
+  const postsLimit = Math.max(4, limitSeguro - (promocoes || []).length);
+
+  let postsRows = [];
+  try {
+    const { sql, params } = sqlPetshopPostsParaFeedCards(hasGeo, usuarioId, lat, lng, postsLimit);
+    postsRows = (await query(sql, params)).rows || [];
+  } catch (err) {
+    logger.error('PETSHOP_PUBLICATION', `petshop_posts feed (geo=${hasGeo})`, err);
+    if (hasGeo) {
+      try {
+        const fb = sqlPetshopPostsParaFeedCards(false, usuarioId, lat, lng, postsLimit);
+        postsRows = (await query(fb.sql, fb.params)).rows || [];
+      } catch (err2) {
+        logger.error('PETSHOP_PUBLICATION', 'petshop_posts feed sem geo (fallback)', err2);
+        postsRows = [];
+      }
+    } else {
+      postsRows = [];
+    }
+  }
 
   const petshopMetaById = new Map();
   const ensureMeta = (row) => {

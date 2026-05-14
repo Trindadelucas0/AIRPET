@@ -172,7 +172,13 @@
       .btn-seguir-explorar:active { transform: scale(0.98); }
       /* Mídia com altura variável (estilo grade Instagram): largura da coluna, proporção natural */
       .explorar-media-box { display: block; width: 100%; line-height: 0; }
-      .explorar-media-box .post-photo { display: block; width: 100%; height: auto; vertical-align: bottom; }
+      .explorar-media-box .post-photo.post-photo--fofinhos,
+      .explore-tile-inner img.post-photo.post-photo--fofinhos {
+        outline: 3px solid #f59e0b;
+        outline-offset: -2px;
+        border-radius: 12px;
+      }
+
       article.explorar-post-card[data-explorar-meta] {
         cursor: pointer;
         -webkit-tap-highlight-color: transparent;
@@ -594,7 +600,7 @@
         </div>
         <div id="composerActions" class="hidden mt-2 pt-2 border-t border-gray-200 flex items-center justify-between">
           <div class="flex items-center gap-2">
-            <button type="button" id="btnOpenImagePicker" class="w-8 h-8 rounded-full text-gray-500 hover:text-primary-500 hover:bg-primary-50 transition-colors" title="Adicionar imagem">
+            <button type="button" id="btnOpenImagePicker" class="min-w-[44px] min-h-[44px] w-11 h-11 rounded-full text-gray-500 hover:text-primary-500 hover:bg-primary-50 transition-colors flex items-center justify-center" title="Adicionar imagem">
               <i class="fa-regular fa-image"></i>
             </button>
             <span class="text-xs text-gray-400">Texto rápido ou imagem opcional</span>
@@ -613,6 +619,10 @@
             <% }); %>
           </select>
         </div>
+        <label class="flex items-center gap-2 mt-2 text-xs text-gray-600 cursor-pointer">
+          <input type="checkbox" id="novoPostFofinhosMoldura" value="1" class="rounded border-gray-300 text-primary-500">
+          <span>Moldura <strong class="text-primary-600">Pets mais fofinhos</strong> (se o pet já puder concorrer)</span>
+        </label>
       <% } else { %>
         <input type="hidden" id="novoPostPet" value="">
         <p class="text-xs text-gray-500">A publicação será no seu perfil. <a href="/pets/cadastro" class="text-primary-500 hover:underline">Cadastre um pet</a> para postar em nome dele.</p>
@@ -621,7 +631,7 @@
 
     <div class="new-post-footer px-4 sm:px-5 py-3 border-t border-gray-100">
       <button type="button" id="btnPublicar" disabled
-              class="w-full py-3 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-primary-500 to-primary-600 shadow-lg shadow-primary-500/20 hover:shadow-xl hover:shadow-primary-500/30 hover:-translate-y-0 transition-all duration-300 disabled:opacity-40 disabled:shadow-none disabled:translate-y-0 disabled:cursor-not-allowed">
+              class="w-full min-h-[48px] py-3.5 rounded-xl text-base font-semibold text-white bg-gradient-to-r from-primary-500 to-primary-600 shadow-lg shadow-primary-500/20 hover:shadow-xl hover:shadow-primary-500/30 hover:-translate-y-0 transition-all duration-300 disabled:opacity-40 disabled:shadow-none disabled:translate-y-0 disabled:cursor-not-allowed">
         Publicar
       </button>
     </div>
@@ -873,7 +883,11 @@
   }
 
   function renderMencoes(texto) {
-    return escapeHtml(texto).replace(/@(\S+)/g, '<span class="mention" data-user="$1">@$1</span>');
+    var esc = escapeHtml(texto);
+    if (typeof window !== 'undefined' && window.AIRPET_socialTextoLinkify && typeof window.AIRPET_socialTextoLinkify.linkifyHashtagsInEscaped === 'function') {
+      esc = window.AIRPET_socialTextoLinkify.linkifyHashtagsInEscaped(esc);
+    }
+    return esc.replace(/@(\S+)/g, '<span class="mention" data-user="$1">@$1</span>');
   }
 
   function normalizeWhatsappDigits(raw) {
@@ -2097,6 +2111,8 @@
     if (selectedFile) formData.append('foto', selectedFile);
     if (textoPayload) formData.append('texto', textoPayload);
     if (petVal) formData.append('pet_id', petVal);
+    var moldEl = document.getElementById('novoPostFofinhosMoldura');
+    if (moldEl && moldEl.checked) formData.append('fofinhos_moldura', '1');
 
     var busyLabel = '<i class="fa-solid fa-spinner fa-spin mr-2"></i><span class="airpet-inline-dots">Publicando</span>';
     var work = function () {
@@ -2403,11 +2419,12 @@
     return '1x1';
   }
 
-  function exploreTilePhotoHtml(src, loadingMode, withPriority) {
+  function exploreTilePhotoHtml(src, loadingMode, withPriority, extraClass) {
     if (!src) return '';
     var lazy = loadingMode === 'eager' ? 'loading="eager"' : 'loading="lazy"';
     var pri = withPriority ? ' fetchpriority="high"' : '';
-    return '<img src="' + escapeHtml(src) + '" alt="" class="post-photo" decoding="async" ' + lazy + pri +
+    var cls = 'post-photo' + (extraClass ? ' ' + extraClass : '');
+    return '<img src="' + escapeHtml(src) + '" alt="" class="' + cls + '" decoding="async" ' + lazy + pri +
       ' onload="var s=this.previousElementSibling;if(s&&s.classList)s.classList.add(\'is-hidden\');"' +
       ' onerror="var s=this.previousElementSibling;if(s&&s.classList)s.classList.add(\'is-hidden\');">';
   }
@@ -2501,7 +2518,7 @@
     };
     var sp = explorarTileSpanClass(p);
     var inner = '<div class="explore-tile-inner"><div class="explore-tile-skeleton" aria-hidden="true"></div>';
-    inner += exFoto ? exploreTilePhotoHtml(exFoto, 'eager', true) : '';
+    inner += exFoto ? exploreTilePhotoHtml(exFoto, 'eager', true, p.fofinhos_moldura ? 'post-photo--fofinhos' : '') : '';
     inner += '<span class="explore-tile-overlay" aria-hidden="true"></span></div>';
     return '<article class="explore-tile-cell explore-tile--' + sp + ' explorar-post-card post-enter" tabindex="0" aria-label="Abrir publicação" data-post-id="' + p.id + '" data-author-id="' + p.usuario_id + '"' + explorarMetaAttr(meta) + ' id="post-' + p.id + '">' + inner + '</article>';
   }

@@ -387,7 +387,7 @@ const petController = {
 
       const { nome, tipo, tipo_custom, raca, cor, porte, sexo, dataNascimento, peso, descricao, telefoneContato,
         microchip, numero_pedigree, foto_cropped, castrado: castradoBody, alergias_medicacoes, veterinario_nome, veterinario_telefone, observacoes,
-        bio_pet, privado,
+        bio_pet, privado, mostrar_ultimo_avistamento_mapa,
       } = req.body;
       const castrado = castradoBody === 'sim' || castradoBody === 'on' ? true : (castradoBody === 'nao' ? false : null);
 
@@ -412,6 +412,7 @@ const petController = {
         observacoes,
         bio_pet,
         privado,
+        mostrar_ultimo_avistamento_mapa,
       });
 
       /* Se uma nova foto foi enviada via multer, atualiza a foto separadamente */
@@ -814,6 +815,43 @@ const petController = {
     } catch (erro) {
       logger.error('PET_CTRL', 'Erro ao alternar seguimento', erro);
       return res.status(500).json({ sucesso: false, mensagem: 'Erro ao atualizar seguimento.' });
+    }
+  },
+
+  /**
+   * Histórico de avistamentos por scan NFC (coordenadas aproximadas) — apenas o tutor.
+   * Rota: GET /pets/:id/mapa-avistamentos
+   */
+  async listarAvistamentosMapa(req, res) {
+    try {
+      if (!req.session || !req.session.usuario) {
+        return res.status(401).json({ sucesso: false, mensagem: 'Não autenticado.' });
+      }
+      const { id } = req.params;
+      const pet = await Pet.buscarPorId(id);
+      if (!pet) return res.status(404).json({ sucesso: false, mensagem: 'Pet não encontrado.' });
+      if (pet.usuario_id !== req.session.usuario.id) {
+        return res.status(403).json({ sucesso: false, mensagem: 'Sem permissão.' });
+      }
+      const mapaPrivacidadeService = require('../services/mapaPrivacidadeService');
+      const scans = await TagScan.buscarPorPet(id, 40);
+      const pontos = (scans || []).map((s) => {
+        const lat = parseFloat(s.latitude);
+        const lng = parseFloat(s.longitude);
+        if (Number.isNaN(lat) || Number.isNaN(lng)) return null;
+        const o = mapaPrivacidadeService.obfuscateLatLng(lat, lng, id);
+        if (o.lat == null) return null;
+        return {
+          data: s.data,
+          label_local: mapaPrivacidadeService.labelLocal(s.cidade),
+          lat: o.lat,
+          lng: o.lng,
+        };
+      }).filter(Boolean);
+      return res.json({ sucesso: true, pet_id: id, pontos });
+    } catch (erro) {
+      logger.error('PET_CTRL', 'Erro ao listar avistamentos mapa', erro);
+      return res.status(500).json({ sucesso: false, mensagem: 'Erro ao carregar histórico.' });
     }
   },
 

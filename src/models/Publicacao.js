@@ -47,10 +47,13 @@ function sqlVisibilidadePet(viewerId) {
   return `(p.pet_id IS NULL OR NOT COALESCE(pet.privado, false))`;
 }
 
+/** null = ainda nao sabe; false = coluna existe; true = usar INSERT sem fofinhos_moldura (BD antiga). */
+let _publicacaoSemColunaFofinhosMoldura = null;
+
 const Publicacao = {
 
   async criar(dados) {
-    const { usuario_id, pet_id, foto, legenda, texto, repost_id, tipo } = dados;
+    const { usuario_id, pet_id, foto, legenda, texto, repost_id, tipo, fofinhos_moldura } = dados;
 
     /*
      * Regra de produto AIRPET: toda foto/post pertence a UM pet especifico.
@@ -67,10 +70,40 @@ const Publicacao = {
       throw err;
     }
 
+    const moldura = fofinhos_moldura === true || fofinhos_moldura === 1 || fofinhos_moldura === '1';
+    const paramsBase = [
+      usuario_id,
+      pet_id || null,
+      foto || null,
+      legenda || null,
+      texto || null,
+      repost_id || null,
+      tipo || 'original',
+    ];
+
+    if (_publicacaoSemColunaFofinhosMoldura !== true) {
+      try {
+        const resultado = await query(
+          `INSERT INTO publicacoes (usuario_id, pet_id, foto, legenda, texto, repost_id, tipo, fofinhos_moldura)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+          [...paramsBase, moldura]
+        );
+        _publicacaoSemColunaFofinhosMoldura = false;
+        return resultado.rows[0];
+      } catch (e) {
+        const msg = String(e && e.message ? e.message : '');
+        if (e && e.code === '42703' && msg.includes('fofinhos_moldura')) {
+          _publicacaoSemColunaFofinhosMoldura = true;
+        } else {
+          throw e;
+        }
+      }
+    }
+
     const resultado = await query(
       `INSERT INTO publicacoes (usuario_id, pet_id, foto, legenda, texto, repost_id, tipo)
        VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-      [usuario_id, pet_id || null, foto || null, legenda || null, texto || null, repost_id || null, tipo || 'original']
+      paramsBase
     );
     return resultado.rows[0];
   },

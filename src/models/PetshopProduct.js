@@ -1,4 +1,5 @@
 const { query } = require('../config/database');
+const logger = require('../utils/logger');
 
 const PetshopProduct = {
   async criar(dados) {
@@ -134,7 +135,8 @@ const PetshopProduct = {
       geoOrder = `distancia_metros ASC, p.avaliacao_media DESC, p.avaliacoes_count DESC`;
     }
 
-    const result = await query(
+    try {
+      const result = await query(
       `SELECT
          pr.id,
          pr.nome AS titulo,
@@ -188,7 +190,14 @@ const PetshopProduct = {
        LIMIT $2`,
       params
     );
-    return result.rows;
+      return result.rows;
+    } catch (err) {
+      if (hasGeo) {
+        logger.error('PETSHOP_PRODUCT', 'listarPromocoesProximas: falha com geo, tentando sem distancia', err);
+        return PetshopProduct.listarPromocoesProximas({ usuarioId, lat: NaN, lng: NaN, limite });
+      }
+      throw err;
+    }
   },
 
   async listarPromocoesElegiveisFeed(usuarioId, limite = 2) {

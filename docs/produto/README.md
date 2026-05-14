@@ -12,8 +12,8 @@ A ordem dos documentos espelha a hierarquia de entrega: fundação viral → há
 | 04 | [Badges visíveis e gamificação](./04-badges-gamificacao.md) | A — fundação | `user_gamification`/`badges`/`user_badges` no schema; falta UI |
 | 05 | [Stories 24h e desafios semanais](./05-stories-desafios.md) | B — hábito | Não existe (TTL); `diario_pet` é log, não story |
 | 06 | [Hashtags e descoberta](./06-hashtags-descoberta.md) | B — hábito | `feed_candidate_pool` tem segmentos; falta entidade hashtag |
-| 07 | [Pet do mês, mapa social, grupos](./07-prestigio-mapa-grupos.md) | C/D — prestígio + comunidade | Geo pronto via PostGIS; falta votação, pins, grupos |
-| 08 | [Tutorial — demo social (URLs + seed)](./08-tutorial-demo-social.md) | QA / dev | Hashtag `/h/…`, pet do mês, grupos, stories; migration `177622…` |
+| 07 | [Pet do mês, mapa social](./07-prestigio-mapa-grupos.md) | C/D — prestígio + comunidade | Geo pronto via PostGIS; falta pins no mapa; grupos sociais removidos do app |
+| 08 | [Tutorial — demo social (URLs + seed)](./08-tutorial-demo-social.md) | QA / dev | Hashtag `/h/…`, pet do mês, stories; migration `177622…` + `177624` (drop grupos) |
 
 ## Princípios transversais (resumo)
 

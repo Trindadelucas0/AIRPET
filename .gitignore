@@ -25,7 +25,7 @@ src/public/images/petshops/*
 Thumbs.db
 testes/
 
-# Testes (pasta e saídas)
-tests/
+# Saídas de cobertura / calibração temporária
 coverage/
 .nyc_output/
+.calibrate-tmp/

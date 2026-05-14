@@ -1,45 +1,93 @@
-<% locals.titulo = titulo || 'Pet do mês' %>
+<% locals.titulo = titulo || 'Pets mais fofinhos' %>
 <%- include('../partials/header') %>
 <%- include('../partials/flash') %>
 
-<main class="flex-1 max-w-lg mx-auto px-4 py-6 pb-24">
-  <h1 class="text-2xl font-black text-gray-900 tracking-tight">Pet do mês</h1>
-  <p class="text-sm text-gray-500 mt-1">Edição de <%= edicao.mes_ref %> · estado: <%= edicao.estado %></p>
+<main class="flex-1 max-w-3xl mx-auto px-4 py-6 pb-24">
+  <header class="mb-6">
+    <h1 class="text-2xl font-black text-gray-900 tracking-tight flex items-center gap-2">
+      <span class="text-3xl" aria-hidden="true">🐾</span> Pets mais fofinhos
+    </h1>
+    <p class="text-sm text-gray-600 mt-1">
+      <% if (typeof diasRestantes !== 'undefined' && diasRestantes != null) { %>
+        Esta edição termina em <strong class="text-orange-600"><%= diasRestantes %></strong> dia<%= diasRestantes === 1 ? '' : 's' %>.
+      <% } else { %>
+        Edição em curso — vote no seu favorito.
+      <% } %>
+    </p>
+    <% if (typeof posicaoMeuVoto !== 'undefined' && posicaoMeuVoto != null && meuVotoPetId) { %>
+      <p class="text-xs text-emerald-700 font-semibold mt-2">O teu voto neste separador: posição <strong>#<%= posicaoMeuVoto %></strong> no ranking.</p>
+    <% } %>
+  </header>
 
-  <section class="mt-8 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-    <h2 class="font-bold text-gray-900">Seu voto</h2>
-    <p class="text-xs text-gray-500 mt-1">Um voto por mês (pode mudar de pet até o fim da edição).</p>
+  <nav class="flex flex-wrap gap-2 mb-5" aria-label="Níveis do ranking">
+    <% var n = typeof nivelAtual !== 'undefined' ? nivelAtual : 'nacional'; %>
+    <% var tabs = [
+      { id: 'nacional', label: 'Todo o país' },
+      { id: 'bairro', label: 'Meu bairro' },
+      { id: 'cidade', label: 'Minha cidade' },
+      { id: 'estado', label: 'Meu estado' },
+      { id: 'pais', label: 'Meu país' }
+    ]; %>
+    <% tabs.forEach(function(t) { %>
+      <a href="/explorar/pet-do-mes?nivel=<%= t.id %>"
+         class="px-3 py-1.5 rounded-full text-xs font-bold border transition-colors
+           <%= n === t.id ? 'bg-orange-500 text-white border-orange-500' : 'bg-white text-gray-700 border-gray-200 hover:border-orange-300' %>">
+        <%= t.label %>
+      </a>
+    <% }); %>
+  </nav>
+
+  <% if (typeof viewerTemGeo !== 'undefined' && viewerTemGeo && n !== 'nacional') { %>
+    <% var geoOk = (n === 'bairro' && viewerTemGeo.bairro) || (n === 'cidade' && viewerTemGeo.cidade) || (n === 'estado' && viewerTemGeo.estado) || (n === 'pais' && viewerTemGeo.pais); %>
+    <% if (!geoOk) { %>
+      <p class="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 mb-4">
+        Completa o teu endereço no perfil (<%= n %>) para filtrar pets na mesma zona. Enquanto isso, mostramos todos os candidatos com votos neste separador.
+      </p>
+    <% } %>
+  <% } %>
+
+  <section class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm mb-8">
+    <h2 class="font-bold text-gray-900">O teu voto</h2>
+    <p class="text-xs text-gray-500 mt-1">Um voto por edição (podes mudar de pet até ao fim). Só pets elegíveis: 4+ posts com foto e vínculo petshop.</p>
     <form id="formVoto" class="mt-4 flex flex-col gap-3">
       <select name="pet_id" id="selPet" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm">
-        <option value="">Escolha um pet</option>
+        <option value="">Escolhe um pet</option>
         <% (pets || []).forEach(function(p) { %>
           <option value="<%= p.id %>" <%= meuVotoPetId === p.id ? 'selected' : '' %>><%= p.nome %></option>
         <% }); %>
       </select>
-      <button type="submit" class="rounded-xl bg-orange-500 text-white font-semibold py-2.5 text-sm">Registrar voto</button>
+      <button type="submit" class="rounded-xl bg-orange-500 text-white font-semibold py-2.5 text-sm">Registar voto</button>
     </form>
     <p id="votoMsg" class="text-sm mt-2 hidden"></p>
   </section>
 
-  <section class="mt-8">
+  <section>
     <h2 class="font-bold text-gray-900 mb-3">Ranking</h2>
-    <ol class="space-y-2">
+    <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
       <% (ranking || []).forEach(function(row, i) { %>
-        <li class="flex items-center gap-3 rounded-xl border border-gray-100 bg-white px-3 py-2">
-          <span class="text-lg font-black text-orange-500 w-6"><%= i + 1 %></span>
-          <% if (row.pet && row.pet.foto) { %>
-            <img src="<%= row.pet.foto %>" alt="" class="w-10 h-10 rounded-full object-cover">
-          <% } %>
-          <div class="flex-1 min-w-0">
-            <a href="/p/<%= row.pet.slug %>" class="font-semibold text-gray-900 truncate block"><%= row.pet.nome %></a>
+        <article class="rounded-2xl border border-gray-100 bg-white overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+          <div class="aspect-square bg-gray-100 relative">
+            <% if (row.media_url) { %>
+              <img src="<%= row.media_url %>" alt="" class="w-full h-full object-cover">
+            <% } else if (row.pet && row.pet.foto) { %>
+              <img src="<%= row.pet.foto %>" alt="" class="w-full h-full object-cover">
+            <% } else { %>
+              <div class="w-full h-full flex items-center justify-center text-3xl text-gray-300">🐾</div>
+            <% } %>
+            <span class="absolute top-2 left-2 w-8 h-8 rounded-full bg-orange-500 text-white text-sm font-black flex items-center justify-center shadow"><%= i + 1 %></span>
+          </div>
+          <div class="p-2.5">
+            <% if (row.pet) { %>
+              <a href="<%= row.pet.slug ? '/p/' + encodeURIComponent(row.pet.slug) : '/explorar/pet/' + row.pet.id %>" class="font-semibold text-gray-900 text-sm truncate block"><%= row.pet.nome %></a>
+            <% } %>
             <span class="text-xs text-gray-500"><%= row.votos %> votos</span>
           </div>
-        </li>
+        </article>
       <% }); %>
-      <% if (!(ranking || []).length) { %>
-        <li class="text-sm text-gray-500">Ainda não há votos nesta edição.</li>
-      <% } %>
-    </ol>
+    </div>
+    <% if (!(ranking || []).length) { %>
+      <p class="text-sm text-gray-500 mt-3">Ainda não há votos neste filtro — sê o primeiro a votar.</p>
+    <% } %>
   </section>
 
   <p class="mt-8 text-center text-sm">
@@ -76,7 +124,7 @@
       if (!j) return;
       if (msg) {
         msg.classList.remove('hidden');
-        msg.textContent = j.sucesso ? 'Voto registrado.' : (j.mensagem || 'Erro.');
+        msg.textContent = j.sucesso ? 'Voto registado.' : (j.mensagem || 'Erro.');
         msg.className = 'text-sm mt-2 ' + (j.sucesso ? 'text-green-600' : 'text-red-600');
       }
       if (j.sucesso) location.reload();

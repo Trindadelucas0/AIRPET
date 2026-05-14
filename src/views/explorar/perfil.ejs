@@ -718,7 +718,11 @@
 
   function renderMentions(text) {
     if (!text) return '';
-    return escapeHtml(text).replace(/@(\w[\w\s]*?\w)/g, '<a href="#" class="text-accent-500 font-semibold hover:underline">@$1</a>');
+    var esc = escapeHtml(text);
+    if (typeof window !== 'undefined' && window.AIRPET_socialTextoLinkify && typeof window.AIRPET_socialTextoLinkify.linkifyHashtagsInEscaped === 'function') {
+      esc = window.AIRPET_socialTextoLinkify.linkifyHashtagsInEscaped(esc);
+    }
+    return esc.replace(/@(\w[\w\s]*?\w)/g, '<a href="#" class="text-accent-500 font-semibold hover:underline">@$1</a>');
   }
 
   /* ── Relative times ── */

@@ -24,7 +24,7 @@ const PostTag = require('../models/PostTag');
 const PostMedia = require('../models/PostMedia');
 const Story = require('../models/Story');
 const PetDoMes = require('../models/PetDoMes');
-const Grupo = require('../models/Grupo');
+const petsMaisFofinhosEligibility = require('../services/petsMaisFofinhosEligibility');
 const socialPostHooks = require('../services/socialPostHooks');
 const { multerPublicUrl } = require('../middlewares/persistUploadMiddleware');
 
@@ -426,7 +426,12 @@ const explorarController = {
         lng,
         limite: 40,
       });
-      const pets = await Pet.buscarPorUsuario(uid);
+      let pets = [];
+      try {
+        pets = await Pet.buscarPorUsuario(uid);
+      } catch (petErr) {
+        logger.error('EXPLORAR', 'Erro ao listar pets no feed parceiros', petErr);
+      }
       res.render('feed-parceiros', {
         titulo: 'Parceiros',
         cards: cards || [],
@@ -610,8 +615,22 @@ const explorarController = {
 
       const removido = await autoDeleteSeNecessario(uid);
 
+      const rawMoldura = req.body?.fofinhos_moldura;
+      const querMoldura =
+        rawMoldura === true || rawMoldura === 1 || rawMoldura === '1' || rawMoldura === 'true';
+      let fofinhosMoldura = false;
+      if (querMoldura && petId) {
+        const det = await petsMaisFofinhosEligibility.detalheElegibilidadePet(petId);
+        fofinhosMoldura = !!det.elegivel;
+      }
+
       const post = await Publicacao.criar({
-        usuario_id: uid, pet_id: petId || null, foto, legenda: textoLimpo || null, texto: textoLimpo || null,
+        usuario_id: uid,
+        pet_id: petId || null,
+        foto,
+        legenda: textoLimpo || null,
+        texto: textoLimpo || null,
+        fofinhos_moldura: fofinhosMoldura,
       });
       if (foto) {
         await PostMedia.criar(post.id, foto, 'image', 0, 'ready');
@@ -1012,6 +1031,31 @@ const explorarController = {
           usuario_segue: uid ? await PetshopFollower.usuarioSegue(item.petshop_id, uid) : false,
         }))
       );
+
+      const edicaoFof = await PetDoMes.buscarOuCriarEdicaoAtiva();
+      const eligPet = await petsMaisFofinhosEligibility.detalheElegibilidadePet(id);
+      let petsMaisFofinhos = null;
+      if (edicaoFof) {
+        const viewerU = uid ? await Usuario.buscarPorId(uid) : null;
+        const posNacional = eligPet.elegivel
+          ? await PetDoMes.posicaoPetNoRanking(edicaoFof.id, id, 'nacional', viewerU || {})
+          : null;
+        let diasRestantes = null;
+        if (edicaoFof.termina_em) {
+          const ms = new Date(edicaoFof.termina_em).getTime() - Date.now();
+          diasRestantes = Math.max(0, Math.ceil(ms / 86400000));
+        }
+        petsMaisFofinhos = {
+          edicao: edicaoFof,
+          elegivel: eligPet.elegivel,
+          fotosComMidia: eligPet.fotosComMidia,
+          temPetshop: eligPet.temPetshop,
+          minFotos: petsMaisFofinhosEligibility.MIN_POSTS_COM_MIDIA,
+          posicaoNacional: posNacional,
+          diasRestantes,
+        };
+      }
+
       res.render('explorar/perfil-pet', {
         titulo: pet.nome,
         pet,
@@ -1022,6 +1066,7 @@ const explorarController = {
         estaSeguindo,
         eMeuPet: uid === pet.usuario_id,
         petshopsVinculados: petshopsVinculadosComFollow,
+        petsMaisFofinhos,
       });
     } catch (err) {
       logger.error('EXPLORAR', 'Erro no perfil do pet', err);
@@ -1172,12 +1217,23 @@ const explorarController = {
       }
 
       const removido = await autoDeleteSeNecessario(uid);
+
+      const rawMolduraV2 = req.body?.fofinhos_moldura;
+      const querMolduraV2 =
+        rawMolduraV2 === true || rawMolduraV2 === 1 || rawMolduraV2 === '1' || rawMolduraV2 === 'true';
+      let fofinhosMolduraV2 = false;
+      if (querMolduraV2 && petId) {
+        const detV2 = await petsMaisFofinhosEligibility.detalheElegibilidadePet(petId);
+        fofinhosMolduraV2 = !!detV2.elegivel;
+      }
+
       const post = await Publicacao.criar({
         usuario_id: uid,
         pet_id: petId || null,
         foto: mediaFiles[0] ? multerPublicUrl(mediaFiles[0], 'posts') : null,
         legenda: texto || null,
         texto: texto || null,
+        fofinhos_moldura: fofinhosMolduraV2,
       });
       for (let i = 0; i < mediaFiles.length; i += 1) {
         const f = mediaFiles[i];
@@ -1602,47 +1658,88 @@ const explorarController = {
 
   async petDoMesPagina(req, res) {
     try {
-      const uid = usuarioAtor(req).id;
-      const edicao = await PetDoMes.buscarOuCriarEdicaoMesAtual();
+      const ator = usuarioAtor(req);
+      if (!ator || !ator.id) {
+        req.session.flash = { tipo: 'erro', mensagem: 'Faça login para ver Pets mais fofinhos.' };
+        return res.redirect('/auth/login?return_to=/explorar/pet-do-mes');
+      }
+      const uid = ator.id;
+      const viewer = await Usuario.buscarPorId(uid);
+      const nivel = String(req.query.nivel || 'nacional').toLowerCase();
+      const nivelSeguro = ['bairro', 'cidade', 'estado', 'pais', 'nacional'].includes(nivel) ? nivel : 'nacional';
+
+      const edicao = await PetDoMes.buscarOuCriarEdicaoAtiva();
       if (!edicao) {
-        req.session.flash = { tipo: 'erro', mensagem: 'Não foi possível carregar a edição do mês.' };
+        req.session.flash = { tipo: 'erro', mensagem: 'Não foi possível carregar a edição do concurso.' };
         return res.redirect('/explorar');
       }
-      const ranking = await PetDoMes.listarRanking(edicao.id, 20);
+
+      const rankingCapas = await PetDoMes.listarRankingComCapaPorNivel(edicao.id, nivelSeguro, viewer || {}, 24);
       const linhas = await Promise.all(
-        ranking.map(async (r) => {
+        rankingCapas.map(async (r) => {
           const pet = await Pet.buscarPorId(r.pet_id);
-          return pet ? { pet_id: r.pet_id, votos: r.votos, pet } : null;
+          return pet ? { pet_id: r.pet_id, votos: r.votos, media_url: r.media_url, pet } : null;
         })
       );
+
       const meu = await PetDoMes.usuarioVoto(edicao.id, uid);
       const meusPets = await Pet.buscarPorUsuario(uid);
       const seguidos = await SeguidorPet.listarPetsSeguidos(uid, 80);
       const vistos = new Set();
-      const pets = [];
+      const petsCandidatos = [];
       (meusPets || []).forEach((p) => {
         if (p && !vistos.has(p.id)) {
           vistos.add(p.id);
-          pets.push(p);
+          petsCandidatos.push(p);
         }
       });
       (seguidos || []).forEach((row) => {
-        const id = row.id;
-        if (id && !vistos.has(id)) {
-          vistos.add(id);
-          pets.push({ id, nome: row.nome, foto: row.foto, slug: row.slug || null, usuario_id: row.dono_id });
+        const idPet = row.id;
+        if (idPet && !vistos.has(idPet)) {
+          vistos.add(idPet);
+          petsCandidatos.push({
+            id: idPet,
+            nome: row.nome,
+            foto: row.foto,
+            slug: row.slug || null,
+            usuario_id: row.dono_id,
+          });
         }
       });
+      const idsVoto = petsCandidatos.map((p) => p.id).filter(Boolean);
+      const elegiveisSet = await petsMaisFofinhosEligibility.petsElegiveisIds(idsVoto);
+      const pets = petsCandidatos.filter((p) => elegiveisSet.has(p.id));
+
+      let diasRestantes = null;
+      if (edicao.termina_em) {
+        const ms = new Date(edicao.termina_em).getTime() - Date.now();
+        diasRestantes = Math.max(0, Math.ceil(ms / 86400000));
+      }
+
+      const posicaoMeuVoto =
+        meu && meu.pet_id
+          ? await PetDoMes.posicaoPetNoRanking(edicao.id, meu.pet_id, nivelSeguro, viewer || {})
+          : null;
+
       res.render('explorar/pet-do-mes', {
-        titulo: 'Pet do mês',
+        titulo: 'Pets mais fofinhos',
         edicao,
+        nivelAtual: nivelSeguro,
         ranking: linhas.filter(Boolean),
         meuVotoPetId: meu ? meu.pet_id : null,
+        posicaoMeuVoto,
         pets,
+        diasRestantes,
+        viewerTemGeo: {
+          bairro: !!(viewer && String(viewer.bairro || '').trim()),
+          cidade: !!(viewer && String(viewer.cidade || '').trim()),
+          estado: !!(viewer && String(viewer.estado || '').trim()),
+          pais: !!(viewer && String(viewer.pais || '').trim()),
+        },
       });
     } catch (err) {
       logger.error('EXPLORAR', 'pet do mês', err);
-      req.session.flash = { tipo: 'erro', mensagem: 'Erro ao carregar Pet do mês.' };
+      req.session.flash = { tipo: 'erro', mensagem: 'Erro ao carregar Pets mais fofinhos.' };
       res.redirect('/explorar');
     }
   },
@@ -1655,53 +1752,33 @@ const explorarController = {
       if (!petId) return res.status(400).json({ sucesso: false, mensagem: 'Escolha um pet.' });
       const pet = await Pet.buscarPorId(petId);
       if (!pet) return res.status(400).json({ sucesso: false, mensagem: 'Pet inválido.' });
+
+      const elig = await petsMaisFofinhosEligibility.detalheElegibilidadePet(petId);
+      if (!elig.elegivel) {
+        return res.status(400).json({
+          sucesso: false,
+          mensagem:
+            'Este pet só recebe votos no concurso com 4+ posts com foto e vínculo ativo com petshop.',
+        });
+      }
+
       const dono = parseInt(pet.usuario_id, 10) === parseInt(uid, 10);
       const segue = dono ? true : await SeguidorPet.estaSeguindo(uid, petId);
       if (!segue) {
         return res.status(403).json({ sucesso: false, mensagem: 'Vote apenas em pets que você segue ou seus próprios pets.' });
       }
-      const edicao = await PetDoMes.buscarOuCriarEdicaoMesAtual();
+      const edicao = await PetDoMes.buscarOuCriarEdicaoAtiva();
       if (!edicao || edicao.estado !== 'aberta') {
         return res.status(400).json({ sucesso: false, mensagem: 'Votação encerrada.' });
+      }
+      if (edicao.termina_em && new Date(edicao.termina_em).getTime() < Date.now()) {
+        return res.status(400).json({ sucesso: false, mensagem: 'Esta edição já terminou.' });
       }
       await PetDoMes.votar(edicao.id, petId, uid);
       return res.json({ sucesso: true });
     } catch (err) {
       logger.error('EXPLORAR', 'voto pet do mês', err);
       return res.status(500).json({ sucesso: false, mensagem: 'Erro ao registrar voto.' });
-    }
-  },
-
-  async gruposPagina(req, res) {
-    try {
-      const uid = usuarioAtor(req).id;
-      const grupos = await Grupo.listarPublicos(30);
-      const meus = await Grupo.idsGruposDoUsuario(uid);
-      const set = new Set(meus);
-      res.render('explorar/grupos', {
-        titulo: 'Grupos',
-        grupos: (grupos || []).map((g) => Object.assign({}, g, { sou_membro: set.has(g.id) })),
-      });
-    } catch (err) {
-      logger.error('EXPLORAR', 'grupos', err);
-      req.session.flash = { tipo: 'erro', mensagem: 'Erro ao carregar grupos.' };
-      res.redirect('/explorar');
-    }
-  },
-
-  async grupoEntrar(req, res) {
-    try {
-      const uid = req.session?.usuario?.id;
-      if (!uid) return res.status(401).json({ sucesso: false, mensagem: 'Faça login.' });
-      const slug = String(req.params.slug || '').toLowerCase().trim();
-      const g = await Grupo.buscarPorSlug(slug);
-      if (!g) return res.status(404).json({ sucesso: false, mensagem: 'Grupo não encontrado.' });
-      await Grupo.entrar(g.id, uid);
-      const atualizado = await Grupo.buscarPorSlug(slug);
-      return res.json({ sucesso: true, membros_count: atualizado ? atualizado.membros_count : g.membros_count });
-    } catch (err) {
-      logger.error('EXPLORAR', 'grupo entrar', err);
-      return res.status(500).json({ sucesso: false, mensagem: 'Erro ao entrar no grupo.' });
     }
   },
 

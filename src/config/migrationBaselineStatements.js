@@ -930,6 +930,9 @@ const migrations = [
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='publicacoes' AND column_name='tipo') THEN
       ALTER TABLE publicacoes ADD COLUMN tipo VARCHAR(20) DEFAULT 'original';
     END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='publicacoes' AND column_name='fofinhos_moldura') THEN
+      ALTER TABLE publicacoes ADD COLUMN fofinhos_moldura BOOLEAN NOT NULL DEFAULT false;
+    END IF;
     ALTER TABLE publicacoes ALTER COLUMN foto DROP NOT NULL;
   END $$;`,
 
@@ -1155,6 +1158,9 @@ const migrations = [
     END IF;
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='pets' AND column_name='privado') THEN
       ALTER TABLE pets ADD COLUMN privado BOOLEAN NOT NULL DEFAULT false;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='pets' AND column_name='mostrar_ultimo_avistamento_mapa') THEN
+      ALTER TABLE pets ADD COLUMN mostrar_ultimo_avistamento_mapa BOOLEAN NOT NULL DEFAULT false;
     END IF;
   END $$;`,
 

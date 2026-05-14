@@ -134,7 +134,11 @@
   }
 
   function renderMencoes(texto) {
-    return escapeHtml(texto).replace(/@(\S+)/g, '<span class="mention" data-user="$1">@$1</span>');
+    var esc = escapeHtml(texto);
+    if (typeof window !== 'undefined' && window.AIRPET_socialTextoLinkify && typeof window.AIRPET_socialTextoLinkify.linkifyHashtagsInEscaped === 'function') {
+      esc = window.AIRPET_socialTextoLinkify.linkifyHashtagsInEscaped(esc);
+    }
+    return esc.replace(/@(\S+)/g, '<span class="mention" data-user="$1">@$1</span>');
   }
 
   function carregarComentariosPostDetail(postId) {
