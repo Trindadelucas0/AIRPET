@@ -23,7 +23,8 @@
     "lint": "eslint \"src/controllers\" \"src/services\" \"src/routes\"",
     "test": "node --test tests/smoke-app.test.js tests/smoke-utils.test.js tests/smoke-admin-path.test.js tests/csrf-origin-guard.test.js",
     "calibrate": "node scripts/calibrate.cjs",
-    "admin:url": "node scripts/print-admin-urls.cjs"
+    "admin:url": "node scripts/print-admin-urls.cjs",
+    "mapa:debug-tag": "node scripts/print-tag-scan-map-debug.cjs"
   },
   "keywords": [
     "pet",

@@ -318,6 +318,16 @@
 
   var currentBBoxKey = null;
 
+  /** Limpa cache SWR dos pins para o próximo fetch ir à rede (ex.: após SSE nfc_scan). */
+  function invalidateMapPinsSwrCache() {
+    try {
+      var C = globalThis.AIRPET_SWR_CACHE;
+      if (C && typeof C.invalidateKeysContaining === 'function') {
+        C.invalidateKeysContaining('mapPins');
+      }
+    } catch (_) {}
+  }
+
   function isLayerVisible(tipo) {
     for (var key in layerMapping) {
       if (layerMapping[key] === tipo) return activeLayers[key] !== false;
@@ -499,8 +509,8 @@
         url: '/mapa/api/pins?' + params.toString(),
         priority: globalThis.AIRPET_REQ_COORDINATOR && globalThis.AIRPET_REQ_COORDINATOR.PRIORITY
           ? globalThis.AIRPET_REQ_COORDINATOR.PRIORITY.HIGH : 'HIGH',
-        staleTimeMs: 120000,  // 2 min
-        cacheTimeMs: 300000,  // 5 min
+        staleTimeMs: 30000, // 30 s — pins mudam com scans; evita JSON “fresco” 2 min sem rede
+        cacheTimeMs: 300000, // 5 min
         group: 'mapPins',
         onUpdate: function (data) {
           if (!currentBBoxKey || requestKey !== ('mapPins:' + currentBBoxKey)) return;
@@ -612,6 +622,7 @@
         var lo = data && parseFloat(data.lng);
         if (Number.isFinite(la) && Number.isFinite(lo)) {
           upsertPetScanPin(data);
+          invalidateMapPinsSwrCache();
         }
       } catch (_) {}
     });

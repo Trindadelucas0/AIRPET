@@ -292,6 +292,7 @@ const nfcService = {
             pet_status: dadosPet.status,
             privado: dadosPet.privado,
             tem_alerta_perdido_aprovado: Boolean(alertaAtivo),
+            mostrar_ultimo_avistamento_mapa: dadosPet.mostrar_ultimo_avistamento_mapa,
           });
           const pub = mapaPrivacidadeService.obfuscateLatLng(
             dadosScan.latitude,
