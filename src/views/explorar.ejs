@@ -2000,7 +2000,16 @@
     btnPublicar.disabled = isSubmittingPost || !(temFoto || temTexto);
   }
 
-  uploadArea.addEventListener('click', function () { photoInput.click(); });
+  uploadArea.addEventListener('click', function (e) {
+    var PS = window.airpetPermissionSheet;
+    if (PS && typeof PS.prepareFilePickerWithCameraHint === 'function') {
+      e.preventDefault();
+      e.stopPropagation();
+      PS.prepareFilePickerWithCameraHint(photoInput).then(function () { photoInput.click(); });
+      return;
+    }
+    photoInput.click();
+  });
   uploadArea.addEventListener('dragover', function (e) { e.preventDefault(); this.classList.add('border-primary-400', 'bg-primary-50/50'); });
   uploadArea.addEventListener('dragleave', function () { this.classList.remove('border-primary-400', 'bg-primary-50/50'); });
   uploadArea.addEventListener('drop', function (e) {
@@ -2088,7 +2097,12 @@
       if (uploadArea && uploadArea.classList.contains('hidden')) {
         uploadArea.classList.remove('hidden');
       }
-      photoInput.click();
+      var PS = window.airpetPermissionSheet;
+      if (PS && typeof PS.prepareFilePickerWithCameraHint === 'function') {
+        PS.prepareFilePickerWithCameraHint(photoInput).then(function () { photoInput.click(); });
+      } else {
+        photoInput.click();
+      }
     });
   }
   window.addEventListener('resize', ajustarSheetViewport);

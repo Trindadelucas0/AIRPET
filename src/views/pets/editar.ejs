@@ -175,16 +175,15 @@
       </label>
 
       <label class="pp-toggle" style="margin-top:14px;" role="switch"
-             aria-checked="<%= pet.mostrar_ultimo_avistamento_mapa ? 'true' : 'false' %>">
-        <input type="checkbox" name="mostrar_ultimo_avistamento_mapa" value="on"
-               <%= pet.mostrar_ultimo_avistamento_mapa ? 'checked' : '' %>
-               <%= pet.privado ? 'disabled' : '' %>
+             aria-checked="<%= pet.mostrar_ultimo_scan_seguidores !== false ? 'true' : 'false' %>">
+        <input type="checkbox" name="mostrar_ultimo_scan_seguidores" value="on"
+               <%= pet.mostrar_ultimo_scan_seguidores !== false ? 'checked' : '' %>
                style="width:18px;height:18px;accent-color:var(--accent);">
-        <span class="pp-toggle-label" style="margin-left:10px;">Mostrar último avistamento no mapa público</span>
+        <span class="pp-toggle-label" style="margin-left:10px;">Mostrar última localização (scan) no mapa para quem segue o pet</span>
       </label>
       <p style="font-size:11px;color:var(--text-muted);margin-top:6px;margin-left:28px;max-width:520px;">
-        Quando alguém escanear a tag com localização, aparece um ponto <strong>aproximado</strong> no mapa AIRPET (não é GPS do pet).
-        Com perfil privado, esta opção fica desligada automaticamente.
+        Camada <strong>Seguindo</strong>: ponto aproximado do último scan da tag. No <strong>mapa público</strong>, pets com perfil não privado já aparecem (coordenadas discretizadas); pets <strong>perdidos</strong> aparecem mesmo privados para ajudar na recuperação.
+        Se desligar aqui, seguidores deixam de ver esse pin — exceto quando o pet estiver <strong>perdido</strong> (alerta ativo).
       </p>
     </section>
 

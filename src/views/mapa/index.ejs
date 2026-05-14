@@ -86,12 +86,17 @@
 <div class="mapa-wrapper">
 
   <div class="absolute top-3 left-3 right-3 z-[1000] flex flex-col gap-2">
+    <div class="rounded-xl border border-amber-200/80 bg-amber-50/95 px-3 py-2 text-[11px] leading-snug text-amber-950 shadow-sm backdrop-blur-sm md:text-xs">
+      <strong class="font-semibold">Privacidade e segurança:</strong>
+      os pontos de pets vêm de escaneamentos da tag (GPS do celular de quem leu a NFC), com localização <strong>aproximada</strong> — não é rastreador do animal nem endereço exato do tutor.
+    </div>
     <div class="bg-white/95 backdrop-blur-sm rounded-2xl shadow-lg p-2 flex items-center gap-2 overflow-x-auto">
       <%- include('../partials/map-layer-button', { layer: 'petshops', icon: 'fa-solid fa-store', label: 'Petshops', isActive: true }) %>
       <%- include('../partials/map-layer-button', { layer: 'perdidos', icon: 'fa-solid fa-triangle-exclamation', label: 'Perdidos', isActive: true }) %>
       <%- include('../partials/map-layer-button', { layer: 'avistamentos', icon: 'fa-solid fa-eye', label: 'Avistamentos', isActive: true }) %>
       <%- include('../partials/map-layer-button', { layer: 'pontos', icon: 'fa-solid fa-map-pin', label: 'Pontos', isActive: false }) %>
       <%- include('../partials/map-layer-button', { layer: 'pet_scans', icon: 'fa-solid fa-paw', label: 'Pets no mapa', isActive: true }) %>
+      <%- include('../partials/map-layer-button', { layer: 'heatmap', icon: 'fa-solid fa-fire-flame-curved', label: 'Calor', isActive: false }) %>
       <% if (locals.usuario) { %>
         <%- include('../partials/map-layer-button', { layer: 'social', icon: 'fa-solid fa-heart', label: 'Seguindo', isActive: false }) %>
       <% } %>
@@ -152,6 +157,7 @@
 <% locals.extraScripts = `
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+<script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
 <script src="/js/mapa.js"></script>
 ` %>
 

@@ -3,6 +3,7 @@
 <%- include('../partials/flash') %>
 
 <main class="container mx-auto px-4 py-6 space-y-6">
+  <% const solicitacoesReturnQs = '?returnStatus=' + encodeURIComponent(filtroStatus || 'pendente'); %>
   <div class="flex items-center justify-between">
     <h1 class="text-2xl font-bold">Solicitações de parceria</h1>
     <a href="<%= adminPath %>/petshops" class="text-sm text-gray-600">Ver petshops ativos</a>
@@ -73,17 +74,17 @@
             </span>
           </div>
           <div class="flex flex-wrap gap-2">
-            <form action="<%= adminPath %>/petshops/<%= s.id %>/aprovar" method="POST">
+            <form action="<%= adminPath %>/petshops/<%= s.id %>/aprovar<%= solicitacoesReturnQs %>" method="POST">
               <button class="btn btn-success">Aprovar</button>
             </form>
-            <form action="<%= adminPath %>/petshops/<%= s.id %>/rejeitar" method="POST" class="flex gap-2">
+            <form action="<%= adminPath %>/petshops/<%= s.id %>/rejeitar<%= solicitacoesReturnQs %>" method="POST" class="flex gap-2">
               <input name="motivo" class="input" placeholder="Motivo da rejeição">
               <button class="btn btn-danger">Rejeitar</button>
             </form>
-            <form action="<%= adminPath %>/petshops/<%= s.id %>/em-analise" method="POST">
+            <form action="<%= adminPath %>/petshops/<%= s.id %>/em-analise<%= solicitacoesReturnQs %>" method="POST">
               <button class="btn">Em análise</button>
             </form>
-            <form action="<%= adminPath %>/petshops/<%= s.id %>/suporte" method="POST">
+            <form action="<%= adminPath %>/petshops/<%= s.id %>/suporte<%= solicitacoesReturnQs %>" method="POST">
               <button class="btn">Acionar suporte</button>
             </form>
           </div>
@@ -102,8 +103,8 @@
             <p class="text-sm text-gray-500"><%= p.texto || 'Sem descrição' %></p>
           </div>
           <div class="flex gap-2">
-            <form method="POST" action="<%= adminPath %>/petshops/promocoes/<%= p.id %>/aprovar"><button class="btn btn-success">Aprovar</button></form>
-            <form method="POST" action="<%= adminPath %>/petshops/promocoes/<%= p.id %>/rejeitar"><button class="btn btn-danger">Rejeitar</button></form>
+            <form method="POST" action="<%= adminPath %>/petshops/promocoes/<%= p.id %>/aprovar<%= solicitacoesReturnQs %>"><button class="btn btn-success">Aprovar</button></form>
+            <form method="POST" action="<%= adminPath %>/petshops/promocoes/<%= p.id %>/rejeitar<%= solicitacoesReturnQs %>"><button class="btn btn-danger">Rejeitar</button></form>
           </div>
         </div>
       <% }) %>

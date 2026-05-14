@@ -11,6 +11,9 @@ router.get('/', (req, res) => {
 // API — buscar pins para exibir no mapa (todas as camadas públicas)
 router.get('/api/pins', mapaController.buscarPins);
 
+// API — agregação de avistamentos (heatmap, sem identificar pets)
+router.get('/api/heatmap-scans', mapaController.buscarHeatmapScans);
+
 // API — buscar pins dos pets que o usuário segue (requer autenticação)
 router.get('/api/pins/social', mapaController.buscarPinsSocial);
 

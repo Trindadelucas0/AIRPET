@@ -37,13 +37,20 @@ function labelLocal(cidade) {
 }
 
 /**
- * Pet ativo no mapa público: opt-in explícito e perfil não privado.
- * Perdidos: sempre elegíveis ao pin de scan (fluxo de recuperação).
+ * Pin público de último scan (tag_scans): não é rastreamento contínuo, só último avistamento ofuscado.
+ *
+ * - Pet **perdido** (`pets.status = 'perdido'` ou alerta aprovado em `pets_perdidos`, ver `tem_alerta_perdido_aprovado`):
+ *   sempre elegível, **mesmo** com perfil privado (recuperação).
+ * - Demais pets: elegíveis se o perfil **não** for privado (`privado === false`).
+ * O campo legado `mostrar_ultimo_avistamento_mapa` **não** entra nesta regra.
  */
 function petScanElegivelMapaPublico(row) {
   if (!row) return false;
-  if (row.pet_status === 'perdido') return true;
-  return Boolean(row.mostrar_ultimo_avistamento_mapa) && !row.privado;
+  const alertaAprovado =
+    row.tem_alerta_perdido_aprovado === true ||
+    row.tem_alerta_perdido_aprovado === 't';
+  if (row.pet_status === 'perdido' || alertaAprovado) return true;
+  return !row.privado;
 }
 
 module.exports = {

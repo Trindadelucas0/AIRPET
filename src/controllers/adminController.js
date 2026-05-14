@@ -57,6 +57,18 @@ const logger = require('../utils/logger');
 
 const getAdminPath = () => process.env.ADMIN_PATH || '/admin';
 
+const STATUS_FORM_PETSHOP_SOLICITACOES = new Set(['pendente', 'em_analise', 'rejeitado', 'aprovado', 'todas']);
+
+/** Volta à lista com o mesmo filtro quando o POST inclui ?returnStatus= no URL da ação. */
+function redirectUrlPetshopsSolicitacoes(req) {
+  const base = `${getAdminPath()}/petshops/solicitacoes`;
+  const raw = req.query && req.query.returnStatus;
+  if (raw != null && STATUS_FORM_PETSHOP_SOLICITACOES.has(String(raw))) {
+    return `${base}?status=${encodeURIComponent(String(raw))}`;
+  }
+  return base;
+}
+
 function extrairFiltrosPerfil(origem = {}) {
   return {
     estado: (origem.estado || '').trim(),
@@ -379,11 +391,11 @@ async function aprovarSolicitacaoPetshop(req, res) {
     const { id } = req.params;
     await petshopModerationService.aprovarSolicitacao(id, req.session.admin && req.session.admin.email);
     req.session.flash = { tipo: 'sucesso', mensagem: 'Solicitação aprovada e parceiro ativado.' };
-    return res.redirect(getAdminPath() + '/petshops/solicitacoes');
+    return res.redirect(redirectUrlPetshopsSolicitacoes(req));
   } catch (erro) {
     logger.error('AdminController', 'Erro ao aprovar solicitação de petshop', erro);
     req.session.flash = { tipo: 'erro', mensagem: erro.message || 'Erro ao aprovar solicitação.' };
-    return res.redirect(getAdminPath() + '/petshops/solicitacoes');
+    return res.redirect(redirectUrlPetshopsSolicitacoes(req));
   }
 }
 
@@ -396,11 +408,11 @@ async function rejeitarSolicitacaoPetshop(req, res) {
       req.session.admin && req.session.admin.email
     );
     req.session.flash = { tipo: 'sucesso', mensagem: 'Solicitação rejeitada.' };
-    return res.redirect(getAdminPath() + '/petshops/solicitacoes');
+    return res.redirect(redirectUrlPetshopsSolicitacoes(req));
   } catch (erro) {
     logger.error('AdminController', 'Erro ao rejeitar solicitação de petshop', erro);
     req.session.flash = { tipo: 'erro', mensagem: 'Erro ao rejeitar solicitação.' };
-    return res.redirect(getAdminPath() + '/petshops/solicitacoes');
+    return res.redirect(redirectUrlPetshopsSolicitacoes(req));
   }
 }
 
@@ -413,11 +425,11 @@ async function colocarSolicitacaoPetshopEmAnalise(req, res) {
       req.session.admin && req.session.admin.email
     );
     req.session.flash = { tipo: 'sucesso', mensagem: 'Solicitação movida para em análise.' };
-    return res.redirect(getAdminPath() + '/petshops/solicitacoes');
+    return res.redirect(redirectUrlPetshopsSolicitacoes(req));
   } catch (erro) {
     logger.error('AdminController', 'Erro ao mover solicitação para análise', erro);
     req.session.flash = { tipo: 'erro', mensagem: 'Erro ao atualizar status da solicitação.' };
-    return res.redirect(getAdminPath() + '/petshops/solicitacoes');
+    return res.redirect(redirectUrlPetshopsSolicitacoes(req));
   }
 }
 
@@ -426,7 +438,7 @@ async function contatarSuportePetshop(req, res) {
     tipo: 'sucesso',
     mensagem: 'Ticket de suporte registrado para contato com o petshop.',
   };
-  return res.redirect(getAdminPath() + '/petshops/solicitacoes');
+  return res.redirect(redirectUrlPetshopsSolicitacoes(req));
 }
 
 async function aprovarPromocaoPetshop(req, res) {
@@ -441,11 +453,11 @@ async function aprovarPromocaoPetshop(req, res) {
       );
     }
     req.session.flash = { tipo: 'sucesso', mensagem: 'Promoção aprovada e publicada.' };
-    return res.redirect(getAdminPath() + '/petshops/solicitacoes');
+    return res.redirect(redirectUrlPetshopsSolicitacoes(req));
   } catch (erro) {
     logger.error('AdminController', 'Erro ao aprovar promoção', erro);
     req.session.flash = { tipo: 'erro', mensagem: 'Erro ao aprovar promoção.' };
-    return res.redirect(getAdminPath() + '/petshops/solicitacoes');
+    return res.redirect(redirectUrlPetshopsSolicitacoes(req));
   }
 }
 
@@ -453,11 +465,11 @@ async function rejeitarPromocaoPetshop(req, res) {
   try {
     await PetshopPost.atualizarAprovacao(req.params.id, 'rejeitado');
     req.session.flash = { tipo: 'sucesso', mensagem: 'Promoção rejeitada.' };
-    return res.redirect(getAdminPath() + '/petshops/solicitacoes');
+    return res.redirect(redirectUrlPetshopsSolicitacoes(req));
   } catch (erro) {
     logger.error('AdminController', 'Erro ao rejeitar promoção', erro);
     req.session.flash = { tipo: 'erro', mensagem: 'Erro ao rejeitar promoção.' };
-    return res.redirect(getAdminPath() + '/petshops/solicitacoes');
+    return res.redirect(redirectUrlPetshopsSolicitacoes(req));
   }
 }
 

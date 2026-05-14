@@ -248,7 +248,6 @@ async function buscarPinsSocial(req, res) {
          p.slug AS pet_slug,
          p.status AS pet_status,
          COALESCE(p.privado, false) AS privado,
-         COALESCE(p.mostrar_ultimo_avistamento_mapa, false) AS mostrar_ultimo_avistamento_mapa,
          ts.latitude,
          ts.longitude,
          ts.cidade,
@@ -262,6 +261,15 @@ async function buscarPinsSocial(req, res) {
          AND ts.latitude IS NOT NULL
          AND ts.longitude IS NOT NULL
          AND ts.data > NOW() - INTERVAL '30 days'
+         AND NOT COALESCE(p.privado, false)
+         AND (
+           COALESCE(p.mostrar_ultimo_scan_seguidores, true) = true
+           OR p.status = 'perdido'
+           OR EXISTS (
+             SELECT 1 FROM pets_perdidos pp
+             WHERE pp.pet_id = p.id AND pp.status = 'aprovado'
+           )
+         )
        ORDER BY t.pet_id, ts.data DESC
        LIMIT 100`,
         [usuarioId]
@@ -350,6 +358,34 @@ async function buscarPinsSocial(req, res) {
 }
 
 /**
+ * Agregação pública de scans NFC em células grosseiras (heatmap, sem identificar pets).
+ * Rota: GET /mapa/api/heatmap-scans
+ */
+async function buscarHeatmapScans(req, res) {
+  try {
+    const { swLat, swLng, neLat, neLng } = req.query;
+    if (!swLat || !swLng || !neLat || !neLng) {
+      return res.status(400).json({ sucesso: false, mensagem: 'Bounding box obrigatória.' });
+    }
+    const sw = { lat: parseFloat(swLat), lng: parseFloat(swLng) };
+    const ne = { lat: parseFloat(neLat), lng: parseFloat(neLng) };
+    if (isNaN(sw.lat) || isNaN(sw.lng) || isNaN(ne.lat) || isNaN(ne.lng)) {
+      return res.status(400).json({ sucesso: false, mensagem: 'Coordenadas inválidas.' });
+    }
+    const celulas = await TagScan.listarHeatmapCelulasNaBox(sw.lat, sw.lng, ne.lat, ne.lng);
+    const points = (celulas || []).map((c) => [
+      parseFloat(c.lat),
+      parseFloat(c.lng),
+      Math.min(1, (parseInt(c.weight, 10) || 1) / 10),
+    ]);
+    return res.status(200).json({ pontos: points });
+  } catch (erro) {
+    logger.error('MapaController', 'Erro ao buscar heatmap de scans', erro);
+    return res.status(500).json({ sucesso: false, mensagem: 'Erro ao carregar heatmap.' });
+  }
+}
+
+/**
  * streamMapaSSE — Server-Sent Events para atualizações em tempo real no mapa
  *
  * Rota: GET /mapa/api/stream
@@ -418,5 +454,6 @@ async function streamMapaSSE(req, res) {
 module.exports = {
   buscarPins,
   buscarPinsSocial,
+  buscarHeatmapScans,
   streamMapaSSE,
 };

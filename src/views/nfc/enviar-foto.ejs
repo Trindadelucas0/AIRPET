@@ -106,6 +106,16 @@
     btnEnviar.disabled = true;
   }
 
+  if (uploadArea) {
+    uploadArea.addEventListener('click', function (ev) {
+      var PS = window.airpetPermissionSheet;
+      if (!PS || typeof PS.prepareFilePickerWithCameraHint !== 'function') return;
+      ev.preventDefault();
+      ev.stopPropagation();
+      PS.prepareFilePickerWithCameraHint(inputFoto).then(function () { inputFoto.click(); });
+    }, true);
+  }
+
   if (inputFoto) {
     inputFoto.addEventListener('change', function() {
       if (this.files && this.files[0]) {

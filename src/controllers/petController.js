@@ -387,7 +387,7 @@ const petController = {
 
       const { nome, tipo, tipo_custom, raca, cor, porte, sexo, dataNascimento, peso, descricao, telefoneContato,
         microchip, numero_pedigree, foto_cropped, castrado: castradoBody, alergias_medicacoes, veterinario_nome, veterinario_telefone, observacoes,
-        bio_pet, privado, mostrar_ultimo_avistamento_mapa,
+        bio_pet, privado, mostrar_ultimo_scan_seguidores,
       } = req.body;
       const castrado = castradoBody === 'sim' || castradoBody === 'on' ? true : (castradoBody === 'nao' ? false : null);
 
@@ -412,7 +412,7 @@ const petController = {
         observacoes,
         bio_pet,
         privado,
-        mostrar_ultimo_avistamento_mapa,
+        mostrar_ultimo_scan_seguidores,
       });
 
       /* Se uma nova foto foi enviada via multer, atualiza a foto separadamente */

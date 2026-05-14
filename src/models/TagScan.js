@@ -104,7 +104,10 @@ const TagScan = {
          p.slug AS pet_slug,
          p.status AS pet_status,
          COALESCE(p.privado, false) AS privado,
-         COALESCE(p.mostrar_ultimo_avistamento_mapa, false) AS mostrar_ultimo_avistamento_mapa,
+         EXISTS (
+           SELECT 1 FROM pets_perdidos pp
+           WHERE pp.pet_id = p.id AND pp.status = 'aprovado'
+         ) AS tem_alerta_perdido_aprovado,
          ts.latitude,
          ts.longitude,
          ts.cidade,
@@ -147,7 +150,11 @@ const TagScan = {
          AND ts.data > NOW() - INTERVAL '30 days'
          AND (
            p.status = 'perdido'
-           OR (COALESCE(p.mostrar_ultimo_avistamento_mapa, false) = true AND COALESCE(p.privado, false) = false)
+           OR EXISTS (
+             SELECT 1 FROM pets_perdidos pp
+             WHERE pp.pet_id = p.id AND pp.status = 'aprovado'
+           )
+           OR COALESCE(p.privado, false) = false
          )
        GROUP BY 1, 2
        ORDER BY weight DESC

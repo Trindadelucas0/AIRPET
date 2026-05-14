@@ -59,11 +59,20 @@
       if (Notification.permission === 'granted') {
         doSubscribe(reg, vapidKey);
       } else if (Notification.permission === 'default') {
-        Notification.requestPermission().then(function (permission) {
-          if (permission === 'granted') {
-            doSubscribe(reg, vapidKey);
-          }
-        });
+        var PS = window.airpetPermissionSheet;
+        if (PS && typeof PS.tryAutoShow === 'function') {
+          PS.tryAutoShow('notifications', { deferMs: 2000 }).then(function (res) {
+            if (res && res.outcome === 'granted') {
+              doSubscribe(reg, vapidKey);
+            }
+          });
+        } else {
+          Notification.requestPermission().then(function (permission) {
+            if (permission === 'granted') {
+              doSubscribe(reg, vapidKey);
+            }
+          });
+        }
       }
     }).catch(function (err) {
       console.warn('[PWA] Erro ao verificar subscription:', err);

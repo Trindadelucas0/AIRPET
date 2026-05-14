@@ -26,6 +26,14 @@ const PetCheckin = {
        JOIN seguidores_pets sp ON sp.pet_id = pc.pet_id AND sp.usuario_id = $1
        WHERE pc.criado_em > NOW() - INTERVAL '30 days'
          AND NOT COALESCE(p.privado, false)
+         AND (
+           COALESCE(p.mostrar_ultimo_scan_seguidores, true) = true
+           OR p.status = 'perdido'
+           OR EXISTS (
+             SELECT 1 FROM pets_perdidos pp
+             WHERE pp.pet_id = p.id AND pp.status = 'aprovado'
+           )
+         )
        ORDER BY pc.criado_em DESC
        LIMIT $2`,
       [usuarioId, limite]

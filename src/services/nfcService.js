@@ -40,6 +40,7 @@ const PetPerdido = require('../models/PetPerdido');
 const PetTrackingEvent = require('../models/PetTrackingEvent');
 const petEventBus = require('./petEventBus');
 const mapaPrivacidadeService = require('./mapaPrivacidadeService');
+const notificacaoService = require('./notificacaoService');
 const petshopRecoveryIntegrationService = require('./petshopRecoveryIntegrationService');
 const tagEntitlementService = require('./tagEntitlementService');
 const pushService = require('./pushService');
@@ -185,6 +186,25 @@ const nfcService = {
         }
 
         /**
+         * PASSO 4b: Estado perdido (antes do mapa público/SSE e notificações em massa por scan).
+         * Alerta aprovado em pets_perdidos OU pets.status = 'perdido'.
+         */
+        if (tag.pet_id) {
+          const alertas = await PetPerdido.buscarPorPet(tag.pet_id);
+          alertaAtivo = alertas.find(a => a.status === 'aprovado') || null;
+
+          const petMarcadoPerdido = dadosPet && dadosPet.status === 'perdido';
+          if (alertaAtivo) {
+            petPerdido = true;
+            logger.info('NfcService', `Pet ${tag.pet_id} está PERDIDO! Alerta aprovado: ${alertaAtivo.id}`);
+          } else if (petMarcadoPerdido) {
+            petPerdido = true;
+            alertaAtivo = alertas[0] || null;
+            logger.info('NfcService', `Pet ${tag.pet_id} está PERDIDO (aguardando aprovação do alerta)`);
+          }
+        }
+
+        /**
          * PASSO 4a: Registra a localização do pet.
          * Se o escaneamento inclui coordenadas GPS, salva como
          * nova localização do pet (origem: 'nfc'). Foto no mapa vem do JOIN com pets.
@@ -256,7 +276,7 @@ const nfcService = {
           const visivelMapaPublico = dadosPet && mapaPrivacidadeService.petScanElegivelMapaPublico({
             pet_status: dadosPet.status,
             privado: dadosPet.privado,
-            mostrar_ultimo_avistamento_mapa: dadosPet.mostrar_ultimo_avistamento_mapa,
+            tem_alerta_perdido_aprovado: Boolean(alertaAtivo),
           });
           const pub = mapaPrivacidadeService.obfuscateLatLng(
             dadosScan.latitude,
@@ -280,6 +300,20 @@ const nfcService = {
             });
           }
 
+          if (petPerdido && tag.user_id != null) {
+            notificacaoService
+              .notificarScanPetPerdidoComLocalizacao({
+                petId: tag.pet_id,
+                petNome: (dadosPet && dadosPet.nome) || tag.pet_nome || null,
+                lat: dadosScan.latitude,
+                lng: dadosScan.longitude,
+                donoUsuarioId: tag.user_id,
+              })
+              .catch((err) => {
+                logger.error('NfcService', 'Falha ao notificar seguidores/região (scan pet perdido)', err);
+              });
+          }
+
           logger.info('NfcService', `Localização registrada para pet: ${tag.pet_id}`);
 
           if (petshopProximoHabilitado) {
@@ -287,28 +321,6 @@ const nfcService = {
               dadosScan.latitude,
               dadosScan.longitude
             );
-          }
-        }
-
-        /**
-         * PASSO 4b: Verifica se o pet está perdido.
-         * Mostra "PERDIDO" na tag quando:
-         *   - O pet está marcado como perdido (pets.status = 'perdido'), OU
-         *   - Existe um alerta aprovado em pets_perdidos.
-         * Assim a tag reflete imediatamente quando o tutor reporta, mesmo antes da aprovação do admin.
-         */
-        if (tag.pet_id) {
-          const alertas = await PetPerdido.buscarPorPet(tag.pet_id);
-          alertaAtivo = alertas.find(a => a.status === 'aprovado') || null;
-
-          const petMarcadoPerdido = dadosPet && dadosPet.status === 'perdido';
-          if (alertaAtivo) {
-            petPerdido = true;
-            logger.info('NfcService', `Pet ${tag.pet_id} está PERDIDO! Alerta aprovado: ${alertaAtivo.id}`);
-          } else if (petMarcadoPerdido) {
-            petPerdido = true;
-            alertaAtivo = alertas[0] || null;
-            logger.info('NfcService', `Pet ${tag.pet_id} está PERDIDO (aguardando aprovação do alerta)`);
           }
         }
 

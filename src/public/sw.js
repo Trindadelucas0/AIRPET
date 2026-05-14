@@ -27,6 +27,7 @@ const SHELL_ASSETS = [
   '/css/tags-commerce.css',
   '/js/app.js',
   '/js/pwa.js',
+  '/js/permissionSheet.js',
   '/js/permissions.js',
   '/js/tags-planos.js',
   '/js/tags-loja.js',

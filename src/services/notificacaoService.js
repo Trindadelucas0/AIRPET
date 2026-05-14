@@ -1,6 +1,7 @@
 const Usuario = require('../models/Usuario');
 const Notificacao = require('../models/Notificacao');
 const PetPerdido = require('../models/PetPerdido');
+const SeguidorPet = require('../models/SeguidorPet');
 const ConfigSistema = require('../models/ConfigSistema');
 const pushService = require('./pushService');
 const logger = require('../utils/logger');
@@ -155,6 +156,62 @@ const notificacaoService = {
     }
 
     return notificacoes;
+  },
+
+  /**
+   * Scan da tag com GPS quando o pet está perdido: notifica seguidores e utilizadores
+   * na região (opt-in `receber_alertas_pet_perdido` + `ultima_localizacao`). Dedup,
+   * cooldown por pet (mesmas horas que `notificarProximos`), até 80 destinatários.
+   * @param {{ petId: number, petNome: string|null, lat: number, lng: number, donoUsuarioId: number }} p
+   */
+  async notificarScanPetPerdidoComLocalizacao(p) {
+    const { petId, petNome, lat, lng, donoUsuarioId } = p;
+    const nome = petNome && String(petNome).trim() ? String(petNome).trim() : 'Pet';
+    const link = `/pets/${petId}`;
+    const mensagem = `Novo avistamento de ${nome}: alguém escaneou a tag com localização. Toque para ver o alerta.`;
+
+    const [seguidores, regiaoIds] = await Promise.all([
+      SeguidorPet.listarUsuarioIdsQueSeguemPetExcetoDono(petId),
+      Usuario.listarIdsParaAlertaPerdidoProximos(lat, lng, 10 * 1000, donoUsuarioId),
+    ]);
+
+    const cooldownHoras = await ConfigSistema.buscarPorChave('alerta_cooldown_horas');
+    const horasCooldown = cooldownHoras ? parseInt(cooldownHoras, 10) : 24;
+    const jaNotificados = await Notificacao.buscarUsuarioIdsJaNotificadosAlerta(petId, horasCooldown);
+    const setJa = new Set(jaNotificados);
+    const donoN = Number(donoUsuarioId);
+
+    const ordem = [];
+    const visto = new Set();
+    const push = (id) => {
+      const uid = Number(id);
+      if (!Number.isFinite(uid)) return;
+      if (Number.isFinite(donoN) && uid === donoN) return;
+      if (setJa.has(uid)) return;
+      if (visto.has(uid)) return;
+      visto.add(uid);
+      ordem.push(uid);
+    };
+    (seguidores || []).forEach(push);
+    (regiaoIds || []).forEach(push);
+
+    const destinatarios = ordem.slice(0, 80);
+    if (destinatarios.length === 0) {
+      return [];
+    }
+
+    logger.info('NotificacaoService', `Scan pet perdido: ${destinatarios.length} destinatário(s) — pet=${petId}`);
+
+    const out = [];
+    for (const uid of destinatarios) {
+      try {
+        const n = await this.criar(uid, 'alerta', mensagem, link, { pet_id: petId });
+        if (n) out.push(n);
+      } catch (e) {
+        logger.error('NotificacaoService', 'notificarScanPetPerdidoComLocalizacao', e);
+      }
+    }
+    return out;
   },
 
   /**

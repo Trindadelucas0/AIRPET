@@ -62,9 +62,9 @@ async function iniciar() {
         'Schema TAG NFC nao encontrado (plan_definitions ausente). Rode `npm run db:migrate` no ambiente antes de usar /tags/loja-tag.'
       );
     }
-app.get('/loaderio-2340347d46737358dce737c59095abea.txt', (req, res) => {
-    res.send('loaderio-2340347d46737358dce737c59095abea');
-});
+    app.get('/loaderio-2340347d46737358dce737c59095abea.txt', (req, res) => {
+      res.send('loaderio-2340347d46737358dce737c59095abea');
+    });
     ensurePublicImageDirs();
 
     logger.secao('Services');
@@ -81,6 +81,8 @@ app.get('/loaderio-2340347d46737358dce737c59095abea.txt', (req, res) => {
       });
       logger.secao('Servidor Pronto');
       logger.info('SERVER', `Acesse http://localhost:${PORT}`);
+      const adminBase = String(process.env.ADMIN_PATH || '/admin').trim().replace(/\/+$/, '') || '/admin';
+      logger.info('ADMIN', `Painel admin (login): http://localhost:${PORT}${adminBase}/login`);
     });
   } catch (err) {
     logger.error('SERVER', 'Falha ao iniciar o servidor', err);

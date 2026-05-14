@@ -25,7 +25,27 @@
     maxClusterRadius: 50,
     spiderfyOnMaxZoom: true,
     showCoverageOnHover: false,
-    disableClusteringAtZoom: 17
+    disableClusteringAtZoom: 17,
+    iconCreateFunction: function (cluster) {
+      var childMarkers = cluster.getAllChildMarkers();
+      var hasLost = false;
+      for (var i = 0; i < childMarkers.length; i++) {
+        var p = childMarkers[i]._airpetProps;
+        if (p && (p.pet_status === 'perdido' || p.tipo === 'pet_perdido')) {
+          hasLost = true;
+          break;
+        }
+      }
+      var n = cluster.getChildCount();
+      var size = hasLost ? 52 : 44;
+      var bg = hasLost ? '#dc2626' : '#ec5a1c';
+      var ring = hasLost ? '0 0 0 4px rgba(220,38,38,0.35)' : '0 2px 10px rgba(0,0,0,.28)';
+      return L.divIcon({
+        className: 'airpet-cluster-ico',
+        html: '<div style="width:' + size + 'px;height:' + size + 'px;border-radius:50%;background:' + bg + ';color:#fff;font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center;border:3px solid #fff;box-shadow:' + ring + '">' + n + '</div>',
+        iconSize: L.point(size, size),
+      });
+    },
   });
   map.addLayer(clusterGroup);
 
@@ -46,7 +66,8 @@
     avistamentos: 'avistamento',
     pontos:     'ponto_interesse',
     pet_scans:  'pet_scan',
-    social:     'pet_seguido'
+    social:     'pet_seguido',
+    heatmap:    '__heatmap__'
   };
 
   function makeIcon(tipo) {
@@ -69,12 +90,14 @@
     } else if (horasAtras !== null && horasAtras > 48) {
       borderColor = '#9ca3af'; // cinza: localização antiga (>48h)
     } else {
-      borderColor = '#ec5a1c'; // laranja: ativo e recente
+      borderColor = '#16a34a'; // verde: ativo / recente
     }
 
     var shadow = petStatus === 'perdido'
       ? '0 0 0 3px rgba(220,38,38,0.25), 0 2px 8px rgba(0,0,0,.3)'
-      : '0 2px 8px rgba(0,0,0,.3)';
+      : (horasAtras !== null && horasAtras > 48)
+        ? '0 2px 8px rgba(0,0,0,.25)'
+        : '0 0 0 2px rgba(22,163,74,0.2), 0 2px 8px rgba(0,0,0,.28)';
 
     var inner;
     if (foto) {
@@ -145,6 +168,12 @@
     return 'https://www.google.com/maps/dir/?api=1&destination=' + lat + ',' + lng;
   }
 
+  /** Abre a zona no Google Maps (coordenadas aproximadas do pin). */
+  function gerarLinkRegiaoExterna(lat, lng) {
+    var q = encodeURIComponent(String(lat) + ',' + String(lng));
+    return 'https://www.google.com/maps?q=' + q + '&z=15';
+  }
+
   function buildBottomSheetHtml(props, lat, lng) {
     var tipo = props.tipo || 'default';
     var html = '';
@@ -157,23 +186,25 @@
       var fotoHtml = props.foto
         ? '<img src="' + props.foto.replace(/"/g, '&quot;') + '" loading="lazy" style="width:52px;height:52px;border-radius:12px;object-fit:cover;flex-shrink:0;border:2px solid #f3f4f6">'
         : '<div style="width:52px;height:52px;border-radius:12px;background:#f97316;display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="fa-solid fa-paw" style="color:#fff;font-size:20px"></i></div>';
-      var cidadeHtml = props.cidade
-        ? '<p style="font-size:12px;color:#6b7280;margin-top:3px"><i class="fa-solid fa-map-pin" style="color:#ec5a1c;font-size:10px;margin-right:3px"></i>' + esc(props.cidade) + '</p>'
-        : '';
+      var localLabel = props.label_local || props.cidade || 'Região aproximada';
+      var localHtml = '<p style="font-size:12px;color:#6b7280;margin-top:3px"><i class="fa-solid fa-map-pin" style="color:#ec5a1c;font-size:10px;margin-right:3px"></i>Última vez visto em: ' + esc(localLabel) + '</p>';
       var dataHtml = props.data
-        ? '<p style="font-size:12px;color:#6b7280;margin-top:2px"><i class="fa-regular fa-clock" style="font-size:10px;margin-right:3px"></i>Visto ' + tempoAtras(props.data) + '</p>'
+        ? '<p style="font-size:12px;color:#6b7280;margin-top:2px"><i class="fa-regular fa-clock" style="font-size:10px;margin-right:3px"></i>' + esc(tempoAtras(props.data)) + '</p>'
         : '';
-      html = '<div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:14px">'
+      var perfilHref = String(props.perfil_url || ('/pets/' + props.id)).replace(/"/g, '&quot;');
+      html = '<p style="font-size:11px;color:#64748b;margin:0 0 10px;line-height:1.45">A localização reflete um escaneamento da tag com GPS do celular de quem encontrou — não é rastreamento em tempo real do pet.</p>'
+        + '<div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:14px">'
         + fotoHtml
         + '<div style="flex:1;min-width:0">'
         + statusBadge
         + '<p style="font-size:16px;font-weight:700;color:#111827;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(props.nome || 'Pet') + '</p>'
-        + cidadeHtml + dataHtml
+        + localHtml + dataHtml
         + '</div></div>'
-        + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">'
-        + '<a href="/pets/' + encodeURIComponent(props.id) + '" style="display:flex;align-items:center;justify-content:center;gap:6px;padding:10px;border-radius:12px;background:#ec5a1c;color:#fff;font-weight:600;font-size:13px;text-decoration:none"><i class="fa-solid fa-paw"></i> Ver perfil</a>'
-        + '<a href="' + gerarLinkRota(lat, lng) + '" target="_blank" rel="noopener" style="display:flex;align-items:center;justify-content:center;gap:6px;padding:10px;border-radius:12px;background:#1d4ed8;color:#fff;font-weight:600;font-size:13px;text-decoration:none"><i class="fa-solid fa-diamond-turn-right"></i> Rota</a>'
-        + '</div>';
+        + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">'
+        + '<a href="' + perfilHref + '" style="display:flex;align-items:center;justify-content:center;gap:6px;padding:10px;border-radius:12px;background:#ec5a1c;color:#fff;font-weight:600;font-size:13px;text-decoration:none"><i class="fa-solid fa-paw"></i> Ver perfil</a>'
+        + '<a href="' + perfilHref + '" style="display:flex;align-items:center;justify-content:center;gap:6px;padding:10px;border-radius:12px;background:#0f766e;color:#fff;font-weight:600;font-size:13px;text-decoration:none"><i class="fa-solid fa-message"></i> Contatar tutor</a>'
+        + '</div>'
+        + '<a href="' + String(gerarLinkRegiaoExterna(lat, lng)).replace(/"/g, '&quot;') + '" target="_blank" rel="noopener noreferrer" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:11px 12px;border-radius:12px;border:2px solid #1d4ed8;background:#eff6ff;color:#1e3a8a;font-weight:700;font-size:13px;text-decoration:none;width:100%;box-sizing:border-box"><i class="fa-solid fa-map-location-dot" style="color:#1d4ed8"></i> Abrir no Google Maps</a>';
 
     } else if (tipo === 'petshop') {
       var logoHtml = props.imagem_url
@@ -202,9 +233,10 @@
         + '<p style="font-size:16px;font-weight:700;color:#111827;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(props.nome || 'Pet') + '</p>'
         + (props.dono ? '<p style="font-size:12px;color:#6b7280;margin-top:2px">Tutor: ' + esc(props.dono) + '</p>' : '')
         + '</div></div>'
-        + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">'
-        + '<a href="/pets-perdidos" style="display:flex;align-items:center;justify-content:center;gap:6px;padding:10px;border-radius:12px;background:#dc2626;color:#fff;font-weight:600;font-size:13px;text-decoration:none"><i class="fa-solid fa-triangle-exclamation"></i> Ver alerta</a>'
-        + '<a href="' + gerarLinkRota(lat, lng) + '" target="_blank" rel="noopener" style="display:flex;align-items:center;justify-content:center;gap:6px;padding:10px;border-radius:12px;background:#1d4ed8;color:#fff;font-weight:600;font-size:13px;text-decoration:none"><i class="fa-solid fa-diamond-turn-right"></i> Rota</a>'
+        + '<p style="font-size:11px;color:#64748b;margin:0 0 12px;line-height:1.45">O pin no AIRPET mostra uma <strong style="color:#475569">zona aproximada</strong> — não é a posição exata do pet em tempo real.</p>'
+        + '<div style="display:flex;flex-direction:column;gap:10px">'
+        + '<a href="/pets-perdidos" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:12px 14px;border-radius:12px;background:#dc2626;color:#fff;font-weight:700;font-size:14px;text-decoration:none;box-shadow:0 4px 14px rgba(220,38,38,0.25)"><i class="fa-solid fa-triangle-exclamation"></i> Ver alerta</a>'
+        + '<a href="' + String(gerarLinkRegiaoExterna(lat, lng)).replace(/"/g, '&quot;') + '" target="_blank" rel="noopener noreferrer" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:11px 14px;border-radius:12px;border:2px solid #1d4ed8;background:#eff6ff;color:#1e3a8a;font-weight:700;font-size:13px;text-decoration:none;box-sizing:border-box"><i class="fa-solid fa-map-location-dot" style="color:#1d4ed8"></i> Abrir no Google Maps</a>'
         + '</div>';
 
     } else {
@@ -231,9 +263,41 @@
     avistamentos: true,
     pontos: false,
     pet_scans: true,
-    social: false
+    social: false,
+    heatmap: false
   };
   var locMarker = null;
+
+  var heatLayer = null;
+
+  function removeHeatLayer() {
+    if (heatLayer && map.hasLayer(heatLayer)) {
+      map.removeLayer(heatLayer);
+    }
+    heatLayer = null;
+  }
+
+  function loadHeatmapPins() {
+    if (!activeLayers.heatmap || typeof L.heatLayer !== 'function') return;
+    var bounds = map.getBounds();
+    var params = new URLSearchParams({
+      swLat: bounds.getSouthWest().lat,
+      swLng: bounds.getSouthWest().lng,
+      neLat: bounds.getNorthEast().lat,
+      neLng: bounds.getNorthEast().lng,
+    });
+    fetch('/mapa/api/heatmap-scans?' + params.toString())
+      .then(function (res) { return res.json(); })
+      .then(function (j) {
+        if (!activeLayers.heatmap) return;
+        removeHeatLayer();
+        var pts = j.pontos || [];
+        if (!pts.length) return;
+        heatLayer = L.heatLayer(pts, { radius: 28, blur: 20, max: 0.85, minOpacity: 0.3 });
+        map.addLayer(heatLayer);
+      })
+      .catch(function () {});
+  }
 
   var debounceTimer = null;
   function debounce(fn, delay) {
@@ -310,18 +374,40 @@
     });
   }
 
+  function animarMarcadorPara(marker, toLat, toLng, durationMs) {
+    if (!marker || !marker.getLatLng) return;
+    var from = marker.getLatLng();
+    var t0 = Date.now();
+    function step() {
+      var t = Math.min(1, (Date.now() - t0) / (durationMs || 400));
+      var e = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+      marker.setLatLng([
+        from.lat + (toLat - from.lat) * e,
+        from.lng + (toLng - from.lng) * e,
+      ]);
+      if (t < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+
   /* ─── Adiciona ou atualiza um pin de pet em tempo real (SSE) ─── */
   function upsertPetScanPin(data) {
     var id = data.petId + '_pet_scan';
+    var lat = parseFloat(data.lat);
+    var lng = parseFloat(data.lng);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+    var prev = markers[id];
+    var startLL = prev && prev.getLatLng ? prev.getLatLng() : L.latLng(lat, lng);
     if (markers[id]) {
-      // Remove marcador antigo e desfaz o cache para permitir re-render
       clusterGroup.removeLayer(markers[id]);
       delete markers[id];
       delete loadedIds[id];
     }
+    var scanIso = data.data ? String(data.data) : new Date(data.ts || Date.now()).toISOString();
+    var slug = data.slug || null;
     renderFeatures([{
       type: 'Feature',
-      geometry: { type: 'Point', coordinates: [data.lng, data.lat] },
+      geometry: { type: 'Point', coordinates: [lng, lat] },
       properties: {
         id: data.petId,
         tipo: 'pet_scan',
@@ -329,10 +415,18 @@
         foto: data.foto || null,
         pet_status: data.petStatus || 'ativo',
         cidade: data.cidade || null,
-        data: new Date().toISOString(),
-        horas_atras: 0
-      }
+        label_local: data.labelLocal || data.cidade || null,
+        slug: slug,
+        perfil_url: slug ? ('/p/' + encodeURIComponent(slug)) : ('/pets/' + encodeURIComponent(data.petId)),
+        data: scanIso,
+        horas_atras: 0,
+      },
     }]);
+    var m = markers[id];
+    if (m && prev && startLL && (Math.abs(startLL.lat - lat) > 1e-7 || Math.abs(startLL.lng - lng) > 1e-7)) {
+      m.setLatLng(startLL);
+      animarMarcadorPara(m, lat, lng, 450);
+    }
   }
 
   /* ─── Fetch de pins (polling) ─── */
@@ -410,6 +504,13 @@
 
   /* ─── Toggle de camada ─── */
   function toggleLayer(layerName) {
+    if (layerName === 'heatmap') {
+      activeLayers.heatmap = !activeLayers.heatmap;
+      if (!activeLayers.heatmap) removeHeatLayer();
+      else loadHeatmapPins();
+      return;
+    }
+
     activeLayers[layerName] = !activeLayers[layerName];
     var tipoAlvo = layerMapping[layerName];
 
@@ -491,6 +592,7 @@
   map.on('moveend', debounce(function () {
     clearTimeout(_sseRetryTimer);
     fetchPins();
+    if (activeLayers.heatmap) loadHeatmapPins();
     setTimeout(conectarSSE, 500);
   }, 400));
 
@@ -501,19 +603,44 @@
   var btnLoc = document.getElementById('btnMinhaLocalizacao');
   if (btnLoc) {
     btnLoc.addEventListener('click', function () {
-      if (!navigator.geolocation) { mostrarErroGeo({ code: 1 }); return; }
-      btnLoc.querySelector('i').className = 'fa-solid fa-spinner fa-spin text-lg';
-      navigator.geolocation.getCurrentPosition(
-        function (pos) {
-          map.setView([pos.coords.latitude, pos.coords.longitude], 14);
-          btnLoc.querySelector('i').className = 'fa-solid fa-location-crosshairs text-lg';
-        },
-        function (err) {
-          btnLoc.querySelector('i').className = 'fa-solid fa-location-crosshairs text-lg';
-          mostrarErroGeo(err);
-        },
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
-      );
+      var PS = window.airpetPermissionSheet;
+      function doGeo() {
+        if (!navigator.geolocation) { mostrarErroGeo({ code: 1 }); return; }
+        btnLoc.querySelector('i').className = 'fa-solid fa-spinner fa-spin text-lg';
+        navigator.geolocation.getCurrentPosition(
+          function (pos) {
+            map.setView([pos.coords.latitude, pos.coords.longitude], 14);
+            btnLoc.querySelector('i').className = 'fa-solid fa-location-crosshairs text-lg';
+          },
+          function (err) {
+            btnLoc.querySelector('i').className = 'fa-solid fa-location-crosshairs text-lg';
+            mostrarErroGeo(err);
+          },
+          { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+        );
+      }
+      if (!PS || !PS.syncOsState) {
+        doGeo();
+        return;
+      }
+      PS.syncOsState('location').then(function (os) {
+        if (os === 'granted') {
+          doGeo();
+          return;
+        }
+        var r = PS.getRecord('location');
+        var wrap = mapEl && mapEl.parentNode;
+        if (r.ui === 'denied_permanent' || os === 'denied') {
+          if (wrap) PS.mountFallbackBanner(wrap, 'location');
+          return;
+        }
+        return PS.showJitSheet('location').then(function (out) {
+          if (out === 'granted') doGeo();
+          else if (out === 'denied' || out === 'dismissed_permanent') {
+            if (wrap) PS.mountFallbackBanner(wrap, 'location');
+          }
+        });
+      });
     });
   }
 
@@ -721,15 +848,35 @@
     });
   }
 
-  /* ─── Auto-localizar ao abrir ─── */
-  if (navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition(function (pos) {
-      map.setView([pos.coords.latitude, pos.coords.longitude], 13);
-    }, function (err) {
-      // Fallback: São Paulo em vez do Brasil inteiro
+  /* ─── Auto-localizar ao abrir (JIT via permissionSheet) ─── */
+  function initUserLocationOnMap() {
+    if (!navigator.geolocation) {
       map.setView([-23.5505, -46.6333], 12);
-      console.warn('[MAPA] Geoloc auto falhou:', err.code, err.message);
-    }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 });
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      function (pos) {
+        map.setView([pos.coords.latitude, pos.coords.longitude], 13);
+      },
+      function (err) {
+        map.setView([-23.5505, -46.6333], 12);
+        console.warn('[MAPA] Geoloc auto falhou:', err.code, err.message);
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+    );
+  }
+
+  var PS = window.airpetPermissionSheet;
+  if (PS && typeof PS.mapPageBootstrap === 'function') {
+    PS.mapPageBootstrap({
+      mapContainer: mapEl && mapEl.parentNode,
+      requestLocate: initUserLocationOnMap,
+      defaultView: function () {
+        map.setView([-23.5505, -46.6333], 12);
+      }
+    });
+  } else {
+    initUserLocationOnMap();
   }
 
   /* ─── Iniciar ─── */

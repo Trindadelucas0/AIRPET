@@ -822,6 +822,271 @@ body.admin-shell {
 }
 
 /* =========================================================
+   AIRPET JIT permission sheet + fallback banner
+   ========================================================= */
+
+.airpet-perm-sheet-overlay {
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0;
+}
+
+.airpet-perm-sheet-modal {
+  width: 100%;
+  max-width: 520px;
+  margin: 0;
+  border-radius: 22px 22px 0 0;
+  max-height: min(88dvh, 560px);
+  background: #fff;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  border-bottom: none;
+  box-shadow: 0 -8px 40px rgba(15, 23, 42, 0.12);
+  transform: translateY(110%);
+  transition: transform 0.28s cubic-bezier(0.32, 0, 0.67, 0);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+@media (min-width: 640px) {
+  .airpet-perm-sheet-overlay {
+    align-items: center;
+    padding: 16px;
+  }
+
+  .airpet-perm-sheet-modal {
+    border-radius: 22px;
+    border: 1px solid rgba(148, 163, 184, 0.28);
+    margin-bottom: 0;
+    max-height: 92vh;
+    box-shadow: 0 24px 60px rgba(15, 23, 42, 0.18);
+  }
+}
+
+.airpet-perm-sheet-inner {
+  padding: 8px 22px 22px;
+}
+
+.airpet-perm-sheet-hero {
+  text-align: center;
+  padding-top: 8px;
+}
+
+.airpet-perm-sheet-icon-wrap {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 14px;
+  border-radius: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.airpet-perm-sheet-icon {
+  font-size: 28px;
+}
+
+.airpet-perm-sheet-title {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1.2;
+}
+
+.airpet-perm-sheet-sub {
+  margin: 10px auto 0;
+  max-width: 340px;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: #64748b;
+}
+
+.airpet-perm-sheet-bullets {
+  list-style: none;
+  margin: 18px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.airpet-perm-sheet-li {
+  display: flex;
+  align-items: flex-start;
+  font-size: 0.88rem;
+  color: #334155;
+  line-height: 1.4;
+}
+
+.airpet-perm-sheet-actions {
+  margin-top: 22px;
+}
+
+.airpet-perm-sheet-nomore {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 14px;
+  padding: 10px 2px;
+  min-height: 44px;
+  font-size: 0.8rem;
+  color: #64748b;
+  cursor: pointer;
+  user-select: none;
+}
+
+.airpet-perm-sheet-checkbox {
+  width: 18px;
+  height: 18px;
+  accent-color: #ec5a1c;
+  flex-shrink: 0;
+}
+
+.airpet-perm-sheet-hint {
+  margin: 4px 0 0;
+  font-size: 0.72rem;
+  line-height: 1.4;
+  color: #94a3b8;
+}
+
+.airpet-perm-fallback-banner {
+  position: relative;
+  z-index: 500;
+  margin: 10px 10px 0;
+  border-radius: 14px;
+  border: 1px solid rgba(251, 191, 36, 0.45);
+  background: linear-gradient(180deg, #fffbeb 0%, #fef9c3 100%);
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
+}
+
+.airpet-perm-fallback-inner {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+}
+
+@media (max-width: 520px) {
+  .airpet-perm-fallback-inner {
+    grid-template-columns: auto 1fr;
+    grid-template-rows: auto auto;
+  }
+
+  .airpet-perm-fallback-btn {
+    grid-column: 1 / -1;
+  }
+
+  .airpet-perm-fallback-close {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+  }
+
+  .airpet-perm-fallback-banner {
+    position: relative;
+  }
+}
+
+.airpet-perm-fallback-ico {
+  color: #d97706;
+  font-size: 1.1rem;
+}
+
+.airpet-perm-fallback-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.airpet-perm-fallback-text strong {
+  font-size: 0.82rem;
+  color: #92400e;
+}
+
+.airpet-perm-fallback-text span {
+  font-size: 0.72rem;
+  color: #a16207;
+  line-height: 1.35;
+}
+
+.airpet-perm-fallback-btn {
+  border: none;
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #fff;
+  background: linear-gradient(140deg, #f4712a 0%, #db4f12 100%);
+  cursor: pointer;
+  white-space: nowrap;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.airpet-perm-fallback-btn:hover {
+  filter: brightness(1.03);
+}
+
+.airpet-perm-fallback-close {
+  border: none;
+  background: transparent;
+  color: #92400e;
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 8px;
+}
+
+.airpet-perm-fallback-close:hover {
+  background: rgba(146, 64, 14, 0.08);
+}
+
+@media (prefers-color-scheme: dark) {
+  .airpet-perm-sheet-modal {
+    background: #1e293b;
+    border-color: rgba(148, 163, 184, 0.2);
+  }
+
+  .airpet-perm-sheet-title {
+    color: #f1f5f9;
+  }
+
+  .airpet-perm-sheet-sub,
+  .airpet-perm-sheet-li {
+    color: #94a3b8;
+  }
+
+  .airpet-perm-sheet-nomore {
+    color: #94a3b8;
+  }
+
+  .airpet-perm-sheet-hint {
+    color: #64748b;
+  }
+
+  .airpet-perm-fallback-banner {
+    background: linear-gradient(180deg, #422006 0%, #451a03 100%);
+    border-color: rgba(251, 191, 36, 0.25);
+  }
+
+  .airpet-perm-fallback-text strong {
+    color: #fde68a;
+  }
+
+  .airpet-perm-fallback-text span {
+    color: #fcd34d;
+  }
+
+  .airpet-perm-fallback-ico {
+    color: #fbbf24;
+  }
+
+  .airpet-perm-fallback-close {
+    color: #fde68a;
+  }
+}
+
+/* =========================================================
    AIRPET Wizard (reutilizavel)
    ========================================================= */
 
