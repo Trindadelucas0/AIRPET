@@ -1160,7 +1160,7 @@ const migrations = [
       ALTER TABLE pets ADD COLUMN privado BOOLEAN NOT NULL DEFAULT false;
     END IF;
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='pets' AND column_name='mostrar_ultimo_avistamento_mapa') THEN
-      ALTER TABLE pets ADD COLUMN mostrar_ultimo_avistamento_mapa BOOLEAN NOT NULL DEFAULT false;
+      ALTER TABLE pets ADD COLUMN mostrar_ultimo_avistamento_mapa BOOLEAN NOT NULL DEFAULT true;
     END IF;
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='pets' AND column_name='mostrar_ultimo_scan_seguidores') THEN
       ALTER TABLE pets ADD COLUMN mostrar_ultimo_scan_seguidores BOOLEAN NOT NULL DEFAULT true;

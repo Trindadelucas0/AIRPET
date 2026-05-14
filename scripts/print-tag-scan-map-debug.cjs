@@ -82,12 +82,22 @@ async function main() {
     );
     console.log('\n[tag_scans últimos 8]', JSON.stringify(scansR.rows, null, 2));
 
+    console.log('\n[checklist mapa publico — camada "Pets no mapa"]');
+    console.log('  1) nfc_tags.status === "active"  ?', tag.status === 'active');
+    console.log('  2) nfc_tags.pet_id NOT NULL      ?', !!tag.pet_id);
+    const scanComCoords = scansR.rows.find(
+      (r) => r.latitude != null && r.longitude != null
+    );
+    console.log('  3) algum tag_scans (30d) com lat/lng ?', !!scanComCoords);
+    console.log('     dica: em localhost o IP geo nao roda. Use AIRPET_DEV_FALLBACK_LAT/LNG no .env');
+    console.log('     ou abra /tag/' + tagCode + ' e toque "Enviar minha localizacao" para gravar GPS real.');
+
     const last = scansR.rows[0];
     if (last) {
       const la = last.latitude != null ? parseFloat(last.latitude) : NaN;
       const lo = last.longitude != null ? parseFloat(last.longitude) : NaN;
       if (!Number.isFinite(la) || !Number.isFinite(lo)) {
-        console.log('\n[mapa] Último scan sem lat/lng — GET /tag sem IP geo (ex.: localhost) ou cookie skip; use POST localização ou ambiente com IP público.');
+        console.log('\n[mapa] Ultimo scan sem lat/lng — sem coords nada aparece nas duas camadas do mapa.');
       } else {
         const pad = 0.5;
         const url =
@@ -101,7 +111,7 @@ async function main() {
           (la + pad) +
           '&neLng=' +
           (lo + pad);
-        console.log('\n[mapa] Teste bbox ~1° em volta do último scan (ajuste host/porta):');
+        console.log('\n[mapa] Teste bbox ~1deg em volta do ultimo scan (ajuste host/porta):');
         console.log(url);
       }
     }

@@ -213,7 +213,7 @@ const nfcService = {
          * nova localização do pet (origem: 'nfc'). Foto no mapa vem do JOIN com pets.
          */
         if (tag.pet_id && dadosScan.latitude && dadosScan.longitude) {
-          if (dadosScan.geo_source === 'ip_aproximado') {
+          if (dadosScan.geo_source === 'ip_aproximado' || dadosScan.geo_source === 'dev_fallback') {
             registrouAproximacaoIp = true;
           }
 
@@ -228,7 +228,7 @@ const nfcService = {
           });
 
           // Projeta no event store unificado (falha silenciosa — não bloqueia fluxo)
-          var confIp = dadosScan.geo_source === 'ip_aproximado' ? 35 : 100;
+          var confIp = (dadosScan.geo_source === 'ip_aproximado' || dadosScan.geo_source === 'dev_fallback') ? 35 : 100;
           PetTrackingEvent.registrar({
             pet_id: tag.pet_id,
             event_type: 'nfc_scan',

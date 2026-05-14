@@ -41,7 +41,8 @@ function labelLocal(cidade) {
  *
  * - Pet **perdido** ou alerta aprovado: sempre no mapa (recuperação), mesmo perfil privado.
  * - Demais: perfil **não** privado e sem opt-out explícito em `mostrar_ultimo_avistamento_mapa`
- *   (coluna em `pets`; só oculta quando `false` explícito).
+ *   (coluna em `pets`; default `true` desde a migration 1776270000000 — só oculta quando o
+ *   tutor desliga explicitamente nas preferências do pet).
  */
 function petScanElegivelMapaPublico(row) {
   if (!row) return false;

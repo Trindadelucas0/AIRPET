@@ -87,7 +87,9 @@ const nfcController = {
           dadosScan.latitude = approx.latitude;
           dadosScan.longitude = approx.longitude;
           dadosScan.cidade = approx.cidade;
-          dadosScan.geo_source = 'ip_aproximado';
+          dadosScan.geo_source = approx.source === 'dev_fallback'
+            ? 'dev_fallback'
+            : 'ip_aproximado';
         }
       }
 

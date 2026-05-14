@@ -14,13 +14,29 @@ function normalizeClientIp(ip) {
   return s;
 }
 
+function parseDevFallback() {
+  const lat = parseFloat(process.env.AIRPET_DEV_FALLBACK_LAT);
+  const lng = parseFloat(process.env.AIRPET_DEV_FALLBACK_LNG);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+  const cidade = process.env.AIRPET_DEV_FALLBACK_CIDADE || null;
+  return { latitude: lat, longitude: lng, cidade, source: 'dev_fallback' };
+}
+
 /**
  * @param {string} reqIp - req.ip ou equivalente
  * @returns {Promise<{ latitude: number, longitude: number, cidade: string|null }|null>}
  */
 async function lookupApproximate(reqIp) {
   const ip = normalizeClientIp(reqIp);
-  if (!ip) return null;
+  if (!ip) {
+    // IP privado / localhost: em dev permite usar coords fixas via env para o pin aparecer no mapa.
+    const fb = parseDevFallback();
+    if (fb) {
+      logger.info('IpGeolocation', 'Usando AIRPET_DEV_FALLBACK_LAT/LNG (IP privado).');
+      return fb;
+    }
+    return null;
+  }
 
   try {
     const url = 'https://ipwho.is/' + encodeURIComponent(ip);
