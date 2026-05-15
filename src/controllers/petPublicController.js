@@ -17,6 +17,7 @@
  */
 
 const Pet = require('../models/Pet');
+const { sameNumericId } = require('../utils/sameNumericId');
 const Publicacao = require('../models/Publicacao');
 const SeguidorPet = require('../models/SeguidorPet');
 const Usuario = require('../models/Usuario');
@@ -66,7 +67,7 @@ function calcularIdade(dataNascimento) {
 async function buildContextoDono(pet, req) {
   const [scans, tags, alertaAtivo] = await Promise.all([
     TagScan.listarHistoricoPorPet(pet.id, 40),
-    NfcTag.buscarPorUsuario(req.session.usuario.id).then((lista) => lista.filter((t) => t.pet_id === pet.id)),
+    NfcTag.buscarPorUsuario(req.session.usuario.id).then((lista) => lista.filter((t) => sameNumericId(t.pet_id, pet.id))),
     PetPerdido.buscarAtivoPorPet(pet.id).catch(() => null),
   ]);
   const tagsAtivas = (tags || []).filter((t) => t.status === 'active');
@@ -241,7 +242,7 @@ const petPublicController = {
       }
 
       const uid = req.session && req.session.usuario ? req.session.usuario.id : null;
-      const ehDono = !!(uid && uid === pet.usuario_id);
+      const ehDono = !!(uid && sameNumericId(uid, pet.usuario_id));
 
       let abaAtiva = String(req.query.tab || 'posts').toLowerCase();
       if (!ABAS_VALIDAS.has(abaAtiva)) abaAtiva = 'posts';

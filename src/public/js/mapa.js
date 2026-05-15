@@ -82,52 +82,80 @@
     });
   }
 
-  /* ─── Pin personalizado com foto do pet ─── */
-  function makePetPhotoIcon(foto, petStatus, horasAtras) {
-    var borderColor;
-    var fotoUrl = normalizeAssetUrl(foto);
-    if (petStatus === 'perdido') {
-      borderColor = '#dc2626'; // vermelho: perdido
-    } else if (horasAtras !== null && horasAtras > 48) {
-      borderColor = '#9ca3af'; // cinza: localização antiga (>48h)
-    } else {
-      borderColor = '#16a34a'; // verde: ativo / recente
-    }
+  /** Miniatura no mapa: mesmo “cartão” 52px do bottom sheet dos petshops (borda + sombra), âncora na base. */
+  var MAP_THUMB = 52;
+  var MAP_THUMB_R = 12;
 
+  function makePetPhotoIcon(foto, petStatus, horasAtras, iconOpts) {
+    iconOpts = iconOpts || {};
+    var accent = iconOpts.accent === 'social' ? 'social' : 'pet';
+    var ringColor;
+    if (petStatus === 'perdido') ringColor = '#dc2626';
+    else if (horasAtras !== null && horasAtras > 48) ringColor = '#9ca3af';
+    else if (accent === 'social') ringColor = '#8b5cf6';
+    else ringColor = '#ec5a1c';
+
+    var fotoUrl = resolveMapAssetUrl(foto);
     var shadow = petStatus === 'perdido'
-      ? '0 0 0 3px rgba(220,38,38,0.25), 0 2px 8px rgba(0,0,0,.3)'
-      : (horasAtras !== null && horasAtras > 48)
-        ? '0 2px 8px rgba(0,0,0,.25)'
-        : '0 0 0 2px rgba(22,163,74,0.2), 0 2px 8px rgba(0,0,0,.28)';
+      ? '0 4px 14px rgba(220,38,38,0.35), 0 2px 8px rgba(0,0,0,.2)'
+      : '0 4px 14px rgba(15,23,42,0.12), 0 2px 8px rgba(0,0,0,.18)';
 
     var inner;
     if (fotoUrl) {
-      // Escapa a URL para uso seguro dentro do HTML inline
       var safeUrl = fotoUrl.replace(/"/g, '&quot;');
-      var fallbackHtml = '<div style=\\"background:' + borderColor + ';width:100%;height:100%;display:flex;align-items:center;justify-content:center;border-radius:50%\\"><i class=\\"fa-solid fa-paw\\" style=\\"color:#fff;font-size:14px\\"></i></div>';
-      inner = '<img src="' + safeUrl + '" loading="lazy" '
-        + 'style="width:100%;height:100%;object-fit:cover;border-radius:50%" '
-        + 'onerror="this.outerHTML=\'' + fallbackHtml + '\'">';
+      var fb = '<div style=\\"background:' + ringColor + ';width:100%;height:100%;display:flex;align-items:center;justify-content:center;border-radius:' + MAP_THUMB_R + 'px\\"><i class=\\"fa-solid fa-paw\\" style=\\"color:#fff;font-size:20px\\"></i></div>';
+      inner = '<img src="' + safeUrl + '" loading="lazy" referrerpolicy="no-referrer" '
+        + 'style="width:100%;height:100%;object-fit:cover;border-radius:' + (MAP_THUMB_R - 2) + 'px;display:block" '
+        + 'onerror="this.outerHTML=\'' + fb + '\'">';
     } else {
-      inner = '<div style="background:' + borderColor + ';width:100%;height:100%;'
-        + 'display:flex;align-items:center;justify-content:center;border-radius:50%">'
-        + '<i class="fa-solid fa-paw" style="color:#fff;font-size:14px"></i></div>';
+      inner = '<div style="background:' + ringColor + ';width:100%;height:100%;'
+        + 'display:flex;align-items:center;justify-content:center;border-radius:' + (MAP_THUMB_R - 2) + 'px">'
+        + '<i class="fa-solid fa-paw" style="color:#fff;font-size:20px"></i></div>';
     }
 
     var lostRing = petStatus === 'perdido'
-      ? '<div style="position:absolute;inset:-4px;border-radius:50%;border:2px solid #dc2626;opacity:.5;animation:petPinRing 1.6s ease-in-out infinite"></div>'
+      ? '<div style="position:absolute;inset:-3px;border-radius:' + (MAP_THUMB_R + 2) + 'px;border:2px solid #dc2626;opacity:.55;animation:petPinRing 1.6s ease-in-out infinite;pointer-events:none"></div>'
       : '';
 
     return L.divIcon({
       className: 'pet-photo-pin',
-      html: '<div style="position:relative;width:44px;height:44px">'
+      html: '<div style="position:relative;width:' + MAP_THUMB + 'px;height:' + MAP_THUMB + 'px">'
         + lostRing
-        + '<div style="width:44px;height:44px;border-radius:50%;border:3px solid ' + borderColor + ';overflow:hidden;box-shadow:' + shadow + '">'
+        + '<div style="width:' + MAP_THUMB + 'px;height:' + MAP_THUMB + 'px;border-radius:' + MAP_THUMB_R + 'px;'
+        + 'border:2px solid #f3f4f6;box-shadow:' + shadow + ';outline:3px solid ' + ringColor + ';outline-offset:0;overflow:hidden;background:#fff">'
         + inner
         + '</div></div>',
-      iconSize: [44, 44],
-      iconAnchor: [22, 22],
-      popupAnchor: [0, -26]
+      iconSize: [MAP_THUMB, MAP_THUMB],
+      iconAnchor: [MAP_THUMB / 2, MAP_THUMB],
+      popupAnchor: [0, -MAP_THUMB - 4]
+    });
+  }
+
+  function makePetshopPhotoIcon(imagemUrl) {
+    var url = resolveMapAssetUrl(imagemUrl);
+    var ring = '#10b981';
+    var shadow = '0 4px 14px rgba(16,185,129,0.22), 0 2px 8px rgba(0,0,0,.15)';
+    var inner;
+    if (url) {
+      var safe = url.replace(/"/g, '&quot;');
+      var fb = '<div style=\\"background:' + ring + ';width:100%;height:100%;display:flex;align-items:center;justify-content:center;border-radius:' + MAP_THUMB_R + 'px\\"><i class=\\"fa-solid fa-store\\" style=\\"color:#fff;font-size:20px\\"></i></div>';
+      inner = '<img src="' + safe + '" loading="lazy" referrerpolicy="no-referrer" '
+        + 'style="width:100%;height:100%;object-fit:cover;border-radius:' + (MAP_THUMB_R - 2) + 'px;display:block" '
+        + 'onerror="this.outerHTML=\'' + fb + '\'">';
+    } else {
+      inner = '<div style="background:' + ring + ';width:100%;height:100%;display:flex;align-items:center;justify-content:center;border-radius:' + (MAP_THUMB_R - 2) + 'px">'
+        + '<i class="fa-solid fa-store" style="color:#fff;font-size:20px"></i></div>';
+    }
+    return L.divIcon({
+      className: 'pet-photo-pin',
+      html: '<div style="position:relative;width:' + MAP_THUMB + 'px;height:' + MAP_THUMB + 'px">'
+        + '<div style="width:' + MAP_THUMB + 'px;height:' + MAP_THUMB + 'px;border-radius:' + MAP_THUMB_R + 'px;'
+        + 'border:2px solid #f3f4f6;box-shadow:' + shadow + ';outline:3px solid ' + ring + ';outline-offset:0;overflow:hidden;background:#fff">'
+        + inner
+        + '</div></div>',
+      iconSize: [MAP_THUMB, MAP_THUMB],
+      iconAnchor: [MAP_THUMB / 2, MAP_THUMB],
+      popupAnchor: [0, -MAP_THUMB - 4]
     });
   }
 
@@ -184,7 +212,7 @@
         ? '<span style="display:inline-flex;align-items:center;gap:4px;background:#fee2e2;color:#b91c1c;font-size:10px;font-weight:700;padding:2px 8px;border-radius:999px;letter-spacing:.04em;animation:petPinRing 1.4s ease-in-out infinite">'
           + '<i class="fa-solid fa-triangle-exclamation" style="font-size:9px"></i> PERDIDO</span> '
         : '';
-      var fotoUrl = normalizeAssetUrl(props.foto);
+      var fotoUrl = resolveMapAssetUrl(props.foto);
       var fotoHtml = fotoUrl
         ? '<img src="' + fotoUrl.replace(/"/g, '&quot;') + '" loading="lazy" style="width:52px;height:52px;border-radius:12px;object-fit:cover;flex-shrink:0;border:2px solid #f3f4f6">'
         : '<div style="width:52px;height:52px;border-radius:12px;background:#f97316;display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="fa-solid fa-paw" style="color:#fff;font-size:20px"></i></div>';
@@ -209,8 +237,9 @@
         + '<a href="' + String(gerarLinkRegiaoExterna(lat, lng)).replace(/"/g, '&quot;') + '" target="_blank" rel="noopener noreferrer" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:11px 12px;border-radius:12px;border:2px solid #1d4ed8;background:#eff6ff;color:#1e3a8a;font-weight:700;font-size:13px;text-decoration:none;width:100%;box-sizing:border-box"><i class="fa-solid fa-map-location-dot" style="color:#1d4ed8"></i> Abrir no Google Maps</a>';
 
     } else if (tipo === 'petshop') {
-      var logoHtml = props.imagem_url
-        ? '<img src="' + props.imagem_url.replace(/"/g, '&quot;') + '" loading="lazy" style="width:52px;height:52px;border-radius:12px;object-fit:cover;flex-shrink:0;border:2px solid #f3f4f6">'
+      var logoResolved = resolveMapAssetUrl(props.imagem_url);
+      var logoHtml = logoResolved
+        ? '<img src="' + logoResolved.replace(/"/g, '&quot;') + '" loading="lazy" referrerpolicy="no-referrer" style="width:52px;height:52px;border-radius:12px;object-fit:cover;flex-shrink:0;border:2px solid #f3f4f6">'
         : '<div style="width:52px;height:52px;border-radius:12px;background:#10b981;display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="fa-solid fa-store" style="color:#fff;font-size:20px"></i></div>';
       var telHtml = props.telefone
         ? '<a href="tel:' + esc(props.telefone) + '" style="font-size:12px;color:#ec5a1c;margin-top:3px;display:block"><i class="fa-solid fa-phone" style="font-size:10px;margin-right:3px"></i>' + esc(props.telefone) + '</a>'
@@ -225,7 +254,7 @@
         + '<a href="' + esc(props.perfil_url || '#') + '" style="display:flex;align-items:center;justify-content:center;gap:6px;padding:10px;border-radius:12px;background:#10b981;color:#fff;font-weight:600;font-size:13px;text-decoration:none;width:100%"><i class="fa-solid fa-store"></i> Ver petshop</a>';
 
     } else if (tipo === 'pet_perdido') {
-      var perdFoto = normalizeAssetUrl(props.foto);
+      var perdFoto = resolveMapAssetUrl(props.foto);
       var pfoto = perdFoto
         ? '<img src="' + perdFoto.replace(/"/g, '&quot;') + '" loading="lazy" style="width:52px;height:52px;border-radius:12px;object-fit:cover;flex-shrink:0;border:2px solid #fecaca">'
         : '<div style="width:52px;height:52px;border-radius:12px;background:#dc2626;display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="fa-solid fa-triangle-exclamation" style="color:#fff;font-size:20px"></i></div>';
@@ -335,14 +364,27 @@
     return true;
   }
 
-  /** Caminhos relativos (ex.: uploads/...) falham em /mapa — usar URL absoluta ao path. */
-  function normalizeAssetUrl(u) {
+  /**
+   * Resolve URL de imagem para o mapa (Leaflet + /mapa).
+   * - Raiz relativa (/uploads/...) vira absoluta com origin (evita edge cases).
+   * - Protocol-relative (//cdn...) recebe o protocolo da página.
+   * - uploads/... sem barra inicial vira /uploads/...
+   */
+  function resolveMapAssetUrl(u) {
     if (u == null || u === '') return null;
     var s = String(u).trim();
     if (!s) return null;
     if (/^https?:\/\//i.test(s)) return s;
-    if (s.charAt(0) === '/') return s;
-    return '/' + s.replace(/^\.?\//, '');
+    if (/^\/\//.test(s)) {
+      var pr = (typeof window !== 'undefined' && window.location && window.location.protocol) ? window.location.protocol : 'https:';
+      s = pr + s;
+      return s;
+    }
+    if (s.charAt(0) !== '/') s = '/' + s.replace(/^\.?\//, '');
+    if (typeof window !== 'undefined' && window.location && window.location.origin) {
+      return window.location.origin + s;
+    }
+    return s;
   }
 
   function parseGeomLatLng(lat, lng) {
@@ -381,7 +423,9 @@
       if (loadedIds[id]) {
         if ((tipo === 'pet_scan' || tipo === 'pet_seguido') && markers[id]) {
           var mUp = markers[id];
-          var iconUp = makePetPhotoIcon(props.foto, props.pet_status, props.horas_atras);
+          var iconUp = makePetPhotoIcon(props.foto, props.pet_status, props.horas_atras, {
+            accent: tipo === 'pet_seguido' ? 'social' : 'pet'
+          });
           mUp.setLatLng([coord.lat, coord.lng]);
           mUp.setIcon(iconUp);
           mUp._airpetProps = props;
@@ -404,7 +448,11 @@
 
       var icon;
       if (tipo === 'pet_scan' || tipo === 'pet_seguido') {
-        icon = makePetPhotoIcon(props.foto, props.pet_status, props.horas_atras);
+        icon = makePetPhotoIcon(props.foto, props.pet_status, props.horas_atras, {
+          accent: tipo === 'pet_seguido' ? 'social' : 'pet'
+        });
+      } else if (tipo === 'petshop' && resolveMapAssetUrl(props.imagem_url)) {
+        icon = makePetshopPhotoIcon(props.imagem_url);
       } else {
         icon = makeIcon(tipo);
       }

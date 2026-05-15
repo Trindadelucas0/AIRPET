@@ -11,6 +11,9 @@
  *   totalSeguidores, totalSeguindo, petshopsVinculados, abaAtiva,
  *   calendarioSaude, tagsAtivas, tagsHistorico, scans, alertaAtivo,
  *   idadePet, totalCurtidasAgregado, canonicalUrl
+ *
+ * Painel do tutor (barra Saúde | Editar | Perdido): GET /pets/<id> como dono
+ * (sessão ou JWT cookie) — ver redirect em routes/index.js.
  */
 var abas = [
   { id: 'posts', label: 'Posts',  icone: 'fa-th',           sempre: true  },
@@ -85,6 +88,13 @@ locals.extraHead = '<link rel="stylesheet" href="/css/perfil-pet-unificado.css">
           </a>
           <% } %>
         </div>
+        <% if (ehDono) { %>
+        <p class="text-center text-xs text-slate-500 mt-3 px-2 leading-snug">
+          <a href="/pets/<%= pet.id %>" class="font-semibold text-primary-600 hover:underline">Painel do tutor</a>
+          <span class="text-slate-400"> — </span>
+          abre a página do pet com a barra inferior (Saúde, Editar, Perdido / Encontrado), mapa de scans e opções rápidas.
+        </p>
+        <% } %>
       </div>
 
       <div class="pp-name-block">

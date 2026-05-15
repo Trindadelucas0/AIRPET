@@ -21,6 +21,7 @@
  *   - logger: registro de eventos e erros
  */
 
+const { sameNumericId } = require('../utils/sameNumericId');
 const Pet = require('../models/Pet');
 const PetPerdido = require('../models/PetPerdido');
 const Vacina = require('../models/Vacina');
@@ -162,8 +163,10 @@ const petController = {
   },
 
   /**
-   * Exibe o perfil completo de um pet.
-   * Rota: GET /pets/:id
+   * Exibe o perfil completo de um pet (painel do tutor: barra inferior Saúde |
+   * Editar | Perdido quando ehDono).
+   * Rota: GET /pets/:id — donos chegam aqui; visitantes com /pets/:id numerico
+   * sao redirecionados a /p/:slug antes do mount (ver routes/index.js).
    *
    * Verifica se o pet existe e se pertence ao usuário logado.
    * Pets de outros tutores podem ser visualizados com dados limitados
@@ -189,7 +192,7 @@ const petController = {
        * Verifica se o usuário logado é o dono do pet.
        * Essa flag é usada na view para mostrar/esconder botões de edição.
        */
-      const ehDono = req.session.usuario && pet.usuario_id === req.session.usuario.id;
+      const ehDono = !!(req.session.usuario && sameNumericId(pet.usuario_id, req.session.usuario.id));
 
       let idadePet = null;
       if (pet.data_nascimento) {
@@ -278,7 +281,7 @@ const petController = {
       if (ehDono) {
         [scans, tags, fotosRecebidas, alertaAtivo] = await Promise.all([
           TagScan.listarHistoricoPorPet(id, 40),
-          NfcTag.buscarPorUsuario(req.session.usuario.id).then(lista => lista.filter(t => t.pet_id === parseInt(id, 10))),
+          NfcTag.buscarPorUsuario(req.session.usuario.id).then((lista) => lista.filter((t) => sameNumericId(t.pet_id, id))),
           Localizacao.buscarComFotosPorPet(id, 20),
           PetPerdido.buscarAtivoPorPet(id),
         ]);
@@ -343,7 +346,7 @@ const petController = {
       }
 
       /* Apenas o dono pode editar */
-      if (pet.usuario_id !== req.session.usuario.id) {
+      if (!sameNumericId(pet.usuario_id, req.session.usuario.id)) {
         req.session.flash = { tipo: 'erro', mensagem: 'Você não tem permissão para editar este pet.' };
         return res.redirect('/pets');
       }
@@ -380,7 +383,7 @@ const petController = {
       }
 
       /* Verifica se o usuário logado é o dono do pet */
-      if (pet.usuario_id !== req.session.usuario.id) {
+      if (!sameNumericId(pet.usuario_id, req.session.usuario.id)) {
         req.session.flash = { tipo: 'erro', mensagem: 'Você não tem permissão para editar este pet.' };
         return res.redirect('/pets');
       }
@@ -480,7 +483,7 @@ const petController = {
       }
 
       /* Apenas o dono pode visualizar dados de saúde */
-      if (pet.usuario_id !== req.session.usuario.id) {
+      if (!sameNumericId(pet.usuario_id, req.session.usuario.id)) {
         req.session.flash = { tipo: 'erro', mensagem: 'Você não tem permissão para ver a saúde deste pet.' };
         return res.redirect('/pets');
       }
@@ -524,7 +527,7 @@ const petController = {
         return res.redirect('/pets');
       }
 
-      if (pet.usuario_id !== req.session.usuario.id) {
+      if (!sameNumericId(pet.usuario_id, req.session.usuario.id)) {
         req.session.flash = { tipo: 'erro', mensagem: 'Você não tem permissão para vincular tags a este pet.' };
         return res.redirect('/pets');
       }
@@ -563,7 +566,7 @@ const petController = {
         return res.redirect('/pets');
       }
 
-      if (pet.usuario_id !== usuarioId) {
+      if (!sameNumericId(pet.usuario_id, usuarioId)) {
         req.session.flash = { tipo: 'erro', mensagem: 'Você não tem permissão para vincular tags a este pet.' };
         return res.redirect('/pets');
       }
@@ -580,7 +583,7 @@ const petController = {
         return res.redirect(`/pets/${id}/vincular-tag`);
       }
 
-      if (tag.user_id && tag.user_id !== usuarioId) {
+      if (tag.user_id && !sameNumericId(tag.user_id, usuarioId)) {
         req.session.flash = { tipo: 'erro', mensagem: 'Esta tag já está reservada para outra conta.' };
         return res.redirect(`/pets/${id}/vincular-tag`);
       }
@@ -666,7 +669,7 @@ const petController = {
         req.session.flash = { tipo: 'erro', mensagem: 'Pet não encontrado.' };
         return res.redirect('/pets');
       }
-      const ehDono = req.session.usuario && pet.usuario_id === req.session.usuario.id;
+      const ehDono = !!(req.session.usuario && sameNumericId(pet.usuario_id, req.session.usuario.id));
       if (!ehDono) {
         req.session.flash = { tipo: 'erro', mensagem: 'Acesso restrito ao dono do pet.' };
         return res.redirect(`/pets/${id}`);
@@ -695,7 +698,7 @@ const petController = {
       const pet = await Pet.buscarPorId(id);
 
       if (!pet) return res.status(404).json({ sucesso: false, mensagem: 'Pet não encontrado.' });
-      if (pet.usuario_id !== usuarioId) return res.status(403).json({ sucesso: false, mensagem: 'Sem permissão.' });
+      if (!sameNumericId(pet.usuario_id, usuarioId)) return res.status(403).json({ sucesso: false, mensagem: 'Sem permissão.' });
 
       if (pet.status === 'perdido') {
         const alerta = await PetPerdido.buscarAtivoPorPet(id);
@@ -752,10 +755,10 @@ const petController = {
       const usuarioId = req.session.usuario.id;
 
       const pet = await Pet.buscarPorId(id);
-      if (!pet || pet.usuario_id !== usuarioId) return res.status(403).json({ sucesso: false, mensagem: 'Sem permissão.' });
+      if (!pet || !sameNumericId(pet.usuario_id, usuarioId)) return res.status(403).json({ sucesso: false, mensagem: 'Sem permissão.' });
 
       const tag = await NfcTag.buscarPorId(tagId);
-      if (!tag || tag.user_id !== usuarioId) return res.status(404).json({ sucesso: false, mensagem: 'Tag não encontrada.' });
+      if (!tag || !sameNumericId(tag.user_id, usuarioId)) return res.status(404).json({ sucesso: false, mensagem: 'Tag não encontrada.' });
 
       let tagAtualizada;
       if (tag.status === 'blocked') {
@@ -802,7 +805,7 @@ const petController = {
       const usuarioId = req.session.usuario.id;
       const pet = await Pet.buscarPorId(id);
       if (!pet) return res.status(404).json({ sucesso: false, mensagem: 'Pet não encontrado.' });
-      if (pet.usuario_id === usuarioId) return res.status(400).json({ sucesso: false, mensagem: 'Você não pode seguir seu próprio pet.' });
+      if (sameNumericId(pet.usuario_id, usuarioId)) return res.status(400).json({ sucesso: false, mensagem: 'Você não pode seguir seu próprio pet.' });
 
       const jaSeguindo = await SeguidorPet.estaSeguindo(usuarioId, id);
       if (jaSeguindo) {
@@ -830,7 +833,7 @@ const petController = {
       const { id } = req.params;
       const pet = await Pet.buscarPorId(id);
       if (!pet) return res.status(404).json({ sucesso: false, mensagem: 'Pet não encontrado.' });
-      if (pet.usuario_id !== req.session.usuario.id) {
+      if (!sameNumericId(pet.usuario_id, req.session.usuario.id)) {
         return res.status(403).json({ sucesso: false, mensagem: 'Sem permissão.' });
       }
       const mapaPrivacidadeService = require('../services/mapaPrivacidadeService');

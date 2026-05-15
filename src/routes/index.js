@@ -4,7 +4,8 @@ const { performance } = require('node:perf_hooks');
 const path = require('path');
 const multer = require('multer');
 
-const { estaAutenticado, estaAutenticadoAPI } = require('../middlewares/authMiddleware');
+const { estaAutenticado, estaAutenticadoAPI, obterUsuarioIdSessaoOuJwtCookie } = require('../middlewares/authMiddleware');
+const { sameNumericId } = require('../utils/sameNumericId');
 const { limiterGeral } = require('../middlewares/rateLimiter');
 const { persistFields, persistSingle } = require('../middlewares/persistUploadMiddleware');
 
@@ -153,6 +154,10 @@ router.get('/planos', (req, res) => res.redirect(302, '/tags/planos'));
 // nas respectivas rotas, para que o redirect rode tambem para visitantes
 // anonimos (caso contrario o middleware mandaria para a tela de login).
 //
+// Excecao: GET /pets/:id com :id so digitos — se o utilizador autenticado
+// (sessao ou JWT cookie) for o dono do pet, chama-se next() para o mount
+// /pets + petController.mostrarPerfil (pets/perfil.ejs com barra inferior).
+//
 // Express 5 / path-to-regexp v8 nao suporta mais a sintaxe :id(\d+).
 // Validamos o formato numerico no handler e devolvemos next() para deixar
 // rotas como /pets/123/editar caminhem normalmente para petRoutes.
@@ -170,9 +175,32 @@ router.delete('/h/:slug/seguir', estaAutenticadoAPI, hashtagController.deixarDeS
 
 function redirectPetParaSlug(req, res, next) {
   if (!/^\d+$/.test(req.params.id)) return next();
-  return petPublicController.redirecionarPorId(req, res, next);
+  return petPublicController.redirecionarPorId(req, res);
 }
-router.get('/pets/:id', redirectPetParaSlug);
+
+/** Dono do pet pode ver GET /pets/:id (painel tutor); outros caem no 301 para /p/:slug. */
+async function redirectPetsIdParaSlugSeNaoForDono(req, res, next) {
+  try {
+    if (!/^\d+$/.test(req.params.id)) return next();
+    const uid = obterUsuarioIdSessaoOuJwtCookie(req);
+    if (uid != null) {
+      try {
+        const id = parseInt(req.params.id, 10);
+        if (Number.isFinite(id)) {
+          const pet = await Pet.buscarPorId(id);
+          if (pet && sameNumericId(pet.usuario_id, uid)) return next();
+        }
+      } catch (_) {
+        /* redirect abaixo */
+      }
+    }
+    return await petPublicController.redirecionarPorId(req, res);
+  } catch (err) {
+    return next(err);
+  }
+}
+
+router.get('/pets/:id', redirectPetsIdParaSlugSeNaoForDono);
 router.get('/explorar/pet/:id', redirectPetParaSlug);
 
 // Rotas públicas

@@ -262,7 +262,20 @@ async function estaAutenticadoAPI(req, res, next) {
   }
 }
 
+/**
+ * ID do usuario para checks leves antes de `estaAutenticado` (ex.: GET /pets/:id
+ * antes do mount `/pets` — sessao ou JWT no cookie, sem ir a BD).
+ */
+function obterUsuarioIdSessaoOuJwtCookie(req) {
+  if (req.session && req.session.usuario && req.session.usuario.id != null) {
+    return req.session.usuario.id;
+  }
+  const dadosJWT = verificarTokenJWT(req);
+  return dadosJWT && dadosJWT.id != null ? dadosJWT.id : null;
+}
+
 module.exports = {
   estaAutenticado,
   estaAutenticadoAPI,
+  obterUsuarioIdSessaoOuJwtCookie,
 };
