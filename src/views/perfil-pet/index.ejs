@@ -12,8 +12,7 @@
  *   calendarioSaude, tagsAtivas, tagsHistorico, scans, alertaAtivo,
  *   idadePet, totalCurtidasAgregado, canonicalUrl
  *
- * Atalho «Perdi meu pet»: /perdidos/<id>/formulario (dono, pet seguro).
- * Atalho «Encontrado»: /perdidos/<id>/encontrado (dono, pet perdido).
+ * Reportar perdido / encontrado: aba Scans (?tab=scans) — CTA principal.
  * Painel do tutor: GET /pets/<id> — ver redirect em routes/index.js.
  */
 var abas = [
@@ -71,15 +70,6 @@ locals.extraHead = '<link rel="stylesheet" href="/css/perfil-pet-unificado.css">
               <span><%= estaSeguindo ? 'Seguindo' : 'Seguir' %></span>
             </button>
           <% } else { %>
-            <% if (pet.status === 'perdido') { %>
-            <a href="/perdidos/<%= pet.id %>/encontrado" class="pp-btn pp-btn--success-outline pp-btn--block">
-              <i class="fa-solid fa-check-circle"></i> Marcar como encontrado
-            </a>
-            <% } else { %>
-            <a href="/perdidos/<%= pet.id %>/formulario" class="pp-btn pp-btn--danger-outline pp-btn--block">
-              <i class="fa-solid fa-triangle-exclamation"></i> Perdi meu pet
-            </a>
-            <% } %>
             <a href="/pets/<%= pet.id %>/editar" class="pp-btn pp-btn--secondary">
               <i class="fa-solid fa-pen"></i> Editar pet
             </a>
@@ -184,7 +174,7 @@ locals.extraHead = '<link rel="stylesheet" href="/css/perfil-pet-unificado.css">
         if (!aba.sempre && !ehDono) return;
         var url = '/p/' + pet.slug + (aba.id === 'posts' ? '' : '?tab=' + aba.id);
       %>
-        <a href="<%= url %>" class="pp-tab <%= abaAtual === aba.id ? 'pp-tab--active' : '' %>" data-tab="<%= aba.id %>">
+        <a href="<%= url %>" class="pp-tab <%= abaAtual === aba.id ? 'pp-tab--active' : '' %><%= (aba.id === 'scans' && ehDono && pet.status !== 'perdido') ? ' pp-tab--hint' : '' %>" data-tab="<%= aba.id %>">
           <i class="fa-solid <%= aba.icone %>"></i> <span><%= aba.label %></span>
         </a>
       <% }); %>

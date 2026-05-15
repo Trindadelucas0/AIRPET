@@ -1,48 +1,40 @@
 <% locals.titulo = 'Reportar ' + pet.nome + ' como Perdido' %>
+<% var returnTo = (typeof returnTo !== 'undefined' && returnTo) ? returnTo : (pet.slug ? '/p/' + pet.slug + '?tab=scans' : '/pets/' + pet.id); %>
+<% var scanLat = (typeof ultimoScan !== 'undefined' && ultimoScan && ultimoScan.latitude != null) ? ultimoScan.latitude : null; %>
+<% var scanLng = (typeof ultimoScan !== 'undefined' && ultimoScan && ultimoScan.longitude != null) ? ultimoScan.longitude : null; %>
 <% locals.extraHead = `
-<link href="https://fonts.googleapis.com/css2?family=Rubik+Doodle+Shadow&family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/design-system.css">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
-  :root{--border:#e5e7eb;--border-hover:#cbd5e1;--text:#111827;--text-dim:#6b7280;--text-muted:#9ca3af;--accent:var(--color-primary);--red:#ef4444;--green:#16a34a;--blue:#2563eb;}
   body{font-family:'DM Sans',sans-serif;}
   .form-wrap{max-width:560px;margin:0 auto;padding:24px 20px 80px;}
-  .page-topbar{position:sticky;top:56px;z-index:40;background:rgba(255,255,255,0.92);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:12px 0;}
+  .page-topbar{position:sticky;top:56px;z-index:40;background:rgba(255,255,255,0.92);backdrop-filter:blur(20px);border-bottom:1px solid #e5e7eb;padding:12px 0;}
   .topbar-inner{max-width:560px;margin:0 auto;padding:0 20px;display:flex;align-items:center;gap:12px;}
-  .back-link{color:var(--text-dim);font-size:13px;text-decoration:none;display:flex;align-items:center;gap:6px;transition:color 0.15s;}
-  .back-link:hover{color:var(--accent);text-decoration:none;}
-  .page-title{font-family:var(--font-display);font-size:18px;font-weight:800;color:var(--text);}
-  /* Alert hero */
+  .back-link{color:#6b7280;font-size:13px;text-decoration:none;display:flex;align-items:center;gap:6px;}
+  .back-link:hover{color:var(--color-primary);text-decoration:none;}
+  .page-title{font-family:var(--font-display);font-size:18px;font-weight:800;color:#111827;}
   .alert-hero{background:#fff1f2;border:1px solid #fecdd3;border-radius:18px;padding:20px;display:flex;align-items:center;gap:16px;margin-bottom:16px;}
-  .alert-hero-avatar{width:56px;height:56px;border-radius:16px;object-fit:cover;border:2px solid rgba(239,68,68,0.4);flex-shrink:0;}
-  .alert-hero-init{width:56px;height:56px;border-radius:16px;background:rgba(239,68,68,0.1);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;}
-  .alert-hero-name{font-family:var(--font-display);font-size:18px;font-weight:800;color:var(--text);}
-  .alert-hero-sub{font-size:12px;color:var(--text-dim);}
-  /* Section */
-  .section-card{background:#fff;border:1px solid var(--border);border-radius:18px;padding:22px;margin-bottom:14px;}
-  .section-title{font-family:var(--font-display);font-size:13px;font-weight:700;color:var(--text-dim);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:16px;display:flex;align-items:center;gap:8px;}
-  .section-icon{width:26px;height:26px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:11px;}
-  .si-red{background:rgba(239,68,68,0.1);color:var(--red);}
-  .si-blue{background:rgba(96,165,250,0.1);color:var(--blue);}
-  .si-accent{background:var(--accent-glow);color:var(--accent);}
-  /* Loc option */
-  .loc-option{display:flex;align-items:center;gap:12px;padding:14px 16px;border:2px solid var(--border);border-radius:12px;cursor:pointer;transition:all 0.15s;margin-bottom:8px;}
-  .loc-option:hover{border-color:var(--border-hover);}
-  .loc-option.active{border-color:var(--accent);background:var(--accent-glow);}
+  .alert-hero-avatar{width:56px;height:56px;border-radius:16px;object-fit:cover;border:2px solid rgba(239,68,68,0.4);}
+  .alert-hero-init{width:56px;height:56px;border-radius:16px;background:rgba(239,68,68,0.1);display:flex;align-items:center;justify-content:center;font-size:22px;}
+  .alert-hero-name{font-family:var(--font-display);font-size:18px;font-weight:800;}
+  .alert-hero-sub{font-size:12px;color:#6b7280;}
+  .loc-option{display:flex;align-items:center;gap:12px;padding:14px 16px;border:2px solid #e5e7eb;border-radius:12px;cursor:pointer;margin-bottom:8px;}
+  .loc-option:hover{border-color:#cbd5e1;}
+  .loc-option.active{border-color:var(--color-primary);background:var(--accent-glow, rgba(236,90,28,0.08));}
   .loc-option-icon{width:40px;height:40px;border-radius:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-  .loc-option-name{font-size:14px;font-weight:700;color:var(--text);}
-  .loc-option-sub{font-size:11px;color:var(--text-dim);}
-  /* Input */
-  .ds-input{width:100%;background:#fff;border:1px solid var(--border);border-radius:10px;padding:11px 14px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;outline:none;transition:border-color 0.2s,box-shadow 0.2s;}
-  .ds-input::placeholder{color:var(--text-muted);}
-  .ds-input:focus{border-color:rgba(242,96,32,0.5);box-shadow:0 0 0 3px rgba(242,96,32,0.06);}
-  .ds-label{display:block;font-size:11px;font-weight:700;color:var(--text-dim);letter-spacing:0.07em;text-transform:uppercase;margin-bottom:6px;}
-  .field-group{margin-bottom:14px;}
-  #mapaPerdido{height:260px;border-radius:12px;overflow:hidden;filter:brightness(0.85) saturate(0.7);}
-  .search-results{background:#fff;border:1px solid var(--border);border-radius:10px;max-height:200px;overflow-y:auto;}
-  .search-result-item{padding:10px 14px;font-size:13px;cursor:pointer;color:var(--text);transition:background 0.1s;}
+  .loc-option-name{font-size:14px;font-weight:700;}
+  .loc-option-sub{font-size:11px;color:#6b7280;}
+  #mapaPerdido{height:260px;border-radius:12px;overflow:hidden;}
+  #mapaPerdidoWrap.hidden,#buscaWrap.hidden{display:none!important;}
+  .air-wizard-step-card:not(.hidden){position:relative;z-index:1;}
+  #mapaPerdidoWrap .leaflet-container{z-index:1;}
+  .search-results{background:#fff;border:1px solid #e5e7eb;border-radius:10px;max-height:200px;overflow-y:auto;}
+  .search-result-item{padding:10px 14px;font-size:13px;cursor:pointer;}
   .search-result-item:hover{background:#f3f4f6;}
-  .btn-submit{width:100%;padding:14px;background:var(--red);color:#fff;border:none;border-radius:12px;font-family:'DM Sans',sans-serif;font-size:16px;font-weight:700;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:8px;}
-  .btn-submit:hover{background:#dc2626;transform:translateY(-1px);}
+  .local-ok{margin-top:10px;padding:10px 14px;background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);border-radius:10px;font-size:13px;color:#16a34a;}
+  .wizard-review{background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:14px;font-size:13px;line-height:1.55;color:#334155;white-space:pre-wrap;}
+  .air-wizard-inline-error.perdido-step-error{display:block;margin-top:8px;}
 </style>
 ` %>
 <%- include('../partials/header') %>
@@ -50,15 +42,13 @@
 
 <div class="page-topbar">
   <div class="topbar-inner">
-    <a href="/pets/<%= pet.id %>" class="back-link"><i class="fa-solid fa-arrow-left"></i> <%= pet.nome %></a>
-    <span class="page-title">Reportar como perdido</span>
+    <a href="<%= returnTo %>" class="back-link"><i class="fa-solid fa-arrow-left"></i> Voltar</a>
+    <span class="page-title">Alerta de pet perdido</span>
   </div>
 </div>
 
 <main class="flex-1">
   <div class="form-wrap">
-
-    <!-- Pet hero -->
     <div class="alert-hero">
       <span class="pet-photo-wrap" style="display:inline-flex;">
         <% if (pet.foto) { %>
@@ -70,7 +60,7 @@
       </span>
       <div>
         <div class="alert-hero-name"><%= pet.nome %></div>
-        <div class="alert-hero-sub"><%= pet.tipo ? pet.tipo.charAt(0).toUpperCase()+pet.tipo.slice(1) : 'Pet' %> · <%= pet.raca || 'Sem raça' %></div>
+        <div class="alert-hero-sub"><%= pet.tipo ? pet.tipo.charAt(0).toUpperCase()+pet.tipo.slice(1) : 'Pet' %> · <%= pet.raca || 'Sem raca' %></div>
       </div>
     </div>
 
@@ -78,150 +68,378 @@
       <input type="hidden" name="latitude" id="latInput">
       <input type="hidden" name="longitude" id="lngInput">
       <input type="hidden" name="local_descricao" id="localDescInput">
+      <input type="hidden" name="return_to" value="<%= returnTo %>">
+      <textarea name="descricao" id="descricaoFinal" class="hidden" aria-hidden="true"></textarea>
 
-      <!-- Localização -->
-      <div class="section-card">
-        <div class="section-title"><div class="section-icon si-red"><i class="fa-solid fa-location-dot"></i></div>Última localização conhecida</div>
+      <div id="wizardPerdidoRoot" data-wizard-root>
+        <%- include('../partials/wizard-shell', {
+          shellId: 'wizardPerdidoShell',
+          badge: 'Protecao AIRPET',
+          title: 'Vamos montar o alerta',
+          subtitle: 'Quanto mais detalhes, mais facil alguem reconhecer ' + pet.nome + '.',
+          totalSteps: 5,
+          currentStep: 1,
+          stepLabelId: 'wizardPerdidoStepLabel',
+          stepPercentId: 'wizardPerdidoStepPercent',
+          progressBarId: 'wizardPerdidoProgressBar'
+        }) %>
 
-        <% if (typeof ultimoScan !== 'undefined' && ultimoScan && ultimoScan.latitude && ultimoScan.longitude) { %>
-          <div class="loc-option" id="optScan" onclick="usarUltimoScan()">
-            <div class="loc-option-icon" style="background:rgba(96,165,250,0.1);"><i class="fa-solid fa-satellite-dish" style="color:var(--blue);"></i></div>
-            <div>
-              <div class="loc-option-name">Último scan da tag NFC</div>
-              <div class="loc-option-sub"><% var dtScan = new Date(ultimoScan.data); %><%= dtScan.toLocaleDateString('pt-BR') %> às <%= dtScan.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}) %></div>
+        <section class="air-wizard-step-card" data-wizard-step data-step="1">
+          <div class="air-wizard-step-grid">
+            <h3 class="air-wizard-step-title">1) Quando <%= pet.nome %> sumiu?</h3>
+            <p class="air-wizard-step-helper">Use a data e hora mais proximas do desaparecimento.</p>
+            <div class="air-field-group">
+              <label class="air-field-label" for="dataDesaparecimento">Data e hora *</label>
+              <input type="datetime-local" name="data_hora_desaparecimento" id="dataDesaparecimento" required class="input-field w-full" max="">
             </div>
           </div>
-        <% } %>
-
-        <div class="loc-option" id="optMapa" onclick="usarMapa()">
-          <div class="loc-option-icon" style="background:var(--accent-glow);"><i class="fa-solid fa-map-location-dot" style="color:var(--accent);"></i></div>
-          <div>
-            <div class="loc-option-name">Marcar no mapa</div>
-            <div class="loc-option-sub">Toque no mapa para indicar o local</div>
+          <div class="air-wizard-nav">
+            <button type="button" class="btn-primary" data-wizard-next>Continuar</button>
           </div>
-        </div>
+        </section>
 
-        <div class="loc-option" id="optBusca" onclick="usarBusca()">
-          <div class="loc-option-icon" style="background:rgba(34,197,94,0.1);"><i class="fa-solid fa-magnifying-glass-location" style="color:var(--green);"></i></div>
-          <div>
-            <div class="loc-option-name">Buscar endereço</div>
-            <div class="loc-option-sub">Digite um endereço para localizar</div>
+        <section class="air-wizard-step-card hidden" data-wizard-step data-step="2">
+          <div class="air-wizard-step-grid">
+            <h3 class="air-wizard-step-title">2) Ultima localizacao conhecida</h3>
+            <p class="air-wizard-step-helper">Obrigatorio para publicar o alerta no mapa.</p>
+            <% if (scanLat != null && scanLng != null) { %>
+            <button type="button" class="loc-option" id="optScan">
+              <div class="loc-option-icon" style="background:rgba(96,165,250,0.1);"><i class="fa-solid fa-satellite-dish" style="color:#2563eb;"></i></div>
+              <div>
+                <div class="loc-option-name">Ultimo scan da tag NFC</div>
+                <div class="loc-option-sub"><% if (ultimoScan && ultimoScan.data) { var dtScan = new Date(ultimoScan.data); %><%= dtScan.toLocaleDateString('pt-BR') %> as <%= dtScan.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}) %><% } else { %>Leitura recente<% } %></div>
+              </div>
+            </button>
+            <% } %>
+            <button type="button" class="loc-option" id="optMapa">
+              <div class="loc-option-icon" style="background:var(--accent-glow);"><i class="fa-solid fa-map-location-dot" style="color:var(--color-primary);"></i></div>
+              <div><div class="loc-option-name">Marcar no mapa</div><div class="loc-option-sub">Toque no mapa</div></div>
+            </button>
+            <button type="button" class="loc-option" id="optBusca">
+              <div class="loc-option-icon" style="background:rgba(34,197,94,0.1);"><i class="fa-solid fa-magnifying-glass-location" style="color:#16a34a;"></i></div>
+              <div><div class="loc-option-name">Buscar endereco</div><div class="loc-option-sub">Digite rua ou bairro</div></div>
+            </button>
+            <div id="mapaPerdidoWrap" class="hidden" style="margin-top:12px;"><div id="mapaPerdido"></div></div>
+            <div id="buscaWrap" class="hidden" style="margin-top:12px;">
+              <input type="text" id="buscaEndereco" class="input-field w-full" placeholder="Endereco ou bairro...">
+              <div id="searchResults" class="search-results hidden" style="margin-top:4px;"></div>
+            </div>
+            <div id="localSelecionado" class="local-ok hidden"><i class="fa-solid fa-check-circle"></i> <span id="localSelecionadoText"></span></div>
+            <p id="locStepError" class="air-wizard-inline-error perdido-step-error hidden">Selecione uma localizacao para continuar.</p>
           </div>
-        </div>
+          <div class="air-wizard-nav">
+            <button type="button" class="btn-primary" data-wizard-next>Continuar</button>
+            <button type="button" class="btn-ghost" data-wizard-prev>Voltar</button>
+          </div>
+        </section>
 
-        <div id="mapaPerdidoWrap" class="hidden" style="margin-top:12px;">
-          <div id="mapaPerdido"></div>
-        </div>
-        <div id="buscaWrap" class="hidden" style="margin-top:12px;">
-          <input type="text" id="buscaEndereco" class="ds-input" placeholder="Digite o endereço ou bairro...">
-          <div id="searchResults" class="search-results hidden" style="margin-top:4px;"></div>
-        </div>
-        <div id="localSelecionado" class="hidden" style="margin-top:10px;padding:10px 14px;background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);border-radius:10px;font-size:13px;color:var(--green);display:flex;align-items:center;gap:8px;">
-          <i class="fa-solid fa-check-circle"></i>
-          <span id="localSelecionadoText"></span>
-        </div>
+        <section class="air-wizard-step-card hidden" data-wizard-step data-step="3">
+          <div class="air-wizard-step-grid">
+            <h3 class="air-wizard-step-title">3) Como estava <%= pet.nome %>?</h3>
+            <p class="air-wizard-step-helper">Toque nas opcoes que se aplicam.</p>
+            <div class="air-wizard-chip-group" data-chip-group="aparencia">
+              <button type="button" class="air-wizard-chip" data-chip-value="Com coleira" aria-pressed="false">Com coleira</button>
+              <button type="button" class="air-wizard-chip" data-chip-value="Sem coleira" aria-pressed="false">Sem coleira</button>
+              <button type="button" class="air-wizard-chip" data-chip-value="Com roupa/peitoral" aria-pressed="false">Com roupa/peitoral</button>
+              <button type="button" class="air-wizard-chip" data-chip-value="Medo de estranhos" aria-pressed="false">Medo de estranhos</button>
+              <button type="button" class="air-wizard-chip" data-chip-value="Foge se assustar" aria-pressed="false">Foge se assustar</button>
+            </div>
+            <div class="air-field-group">
+              <label class="air-field-label" for="aparenciaExtra">Mais detalhes (opcional)</label>
+              <textarea id="aparenciaExtra" class="input-field w-full" rows="2" maxlength="400" placeholder="Cor da coleira, manchas, porte..."></textarea>
+            </div>
+            <p id="aparenciaStepError" class="air-wizard-inline-error perdido-step-error hidden">Escolha ao menos uma opcao ou descreva como estava.</p>
+          </div>
+          <div class="air-wizard-nav">
+            <button type="button" class="btn-primary" data-wizard-next>Continuar</button>
+            <button type="button" class="btn-ghost" data-wizard-prev>Voltar</button>
+          </div>
+        </section>
+
+        <section class="air-wizard-step-card hidden" data-wizard-step data-step="4">
+          <div class="air-wizard-step-grid">
+            <h3 class="air-wizard-step-title">4) O que aconteceu?</h3>
+            <p class="air-wizard-step-helper">Ajuda quem encontrar a entender o contexto.</p>
+            <div class="air-wizard-chip-group" data-chip-group="circunstancia">
+              <button type="button" class="air-wizard-chip" data-chip-value="Fugiu no passeio" aria-pressed="false">Fugiu no passeio</button>
+              <button type="button" class="air-wizard-chip" data-chip-value="Portao/cerca aberta" aria-pressed="false">Portao/cerca aberta</button>
+              <button type="button" class="air-wizard-chip" data-chip-value="Assustou com barulho" aria-pressed="false">Assustou com barulho</button>
+              <button type="button" class="air-wizard-chip" data-chip-value="Saiu de casa" aria-pressed="false">Saiu de casa</button>
+            </div>
+            <div class="air-field-group">
+              <label class="air-field-label" for="ondeEstava">Onde estava antes? (opcional)</label>
+              <input type="text" id="ondeEstava" class="input-field w-full" maxlength="200" placeholder="Ex: perto do parque, na garagem...">
+            </div>
+          </div>
+          <div class="air-wizard-nav">
+            <button type="button" class="btn-primary" data-wizard-next>Continuar</button>
+            <button type="button" class="btn-ghost" data-wizard-prev>Voltar</button>
+          </div>
+        </section>
+
+        <section class="air-wizard-step-card hidden" data-wizard-step data-step="5">
+          <div class="air-wizard-step-grid">
+            <h3 class="air-wizard-step-title">5) Revisao e envio</h3>
+            <p class="air-wizard-step-helper">Confira antes de enviar para analise da equipe AIRPET.</p>
+            <div id="wizardReview" class="wizard-review"></div>
+            <div class="air-field-group" style="margin-top:14px;">
+              <label class="air-field-label" for="recompensaInput">Recompensa (opcional)</label>
+              <input type="text" name="recompensa" id="recompensaInput" class="input-field w-full" maxlength="60" placeholder="Ex: R$ 200, Pix...">
+            </div>
+          </div>
+          <div class="air-wizard-nav">
+            <button type="submit" class="btn-primary" id="btnSubmitPerdido">
+              <i class="fa-solid fa-triangle-exclamation"></i> Reportar como perdido
+            </button>
+            <button type="button" class="btn-ghost" data-wizard-prev>Voltar</button>
+          </div>
+        </section>
       </div>
-
-      <!-- Observações -->
-      <div class="section-card">
-        <div class="section-title"><div class="section-icon si-accent"><i class="fa-solid fa-file-lines"></i></div>Detalhes</div>
-        <div class="field-group">
-          <label class="ds-label">Descrição</label>
-          <textarea name="descricao" class="ds-input" rows="3" style="resize:none;" placeholder="Como estava usando? Sinais particulares? Qualquer detalhe ajuda..." maxlength="500"></textarea>
-        </div>
-        <div class="field-group" style="margin-bottom:0">
-          <label class="ds-label">Recompensa (opcional)</label>
-          <input type="text" name="recompensa" class="ds-input" placeholder="Ex: R$200, Pix, etc. (opcional)" maxlength="60">
-        </div>
-      </div>
-
-      <button type="submit" class="btn-submit">
-        <i class="fa-solid fa-triangle-exclamation"></i> Reportar como perdido
-      </button>
     </form>
   </div>
 </main>
 
 <% locals.extraScripts = `
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="/js/airpet-wizard.js"></script>
 <script>
-var mapa = null, marker = null;
-var optScan = document.getElementById('optScan');
-var optMapa = document.getElementById('optMapa');
-var optBusca = document.getElementById('optBusca');
+(function () {
+  var SCAN_LAT = ` + (scanLat != null ? scanLat : 'null') + `;
+  var SCAN_LNG = ` + (scanLng != null ? scanLng : 'null') + `;
+  var mapa = null, marker = null;
+  var optScan = document.getElementById('optScan');
+  var optMapa = document.getElementById('optMapa');
+  var optBusca = document.getElementById('optBusca');
 
-function clearActive() {
-  [optScan,optMapa,optBusca].filter(Boolean).forEach(function(el){ el.classList.remove('active'); });
-}
+  var dtInput = document.getElementById('dataDesaparecimento');
+  if (dtInput) {
+    var now = new Date();
+    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+    dtInput.max = now.toISOString().slice(0, 16);
+  }
 
-function setLocal(lat, lng, desc) {
-  document.getElementById('latInput').value = lat;
-  document.getElementById('lngInput').value = lng;
-  document.getElementById('localDescInput').value = desc || '';
-  var el = document.getElementById('localSelecionado');
-  el.classList.remove('hidden');
-  document.getElementById('localSelecionadoText').textContent = desc || lat+', '+lng;
-}
+  function clearLocActive() {
+    [optScan, optMapa, optBusca].filter(Boolean).forEach(function (el) { el.classList.remove('active'); });
+  }
 
-function usarUltimoScan() {
-  clearActive();
-  if (!optScan) return;
-  optScan.classList.add('active');
-  document.getElementById('mapaPerdidoWrap').classList.add('hidden');
-  document.getElementById('buscaWrap').classList.add('hidden');
-  var lat = ${ultimoScan?.latitude ?? null};
-  var lng = ${ultimoScan?.longitude ?? null};
-  if (lat == null || lng == null) return;
-  setLocal(lat, lng, 'Último scan da tag NFC');
-}
+  function setLocal(lat, lng, desc) {
+    document.getElementById('latInput').value = lat;
+    document.getElementById('lngInput').value = lng;
+    document.getElementById('localDescInput').value = desc || '';
+    var el = document.getElementById('localSelecionado');
+    el.classList.remove('hidden');
+    document.getElementById('localSelecionadoText').textContent = desc || (lat + ', ' + lng);
+    var err = document.getElementById('locStepError');
+    if (err) err.classList.add('hidden');
+  }
 
-function usarMapa() {
-  clearActive(); optMapa.classList.add('active');
-  document.getElementById('buscaWrap').classList.add('hidden');
-  var wrap = document.getElementById('mapaPerdidoWrap');
-  wrap.classList.remove('hidden');
-  if (!mapa) {
-    mapa = L.map('mapaPerdido').setView([-15.78,-47.93],13);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OSM'}).addTo(mapa);
-    mapa.on('click', function(e) {
-      var ll = e.latlng;
-      if (marker) marker.setLatLng(ll);
-      else marker = L.marker(ll).addTo(mapa);
-      setLocal(ll.lat.toFixed(6), ll.lng.toFixed(6), 'Marcado no mapa');
+  function hasLocal() {
+    var lat = document.getElementById('latInput').value;
+    var lng = document.getElementById('lngInput').value;
+    return lat && lng && !isNaN(parseFloat(lat)) && !isNaN(parseFloat(lng));
+  }
+
+  if (optScan) {
+    optScan.addEventListener('click', function () {
+      clearLocActive();
+      optScan.classList.add('active');
+      document.getElementById('mapaPerdidoWrap').classList.add('hidden');
+      document.getElementById('buscaWrap').classList.add('hidden');
+      if (SCAN_LAT == null || SCAN_LNG == null) return;
+      setLocal(SCAN_LAT, SCAN_LNG, 'Ultimo scan da tag NFC');
     });
-  } else { mapa.invalidateSize(); }
-}
+  }
+  if (optMapa) {
+    optMapa.addEventListener('click', function () {
+      clearLocActive();
+      optMapa.classList.add('active');
+      document.getElementById('buscaWrap').classList.add('hidden');
+      var wrap = document.getElementById('mapaPerdidoWrap');
+      wrap.classList.remove('hidden');
+      if (!mapa) {
+        mapa = L.map('mapaPerdido').setView([-15.78, -47.93], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OSM' }).addTo(mapa);
+        mapa.on('click', function (e) {
+          var ll = e.latlng;
+          if (marker) marker.setLatLng(ll);
+          else marker = L.marker(ll).addTo(mapa);
+          setLocal(ll.lat.toFixed(6), ll.lng.toFixed(6), 'Marcado no mapa');
+        });
+      } else {
+        setTimeout(function () { mapa.invalidateSize(); }, 100);
+      }
+    });
+  }
+  if (optBusca) {
+    optBusca.addEventListener('click', function () {
+      clearLocActive();
+      optBusca.classList.add('active');
+      document.getElementById('mapaPerdidoWrap').classList.add('hidden');
+      document.getElementById('buscaWrap').classList.remove('hidden');
+    });
+  }
 
-function usarBusca() {
-  clearActive(); optBusca.classList.add('active');
-  document.getElementById('mapaPerdidoWrap').classList.add('hidden');
-  document.getElementById('buscaWrap').classList.remove('hidden');
-}
+  var buscaTimer;
+  var buscaEl = document.getElementById('buscaEndereco');
+  if (buscaEl) {
+    buscaEl.addEventListener('input', function () {
+      clearTimeout(buscaTimer);
+      var q = this.value.trim();
+      if (q.length < 3) {
+        document.getElementById('searchResults').classList.add('hidden');
+        return;
+      }
+      buscaTimer = setTimeout(function () {
+        fetch('https://nominatim.openstreetmap.org/search?q=' + encodeURIComponent(q) + '&format=json&limit=4&accept-language=pt-BR')
+          .then(function (r) { return r.json(); })
+          .then(function (data) {
+            var el = document.getElementById('searchResults');
+            if (!data.length) { el.classList.add('hidden'); return; }
+            el.innerHTML = data.map(function (d) {
+              var label = d.display_name || '';
+              return '<div class="search-result-item" data-lat="' + d.lat + '" data-lng="' + d.lon + '" data-label="' + encodeURIComponent(label) + '">' + label + '</div>';
+            }).join('');
+            el.classList.remove('hidden');
+            el.querySelectorAll('.search-result-item').forEach(function (item) {
+              item.addEventListener('click', function () {
+                var rawLabel = item.getAttribute('data-label') || '';
+                try { rawLabel = decodeURIComponent(rawLabel); } catch (_) {}
+                setLocal(item.getAttribute('data-lat'), item.getAttribute('data-lng'), rawLabel);
+                document.getElementById('searchResults').classList.add('hidden');
+                buscaEl.value = rawLabel.split(',')[0];
+              });
+            });
+          });
+      }, 400);
+    });
+  }
 
-var buscaTimer;
-document.getElementById('buscaEndereco').addEventListener('input', function() {
-  clearTimeout(buscaTimer);
-  var q = this.value.trim();
-  if (q.length < 3) { document.getElementById('searchResults').classList.add('hidden'); return; }
-  buscaTimer = setTimeout(function() {
-    fetch('https://nominatim.openstreetmap.org/search?q='+encodeURIComponent(q)+'&format=json&limit=4&accept-language=pt-BR')
-      .then(function(r){ return r.json(); })
-      .then(function(data) {
-        var el = document.getElementById('searchResults');
-        if (!data.length) { el.classList.add('hidden'); return; }
-        el.innerHTML = data.map(function(d){
-          return '<div class="search-result-item" onclick="selecionarLocal('+d.lat+','+d.lon+',\\''+d.display_name.replace(/'/g,'')+'\\')">'+ d.display_name +'</div>';
-        }).join('');
-        el.classList.remove('hidden');
-      });
-  }, 400);
-});
+  function toggleWizardChip(chip) {
+    if (!chip) return;
+    var selected = chip.classList.toggle('is-selected');
+    chip.setAttribute('aria-pressed', selected ? 'true' : 'false');
+    var group = chip.closest('[data-chip-group]');
+    if (group && group.getAttribute('data-chip-group') === 'aparencia') {
+      var err = document.getElementById('aparenciaStepError');
+      if (err) err.classList.add('hidden');
+    }
+  }
 
-function selecionarLocal(lat, lng, desc) {
-  document.getElementById('searchResults').classList.add('hidden');
-  document.getElementById('buscaEndereco').value = desc.split(',')[0];
-  setLocal(lat, lng, desc.split(',').slice(0,2).join(','));
-}
+  function resetLocPanelsForStep(step) {
+    if (step === 2) return;
+    var mapWrap = document.getElementById('mapaPerdidoWrap');
+    var buscaWrap = document.getElementById('buscaWrap');
+    if (mapWrap) mapWrap.classList.add('hidden');
+    if (buscaWrap) buscaWrap.classList.add('hidden');
+  }
+
+  function chipsText(groupName) {
+    var group = document.querySelector('[data-chip-group="' + groupName + '"]');
+    if (!group) return '';
+    return Array.prototype.slice.call(group.querySelectorAll('.air-wizard-chip.is-selected'))
+      .map(function (c) { return c.getAttribute('data-chip-value'); })
+      .filter(Boolean)
+      .join(', ');
+  }
+
+  function buildDescricao() {
+    var parts = [];
+    var ap = chipsText('aparencia');
+    var extra = (document.getElementById('aparenciaExtra').value || '').trim();
+    if (ap || extra) {
+      parts.push('Aparencia: ' + [ap, extra].filter(Boolean).join('. '));
+    }
+    var circ = chipsText('circunstancia');
+    var onde = (document.getElementById('ondeEstava').value || '').trim();
+    if (circ || onde) {
+      parts.push('Circunstancias: ' + [circ, onde ? 'Onde estava: ' + onde : ''].filter(Boolean).join('. '));
+    }
+    var loc = document.getElementById('localDescInput').value;
+    if (loc) parts.push('Ultima localizacao: ' + loc);
+    return parts.join('\\n\\n') || 'Sem descricao fornecida.';
+  }
+
+  function updateReview() {
+    var dt = document.getElementById('dataDesaparecimento').value;
+    var lines = [];
+    if (dt) {
+      try {
+        lines.push('Quando sumiu: ' + new Date(dt).toLocaleString('pt-BR'));
+      } catch (_) {}
+    }
+    if (hasLocal()) {
+      lines.push('Local: ' + (document.getElementById('localDescInput').value || document.getElementById('latInput').value + ', ' + document.getElementById('lngInput').value));
+    }
+    lines.push('');
+    lines.push(buildDescricao());
+    var rec = (document.getElementById('recompensaInput').value || '').trim();
+    if (rec) lines.push('\\nRecompensa: ' + rec);
+    document.getElementById('wizardReview').textContent = lines.join('\\n');
+  }
+
+  var root = document.getElementById('wizardPerdidoRoot');
+  if (root) {
+    root.addEventListener('click', function (event) {
+      var chip = event.target.closest('.air-wizard-chip');
+      if (!chip || !root.contains(chip)) return;
+      event.preventDefault();
+      event.stopPropagation();
+      toggleWizardChip(chip);
+    });
+  }
+  if (root && window.AirpetWizard) {
+    new window.AirpetWizard(root, {
+      stepLabel: document.getElementById('wizardPerdidoStepLabel'),
+      stepPercent: document.getElementById('wizardPerdidoStepPercent'),
+      progressBar: document.getElementById('wizardPerdidoProgressBar'),
+      form: document.getElementById('formPerdido'),
+      customValidator: function (stepNumber) {
+        if (stepNumber === 1) {
+          var v = document.getElementById('dataDesaparecimento').value;
+          if (!v) return false;
+          var d = new Date(v);
+          if (Number.isNaN(d.getTime()) || d.getTime() > Date.now()) {
+            alert('Informe uma data e hora validas (no passado).');
+            return false;
+          }
+          return true;
+        }
+        if (stepNumber === 2) {
+          if (!hasLocal()) {
+            document.getElementById('locStepError').classList.remove('hidden');
+            return false;
+          }
+          return true;
+        }
+        if (stepNumber === 3) {
+          var ap = chipsText('aparencia');
+          var extra = (document.getElementById('aparenciaExtra').value || '').trim();
+          if (!ap && !extra) {
+            document.getElementById('aparenciaStepError').classList.remove('hidden');
+            return false;
+          }
+          return true;
+        }
+        if (stepNumber === 4) return true;
+        if (stepNumber === 5) {
+          updateReview();
+          document.getElementById('descricaoFinal').value = buildDescricao();
+          return true;
+        }
+        return true;
+      },
+      onStepChange: function (step) {
+        resetLocPanelsForStep(step);
+        if (step === 5) updateReview();
+        if (step === 2 && mapa) setTimeout(function () { mapa.invalidateSize(); }, 150);
+      }
+    });
+  }
+
+  document.getElementById('formPerdido').addEventListener('submit', function () {
+    document.getElementById('descricaoFinal').value = buildDescricao();
+  });
+})();
 </script>
 ` %>
 

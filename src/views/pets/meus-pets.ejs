@@ -180,15 +180,10 @@
               <a href="/p/<%= pet.slug || pet.id %>" class="pet-action-btn primary">
                 <i class="fa-solid fa-paw"></i> Ver perfil
               </a>
-              <% if (pet.status !== 'perdido') { %>
-              <a href="/perdidos/<%= pet.id %>/formulario" class="pet-action-btn alert" title="Reportar como perdido">
-                <i class="fa-solid fa-triangle-exclamation"></i> Perdido?
+              <a href="/p/<%= pet.slug || pet.id %>?tab=scans" class="pet-action-btn alert" title="<%= pet.status === 'perdido' ? 'Aba Scans — marcar encontrado' : 'Aba Scans — reportar perdido' %>">
+                <i class="fa-solid fa-<%= pet.status === 'perdido' ? 'check-circle' : 'triangle-exclamation' %>"></i>
+                <%= pet.status === 'perdido' ? 'Encontrado' : 'Perdido?' %>
               </a>
-              <% } else { %>
-              <a href="/perdidos/<%= pet.id %>/encontrado" class="pet-action-btn alert" title="Marcar como encontrado">
-                <i class="fa-solid fa-check-circle"></i> Encontrado
-              </a>
-              <% } %>
               <a href="/pets/<%= pet.id %>/editar" class="pet-action-btn ghost">
                 <i class="fa-solid fa-pen"></i>
               </a>

@@ -33,12 +33,14 @@ const validarNfcEncontrei = [
 const validarNfcEnviarFoto = [camposPermitidos([])];
 
 const validarPetPerdidoReportar = [
-  camposPermitidos(['descricao', 'latitude', 'longitude', 'local_descricao', 'recompensa', '_method']),
+  camposPermitidos(['descricao', 'latitude', 'longitude', 'local_descricao', 'recompensa', 'data_hora_desaparecimento', 'return_to', '_method']),
   body('descricao').optional({ checkFalsy: true }).trim().isLength({ max: 4000 }),
   body('latitude').optional({ checkFalsy: true }).trim().isLength({ max: 24 }),
   body('longitude').optional({ checkFalsy: true }).trim().isLength({ max: 24 }),
   body('local_descricao').optional({ checkFalsy: true }).trim().isLength({ max: 200 }),
   body('recompensa').optional({ checkFalsy: true }).trim().isLength({ max: 200 }),
+  body('data_hora_desaparecimento').optional({ checkFalsy: true }).trim().isLength({ max: 32 }),
+  body('return_to').optional({ checkFalsy: true }).trim().isLength({ max: 500 }),
 ];
 
 const validarPetPerdidoEncontrado = [

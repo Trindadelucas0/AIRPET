@@ -29,6 +29,17 @@ const Conversa = require('../models/Conversa');
 const MensagemChat = require('../models/MensagemChat');
 const { withTransaction } = require('../config/database');
 const logger = require('../utils/logger');
+const { sameNumericId } = require('../utils/sameNumericId');
+
+/** Redirect interno seguro após reporte (ex.: /p/slug?tab=scans). */
+function resolveSafeReturnTo(value, fallback) {
+  if (!value || typeof value !== 'string') return fallback;
+  const s = value.trim();
+  if (!s.startsWith('/') || s.startsWith('//')) return fallback;
+  if (s.includes('..') || /\s/.test(s)) return fallback;
+  if (!/^\/(p|pets)\//.test(s)) return fallback;
+  return s;
+}
 
 /**
  * mostrarFormulario — Renderiza o formulário de reporte de pet perdido
@@ -59,18 +70,22 @@ async function mostrarFormulario(req, res) {
     }
 
     /* Somente o dono pode reportar o pet como perdido */
-    if (pet.usuario_id !== usuarioId) {
+    if (!sameNumericId(pet.usuario_id, usuarioId)) {
       req.session.flash = { tipo: 'erro', mensagem: 'Você não tem permissão para reportar este pet.' };
       return res.redirect(`/pets/${pet_id}`);
     }
 
-    /* Busca ultimo scan da tag NFC para pre-preencher localizacao */
     const ultimoScan = await TagScan.ultimoScanPet(pet_id);
+    const returnTo = resolveSafeReturnTo(
+      req.query.return_to,
+      pet.slug ? `/p/${pet.slug}?tab=scans` : `/pets/${pet_id}`
+    );
 
     return res.render('pets-perdidos/formulario', {
       titulo: `Reportar ${pet.nome} como Perdido - AIRPET`,
       pet,
       ultimoScan,
+      returnTo,
     });
   } catch (erro) {
     logger.error('PetPerdidoController', 'Erro ao exibir formulário de reporte', erro);
@@ -100,7 +115,7 @@ async function reportar(req, res) {
   try {
     const { pet_id } = req.params;
     const usuarioId = req.session.usuario.id;
-    const { descricao, latitude, longitude, recompensa } = req.body;
+    const { descricao, latitude, longitude, recompensa, data_hora_desaparecimento, return_to } = req.body;
 
     const pet = await Pet.buscarPorId(pet_id);
 
@@ -109,9 +124,17 @@ async function reportar(req, res) {
       return res.redirect('/pets');
     }
 
-    if (pet.usuario_id !== usuarioId) {
+    if (!sameNumericId(pet.usuario_id, usuarioId)) {
       req.session.flash = { tipo: 'erro', mensagem: 'Você não tem permissão para reportar este pet.' };
       return res.redirect(`/pets/${pet_id}`);
+    }
+
+    let dataDesap = null;
+    if (data_hora_desaparecimento && String(data_hora_desaparecimento).trim()) {
+      const parsed = new Date(data_hora_desaparecimento);
+      if (!Number.isNaN(parsed.getTime()) && parsed.getTime() <= Date.now()) {
+        dataDesap = parsed.toISOString();
+      }
     }
 
     await withTransaction(async (client) => {
@@ -122,18 +145,19 @@ async function reportar(req, res) {
         longitude: longitude ? parseFloat(longitude) : null,
         cidade: null,
         recompensa: recompensa || null,
+        data_hora_desaparecimento: dataDesap,
       }, client);
       await Pet.atualizarStatus(pet_id, 'perdido', client);
     });
 
     logger.info('PetPerdidoController', `Pet reportado como perdido: ${pet.nome} (ID: ${pet_id})`);
 
-    /*
-     * Flash message informando que o formulário foi ENVIADO PARA ANÁLISE.
-     * O alerta não fica visível imediatamente — precisa de aprovação.
-     */
     req.session.flash = { tipo: 'sucesso', mensagem: 'Formulário enviado para análise. O alerta será publicado após a aprovação da equipe.' };
-    return res.redirect(`/pets/${pet_id}`);
+    const destino = resolveSafeReturnTo(
+      return_to,
+      pet.slug ? `/p/${pet.slug}?tab=scans` : `/pets/${pet_id}`
+    );
+    return res.redirect(destino);
   } catch (erro) {
     logger.error('PetPerdidoController', 'Erro ao reportar pet perdido', erro);
     req.session.flash = { tipo: 'erro', mensagem: 'Erro ao enviar o reporte. Tente novamente.' };

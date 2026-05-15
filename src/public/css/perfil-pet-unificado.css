@@ -296,6 +296,17 @@
   border-bottom-color: #ec5a1c;
 }
 
+.pp-tab--hint span::after {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-left: 5px;
+  border-radius: 50%;
+  background: #dc2626;
+  vertical-align: middle;
+}
+
 /* === Grid de posts (Instagram-like) === */
 .pp-grid {
   display: grid;

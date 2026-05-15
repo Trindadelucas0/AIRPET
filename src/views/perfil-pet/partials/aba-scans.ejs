@@ -1,11 +1,10 @@
 <%
-/*
- * aba-scans.ejs — Painel "Scans" — somente dono.
- * Lista de leituras NFC recebidas. Cada scan eh um sinal de uso real
- * da tag.
- */
 var lista = (typeof scans !== 'undefined' && Array.isArray(scans)) ? scans : [];
 var alerta = (typeof alertaAtivo !== 'undefined') ? alertaAtivo : null;
+var returnScans = '/p/' + pet.slug + '?tab=scans';
+var urlFormPerdido = '/perdidos/' + pet.id + '/formulario?return_to=' + encodeURIComponent(returnScans);
+var urlEncontrado = '/perdidos/' + pet.id + '/encontrado?return_to=' + encodeURIComponent(returnScans);
+var ultimo = lista.length > 0 ? lista[0] : null;
 function _fmtData(d) {
   if (!d) return '';
   try { return new Date(d).toLocaleString('pt-BR'); } catch (_) { return ''; }
@@ -23,15 +22,45 @@ function _labelScan(s) {
 %>
 
 <div class="pp-panel">
-  <% if (alerta) { %>
-    <div class="pp-card" style="border-color:#fecaca;background:linear-gradient(135deg,#fee2e2 0%,#fff 60%);">
-      <div class="pp-card-title" style="color:#b91c1c;"><i class="fa-solid fa-triangle-exclamation" style="color:#dc2626;"></i> Alerta de pet perdido ativo</div>
-      <p style="font-size:13px;color:#7f1d1d;margin:0 0 10px;">
-        <%= pet.nome %> esta marcado como perdido. Toda leitura da tag e priorizada.
+  <% if (!alerta && pet.status !== 'perdido') { %>
+    <div class="pp-card" style="border-color:#fecaca;background:linear-gradient(135deg,#fff1f2 0%,#fff 55%);margin-bottom:12px;">
+      <div class="pp-card-title" style="color:#b91c1c;">
+        <i class="fa-solid fa-shield-halved" style="color:#dc2626;"></i> Protecao e localizacao
+      </div>
+      <p style="font-size:13px;color:#7f1d1d;margin:0 0 12px;line-height:1.5;">
+        Quando alguem escanear a tag NFC de <%= pet.nome %>, a leitura aparece aqui.
+        Se ele sumiu, ative o alerta para a comunidade AIRPET ajudar.
       </p>
-      <a href="/alerta/<%= alerta.id %>" class="pp-btn pp-btn--secondary">
-        <i class="fa-solid fa-eye"></i> Ver alerta publico
+      <% if (ultimo) { %>
+        <p style="font-size:12px;color:#64748b;margin:0 0 12px;padding:10px 12px;background:#f8fafc;border-radius:10px;border:1px solid #e2e8f0;">
+          <i class="fa-solid fa-satellite-dish" style="color:#2563eb;margin-right:6px;"></i>
+          <strong>Ultima leitura:</strong> <%= _labelScan(ultimo) %> — <%= _fmtData(ultimo.data) %>.
+          Voce podera usar isso no formulario de alerta.
+        </p>
+      <% } %>
+      <a href="<%= urlFormPerdido %>" class="pp-btn pp-btn--danger-outline pp-btn--block" style="justify-content:center;">
+        <i class="fa-solid fa-triangle-exclamation"></i> Perdi meu pet
       </a>
+    </div>
+  <% } else if (pet.status === 'perdido' || alerta) { %>
+    <div class="pp-card" style="border-color:#fecaca;background:linear-gradient(135deg,#fee2e2 0%,#fff 60%);margin-bottom:12px;">
+      <div class="pp-card-title" style="color:#b91c1c;">
+        <i class="fa-solid fa-triangle-exclamation" style="color:#dc2626;"></i>
+        <%= alerta ? 'Alerta de pet perdido ativo' : pet.nome + ' esta perdido' %>
+      </div>
+      <p style="font-size:13px;color:#7f1d1d;margin:0 0 12px;">
+        Toda leitura da tag e priorizada. Quando <%= pet.nome %> for encontrado, marque aqui.
+      </p>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;">
+        <% if (alerta) { %>
+        <a href="/alerta/<%= alerta.id %>" class="pp-btn pp-btn--secondary">
+          <i class="fa-solid fa-eye"></i> Ver alerta publico
+        </a>
+        <% } %>
+        <a href="<%= urlEncontrado %>" class="pp-btn pp-btn--success-outline">
+          <i class="fa-solid fa-check-circle"></i> Marcar como encontrado
+        </a>
+      </div>
     </div>
   <% } %>
 

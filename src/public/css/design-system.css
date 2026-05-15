@@ -1200,14 +1200,31 @@ body.admin-shell {
   background: var(--ink-3);
   color: var(--text);
   border-radius: 999px;
-  min-height: 36px;
-  padding: 0 12px;
+  min-height: var(--touch-target);
+  padding: 0 14px;
   font-size: 12px;
   font-weight: 700;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .air-wizard-chip:hover {
   border-color: color-mix(in srgb, var(--accent) 44%, var(--border));
+}
+
+.air-wizard-chip.is-selected,
+.air-wizard-chip[aria-pressed="true"] {
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
+  background: color-mix(in srgb, var(--accent) 14%, #ffffff);
+  color: var(--text);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+.air-wizard-step-card.hidden {
+  display: none !important;
+  pointer-events: none !important;
 }
 
 .air-wizard-nav {

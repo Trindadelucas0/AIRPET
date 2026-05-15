@@ -51,29 +51,56 @@ const PetPerdido = {
    * @returns {Promise<object>} O registro do alerta criado
    */
   async criar(dados, client = null) {
-    const { pet_id, descricao, latitude, longitude, cidade, recompensa } = dados;
+    const {
+      pet_id, descricao, latitude, longitude, cidade, recompensa, data_hora_desaparecimento,
+    } = dados;
     const executor = client || pool;
 
     const hasCoords = latitude !== null && latitude !== undefined &&
                       longitude !== null && longitude !== undefined;
+    const hasDesaparecimento = data_hora_desaparecimento != null && String(data_hora_desaparecimento).trim() !== '';
 
-    const sql = hasCoords
-      ? `INSERT INTO pets_perdidos
+    if (hasCoords && hasDesaparecimento) {
+      const resultado = await executor.query(
+        `INSERT INTO pets_perdidos
+          (pet_id, descricao, ultima_lat, ultima_lng, ultima_localizacao, cidade, recompensa, data_hora_desaparecimento)
+         VALUES ($1, $2, $3::numeric, $4::numeric,
+                 ST_SetSRID(ST_MakePoint($4::numeric, $3::numeric), 4326)::geography,
+                 $5, $6, $7::timestamp)
+         RETURNING *`,
+        [pet_id, descricao, latitude, longitude, cidade, recompensa, data_hora_desaparecimento]
+      );
+      return resultado.rows[0];
+    }
+    if (hasCoords) {
+      const resultado = await executor.query(
+        `INSERT INTO pets_perdidos
           (pet_id, descricao, ultima_lat, ultima_lng, ultima_localizacao, cidade, recompensa)
          VALUES ($1, $2, $3::numeric, $4::numeric,
                  ST_SetSRID(ST_MakePoint($4::numeric, $3::numeric), 4326)::geography,
                  $5, $6)
-         RETURNING *`
-      : `INSERT INTO pets_perdidos
-          (pet_id, descricao, cidade, recompensa)
-         VALUES ($1, $2, $3, $4)
-         RETURNING *`;
+         RETURNING *`,
+        [pet_id, descricao, latitude, longitude, cidade, recompensa]
+      );
+      return resultado.rows[0];
+    }
+    if (hasDesaparecimento) {
+      const resultado = await executor.query(
+        `INSERT INTO pets_perdidos
+          (pet_id, descricao, cidade, recompensa, data_hora_desaparecimento)
+         VALUES ($1, $2, $3, $4, $5::timestamp)
+         RETURNING *`,
+        [pet_id, descricao, cidade, recompensa, data_hora_desaparecimento]
+      );
+      return resultado.rows[0];
+    }
 
-    const params = hasCoords
-      ? [pet_id, descricao, latitude, longitude, cidade, recompensa]
-      : [pet_id, descricao, cidade, recompensa];
-
-    const resultado = await executor.query(sql, params);
+    const resultado = await executor.query(
+      `INSERT INTO pets_perdidos (pet_id, descricao, cidade, recompensa)
+       VALUES ($1, $2, $3, $4)
+       RETURNING *`,
+      [pet_id, descricao, cidade, recompensa]
+    );
     return resultado.rows[0];
   },
 
