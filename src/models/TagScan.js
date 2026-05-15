@@ -176,7 +176,10 @@ const TagScan = {
              SELECT 1 FROM pets_perdidos pp
              WHERE pp.pet_id = p.id AND pp.status = 'aprovado'
            )
-           OR COALESCE(p.privado, false) = false
+           OR (
+             COALESCE(p.privado, false) = false
+             AND COALESCE(p.mostrar_ultimo_avistamento_mapa, true) = true
+           )
          )
        GROUP BY 1, 2
        ORDER BY weight DESC

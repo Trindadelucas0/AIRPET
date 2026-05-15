@@ -339,6 +339,7 @@ const validarExplorarPostV1 = [
     .bail()
     .trim()
     .isLength({ max: 20 }),
+  body('fofinhos_moldura').optional(),
   body().custom((_, { req }) => {
     const t = String(req.body?.texto || req.body?.text || '').trim();
     if (!t && !req.file) throw new Error('Escreva algo ou envie uma imagem.');
@@ -363,6 +364,7 @@ const validarExplorarPostV2 = [
       if (typeof v === 'string') return true;
       throw new Error('taggedUserIds invalido.');
     }),
+  body('fofinhos_moldura').optional(),
   body().custom((_, { req }) => {
     const t = String(req.body?.text || req.body?.texto || '').trim();
     const files = req.files;

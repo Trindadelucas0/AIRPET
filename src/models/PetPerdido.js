@@ -421,8 +421,10 @@ const PetPerdido = {
        WHERE pp.status = 'aprovado'
          AND pp.ultima_lat IS NOT NULL
          AND pp.ultima_lng IS NOT NULL
-         AND pp.ultima_lat BETWEEN $1 AND $3
-         AND pp.ultima_lng BETWEEN $2 AND $4
+         AND pp.ultima_lat BETWEEN LEAST($1::double precision, $3::double precision)
+                            AND GREATEST($1::double precision, $3::double precision)
+         AND pp.ultima_lng BETWEEN LEAST($2::double precision, $4::double precision)
+                            AND GREATEST($2::double precision, $4::double precision)
        ORDER BY pp.data DESC
        LIMIT 100`,
       [swLat, swLng, neLat, neLng]

@@ -54,7 +54,6 @@
     petshop:         { color: '#10b981', icon: 'fa-store' },
     ponto_interesse: { color: '#3b82f6', icon: 'fa-map-pin' },
     pet_perdido:     { color: '#dc2626', icon: 'fa-triangle-exclamation' },
-    avistamento:     { color: '#f59e0b', icon: 'fa-eye' },
     pet_scan:        { color: '#ec5a1c', icon: 'fa-paw' },
     pet_seguido:     { color: '#8b5cf6', icon: 'fa-heart' },
     default:         { color: '#6b7280', icon: 'fa-map-pin' }
@@ -63,10 +62,9 @@
   var layerMapping = {
     petshops:   'petshop',
     perdidos:   'pet_perdido',
-    avistamentos: 'avistamento',
     pontos:     'ponto_interesse',
     pet_scans:  'pet_scan',
-    social:     'pet_seguido',
+    social:     ['pet_seguido', 'pet_checkin'],
     heatmap:    '__heatmap__'
   };
 
@@ -207,7 +205,7 @@
     var tipo = props.tipo || 'default';
     var html = '';
 
-    if (tipo === 'pet_scan' || tipo === 'pet_seguido') {
+    if (tipo === 'pet_scan' || tipo === 'pet_seguido' || tipo === 'pet_checkin') {
       var statusBadge = props.pet_status === 'perdido'
         ? '<span style="display:inline-flex;align-items:center;gap:4px;background:#fee2e2;color:#b91c1c;font-size:10px;font-weight:700;padding:2px 8px;border-radius:999px;letter-spacing:.04em;animation:petPinRing 1.4s ease-in-out infinite">'
           + '<i class="fa-solid fa-triangle-exclamation" style="font-size:9px"></i> PERDIDO</span> '
@@ -265,11 +263,23 @@
         + '<p style="font-size:16px;font-weight:700;color:#111827;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(props.nome || 'Pet') + '</p>'
         + (props.dono ? '<p style="font-size:12px;color:#6b7280;margin-top:2px">Tutor: ' + esc(props.dono) + '</p>' : '')
         + '</div></div>'
-        + '<p style="font-size:11px;color:#64748b;margin:0 0 12px;line-height:1.45">O pin no AIRPET mostra uma <strong style="color:#475569">zona aproximada</strong> — não é a posição exata do pet em tempo real.</p>'
+        + '<p style="font-size:11px;color:#64748b;margin:0 0 12px;line-height:1.45">Posição da <strong style="color:#475569">última localização registrada no alerta</strong> (zona aproximada) — pode diferir do último scan da tag.</p>'
         + '<div style="display:flex;flex-direction:column;gap:10px">'
         + '<a href="/pets-perdidos" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:12px 14px;border-radius:12px;background:#dc2626;color:#fff;font-weight:700;font-size:14px;text-decoration:none;box-shadow:0 4px 14px rgba(220,38,38,0.25)"><i class="fa-solid fa-triangle-exclamation"></i> Ver alerta</a>'
         + '<a href="' + String(gerarLinkRegiaoExterna(lat, lng)).replace(/"/g, '&quot;') + '" target="_blank" rel="noopener noreferrer" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:11px 14px;border-radius:12px;border:2px solid #1d4ed8;background:#eff6ff;color:#1e3a8a;font-weight:700;font-size:13px;text-decoration:none;box-sizing:border-box"><i class="fa-solid fa-map-location-dot" style="color:#1d4ed8"></i> Abrir no Google Maps</a>'
         + '</div>';
+
+    } else if (tipo === 'ponto_interesse') {
+      var catHtml = props.categoria
+        ? '<p style="font-size:12px;color:#6b7280;margin-top:2px;text-transform:capitalize">' + esc(props.categoria) + '</p>'
+        : '';
+      html = '<div style="margin-bottom:14px">'
+        + '<p style="font-size:16px;font-weight:700;color:#111827">' + esc(props.nome || 'Ponto') + '</p>'
+        + catHtml
+        + (props.descricao ? '<p style="font-size:13px;color:#4b5563;margin-top:8px;line-height:1.45">' + esc(props.descricao) + '</p>' : '')
+        + (props.endereco ? '<p style="font-size:12px;color:#6b7280;margin-top:8px"><i class="fa-solid fa-location-dot" style="font-size:10px;margin-right:4px"></i>' + esc(props.endereco) + '</p>' : '')
+        + '</div>'
+        + '<a href="' + String(gerarLinkRegiaoExterna(lat, lng)).replace(/"/g, '&quot;') + '" target="_blank" rel="noopener noreferrer" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:11px 12px;border-radius:12px;border:2px solid #1d4ed8;background:#eff6ff;color:#1e3a8a;font-weight:700;font-size:13px;text-decoration:none;box-sizing:border-box"><i class="fa-solid fa-map-location-dot" style="color:#1d4ed8"></i> Abrir no Google Maps</a>';
 
     } else {
       html = '<p style="font-size:15px;font-weight:600;color:#111827;margin-bottom:8px">' + esc(props.nome || 'Ponto') + '</p>'
@@ -292,7 +302,6 @@
   var activeLayers = {
     petshops: true,
     perdidos: true,
-    avistamentos: true,
     pontos: false,
     pet_scans: true,
     social: typeof document !== 'undefined' && document.body && document.body.getAttribute('data-logado') === 'true',
@@ -357,11 +366,27 @@
     } catch (_) {}
   }
 
+  function layerTipoMatches(mappingVal, tipo) {
+    if (Array.isArray(mappingVal)) return mappingVal.indexOf(tipo) !== -1;
+    return mappingVal === tipo;
+  }
+
   function isLayerVisible(tipo) {
     for (var key in layerMapping) {
-      if (layerMapping[key] === tipo) return activeLayers[key] !== false;
+      if (layerTipoMatches(layerMapping[key], tipo)) return activeLayers[key] !== false;
     }
     return true;
+  }
+
+  function clearMarkersBySource(source) {
+    for (var id in markers) {
+      var m = markers[id];
+      if (m && m._airpetSource === source) {
+        if (clusterGroup && clusterGroup.hasLayer(m)) clusterGroup.removeLayer(m);
+        delete markers[id];
+        delete loadedIds[id];
+      }
+    }
   }
 
   /**
@@ -394,8 +419,40 @@
     return { lat: la, lng: lo };
   }
 
+  function isPetPhotoTipo(tipo) {
+    return tipo === 'pet_scan' || tipo === 'pet_seguido' || tipo === 'pet_checkin';
+  }
+
+  function petPhotoAccent(tipo) {
+    return (tipo === 'pet_seguido' || tipo === 'pet_checkin') ? 'social' : 'pet';
+  }
+
+  function petTemPinPerdidoAtivo(petId) {
+    for (var mid in markers) {
+      var m = markers[mid];
+      if (m._airpetTipo === 'pet_perdido' && m._airpetProps
+          && String(m._airpetProps.pet_id) === String(petId)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  function applyPinsFromApi(data) {
+    clearMarkersBySource('pins');
+    renderFeatures(data, { source: 'pins' });
+  }
+
+  function applySocialFromApi(data) {
+    clearMarkersBySource('social');
+    renderFeatures(data, { source: 'social' });
+  }
+
   /* ─── Renderiza features GeoJSON no mapa ─── */
-  function renderFeatures(data, tipoOverride) {
+  function renderFeatures(data, opts) {
+    opts = opts || {};
+    var source = opts.source || null;
+    var tipoOverride = opts.tipoOverride;
     var features = data && (data.features || data) ? (data.features || data) : [];
     if (!Array.isArray(features)) return;
 
@@ -421,10 +478,10 @@
       if (!coord) return;
 
       if (loadedIds[id]) {
-        if ((tipo === 'pet_scan' || tipo === 'pet_seguido') && markers[id]) {
+        if (isPetPhotoTipo(tipo) && markers[id]) {
           var mUp = markers[id];
           var iconUp = makePetPhotoIcon(props.foto, props.pet_status, props.horas_atras, {
-            accent: tipo === 'pet_seguido' ? 'social' : 'pet'
+            accent: petPhotoAccent(tipo)
           });
           mUp.setLatLng([coord.lat, coord.lng]);
           mUp.setIcon(iconUp);
@@ -447,9 +504,9 @@
       var lng = coord.lng;
 
       var icon;
-      if (tipo === 'pet_scan' || tipo === 'pet_seguido') {
+      if (isPetPhotoTipo(tipo)) {
         icon = makePetPhotoIcon(props.foto, props.pet_status, props.horas_atras, {
-          accent: tipo === 'pet_seguido' ? 'social' : 'pet'
+          accent: petPhotoAccent(tipo)
         });
       } else if (tipo === 'petshop' && resolveMapAssetUrl(props.imagem_url)) {
         icon = makePetshopPhotoIcon(props.imagem_url);
@@ -462,6 +519,7 @@
       marker._airpetProps = props;
       marker._airpetLat   = lat;
       marker._airpetLng   = lng;
+      if (source) marker._airpetSource = source;
 
       marker.on('click', function () {
         abrirBottomSheet(buildBottomSheetHtml(props, lat, lng));
@@ -497,6 +555,8 @@
     var lat = parseFloat(data.lat);
     var lng = parseFloat(data.lng);
     if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+    if (!activeLayers.pet_scans) return;
+    if (activeLayers.perdidos && petTemPinPerdidoAtivo(data.petId)) return;
     var prev = markers[id];
     var startLL = prev && prev.getLatLng ? prev.getLatLng() : L.latLng(lat, lng);
     if (markers[id]) {
@@ -522,7 +582,7 @@
         data: scanIso,
         horas_atras: 0,
       },
-    }]);
+    }], { source: 'pins' });
     var m = markers[id];
     if (m && prev && startLL && (Math.abs(startLL.lat - lat) > 1e-7 || Math.abs(startLL.lng - lng) > 1e-7)) {
       m.setLatLng(startLL);
@@ -562,10 +622,10 @@
         group: 'mapPins',
         onUpdate: function (data) {
           if (!currentBBoxKey || requestKey !== ('mapPins:' + currentBBoxKey)) return;
-          renderFeatures(data);
+          applyPinsFromApi(data);
         }
       }).then(function (res) {
-        renderFeatures(res.data);
+        applyPinsFromApi(res.data);
       }).catch(function () {
         if (Object.keys(markers).length === 0) mostrarErroPinsRede();
       });
@@ -574,7 +634,7 @@
 
     fetch('/mapa/api/pins?' + params.toString())
       .then(function (res) { return res.json(); })
-      .then(renderFeatures)
+      .then(applyPinsFromApi)
       .catch(function (err) {
         console.error('[MAPA] Erro ao carregar pins:', err);
         if (Object.keys(markers).length === 0) mostrarErroPinsRede();
@@ -584,7 +644,14 @@
   /* ─── Fetch da camada social ─── */
   function fetchSocialPins() {
     if (!activeLayers.social) return;
-    fetch('/mapa/api/pins/social', { credentials: 'same-origin' })
+    var bounds = map.getBounds();
+    var params = new URLSearchParams({
+      swLat: bounds.getSouthWest().lat,
+      swLng: bounds.getSouthWest().lng,
+      neLat: bounds.getNorthEast().lat,
+      neLng: bounds.getNorthEast().lng,
+    });
+    fetch('/mapa/api/pins/social?' + params.toString(), { credentials: 'same-origin' })
       .then(function (res) {
         if (res.status === 401) {
           // Não logado — desativar camada silenciosamente
@@ -596,7 +663,7 @@
         return res.json();
       })
       .then(function (data) {
-        if (data) renderFeatures(data, 'pet_seguido');
+        if (data) applySocialFromApi(data);
       })
       .catch(function (err) {
         console.warn('[MAPA] Erro ao carregar pets seguidos:', err);
@@ -615,14 +682,15 @@
     activeLayers[layerName] = !activeLayers[layerName];
     var tipoAlvo = layerMapping[layerName];
 
-    // Carregar pins sociais sob demanda ao ativar
-    if (layerName === 'social' && activeLayers.social) {
-      fetchSocialPins();
+    if (layerName === 'social') {
+      if (activeLayers.social) fetchSocialPins();
+      else clearMarkersBySource('social');
+      return;
     }
 
     for (var id in markers) {
       var m = markers[id];
-      if (m._airpetTipo === tipoAlvo) {
+      if (layerTipoMatches(tipoAlvo, m._airpetTipo)) {
         if (activeLayers[layerName]) {
           clusterGroup.addLayer(m);
         } else {
@@ -696,6 +764,7 @@
   map.on('moveend', debounce(function () {
     clearTimeout(_sseRetryTimer);
     fetchPins();
+    if (activeLayers.social) fetchSocialPins();
     if (activeLayers.heatmap) loadHeatmapPins();
     setTimeout(conectarSSE, 500);
   }, 400));

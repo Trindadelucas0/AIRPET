@@ -154,10 +154,13 @@ async function buscarPins(req, res) {
       });
     });
 
+    const petIdsComAlertaPerdido = new Set();
+
     /* Converte alertas de pets perdidos para features GeoJSON */
     perdidos.forEach((perdido) => {
       /* Só inclui se tiver coordenadas válidas */
       if (perdido.latitude && perdido.longitude) {
+        if (perdido.pet_id != null) petIdsComAlertaPerdido.add(String(perdido.pet_id));
         features.push({
           type: 'Feature',
           geometry: {
@@ -167,6 +170,7 @@ async function buscarPins(req, res) {
           properties: {
             id: perdido.id,
             tipo: 'pet_perdido',
+            pet_id: perdido.pet_id,
             nome: perdido.pet_nome,
             foto: perdido.pet_foto,
             dono: perdido.dono_nome,
@@ -179,6 +183,7 @@ async function buscarPins(req, res) {
 
     /* Última localização da tag por pet (scan NFC) dentro da bbox — coords públicas aproximadas */
     (petScans || []).forEach((row) => {
+      if (petIdsComAlertaPerdido.has(String(row.pet_id))) return;
       if (!mapaPrivacidadeService.petScanElegivelMapaPublico(row)) return;
       const latRaw = parseFloat(row.latitude);
       const lngRaw = parseFloat(row.longitude);
@@ -231,12 +236,34 @@ async function buscarPins(req, res) {
  * Dono vê o pin mesmo com perfil privado ou sem “mostrar para seguidores”; seguidores mantêm as regras antigas.
  * Rota: GET /mapa/api/pins/social (requer autenticação)
  */
+function parseBboxOpcional(req) {
+  const { swLat, swLng, neLat, neLng } = req.query;
+  if (!swLat || !swLng || !neLat || !neLng) return null;
+  const sw = { lat: parseFloat(swLat), lng: parseFloat(swLng) };
+  const ne = { lat: parseFloat(neLat), lng: parseFloat(neLng) };
+  if ([sw.lat, sw.lng, ne.lat, ne.lng].some((n) => Number.isNaN(n))) return null;
+  return {
+    swLat: Math.min(sw.lat, ne.lat),
+    neLat: Math.max(sw.lat, ne.lat),
+    swLng: Math.min(sw.lng, ne.lng),
+    neLng: Math.max(sw.lng, ne.lng),
+  };
+}
+
+function featureDentroDaBbox(feature, bbox) {
+  if (!bbox || !feature || !feature.geometry || !feature.geometry.coordinates) return true;
+  const lng = feature.geometry.coordinates[0];
+  const lat = feature.geometry.coordinates[1];
+  return lat >= bbox.swLat && lat <= bbox.neLat && lng >= bbox.swLng && lng <= bbox.neLng;
+}
+
 async function buscarPinsSocial(req, res) {
   if (!req.session || !req.session.usuario) {
     return res.status(401).json({ sucesso: false, mensagem: 'Não autenticado.' });
   }
 
   try {
+    const bbox = parseBboxOpcional(req);
     const usuarioId = req.session.usuario.id;
     const { query } = require('../config/database');
 
@@ -358,7 +385,11 @@ async function buscarPinsSocial(req, res) {
       };
     }).filter(Boolean);
 
-    return res.status(200).json({ type: 'FeatureCollection', features });
+    const featuresFiltradas = bbox
+      ? features.filter((f) => featureDentroDaBbox(f, bbox))
+      : features;
+
+    return res.status(200).json({ type: 'FeatureCollection', features: featuresFiltradas });
   } catch (erro) {
     logger.error('MapaController', 'Erro ao buscar pins sociais', erro);
     return res.status(500).json({ sucesso: false, mensagem: 'Erro ao carregar pets seguidos.' });

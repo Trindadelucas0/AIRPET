@@ -1,6 +1,9 @@
 /**
  * mapaService.js — Serviço do mapa interativo do sistema AIRPET
  *
+ * @deprecated Use mapaController.js (GET /mapa/api/pins) no mapa público.
+ * Este módulo não é referenciado pelas rotas atuais.
+ *
  * Este módulo centraliza a lógica de busca de pontos para exibição
  * no mapa interativo (Leaflet/Mapbox) do aplicativo.
  *

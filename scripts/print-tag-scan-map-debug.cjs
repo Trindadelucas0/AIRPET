@@ -97,7 +97,7 @@ async function main() {
       const la = last.latitude != null ? parseFloat(last.latitude) : NaN;
       const lo = last.longitude != null ? parseFloat(last.longitude) : NaN;
       if (!Number.isFinite(la) || !Number.isFinite(lo)) {
-        console.log('\n[mapa] Ultimo scan sem lat/lng — sem coords nada aparece nas duas camadas do mapa.');
+        console.log('\n[mapa] Ultimo scan sem lat/lng — sem coords o pet nao aparece na camada "Pets no mapa".');
       } else {
         const pad = 0.5;
         const url =

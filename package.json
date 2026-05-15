@@ -21,7 +21,7 @@
     "test:r2": "node scripts/test-r2-put.cjs",
     "metrics:reconcile": "node scripts/reconcile-r2-metrics.cjs",
     "lint": "eslint \"src/controllers\" \"src/services\" \"src/routes\"",
-    "test": "node --test tests/smoke-app.test.js tests/smoke-utils.test.js tests/smoke-admin-path.test.js tests/csrf-origin-guard.test.js",
+    "test": "node --test tests/smoke-app.test.js tests/smoke-utils.test.js tests/smoke-admin-path.test.js tests/csrf-origin-guard.test.js tests/explorar-post-validators.test.js",
     "calibrate": "node scripts/calibrate.cjs",
     "admin:url": "node scripts/print-admin-urls.cjs",
     "mapa:debug-tag": "node scripts/print-tag-scan-map-debug.cjs"
