@@ -121,6 +121,9 @@ router.post('/petshops/promocoes/:id/aprovar', apenasAdmin, ...validarBodyVazioJ
 router.post('/petshops/promocoes/:id/rejeitar', apenasAdmin, ...validarAdminRejeitarPetshop, validarResultado, adminController.rejeitarPromocaoPetshop);
 router.post('/petshops/:id/excluir', apenasAdmin, ...validarBodyVazioJson, validarResultado, adminController.excluirPetshop);
 
+router.get('/lista-espera', apenasAdmin, adminController.listarValidacaoInteresse);
+router.get('/lista-espera/export.csv', apenasAdmin, adminController.exportarValidacaoInteresseCsv);
+
 router.get('/pets-perdidos', apenasAdmin, adminAlertsController.listarPerdidos);
 router.post('/pets-perdidos/:id/aprovar', apenasAdmin, ...validarBodyVazioJson, validarResultado, adminAlertsController.aprovarPerdido);
 router.post('/pets-perdidos/:id/rejeitar', apenasAdmin, ...validarAdminRejeitarPetshop, validarResultado, adminAlertsController.rejeitarPerdido);

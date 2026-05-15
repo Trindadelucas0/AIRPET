@@ -6,7 +6,11 @@ const multer = require('multer');
 
 const { estaAutenticado, estaAutenticadoAPI, obterUsuarioIdSessaoOuJwtCookie } = require('../middlewares/authMiddleware');
 const { sameNumericId } = require('../utils/sameNumericId');
-const { limiterGeral } = require('../middlewares/rateLimiter');
+const { limiterGeral, limiterValidacao } = require('../middlewares/rateLimiter');
+const { validarListaEspera, validarProtegerMeuPetInscricao } = require('../middlewares/writeRouteValidators');
+const { validarResultado } = require('../middlewares/validator');
+const validacaoController = require('../controllers/validacaoController');
+const listaEsperaController = require('../controllers/listaEsperaController');
 const { persistFields, persistSingle } = require('../middlewares/persistUploadMiddleware');
 
 const uploadPerfilCapa = multer({
@@ -145,6 +149,25 @@ router.get('/', async (req, res) => {
 router.get('/termos', (req, res) => res.render('termos', { titulo: 'Termos de Uso' }));
 router.get('/privacidade', (req, res) => res.render('privacidade', { titulo: 'Política de Privacidade' }));
 
+router.get('/proteger-meu-pet', validacaoController.exibirLanding);
+router.get('/proteger-meu-pet/inscricao', (req, res) => res.redirect(302, '/lista-espera'));
+router.get('/lista-espera', listaEsperaController.exibirWizard);
+router.get('/obrigado', listaEsperaController.exibirObrigado);
+router.post(
+  '/api/lista-espera',
+  limiterValidacao,
+  ...validarListaEspera,
+  validarResultado,
+  listaEsperaController.inscrever
+);
+router.post(
+  '/api/proteger-meu-pet',
+  limiterValidacao,
+  ...validarProtegerMeuPetInscricao,
+  validarResultado,
+  validacaoController.inscrever
+);
+
 /** Atalho: quem acessa /planos cai na página real em /tags/planos */
 router.get('/planos', (req, res) => res.redirect(302, '/tags/planos'));
 
@@ -236,7 +259,7 @@ router.get('/feed/parceiros', estaAutenticado, require('../controllers/explorarC
 
 // Perfil do usuario
 const perfilController = require('../controllers/perfilController');
-const { validarPerfil, validarResultado, camposPermitidos, CAMPOS_PERFIL } = require('../middlewares/validator');
+const { validarPerfil, camposPermitidos, CAMPOS_PERFIL } = require('../middlewares/validator');
 // Validators de galeria foram desativados (galeria virou posts). Mantemos
 // apenas referencia ao modulo para nao quebrar consumidores externos do file.
 router.get('/perfil', estaAutenticado, perfilController.mostrarPerfilHub);

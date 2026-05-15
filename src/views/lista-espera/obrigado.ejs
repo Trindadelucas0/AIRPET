@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Vaga garantida | AIRPET</title>
+  <meta name="robots" content="noindex">
+  <meta name="theme-color" content="#ec5a1c">
+  <link rel="icon" type="image/svg+xml" href="/images/icons/icon-192.svg">
+  <link rel="stylesheet" href="/css/output.css">
+</head>
+<body class="min-h-screen bg-[#fff7ed] text-gray-800 antialiased flex flex-col">
+
+  <header class="border-b border-gray-900/5 bg-[#fff7ed]/90 backdrop-blur-md">
+    <div class="max-w-lg mx-auto px-4 h-14 flex items-center justify-center">
+      <span class="font-display font-extrabold text-gray-900">AIRPET</span>
+    </div>
+  </header>
+
+  <main class="flex-1 flex flex-col items-center justify-center max-w-lg mx-auto px-6 py-16 text-center">
+    <p class="text-5xl mb-6" aria-hidden="true">🐾</p>
+    <h1 class="text-3xl font-display font-extrabold text-gray-900">Vaga garantida. 🐾</h1>
+    <p class="mt-4 text-gray-600 leading-relaxed max-w-sm">
+      Assim que o AIRPET abrir na sua cidade, você é o primeiro a saber. Fique de olho no seu e-mail.
+    </p>
+    <button type="button" id="leShareBtn"
+      class="mt-10 w-full sm:w-auto rounded-full border-2 border-primary-500 text-primary-600 hover:bg-primary-50 font-bold px-8 py-3.5 transition-colors">
+      Compartilhar com outros donos de pets
+    </button>
+    <p id="leShareFeedback" class="mt-3 text-sm text-green-700 hidden" role="status"></p>
+    <a href="/proteger-meu-pet" class="mt-8 text-sm text-gray-500 hover:text-primary-600 underline">Voltar à página inicial</a>
+  </main>
+
+  <script>
+  (function () {
+    var SHARE_TEXT = 'Acabei de entrar na lista do AIRPET — tecnologia pra nunca mais perder um pet. airpet.com.br';
+    var shareUrl = '<%= typeof shareUrl !== "undefined" ? shareUrl : "https://airpet.com.br" %>';
+    var btn = document.getElementById('leShareBtn');
+    var feedback = document.getElementById('leShareFeedback');
+
+    function showCopied() {
+      if (!feedback) return;
+      feedback.textContent = 'Link copiado!';
+      feedback.classList.remove('hidden');
+    }
+
+    if (!btn) return;
+
+    btn.addEventListener('click', function () {
+      if (navigator.share) {
+        navigator.share({ title: 'AIRPET', text: SHARE_TEXT, url: shareUrl }).catch(function () {});
+        return;
+      }
+      var full = SHARE_TEXT + ' ' + shareUrl;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(full).then(showCopied).catch(function () {
+          window.prompt('Copie e compartilhe:', full);
+        });
+        return;
+      }
+      window.prompt('Copie e compartilhe:', full);
+    });
+  })();
+  </script>
+</body>
+</html>

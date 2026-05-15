@@ -1,0 +1,252 @@
+<% locals.titulo = 'Validação do produto' %>
+<% const a = typeof agreg !== 'undefined' ? agreg : {}; %>
+<%- include('../partials/admin-layout') %>
+
+<main class="flex-1">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div>
+        <a href="<%= adminPath %>" class="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-primary-500 mb-2">
+          <i class="fa-solid fa-arrow-left text-xs"></i> Dashboard
+        </a>
+        <h1 class="text-2xl font-bold text-gray-900">Validação do produto</h1>
+        <p class="text-sm text-gray-500 mt-0.5">Insights da lista de espera AIRPET</p>
+      </div>
+      <% const exportQs = []; if (filtros.origem) exportQs.push('origem=' + encodeURIComponent(filtros.origem)); if (filtros.buscaEmail) exportQs.push('q=' + encodeURIComponent(filtros.buscaEmail)); %>
+      <a href="<%= adminPath %>/lista-espera/export.csv<%= exportQs.length ? '?' + exportQs.join('&') : '' %>"
+         class="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 text-gray-700 text-sm font-medium hover:bg-gray-50">
+        <i class="fa-solid fa-file-csv text-xs"></i> Exportar CSV
+      </a>
+    </div>
+
+    <section class="bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl p-5 sm:p-6 text-white shadow-lg">
+      <h2 class="text-sm font-semibold uppercase tracking-wide text-white/70 mb-4">Links públicos — compartilhe na VPS</h2>
+      <div class="space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+          <div class="min-w-0 flex-1">
+            <p class="text-xs font-medium text-white/60 mb-1">Landing (marketing)</p>
+            <a href="<%= typeof landingUrlAbs !== 'undefined' ? landingUrlAbs : '#' %>" target="_blank" rel="noopener"
+               class="text-sm text-primary-300 hover:text-primary-200 break-all font-mono"><%= typeof landingUrlAbs !== 'undefined' ? landingUrlAbs : '' %></a>
+          </div>
+          <button type="button" class="admin-copy-link shrink-0 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-sm font-medium border border-white/20"
+                  data-copy="<%= typeof landingUrlAbs !== 'undefined' ? landingUrlAbs : '' %>">Copiar</button>
+        </div>
+        <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+          <div class="min-w-0 flex-1">
+            <p class="text-xs font-medium text-white/60 mb-1">Inscrição (enviar para as pessoas)</p>
+            <a href="<%= typeof wizardUrlAbs !== 'undefined' ? wizardUrlAbs : '#' %>" target="_blank" rel="noopener"
+               class="text-sm text-primary-300 hover:text-primary-200 break-all font-mono"><%= typeof wizardUrlAbs !== 'undefined' ? wizardUrlAbs : '' %></a>
+          </div>
+          <button type="button" class="admin-copy-link shrink-0 px-4 py-2 rounded-lg bg-primary-500 hover:bg-primary-600 text-sm font-bold"
+                  data-copy="<%= typeof wizardUrlAbs !== 'undefined' ? wizardUrlAbs : '' %>">Copiar link</button>
+        </div>
+      </div>
+      <p class="mt-4 text-xs text-white/50">Configure <code class="text-white/80">BASE_URL</code> no <code class="text-white/80">.env</code> da VPS (ex: <code class="text-white/80">https://airpet.com.br</code>) para os links saírem corretos.</p>
+      <p id="adminCopyFeedback" class="mt-2 text-sm text-green-400 hidden" role="status">Copiado!</p>
+    </section>
+
+    <!-- KPIs -->
+    <section class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+        <p class="text-xs font-medium text-gray-500 uppercase">Total inscritos</p>
+        <p class="text-3xl font-bold text-gray-900 mt-1"><%= a.total ?? total %></p>
+      </div>
+      <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+        <p class="text-xs font-medium text-gray-500 uppercase">Wizard completo</p>
+        <p class="text-3xl font-bold text-primary-600 mt-1"><%= a.wizardCompleto ?? 0 %></p>
+      </div>
+      <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+        <p class="text-xs font-medium text-gray-500 uppercase">Últimos 7 dias</p>
+        <p class="text-3xl font-bold text-gray-900 mt-1"><%= a.ultimos7 ?? ultimos7 %></p>
+      </div>
+      <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+        <p class="text-xs font-medium text-gray-500 uppercase">Quer primeiras vagas AIRPET</p>
+        <p class="text-3xl font-bold text-green-600 mt-1"><%= a.betaPctSim ?? 0 %>%</p>
+      </div>
+    </section>
+
+    <!-- Hipóteses do produto -->
+    <section class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div class="bg-white rounded-xl border p-5 text-center">
+        <p class="text-xs text-gray-500 uppercase font-medium">Prioridade: identificar dono</p>
+        <p class="text-4xl font-bold text-primary-600 mt-2"><%= a.pctIdentificacao ?? 0 %>%</p>
+      </div>
+      <div class="bg-white rounded-xl border p-5 text-center">
+        <p class="text-xs text-gray-500 uppercase font-medium">Prioridade: contato com o dono</p>
+        <p class="text-4xl font-bold text-blue-600 mt-2"><%= a.pctContato ?? 0 %>%</p>
+      </div>
+      <div class="bg-white rounded-xl border p-5 text-center">
+        <p class="text-xs text-gray-500 uppercase font-medium">Prioridade: última localização</p>
+        <p class="text-4xl font-bold text-green-600 mt-2"><%= a.pctLocalizacao ?? 0 %>%</p>
+      </div>
+    </section>
+
+    <script type="application/json" id="validacaoChartData"><%- typeof chartData !== 'undefined' ? chartData : '{}' %></script>
+
+    <section class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div class="bg-white border rounded-xl p-5">
+        <h2 class="text-sm font-semibold text-gray-900 mb-3">Métodos usados hoje (dor)</h2>
+        <div class="h-56"><canvas id="chartMetodos"></canvas></div>
+      </div>
+      <div class="bg-white border rounded-xl p-5">
+        <h2 class="text-sm font-semibold text-gray-900 mb-3">Já perdeu / quase perdeu pet?</h2>
+        <div class="h-56"><canvas id="chartPerdeu"></canvas></div>
+      </div>
+      <div class="bg-white border rounded-xl p-5">
+        <h2 class="text-sm font-semibold text-gray-900 mb-3">Tipo de pet</h2>
+        <div class="h-56"><canvas id="chartTipoPet"></canvas></div>
+      </div>
+      <div class="bg-white border rounded-xl p-5">
+        <h2 class="text-sm font-semibold text-gray-900 mb-3">Interesse nas primeiras vagas</h2>
+        <div class="h-56"><canvas id="chartBeta"></canvas></div>
+      </div>
+      <div class="bg-white border rounded-xl p-5 lg:col-span-2">
+        <h2 class="text-sm font-semibold text-gray-900 mb-3">O que mais salvaria (prioridades)</h2>
+        <div class="h-56"><canvas id="chartPrioridades"></canvas></div>
+      </div>
+    </section>
+
+    <% if ((a.topCidades || []).length) { %>
+    <section class="bg-white border rounded-xl p-5">
+      <h2 class="text-sm font-semibold text-gray-900 mb-3">Top cidades</h2>
+      <div class="flex flex-wrap gap-2">
+        <% (a.topCidades || []).forEach(function(c) { %>
+          <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-gray-100 text-sm text-gray-700">
+            <%= c.k %> <strong class="text-gray-900"><%= c.c %></strong>
+          </span>
+        <% }); %>
+      </div>
+    </section>
+    <% } %>
+
+    <!-- Filtros + tabela -->
+    <form method="GET" action="<%= adminPath %>/lista-espera" class="bg-white rounded-xl border p-4">
+      <div class="flex flex-wrap items-end gap-3">
+        <div class="flex-1 min-w-[200px]">
+          <label for="filtro_q" class="block text-xs font-medium text-gray-500 mb-1">Buscar</label>
+          <input type="text" name="q" id="filtro_q" value="<%= filtros.buscaEmail || '' %>" placeholder="e-mail ou nome..."
+                 class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm">
+        </div>
+        <div class="min-w-[160px]">
+          <label for="filtro_origem" class="block text-xs font-medium text-gray-500 mb-1">Origem</label>
+          <select name="origem" id="filtro_origem" class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm">
+            <option value="">Todas</option>
+            <% (origens || []).forEach(function(o) { %>
+              <option value="<%= o.origem %>" <%= filtros.origem === o.origem ? 'selected' : '' %>><%= o.origem %> (<%= o.total %>)</option>
+            <% }); %>
+          </select>
+        </div>
+        <button type="submit" class="px-4 py-2 rounded-lg bg-primary-500 text-white text-sm font-medium">Filtrar</button>
+      </div>
+    </form>
+
+    <div class="bg-white rounded-xl border overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="min-w-full text-sm">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500">#</th>
+              <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500">Nome / E-mail</th>
+              <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500">Pet / Dor</th>
+              <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500">Beta</th>
+              <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500">Data</th>
+              <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500"></th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-50">
+            <% if (!inscritos || !inscritos.length) { %>
+              <tr><td colspan="6" class="px-4 py-10 text-center text-gray-400">Nenhuma inscrição ainda.</td></tr>
+            <% } %>
+            <% (inscritos || []).forEach(function(row) {
+              const r = row.respostas_json || row.respostas || {};
+              const dataFmt = row.criado_em ? new Date(row.criado_em).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
+            %>
+              <tr class="hover:bg-gray-50/80 align-top">
+                <td class="px-4 py-3 text-gray-400 font-mono text-xs"><%= row.id %></td>
+                <td class="px-4 py-3">
+                  <p class="font-medium text-gray-900"><%= row.nome || '—' %></p>
+                  <a href="mailto:<%= row.email %>" class="text-primary-600 text-xs hover:underline"><%= row.email %></a>
+                  <% if (row.telefone) { %><p class="text-xs text-gray-500 mt-0.5"><%= row.telefone %></p><% } %>
+                  <% if (row.cidade) { %><p class="text-xs text-gray-400"><%= row.cidade %><% if (row.estado) { %>/<%= row.estado %><% } %></p><% } %>
+                </td>
+                <td class="px-4 py-3 text-xs text-gray-600">
+                  <% if (r.tipo_pet) { %><span class="block"><%= r.tipo_pet %> · <%= r.qtd_pets || '?' %> pet(s)</span><% } %>
+                  <% if (r.ja_perdeu_pet) { %><span class="block text-gray-500">Experiência: <%= r.ja_perdeu_pet %></span><% } %>
+                  <% if (Array.isArray(r.metodos_busca) && r.metodos_busca.length) { %>
+                    <span class="block mt-1 text-gray-400"><%= r.metodos_busca.join(', ') %></span>
+                  <% } %>
+                </td>
+                <td class="px-4 py-3">
+                  <% if (r.beta_interesse) { %>
+                    <span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium <%= r.beta_interesse === 'sim' ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-600' %>"><%= r.beta_interesse %></span>
+                  <% } else { %>—<% } %>
+                  <% if (!row.wizard_completo) { %><span class="block text-xs text-amber-600 mt-1">incompleto</span><% } %>
+                </td>
+                <td class="px-4 py-3 text-gray-500 whitespace-nowrap text-xs"><%= dataFmt %></td>
+                <td class="px-4 py-3">
+                  <button type="button" class="text-xs text-primary-600 hover:underline validacao-detalhe-btn" data-json="<%= encodeURIComponent(JSON.stringify(r)) %>">Detalhes</button>
+                </td>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <% if (totalPages > 1) { %>
+      <div class="flex justify-between text-sm text-gray-500">
+        <span>Página <%= page %> de <%= totalPages %></span>
+        <div class="flex gap-2">
+          <% if (page > 1) {
+            const pq = ['page=' + (page-1)]; if (filtros.origem) pq.push('origem='+encodeURIComponent(filtros.origem)); if (filtros.buscaEmail) pq.push('q='+encodeURIComponent(filtros.buscaEmail));
+          %><a href="<%= adminPath %>/lista-espera?<%= pq.join('&') %>" class="px-3 py-1 border rounded-lg">Anterior</a><% } %>
+          <% if (page < totalPages) {
+            const nq = ['page=' + (page+1)]; if (filtros.origem) nq.push('origem='+encodeURIComponent(filtros.origem)); if (filtros.buscaEmail) nq.push('q='+encodeURIComponent(filtros.buscaEmail));
+          %><a href="<%= adminPath %>/lista-espera?<%= nq.join('&') %>" class="px-3 py-1 border rounded-lg">Próxima</a><% } %>
+        </div>
+      </div>
+    <% } %>
+  </div>
+</main>
+
+<div id="validacaoModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
+  <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl">
+    <h3 class="font-bold text-gray-900 mb-3">Respostas completas</h3>
+    <pre id="validacaoModalBody" class="text-xs bg-gray-50 rounded-lg p-4 overflow-auto max-h-64 text-gray-700"></pre>
+    <button type="button" id="validacaoModalClose" class="mt-4 w-full py-2 rounded-lg bg-gray-900 text-white text-sm font-medium">Fechar</button>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="/js/admin-validacao-dashboard.js"></script>
+<script>
+(function(){
+  var modal = document.getElementById('validacaoModal');
+  var body = document.getElementById('validacaoModalBody');
+  document.querySelectorAll('.validacao-detalhe-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      try {
+        body.textContent = JSON.stringify(JSON.parse(decodeURIComponent(btn.getAttribute('data-json')||'{}')), null, 2);
+      } catch(e) { body.textContent = '{}'; }
+      modal.classList.remove('hidden');
+    });
+  });
+  document.getElementById('validacaoModalClose').addEventListener('click', function(){ modal.classList.add('hidden'); });
+  var feedback = document.getElementById('adminCopyFeedback');
+  document.querySelectorAll('.admin-copy-link').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var url = btn.getAttribute('data-copy') || '';
+      if (!url) return;
+      function ok(){ if (feedback) { feedback.classList.remove('hidden'); setTimeout(function(){ feedback.classList.add('hidden'); }, 2000); } }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(url).then(ok).catch(function(){ window.prompt('Copie o link:', url); });
+      } else {
+        window.prompt('Copie o link:', url);
+        ok();
+      }
+    });
+  });
+})();
+</script>
+
+<%- include('../partials/admin-footer') %>

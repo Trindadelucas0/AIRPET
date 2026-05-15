@@ -1,0 +1,69 @@
+/* Landing AIRPET — validação premium */
+
+.validacao-landing {
+  font-family: "DM Sans", system-ui, sans-serif;
+  background: #fff;
+  color: #1f2937;
+}
+
+.validacao-landing .font-display {
+  font-family: "Syne", "DM Sans", sans-serif;
+  letter-spacing: -0.02em;
+}
+
+.lp-hero-mesh {
+  background:
+    radial-gradient(ellipse 80% 60% at 70% 20%, rgba(236, 90, 28, 0.18), transparent 55%),
+    radial-gradient(ellipse 50% 40% at 10% 80%, rgba(50, 141, 255, 0.12), transparent 50%),
+    linear-gradient(165deg, #0f172a 0%, #1e293b 45%, #111827 100%);
+}
+
+.lp-stat {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem 2rem;
+  justify-content: center;
+  padding: 1.25rem 1.5rem;
+  background: #fff;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.lp-stat-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #4b5563;
+}
+
+.lp-stat-item svg {
+  flex-shrink: 0;
+  color: #ec5a1c;
+}
+
+.lp-card-lift {
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.lp-card-lift:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 40px -12px rgba(15, 23, 42, 0.12);
+}
+
+.lp-img-fallback {
+  background: linear-gradient(135deg, #e5e7eb 0%, #d1d5db 100%);
+}
+
+.lp-bento-main {
+  grid-row: span 2;
+}
+
+@media (min-width: 768px) {
+  .lp-bento {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    grid-template-rows: auto auto;
+    gap: 1.25rem;
+  }
+}

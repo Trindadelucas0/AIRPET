@@ -432,6 +432,53 @@ const validarAdminLogin = [
   body('senha').notEmpty().withMessage('Senha e obrigatoria.'),
 ];
 
+const validarListaEspera = [
+  camposPermitidos([
+    'email', 'nome', 'telefone', 'cidade', 'estado', 'origem', 'respostas',
+    'wizard_completo', 'user_agent', 'website',
+  ]),
+  body('email').trim().notEmpty().withMessage('Informe seu e-mail.').isEmail().withMessage('E-mail invalido.').normalizeEmail(),
+  body('nome').trim().notEmpty().withMessage('Informe seu nome.').isLength({ max: 120 }),
+  body('telefone').optional({ checkFalsy: true }).trim().isLength({ max: 30 }),
+  body('cidade').optional({ checkFalsy: true }).trim().isLength({ max: 80 }),
+  body('estado').optional({ checkFalsy: true }).trim().isLength({ max: 2 }),
+  body('origem').optional({ checkFalsy: true }).trim().isLength({ max: 64 }),
+  body('wizard_completo').optional().isBoolean().withMessage('wizard_completo invalido.'),
+  body('respostas').optional().isObject().withMessage('respostas deve ser um objeto.'),
+  body('user_agent').optional({ checkFalsy: true }).trim().isLength({ max: 512 }),
+  body('website').optional({ checkFalsy: true }).trim().isLength({ max: 200 }),
+  (req, res, next) => {
+    const respostas = req.body.respostas;
+    if (respostas && Array.isArray(respostas.prioridades) && respostas.prioridades.length > 2) {
+      return responderValidacaoFalha(req, res, ['Escolha só 2 prioridades.']);
+    }
+    return next();
+  },
+];
+
+const validarProtegerMeuPetInscricao = [
+  camposPermitidos([
+    'email', 'nome', 'telefone', 'cidade', 'estado', 'origem', 'respostas',
+    'wizard_completo', 'website',
+  ]),
+  body('email').trim().notEmpty().withMessage('Informe seu e-mail.').isEmail().withMessage('E-mail invalido.').normalizeEmail(),
+  body('nome').optional({ checkFalsy: true }).trim().isLength({ max: 120 }),
+  body('telefone').optional({ checkFalsy: true }).trim().isLength({ max: 30 }),
+  body('cidade').optional({ checkFalsy: true }).trim().isLength({ max: 80 }),
+  body('estado').optional({ checkFalsy: true }).trim().isLength({ max: 2 }),
+  body('origem').optional({ checkFalsy: true }).trim().isLength({ max: 64 }),
+  body('wizard_completo').optional().isBoolean().withMessage('wizard_completo invalido.'),
+  body('respostas').optional().isObject().withMessage('respostas deve ser um objeto.'),
+  body('website').optional({ checkFalsy: true }).trim().isLength({ max: 200 }),
+  (req, res, next) => {
+    const completo = req.body.wizard_completo === true || req.body.wizard_completo === 'true';
+    if (completo && !String(req.body.nome || '').trim()) {
+      return responderValidacaoFalha(req, res, ['Informe seu nome para concluir.']);
+    }
+    return next();
+  },
+];
+
 const validarAdminBoost = [
   camposPermitidos([
     'target_type', 'target_id', 'selected_user_id', 'selected_pet_id', 'boost_value', 'duracao_horas', 'motivo', '_method',
@@ -575,6 +622,8 @@ module.exports = {
   validarExplorarView,
   validarBodyVazioJson,
   validarAdminLogin,
+  validarListaEspera,
+  validarProtegerMeuPetInscricao,
   validarAdminBoost,
   validarAdminRejeitarPetshop,
   validarAdminEscalar,

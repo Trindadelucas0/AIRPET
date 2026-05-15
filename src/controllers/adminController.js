@@ -1379,6 +1379,117 @@ async function cancelarBoost(req, res) {
   }
 }
 
+/**
+ * listarValidacaoInteresse — Lista de espera da landing /proteger-meu-pet
+ *
+ * Rota: GET /admin/lista-espera
+ */
+async function listarValidacaoInteresse(req, res) {
+  const ListaEspera = require('../models/ListaEspera');
+
+  try {
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const origem = String(req.query.origem || '').trim();
+    const buscaEmail = String(req.query.q || '').trim();
+    const limite = ListaEspera.PAGE_SIZE;
+    const offset = (page - 1) * limite;
+
+    const filtros = {};
+    if (origem) filtros.origem = origem;
+    if (buscaEmail) filtros.buscaEmail = buscaEmail;
+
+    const [inscritos, total, ultimos7, origens, agreg] = await Promise.all([
+      ListaEspera.listar({ ...filtros, limite, offset }),
+      ListaEspera.contar(filtros),
+      ListaEspera.contarUltimosDias(7),
+      ListaEspera.listarOrigens(),
+      ListaEspera.agregarValidacao(),
+    ]);
+
+    const totalPages = Math.max(1, Math.ceil(total / limite));
+    const publicBaseUrl = (process.env.BASE_URL || `${req.protocol}://${req.get('host')}`).replace(/\/$/, '');
+
+    return res.render('admin/lista-espera', {
+      titulo: 'Validação do produto',
+      inscritos,
+      total,
+      ultimos7,
+      origens: origens || [],
+      agreg,
+      filtros: { origem, buscaEmail },
+      page,
+      totalPages,
+      limite,
+      landingUrl: '/lista-espera',
+      landingUrlAbs: `${publicBaseUrl}/proteger-meu-pet`,
+      wizardUrlAbs: `${publicBaseUrl}/lista-espera`,
+      chartData: JSON.stringify({
+        metodosBusca: agreg.metodosBusca || [],
+        tipoPet: agreg.tipoPet || [],
+        perdeuPet: agreg.perdeuPet || [],
+        betaInteresse: agreg.betaInteresse || [],
+        prioridades: agreg.prioridades || [],
+      }),
+    });
+  } catch (erro) {
+    logger.error('AdminController', 'Erro ao listar validacao interesse', erro);
+    req.session.flash = { tipo: 'erro', mensagem: 'Erro ao carregar a lista de espera.' };
+    return res.redirect(getAdminPath());
+  }
+}
+
+/**
+ * exportarValidacaoInteresseCsv — Export CSV da lista de espera
+ */
+async function exportarValidacaoInteresseCsv(req, res) {
+  const ListaEspera = require('../models/ListaEspera');
+
+  try {
+    const origem = String(req.query.origem || '').trim();
+    const buscaEmail = String(req.query.q || '').trim();
+    const filtros = {};
+    if (origem) filtros.origem = origem;
+    if (buscaEmail) filtros.buscaEmail = buscaEmail;
+
+    const rows = await ListaEspera.listarParaExport(filtros);
+
+    const linhas = [
+      'email,nome,telefone,cidade,estado,origem,wizard_completo,criado_em,tipo_pet,qtd_pets,ja_perdeu_pet,metodos_busca,prioridades,beta_interesse',
+    ];
+    for (const row of rows) {
+      const r = row.respostas_json || row.respostas || {};
+      const esc = (v) => String(v ?? '').replace(/"/g, '""');
+      const data = row.criado_em ? new Date(row.criado_em).toISOString() : '';
+      const metodos = Array.isArray(r.metodos_busca) ? r.metodos_busca.join('|') : '';
+      const prioridades = Array.isArray(r.prioridades) ? r.prioridades.join('|') : '';
+      linhas.push([
+        `"${esc(row.email)}"`,
+        `"${esc(row.nome)}"`,
+        `"${esc(row.telefone)}"`,
+        `"${esc(row.cidade)}"`,
+        `"${esc(row.estado)}"`,
+        `"${esc(row.origem)}"`,
+        row.wizard_completo ? 'sim' : 'nao',
+        `"${data}"`,
+        `"${esc(r.tipo_pet)}"`,
+        `"${esc(r.qtd_pets)}"`,
+        `"${esc(r.ja_perdeu_pet)}"`,
+        `"${esc(metodos)}"`,
+        `"${esc(prioridades)}"`,
+        `"${esc(r.beta_interesse)}"`,
+      ].join(','));
+    }
+
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', 'attachment; filename="lista-espera-airpet.csv"');
+    return res.send('\uFEFF' + linhas.join('\n'));
+  } catch (erro) {
+    logger.error('AdminController', 'Erro ao exportar lista de espera', erro);
+    req.session.flash = { tipo: 'erro', mensagem: 'Erro ao exportar CSV.' };
+    return res.redirect(getAdminPath() + '/lista-espera');
+  }
+}
+
 module.exports = {
   dashboard,
   listarUsuarios,
@@ -1418,4 +1529,6 @@ module.exports = {
   buscarPetsParaBoost,
   criarBoost,
   cancelarBoost,
+  listarValidacaoInteresse,
+  exportarValidacaoInteresseCsv,
 };
