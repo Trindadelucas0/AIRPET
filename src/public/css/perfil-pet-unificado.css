@@ -144,6 +144,38 @@
   justify-content: center;
 }
 
+.pp-btn--block {
+  flex: 1 1 100%;
+  justify-content: center;
+  padding: 11px 16px;
+}
+
+.pp-btn--danger-outline {
+  background: #fef2f2;
+  color: #b91c1c;
+  border-color: #fecaca;
+  box-shadow: 0 4px 14px rgba(220, 38, 38, 0.12);
+}
+
+.pp-btn--danger-outline:hover {
+  background: #fee2e2;
+  border-color: #f87171;
+  box-shadow: 0 6px 18px rgba(220, 38, 38, 0.18);
+}
+
+.pp-btn--success-outline {
+  background: #ecfdf5;
+  color: #047857;
+  border-color: #a7f3d0;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.12);
+}
+
+.pp-btn--success-outline:hover {
+  background: #d1fae5;
+  border-color: #6ee7b7;
+  box-shadow: 0 6px 18px rgba(16, 185, 129, 0.18);
+}
+
 .pp-name-block {
   margin-top: 14px;
 }

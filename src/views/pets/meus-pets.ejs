@@ -110,6 +110,8 @@
   .pet-action-btn.primary:hover { background:var(--accent); color:#fff; border-color:var(--accent); text-decoration:none; }
   .pet-action-btn.ghost { background:var(--ink-3); border:1px solid var(--border); color:var(--text-dim); }
   .pet-action-btn.ghost:hover { border-color:var(--border-hover); color:var(--text); text-decoration:none; }
+  .pet-action-btn.alert { flex:0 1 auto; background:rgba(254,242,242,0.95); border:1px solid #fecaca; color:#b91c1c; }
+  .pet-action-btn.alert:hover { background:#fee2e2; border-color:#f87171; color:#991b1b; text-decoration:none; }
 
   /* ── EMPTY STATE ── */
   .pets-empty {
@@ -178,6 +180,15 @@
               <a href="/p/<%= pet.slug || pet.id %>" class="pet-action-btn primary">
                 <i class="fa-solid fa-paw"></i> Ver perfil
               </a>
+              <% if (pet.status !== 'perdido') { %>
+              <a href="/perdidos/<%= pet.id %>/formulario" class="pet-action-btn alert" title="Reportar como perdido">
+                <i class="fa-solid fa-triangle-exclamation"></i> Perdido?
+              </a>
+              <% } else { %>
+              <a href="/perdidos/<%= pet.id %>/encontrado" class="pet-action-btn alert" title="Marcar como encontrado">
+                <i class="fa-solid fa-check-circle"></i> Encontrado
+              </a>
+              <% } %>
               <a href="/pets/<%= pet.id %>/editar" class="pet-action-btn ghost">
                 <i class="fa-solid fa-pen"></i>
               </a>
