@@ -100,15 +100,17 @@ const notificacaoService = {
       throw new Error('Alerta de pet perdido não encontrado');
     }
 
-    if (!alerta.latitude || !alerta.longitude) {
+    const lat = alerta.latitude ?? alerta.ultima_lat;
+    const lng = alerta.longitude ?? alerta.ultima_lng;
+    if (lat == null || lng == null || Number.isNaN(Number(lat)) || Number.isNaN(Number(lng))) {
       throw new Error('Alerta sem coordenadas de localização');
     }
 
     const raioMetros = raioKm * 1000;
 
     let usuarioIds = await Usuario.listarIdsParaAlertaPerdidoProximos(
-      alerta.latitude,
-      alerta.longitude,
+      lat,
+      lng,
       raioMetros,
       alerta.usuario_id
     );

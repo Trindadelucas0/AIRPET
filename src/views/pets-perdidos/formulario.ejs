@@ -1,7 +1,9 @@
 <% locals.titulo = 'Reportar ' + pet.nome + ' como Perdido' %>
 <% var returnTo = (typeof returnTo !== 'undefined' && returnTo) ? returnTo : (pet.slug ? '/p/' + pet.slug + '?tab=scans' : '/pets/' + pet.id); %>
-<% var scanLat = (typeof ultimoScan !== 'undefined' && ultimoScan && ultimoScan.latitude != null) ? ultimoScan.latitude : null; %>
-<% var scanLng = (typeof ultimoScan !== 'undefined' && ultimoScan && ultimoScan.longitude != null) ? ultimoScan.longitude : null; %>
+<% var scanLat = (typeof scanLat !== 'undefined' && scanLat != null) ? scanLat : ((typeof ultimoScan !== 'undefined' && ultimoScan && ultimoScan.latitude != null) ? ultimoScan.latitude : null); %>
+<% var scanLng = (typeof scanLng !== 'undefined' && scanLng != null) ? scanLng : ((typeof ultimoScan !== 'undefined' && ultimoScan && ultimoScan.longitude != null) ? ultimoScan.longitude : null); %>
+<% var scanCidade = (typeof scanCidade !== 'undefined' && scanCidade) ? scanCidade : ((typeof ultimoScan !== 'undefined' && ultimoScan && ultimoScan.cidade) ? String(ultimoScan.cidade).trim() : ''); %>
+<% var scanLabelPreview = (typeof scanLabelPreview !== 'undefined' && scanLabelPreview) ? scanLabelPreview : 'Leitura recente da tag'; %>
 <% locals.extraHead = `
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/css/design-system.css">
@@ -33,6 +35,8 @@
   .search-result-item{padding:10px 14px;font-size:13px;cursor:pointer;}
   .search-result-item:hover{background:#f3f4f6;}
   .local-ok{margin-top:10px;padding:10px 14px;background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);border-radius:10px;font-size:13px;color:#16a34a;}
+  .local-ok-maps{display:inline-flex;align-items:center;gap:6px;margin-top:8px;font-size:12px;font-weight:700;color:#2563eb;text-decoration:none;}
+  .local-ok-maps:hover{text-decoration:underline;}
   .wizard-review{background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:14px;font-size:13px;line-height:1.55;color:#334155;white-space:pre-wrap;}
   .air-wizard-inline-error.perdido-step-error{display:block;margin-top:8px;}
 </style>
@@ -106,8 +110,8 @@
             <button type="button" class="loc-option" id="optScan">
               <div class="loc-option-icon" style="background:rgba(96,165,250,0.1);"><i class="fa-solid fa-satellite-dish" style="color:#2563eb;"></i></div>
               <div>
-                <div class="loc-option-name">Ultimo scan da tag NFC</div>
-                <div class="loc-option-sub"><% if (ultimoScan && ultimoScan.data) { var dtScan = new Date(ultimoScan.data); %><%= dtScan.toLocaleDateString('pt-BR') %> as <%= dtScan.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}) %><% } else { %>Leitura recente<% } %></div>
+                <div class="loc-option-name">Ultima leitura da tag NFC</div>
+                <div class="loc-option-sub"><%= scanLabelPreview %><% if (ultimoScan && ultimoScan.data) { var dtScan = new Date(ultimoScan.data); %> · <%= dtScan.toLocaleDateString('pt-BR') %> as <%= dtScan.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}) %><% } %></motion>
               </div>
             </button>
             <% } %>
@@ -124,7 +128,7 @@
               <input type="text" id="buscaEndereco" class="input-field w-full" placeholder="Endereco ou bairro...">
               <div id="searchResults" class="search-results hidden" style="margin-top:4px;"></div>
             </div>
-            <div id="localSelecionado" class="local-ok hidden"><i class="fa-solid fa-check-circle"></i> <span id="localSelecionadoText"></span></div>
+            <div id="localSelecionado" class="local-ok hidden"><i class="fa-solid fa-check-circle"></i> <span id="localSelecionadoText"></span><a id="localSelecionadoMaps" class="local-ok-maps hidden" href="#" target="_blank" rel="noopener"><i class="fa-solid fa-map-location-dot"></i> Abrir no Google Maps</a></div>
             <p id="locStepError" class="air-wizard-inline-error perdido-step-error hidden">Selecione uma localizacao para continuar.</p>
           </div>
           <div class="air-wizard-nav">
@@ -202,10 +206,12 @@
 <% locals.extraScripts = `
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="/js/airpet-wizard.js"></script>
+<script src="/js/airpet-location.js"></script>
 <script>
 (function () {
   var SCAN_LAT = ` + (scanLat != null ? scanLat : 'null') + `;
   var SCAN_LNG = ` + (scanLng != null ? scanLng : 'null') + `;
+  var SCAN_CIDADE = ` + JSON.stringify(scanCidade || '') + `;
   var mapa = null, marker = null;
   var optScan = document.getElementById('optScan');
   var optMapa = document.getElementById('optMapa');
@@ -222,15 +228,28 @@
     [optScan, optMapa, optBusca].filter(Boolean).forEach(function (el) { el.classList.remove('active'); });
   }
 
+  var Loc = window.AIRPET_location || {};
   function setLocal(lat, lng, desc) {
     document.getElementById('latInput').value = lat;
     document.getElementById('lngInput').value = lng;
-    document.getElementById('localDescInput').value = desc || '';
+    var label = (desc && String(desc).trim()) ? String(desc).trim() : (Loc.formatLocationLabel ? Loc.formatLocationLabel({ latitude: lat, longitude: lng }) : (lat + ', ' + lng));
+    document.getElementById('localDescInput').value = label;
     var el = document.getElementById('localSelecionado');
     el.classList.remove('hidden');
-    document.getElementById('localSelecionadoText').textContent = desc || (lat + ', ' + lng);
+    document.getElementById('localSelecionadoText').textContent = label;
+    var mapsA = document.getElementById('localSelecionadoMaps');
+    if (mapsA && Loc.googleMapsViewUrl && Loc.hasValidCoords && Loc.hasValidCoords(lat, lng)) {
+      mapsA.href = Loc.googleMapsViewUrl(lat, lng);
+      mapsA.classList.remove('hidden');
+    } else if (mapsA) { mapsA.classList.add('hidden'); }
     var err = document.getElementById('locStepError');
     if (err) err.classList.add('hidden');
+  }
+  function resolveLabel(lat, lng, hint) {
+    if (hint && String(hint).trim()) return Promise.resolve(String(hint).trim());
+    if (SCAN_CIDADE && String(SCAN_CIDADE).trim()) return Promise.resolve(String(SCAN_CIDADE).trim());
+    if (Loc.reverseGeocodeLabel) return Loc.reverseGeocodeLabel(lat, lng);
+    return Promise.resolve(Loc.formatLocationLabel ? Loc.formatLocationLabel({ latitude: lat, longitude: lng }) : (lat + ', ' + lng));
   }
 
   function hasLocal() {
@@ -246,7 +265,7 @@
       document.getElementById('mapaPerdidoWrap').classList.add('hidden');
       document.getElementById('buscaWrap').classList.add('hidden');
       if (SCAN_LAT == null || SCAN_LNG == null) return;
-      setLocal(SCAN_LAT, SCAN_LNG, 'Ultimo scan da tag NFC');
+      resolveLabel(SCAN_LAT, SCAN_LNG, SCAN_CIDADE).then(function (label) { setLocal(SCAN_LAT, SCAN_LNG, label); });
     });
   }
   if (optMapa) {
@@ -263,7 +282,9 @@
           var ll = e.latlng;
           if (marker) marker.setLatLng(ll);
           else marker = L.marker(ll).addTo(mapa);
-          setLocal(ll.lat.toFixed(6), ll.lng.toFixed(6), 'Marcado no mapa');
+          var lat = ll.lat.toFixed(6);
+          var lng = ll.lng.toFixed(6);
+          resolveLabel(lat, lng, null).then(function (label) { setLocal(lat, lng, label); });
         });
       } else {
         setTimeout(function () { mapa.invalidateSize(); }, 100);

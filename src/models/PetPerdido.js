@@ -108,7 +108,7 @@ const PetPerdido = {
    * Busca um alerta pelo ID com dados completos do pet e do dono.
    * Usa JOINs para trazer nome, foto do pet e contato do tutor.
    *
-   * @param {string} id - UUID do alerta
+   * @param {number|string} id - ID numérico do alerta (pets_perdidos.id)
    * @returns {Promise<object|undefined>} Alerta com dados enriquecidos
    */
   async buscarPorId(id) {
@@ -358,6 +358,8 @@ const PetPerdido = {
               pp.ultima_lat AS latitude, pp.ultima_lng AS longitude
        FROM pets_perdidos pp
        WHERE pp.status = 'aprovado'
+         AND pp.ultima_lat IS NOT NULL
+         AND pp.ultima_lng IS NOT NULL
        ORDER BY pp.data ASC`
     );
     return resultado.rows;

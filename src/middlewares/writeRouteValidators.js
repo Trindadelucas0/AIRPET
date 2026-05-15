@@ -330,7 +330,7 @@ const validarPetshopPost = [
 ];
 
 const validarExplorarPostV1 = [
-  camposPermitidos(['texto', 'text', 'pet_id']),
+  camposPermitidos(['texto', 'text', 'pet_id', 'fofinhos_moldura', 'lat', 'lng', 'local_nome']),
   body('texto').optional({ checkFalsy: true }).trim().isLength({ max: 8000 }),
   body('text').optional({ checkFalsy: true }).trim().isLength({ max: 8000 }),
   // Regra de produto AIRPET: todo post pertence a um pet do tutor.
@@ -347,7 +347,7 @@ const validarExplorarPostV1 = [
 ];
 
 const validarExplorarPostV2 = [
-  camposPermitidos(['text', 'texto', 'pet_id', 'taggedUserIds']),
+  camposPermitidos(['text', 'texto', 'pet_id', 'taggedUserIds', 'fofinhos_moldura', 'lat', 'lng', 'local_nome']),
   body('text').optional({ checkFalsy: true }).trim().isLength({ max: 8000 }),
   body('texto').optional({ checkFalsy: true }).trim().isLength({ max: 8000 }),
   body('pet_id')

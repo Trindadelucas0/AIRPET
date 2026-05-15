@@ -23,7 +23,28 @@
         <% } %>
         <h1 class="font-display text-2xl font-extrabold text-gray-900 mb-1"><%= alerta.pet_nome || 'Pet' %></h1>
         <% if (alerta.pet_raca) { %><p class="text-sm text-gray-500 mb-2"><%= alerta.pet_raca %><% if (alerta.pet_tipo) { %> · <%= alerta.pet_tipo %><% } %></p><% } %>
-        <% if (alerta.cidade) { %><p class="text-sm text-gray-600 mb-3"><i class="fa-solid fa-location-dot text-primary-500 mr-1"></i>Região: <%= alerta.cidade %></p><% } %>
+        <% if (locLabel || hasMaps) { %>
+          <div class="mt-3 mb-3 rounded-xl border border-orange-100 bg-orange-50/60 px-4 py-3 text-left">
+            <p class="text-xs font-bold text-orange-800 uppercase tracking-wide mb-1">
+              <i class="fa-solid fa-location-dot text-primary-500 mr-1"></i> Ultima localizacao conhecida
+            </p>
+            <% if (locLabel) { %>
+              <p class="text-sm text-gray-800 font-semibold leading-snug"><%= locLabel %></p>
+            <% } %>
+            <% if (hasMaps) { %>
+              <div class="flex flex-wrap gap-2 mt-3">
+                <a href="<%= mapsUrl %>" target="_blank" rel="noopener"
+                   class="inline-flex items-center gap-2 rounded-lg bg-white border border-primary-200 text-primary-700 px-3 py-2 text-xs font-bold hover:bg-primary-50">
+                  <i class="fa-solid fa-map-location-dot"></i> Abrir no Google Maps
+                </a>
+                <a href="<%= mapsDirectionsUrl %>" target="_blank" rel="noopener"
+                   class="inline-flex items-center gap-2 rounded-lg bg-primary-600 text-white px-3 py-2 text-xs font-bold hover:bg-primary-700">
+                  <i class="fa-solid fa-diamond-turn-right"></i> Como chegar
+                </a>
+              </div>
+            <% } %>
+          </div>
+        <% } %>
         <% if (alerta.descricao) { %>
           <div class="text-left mt-4 pt-4 border-t border-gray-100">
             <p class="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Informações</p>

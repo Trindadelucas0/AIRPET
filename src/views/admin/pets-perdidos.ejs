@@ -10,6 +10,9 @@
       </a>
       <h1 class="text-2xl font-bold text-gray-900">Pets Perdidos</h1>
       <p class="text-sm text-gray-500 mt-1"><%= perdidos.length %> registros</p>
+      <p class="text-sm text-gray-500 mt-2 max-w-2xl">
+        Para ver <strong class="text-gray-700">scans NFC e localização no mapa</strong>, abra a ficha do pet (botão na card ou menu lateral <strong>Pets</strong>).
+      </p>
     </div>
 
     <!-- Hub de alertas: status do cron, links e log -->
@@ -132,7 +135,9 @@
             <div class="p-5">
               <div class="flex items-start justify-between mb-3">
                 <div>
-                  <h3 class="font-semibold text-gray-900"><%= p.pet_nome || 'Pet #' + p.pet_id %></h3>
+                  <h3 class="font-semibold text-gray-900">
+                    <a href="<%= adminPath %>/pets/<%= p.pet_id %>" class="hover:text-primary-600 hover:underline"><%= p.pet_nome || 'Pet #' + p.pet_id %></a>
+                  </h3>
                   <p class="text-xs text-gray-500 mt-0.5"><%= p.criado_em ? new Date(p.criado_em).toLocaleDateString('pt-BR') : '' %></p>
                 </div>
                 <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold <%= statusClass %>">
@@ -149,8 +154,13 @@
               <% } %>
 
               <% if (p.descricao) { %>
-                <p class="text-sm text-gray-600 mb-4 line-clamp-2"><%= p.descricao %></p>
+                <p class="text-sm text-gray-600 mb-3 line-clamp-2"><%= p.descricao %></p>
               <% } %>
+
+              <a href="<%= adminPath %>/pets/<%= p.pet_id %>"
+                 class="w-full flex items-center justify-center gap-2 px-4 py-2 mb-3 rounded-lg text-sm font-semibold text-primary-700 bg-primary-50 border border-primary-200 hover:bg-primary-100 transition-colors">
+                <i class="fa-solid fa-map-location-dot"></i> Ficha do pet (alertas + scans)
+              </a>
 
               <% if (p.status === 'pendente') { %>
                 <form action="<%= adminPath %>/pets-perdidos/<%= p.id %>/aprovar" method="POST">

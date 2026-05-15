@@ -138,8 +138,7 @@ const Conversa = {
     const executor = client || pool;
     const resultado = await executor.query(
       `UPDATE conversas
-       SET status = 'encerrada',
-           data_atualizacao = NOW()
+       SET status = 'encerrada'
        WHERE id = $1
        RETURNING *`,
       [id]

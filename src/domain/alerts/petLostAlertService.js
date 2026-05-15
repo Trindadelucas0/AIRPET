@@ -98,10 +98,17 @@ async function escalarOuReiniciarCiclo(petPerdidoId, opcoes = {}) {
 
   const raioKm = await getRaioNivelKm(nivelDestino);
   let notificacoes = [];
-  try {
-    notificacoes = await notificacaoService.notificarProximos(alerta.id, raioKm);
-  } catch (erroNotificacao) {
-    logger.error('PetLostAlertService', 'Falha ao notificar usuários na escalação', erroNotificacao);
+  const lat = alertaAtualizado?.ultima_lat ?? alertaAtualizado?.latitude ?? alerta.latitude ?? alerta.ultima_lat;
+  const lng = alertaAtualizado?.ultima_lng ?? alertaAtualizado?.longitude ?? alerta.longitude ?? alerta.ultima_lng;
+  const temCoords = lat != null && lng != null && !Number.isNaN(Number(lat)) && !Number.isNaN(Number(lng));
+  if (!temCoords) {
+    logger.warn('PetLostAlertService', `Alerta ${alerta.id} escalado sem coordenadas — notificacao por proximidade ignorada`);
+  } else {
+    try {
+      notificacoes = await notificacaoService.notificarProximos(alerta.id, raioKm);
+    } catch (erroNotificacao) {
+      logger.error('PetLostAlertService', 'Falha ao notificar usuários na escalação', erroNotificacao);
+    }
   }
 
   await registrarEvento(alertaAtualizado || alerta, {

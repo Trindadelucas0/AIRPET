@@ -29,6 +29,8 @@ const Conversa = require('../models/Conversa');
 const MensagemChat = require('../models/MensagemChat');
 const { withTransaction } = require('../config/database');
 const logger = require('../utils/logger');
+const geocoding = require('../utils/geocoding');
+const mapLinks = require('../utils/mapLinks');
 const { sameNumericId } = require('../utils/sameNumericId');
 
 /** Redirect interno seguro após reporte (ex.: /p/slug?tab=scans). */
@@ -75,7 +77,19 @@ async function mostrarFormulario(req, res) {
       return res.redirect(`/pets/${pet_id}`);
     }
 
-    const ultimoScan = await TagScan.ultimoScanPet(pet_id);
+    const ultimoScanRaw = await TagScan.ultimoScanPet(pet_id);
+    const ultimoScan = ultimoScanRaw ? mapLinks.enrichScan(ultimoScanRaw, 'Leitura recente da tag') : null;
+    const scanLat = ultimoScan && ultimoScan.latitude != null ? ultimoScan.latitude : null;
+    const scanLng = ultimoScan && ultimoScan.longitude != null ? ultimoScan.longitude : null;
+    const scanCidade = ultimoScan && ultimoScan.cidade ? String(ultimoScan.cidade).trim() : '';
+    const scanLabelPreview = ultimoScan
+      ? ultimoScan.locLabel
+      : mapLinks.formatLocationLabel({
+        cidade: scanCidade,
+        latitude: scanLat,
+        longitude: scanLng,
+        fallback: 'Leitura recente da tag',
+      });
     const returnTo = resolveSafeReturnTo(
       req.query.return_to,
       pet.slug ? `/p/${pet.slug}?tab=scans` : `/pets/${pet_id}`
@@ -85,6 +99,10 @@ async function mostrarFormulario(req, res) {
       titulo: `Reportar ${pet.nome} como Perdido - AIRPET`,
       pet,
       ultimoScan,
+      scanLat,
+      scanLng,
+      scanCidade,
+      scanLabelPreview,
       returnTo,
     });
   } catch (erro) {
@@ -115,7 +133,10 @@ async function reportar(req, res) {
   try {
     const { pet_id } = req.params;
     const usuarioId = req.session.usuario.id;
-    const { descricao, latitude, longitude, recompensa, data_hora_desaparecimento, return_to } = req.body;
+    const {
+      descricao, latitude, longitude, local_descricao,
+      recompensa, data_hora_desaparecimento, return_to,
+    } = req.body;
 
     const pet = await Pet.buscarPorId(pet_id);
 
@@ -137,13 +158,24 @@ async function reportar(req, res) {
       }
     }
 
+    const lat = latitude != null && latitude !== '' ? parseFloat(latitude) : null;
+    const lng = longitude != null && longitude !== '' ? parseFloat(longitude) : null;
+    const hasCoords = mapLinks.hasValidCoords(lat, lng);
+
+    let cidade = local_descricao && String(local_descricao).trim()
+      ? String(local_descricao).trim()
+      : null;
+    if (!cidade && hasCoords) {
+      cidade = await geocoding.reverseGeocode(lat, lng);
+    }
+
     await withTransaction(async (client) => {
       await PetPerdido.criar({
         pet_id: parseInt(pet_id, 10),
         descricao: descricao || 'Sem descrição fornecida.',
-        latitude: latitude ? parseFloat(latitude) : null,
-        longitude: longitude ? parseFloat(longitude) : null,
-        cidade: null,
+        latitude: hasCoords ? lat : null,
+        longitude: hasCoords ? lng : null,
+        cidade,
         recompensa: recompensa || null,
         data_hora_desaparecimento: dataDesap,
       }, client);
@@ -285,7 +317,7 @@ async function marcarEncontrado(req, res) {
       return res.redirect('/pets');
     }
 
-    if (pet.usuario_id !== usuarioId) {
+    if (!sameNumericId(pet.usuario_id, usuarioId)) {
       req.session.flash = { tipo: 'erro', mensagem: 'Você não tem permissão para esta ação.' };
       return res.redirect(`/pets/${pet_id}`);
     }
@@ -368,7 +400,12 @@ async function mostrarConfirmacao(req, res) {
   }
 }
 
-const UUID_ALERTA_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+function parseAlertaPublicoId(raw) {
+  const s = String(raw || '').trim();
+  if (!/^\d{1,10}$/.test(s)) return null;
+  const n = parseInt(s, 10);
+  return n > 0 ? n : null;
+}
 
 /**
  * Página pública do alerta (compartilhável). Só exibe dados sensíveis mínimos.
@@ -376,8 +413,8 @@ const UUID_ALERTA_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]
  */
 async function mostrarAlertaPublico(req, res) {
   try {
-    const { alertaId } = req.params;
-    if (!UUID_ALERTA_RE.test(String(alertaId || ''))) {
+    const id = parseAlertaPublicoId(req.params.alertaId);
+    if (id == null) {
       return res.status(404).render('partials/erro', {
         titulo: 'Alerta não encontrado',
         mensagem: 'Este link não é válido.',
@@ -385,7 +422,7 @@ async function mostrarAlertaPublico(req, res) {
       });
     }
 
-    const alerta = await PetPerdido.buscarPorId(alertaId);
+    const alerta = await PetPerdido.buscarPorId(id);
     if (!alerta) {
       return res.status(404).render('partials/erro', {
         titulo: 'Alerta não encontrado',
@@ -397,6 +434,17 @@ async function mostrarAlertaPublico(req, res) {
     const pet = await Pet.buscarPorId(alerta.pet_id);
     const ativo = alerta.status === 'aprovado' && pet && pet.status === 'perdido';
 
+    const alertaLat = alerta.latitude != null ? alerta.latitude : alerta.ultima_lat;
+    const alertaLng = alerta.longitude != null ? alerta.longitude : alerta.ultima_lng;
+    const locLabel = mapLinks.formatLocationLabel({
+      cidade: alerta.cidade,
+      latitude: alertaLat,
+      longitude: alertaLng,
+      fallback: '',
+    });
+    const mapsUrl = mapLinks.googleMapsViewUrl(alertaLat, alertaLng);
+    const mapsDirectionsUrl = mapLinks.googleMapsDirectionsUrl(alertaLat, alertaLng);
+
     return res.render('pets-perdidos/alerta-publico', {
       titulo: ativo
         ? `${alerta.pet_nome || 'Pet'} está perdido — AIRPET`
@@ -404,6 +452,10 @@ async function mostrarAlertaPublico(req, res) {
       alerta,
       pet,
       ativo,
+      locLabel,
+      mapsUrl,
+      mapsDirectionsUrl,
+      hasMaps: !!mapsUrl,
     });
   } catch (erro) {
     logger.error('PetPerdidoController', 'Erro na página pública do alerta', erro);

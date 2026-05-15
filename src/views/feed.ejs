@@ -887,10 +887,9 @@
         <!-- Pet selector -->
         <% if (typeof meusPets !== 'undefined' && meusPets && meusPets.length > 0) { %>
         <div style="margin-bottom:12px;">
-          <select id="novoPetId" style="background:var(--ink-3);border:1px solid var(--border);border-radius:9px;padding:7px 12px;color:var(--text);font-family:var(--font-body);font-size:13px;outline:none;width:100%;cursor:pointer;">
-            <option value="">🐾 Nenhum pet</option>
-            <% meusPets.forEach(function(p) { %>
-              <option value="<%= p.id %>"><%= p.nome %></option>
+          <select id="novoPetId" required style="background:var(--ink-3);border:1px solid var(--border);border-radius:9px;padding:7px 12px;color:var(--text);font-family:var(--font-body);font-size:13px;outline:none;width:100%;cursor:pointer;">
+            <% meusPets.forEach(function(p, idx) { %>
+              <option value="<%= p.id %>"<%= idx === 0 ? ' selected' : '' %>><%= p.nome %></option>
             <% }); %>
           </select>
         </div>
@@ -2188,11 +2187,16 @@
       isPublishingPost = true;
 
       var petIdEl = document.getElementById('novoPetId');
-      var petId = petIdEl ? petIdEl.value : '';
+      var petId = petIdEl ? String(petIdEl.value || '').trim() : '';
+      if (!petId) {
+        alert('Escolha um pet para publicar. Cadastre um pet em Meus pets se ainda não tiver.');
+        isPublishingPost = false;
+        return;
+      }
 
       var fd = new FormData();
       if (texto) fd.append('texto', texto);
-      if (petId) fd.append('pet_id', petId);
+      fd.append('pet_id', petId);
       if (fotoBlob) fd.append('foto', fotoBlob);
       var moldChk = document.getElementById('feedPostFofinhosMoldura');
       if (moldChk && moldChk.checked) fd.append('fofinhos_moldura', '1');
@@ -2201,14 +2205,23 @@
       var work = function () {
         return feedDeferred(function () {
           return fetch('/explorar/post', { method: 'POST', body: fd, credentials: 'same-origin' })
-            .then(function (r) { return r.json(); });
+            .then(function (r) {
+              return r.text().then(function (text) {
+                var data;
+                try { data = JSON.parse(text); } catch (_) {
+                  data = { sucesso: false, mensagem: r.status === 401 ? 'Sessão expirada. Faça login de novo.' : 'Erro no servidor.' };
+                }
+                return { ok: r.ok, data: data };
+              });
+            });
         }, 'A publicar…');
       };
       var p = window.AIRPET_LOADING
         ? window.AIRPET_LOADING.runLocked({ button: btnPublicar, busyText: busyLabel }, work)
         : work();
-      p.then(function (d) {
-          if (d.sucesso && d.post) {
+      p.then(function (res) {
+          var d = res.data;
+          if (res.ok && d.sucesso && d.post) {
             textarea.value = ''; charCount.textContent = '0/500';
             previewWrap.classList.add('hidden'); previewImg.src = ''; fotoBlob = null;
             btnPublicar.disabled = true;
@@ -2218,10 +2231,11 @@
             feedContainer.insertBefore(newCard, feedContainer.firstChild);
             initVerMais();
           } else {
-            alert((d && d.mensagem) || 'Erro ao publicar.');
+            var msg = (d && d.mensagem) || (d && d.erros && d.erros.length ? d.erros.join(' ') : '') || 'Erro ao publicar.';
+            alert(msg);
           }
         })
-        .catch(function () { alert('Erro ao publicar.'); })
+        .catch(function () { alert('Erro de conexão. Tente novamente.'); })
         .finally(function () { isPublishingPost = false; });
     });
   }

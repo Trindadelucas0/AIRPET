@@ -611,11 +611,10 @@
 
       <% if (pets && pets.length > 0) { %>
         <div>
-          <label class="text-xs font-medium text-gray-500 mb-1.5 block">Perfil do post (opcional)</label>
-          <select id="novoPostPet" class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-800 focus:ring-2 focus:ring-primary-500/20 focus:border-primary-400 outline-none bg-white transition-all">
-            <option value="">Meu perfil (sem pet)</option>
-            <% pets.forEach(function(p) { %>
-              <option value="<%= p.id %>"><%= p.nome %></option>
+          <label class="text-xs font-medium text-gray-500 mb-1.5 block">Publicar como pet <span class="text-red-500">*</span></label>
+          <select id="novoPostPet" required class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-800 focus:ring-2 focus:ring-primary-500/20 focus:border-primary-400 outline-none bg-white transition-all">
+            <% pets.forEach(function(p, idx) { %>
+              <option value="<%= p.id %>"<%= idx === 0 ? ' selected' : '' %>><%= p.nome %></option>
             <% }); %>
           </select>
         </div>
@@ -2113,7 +2112,12 @@
     var textoPayload = novoPostTexto ? novoPostTexto.value.trim() : '';
     if (!selectedFile && !textoPayload) return;
     var petSelect = document.getElementById('novoPostPet');
-    var petVal = (petSelect && petSelect.value) ? petSelect.value : '';
+    var petVal = (petSelect && petSelect.value) ? String(petSelect.value).trim() : '';
+    if (!petVal) {
+      toast('Escolha um pet para publicar. Cadastre um pet se ainda não tiver.', 'erro');
+      isSubmittingPost = false;
+      return;
+    }
     var hash = payloadHash(textoPayload, petVal, selectedFile);
     if (isRecentDuplicate(hash)) {
       toast('Publicação já enviada recentemente. Aguarde alguns segundos.', 'erro');
@@ -2124,7 +2128,7 @@
     var formData = new FormData();
     if (selectedFile) formData.append('foto', selectedFile);
     if (textoPayload) formData.append('texto', textoPayload);
-    if (petVal) formData.append('pet_id', petVal);
+    formData.append('pet_id', petVal);
     var moldEl = document.getElementById('novoPostFofinhosMoldura');
     if (moldEl && moldEl.checked) formData.append('fofinhos_moldura', '1');
 

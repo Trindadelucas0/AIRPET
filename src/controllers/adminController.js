@@ -21,6 +21,7 @@
  *   GET  /admin/dashboard           → dashboard
  *   GET  /admin/usuarios            → listarUsuarios
  *   GET  /admin/pets                → listarPets
+ *   GET  /admin/pets/:id            → mostrarPetDetalhe
  *   GET  /admin/petshops            → listarPetshops
  *   GET  /admin/pets-perdidos       → listarPerdidos
  *   POST /admin/pets-perdidos/:id/aprovar   → aprovarPerdido
@@ -36,6 +37,8 @@ const Usuario = require('../models/Usuario');
 const Pet = require('../models/Pet');
 const Petshop = require('../models/Petshop');
 const PetPerdido = require('../models/PetPerdido');
+const TagScan = require('../models/TagScan');
+const mapLinks = require('../utils/mapLinks');
 const MensagemChat = require('../models/MensagemChat');
 const Notificacao = require('../models/Notificacao');
 const ConfigSistema = require('../models/ConfigSistema');
@@ -280,6 +283,81 @@ async function listarPets(req, res) {
     logger.error('AdminController', 'Erro ao listar pets', erro);
     req.session.flash = { tipo: 'erro', mensagem: 'Erro ao carregar a lista de pets.' };
     return res.redirect(getAdminPath());
+  }
+}
+
+function enrichAlertaLocalizacao(alerta) {
+  const lat = alerta.latitude != null ? alerta.latitude : alerta.ultima_lat;
+  const lng = alerta.longitude != null ? alerta.longitude : alerta.ultima_lng;
+  return {
+    ...alerta,
+    latitude: lat,
+    longitude: lng,
+    locLabel: mapLinks.formatLocationLabel({
+      cidade: alerta.cidade,
+      latitude: lat,
+      longitude: lng,
+      fallback: 'Sem localização',
+    }),
+    mapsUrl: mapLinks.googleMapsViewUrl(lat, lng),
+    mapsDirectionsUrl: mapLinks.googleMapsDirectionsUrl(lat, lng),
+    hasMaps: mapLinks.hasValidCoords(lat, lng),
+  };
+}
+
+function enrichScanLocalizacao(scan) {
+  return {
+    ...scan,
+    locLabel: mapLinks.formatLocationLabel({
+      cidade: scan.cidade,
+      latitude: scan.latitude,
+      longitude: scan.longitude,
+      fallback: 'Leitura sem GPS',
+    }),
+    mapsUrl: mapLinks.googleMapsViewUrl(scan.latitude, scan.longitude),
+    mapsDirectionsUrl: mapLinks.googleMapsDirectionsUrl(scan.latitude, scan.longitude),
+    hasMaps: mapLinks.hasValidCoords(scan.latitude, scan.longitude),
+  };
+}
+
+/**
+ * mostrarPetDetalhe — Ficha completa do pet (alertas, scans NFC, mapas)
+ *
+ * Rota: GET /admin/pets/:id
+ */
+async function mostrarPetDetalhe(req, res) {
+  const adminPath = getAdminPath();
+  try {
+    const { id } = req.params;
+    const pet = await Pet.buscarPorId(id);
+
+    if (!pet) {
+      req.session.flash = { tipo: 'erro', mensagem: 'Pet não encontrado.' };
+      return res.redirect(`${adminPath}/pets`);
+    }
+
+    const [alertasRaw, scansRaw, dono] = await Promise.all([
+      PetPerdido.buscarPorPet(id),
+      TagScan.listarHistoricoPorPet(id, 50),
+      Usuario.buscarPorId(pet.usuario_id),
+    ]);
+
+    const alertas = alertasRaw.map(enrichAlertaLocalizacao);
+    const scans = scansRaw.map(enrichScanLocalizacao);
+    const alertaAtivo = alertas.find((a) => a.status === 'aprovado') || null;
+
+    return res.render('admin/pet-detalhe', {
+      titulo: `${pet.nome} — Admin AIRPET`,
+      pet,
+      dono: dono || null,
+      alertas,
+      scans,
+      alertaAtivo,
+    });
+  } catch (erro) {
+    logger.error('AdminController', 'Erro na ficha do pet', erro);
+    req.session.flash = { tipo: 'erro', mensagem: 'Erro ao carregar a ficha do pet.' };
+    return res.redirect(`${adminPath}/pets`);
   }
 }
 
@@ -1305,6 +1383,7 @@ module.exports = {
   dashboard,
   listarUsuarios,
   listarPets,
+  mostrarPetDetalhe,
   listarPetshops,
   listarSolicitacoesPetshop,
   aprovarSolicitacaoPetshop,

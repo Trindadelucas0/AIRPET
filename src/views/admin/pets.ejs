@@ -10,6 +10,9 @@
           <i class="fa-solid fa-arrow-left text-xs"></i> Dashboard
         </a>
         <h1 class="text-2xl font-bold text-gray-900">Todos os Pets</h1>
+        <p class="text-sm text-gray-500 mt-1 max-w-xl">
+          Abra a <strong class="text-gray-700">ficha do pet</strong> para ver alertas de perdido, leituras NFC e links do Google Maps.
+        </p>
       </div>
       <span class="text-sm text-gray-500"><%= pets.length %> registros</span>
     </div>
@@ -26,6 +29,7 @@
               <th class="px-4 py-3 text-left font-semibold text-gray-600">Dono</th>
               <th class="px-4 py-3 text-left font-semibold text-gray-600">Status</th>
               <th class="px-4 py-3 text-left font-semibold text-gray-600">Data</th>
+              <th class="px-4 py-3 text-right font-semibold text-gray-600">Ficha</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-100">
@@ -41,7 +45,7 @@
                         <i class="fa-solid fa-paw"></i>
                       </span>
                     <% } %>
-                    <%= p.nome %>
+                    <a href="<%= adminPath %>/pets/<%= p.id %>" class="hover:text-primary-600 hover:underline"><%= p.nome %></a>
                   </div>
                 </td>
                 <td class="px-4 py-3 text-gray-600 capitalize"><%= p.tipo %></td>
@@ -54,6 +58,12 @@
                   </span>
                 </td>
                 <td class="px-4 py-3 text-gray-500 text-xs"><%= p.criado_em ? new Date(p.criado_em).toLocaleDateString('pt-BR') : '—' %></td>
+                <td class="px-4 py-3 text-right">
+                  <a href="<%= adminPath %>/pets/<%= p.id %>"
+                     class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-white bg-primary-600 hover:bg-primary-700 shadow-sm">
+                    <i class="fa-solid fa-map-location-dot"></i> Ficha
+                  </a>
+                </td>
               </tr>
             <% }); %>
           </tbody>

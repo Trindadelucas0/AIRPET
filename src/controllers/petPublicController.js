@@ -32,6 +32,8 @@ const PetStatusHistory = require('../models/PetStatusHistory');
 const PetTrackingEvent = require('../models/PetTrackingEvent');
 const logger = require('../utils/logger');
 
+const mapLinks = require('../utils/mapLinks');
+
 const ABAS_VALIDAS = new Set(['posts', 'sobre', 'saude', 'nfc', 'scans']);
 const ABAS_SOMENTE_DONO = new Set(['saude', 'nfc', 'scans']);
 
@@ -97,7 +99,13 @@ async function buildContextoDono(pet, req) {
     calendarioSaude = [];
   }
 
-  return { scans, tagsAtivas, tagsHistorico, alertaAtivo, calendarioSaude };
+  return {
+    scans: mapLinks.enrichScans(scans),
+    tagsAtivas,
+    tagsHistorico,
+    alertaAtivo,
+    calendarioSaude,
+  };
 }
 
 /**

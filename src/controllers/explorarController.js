@@ -27,6 +27,7 @@ const PetDoMes = require('../models/PetDoMes');
 const petsMaisFofinhosEligibility = require('../services/petsMaisFofinhosEligibility');
 const socialPostHooks = require('../services/socialPostHooks');
 const { multerPublicUrl } = require('../middlewares/persistUploadMiddleware');
+const { sameNumericId } = require('../utils/sameNumericId');
 
 function getNotificacaoService() {
   try { return require('../services/notificacaoService'); } catch (_) { return null; }
@@ -118,7 +119,7 @@ async function validarPetDonoOuFalhar(petId, usuarioId, mensagem = 'Pet não enc
     return null;
   }
   const pet = await Pet.buscarPorId(petId);
-  if (!pet || pet.usuario_id !== usuarioId) {
+  if (!pet || !sameNumericId(pet.usuario_id, usuarioId)) {
     const erro = new Error(mensagem);
     erro.code = 'PET_NAO_PERTENCE';
     throw erro;

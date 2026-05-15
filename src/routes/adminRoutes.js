@@ -110,6 +110,7 @@ router.post('/boosts/:id/cancelar', apenasAdmin, ...validarBodyVazioJson, valida
 
 router.get('/usuarios', apenasAdmin, adminController.listarUsuarios);
 router.get('/pets', apenasAdmin, adminController.listarPets);
+router.get('/pets/:id', apenasAdmin, adminController.mostrarPetDetalhe);
 router.get('/petshops', apenasAdmin, adminController.listarPetshops);
 router.get('/petshops/solicitacoes', apenasAdmin, adminController.listarSolicitacoesPetshop);
 router.post('/petshops/:id/aprovar', apenasAdmin, ...validarBodyVazioJson, validarResultado, adminController.aprovarSolicitacaoPetshop);

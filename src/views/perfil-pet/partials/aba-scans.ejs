@@ -9,16 +9,6 @@ function _fmtData(d) {
   if (!d) return '';
   try { return new Date(d).toLocaleString('pt-BR'); } catch (_) { return ''; }
 }
-function _labelScan(s) {
-  var c = s.cidade != null ? String(s.cidade).trim() : '';
-  if (c) return c;
-  var lat = s.latitude;
-  var lng = s.longitude;
-  if (lat != null && lng != null && lat !== '' && lng !== '') {
-    return 'No mapa (coordenadas aproximadas)';
-  }
-  return 'Leitura registrada (localizacao nao informada)';
-}
 %>
 
 <div class="pp-panel">
@@ -34,7 +24,13 @@ function _labelScan(s) {
       <% if (ultimo) { %>
         <p style="font-size:12px;color:#64748b;margin:0 0 12px;padding:10px 12px;background:#f8fafc;border-radius:10px;border:1px solid #e2e8f0;">
           <i class="fa-solid fa-satellite-dish" style="color:#2563eb;margin-right:6px;"></i>
-          <strong>Ultima leitura:</strong> <%= _labelScan(ultimo) %> — <%= _fmtData(ultimo.data) %>.
+          <strong>Ultima leitura:</strong>
+          <% if (ultimo.hasMaps && ultimo.mapsUrl) { %>
+            <a href="<%= ultimo.mapsUrl %>" target="_blank" rel="noopener" style="color:#2563eb;font-weight:700;text-decoration:none;"><%= ultimo.locLabel %></a>
+          <% } else { %>
+            <%= ultimo.locLabel %>
+          <% } %>
+           — <%= _fmtData(ultimo.data) %>.
           Voce podera usar isso no formulario de alerta.
         </p>
       <% } %>
@@ -51,11 +47,15 @@ function _labelScan(s) {
       <p style="font-size:13px;color:#7f1d1d;margin:0 0 12px;">
         Toda leitura da tag e priorizada. Quando <%= pet.nome %> for encontrado, marque aqui.
       </p>
-      <div style="display:flex;flex-wrap:wrap;gap:8px;">
-        <% if (alerta) { %>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
+        <% if (alerta && alerta.status === 'aprovado') { %>
         <a href="/alerta/<%= alerta.id %>" class="pp-btn pp-btn--secondary">
           <i class="fa-solid fa-eye"></i> Ver alerta publico
         </a>
+        <% } else if (alerta && alerta.status === 'pendente') { %>
+        <span style="font-size:12px;color:#7f1d1d;padding:8px 12px;background:rgba(255,255,255,0.7);border-radius:10px;border:1px solid #fecaca;">
+          <i class="fa-solid fa-clock"></i> Aguardando aprovacao da equipe AIRPET
+        </span>
         <% } %>
         <a href="<%= urlEncontrado %>" class="pp-btn pp-btn--success-outline">
           <i class="fa-solid fa-check-circle"></i> Marcar como encontrado
@@ -78,8 +78,19 @@ function _labelScan(s) {
               <i class="fa-solid fa-location-dot" style="font-size:12px;"></i>
             </span>
             <div style="flex:1;min-width:0;">
-              <div style="font-size:13px;color:#0f172a;font-weight:700;"><%= _labelScan(s) %></div>
+              <div style="font-size:13px;color:#0f172a;font-weight:700;">
+                <% if (s.hasMaps && s.mapsUrl) { %>
+                  <a href="<%= s.mapsUrl %>" target="_blank" rel="noopener" style="color:#0f172a;text-decoration:none;border-bottom:1px dashed #ea580c;"><%= s.locLabel %></a>
+                <% } else { %>
+                  <%= s.locLabel %>
+                <% } %>
+              </div>
               <div style="font-size:11px;color:#64748b;"><%= _fmtData(s.data) %></div>
+              <% if (s.hasMaps && s.mapsUrl) { %>
+                <a href="<%= s.mapsUrl %>" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;margin-top:6px;font-size:11px;font-weight:700;color:#2563eb;text-decoration:none;">
+                  <i class="fa-solid fa-map-location-dot"></i> Ver no Google Maps
+                </a>
+              <% } %>
             </div>
           </div>
         <% }); %>
