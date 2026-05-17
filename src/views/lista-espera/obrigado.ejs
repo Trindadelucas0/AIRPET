@@ -29,30 +29,39 @@
   <% } %>
 
   <div class="le-done-grid text-left">
-    <div class="le-done-card">
-      <strong>1. E-mail</strong>
-      <span>Confira a caixa de entrada (e o spam). Enviamos uma confirmação com o resumo.</span>
-    </div>
-    <div class="le-done-card">
-      <strong>2. Indique tutores</strong>
-      <span>Quanto mais gente na sua cidade, mais rápido abrimos vagas por aqui.</span>
-    </div>
-    <div class="le-done-card">
-      <strong>3. Sorteio AirTag + WhatsApp</strong>
-      <p class="le-done-card-body">Você entra no sorteio ao concluir a lista. São <span class="le-done-kw">30 selecionados por cidade</span> para testar uma <span class="le-done-kw">AirTag</span> com a gente, <span class="le-done-kw">sem custo</span>. A <span class="le-done-kw">data do sorteio</span> e as instruções enviamos pelo <span class="le-done-kw">WhatsApp</span> no número que você cadastrou.</p>
-    </div>
+    <article class="le-done-card">
+      <span class="le-done-card__badge" aria-hidden="true">1</span>
+      <div class="le-done-card__body">
+        <strong class="le-done-card__title">E-mail</strong>
+        <p class="le-done-card__text">Confira a caixa de entrada (e o spam). Enviamos uma confirmação com o resumo.</p>
+      </div>
+    </article>
+    <article class="le-done-card">
+      <span class="le-done-card__badge" aria-hidden="true">2</span>
+      <div class="le-done-card__body">
+        <strong class="le-done-card__title">Indique tutores</strong>
+        <p class="le-done-card__text">Quanto mais gente na sua cidade, mais rápido abrimos vagas por aqui.</p>
+      </div>
+    </article>
+    <article class="le-done-card">
+      <span class="le-done-card__badge" aria-hidden="true">3</span>
+      <div class="le-done-card__body">
+        <strong class="le-done-card__title">Sorteio AirTag + WhatsApp</strong>
+        <p class="le-done-card-body">Você entra no sorteio ao concluir a lista. São <span class="le-done-kw">30 selecionados por cidade</span> para testar uma <span class="le-done-kw">AirTag</span> com a gente, <span class="le-done-kw">sem custo</span>. A <span class="le-done-kw">data do sorteio</span> e as instruções enviamos pelo <span class="le-done-kw">WhatsApp</span> no número que você cadastrou.</p>
+      </div>
+    </article>
   </div>
 
   <p class="mt-4 text-center text-xs text-slate-500 max-w-md mx-auto">AirTag é marca registrada da Apple Inc. O sorteio é do AIRPET, sem vínculo com a Apple. Novidades do produto também no <a href="<%= typeof instagramUrl !== 'undefined' ? instagramUrl : 'https://instagram.com' %>" class="text-primary-600 font-semibold hover:underline" target="_blank" rel="noopener">Instagram</a>.</p>
 
   <div class="le-ref-box text-left">
-    <p class="text-sm font-bold text-slate-900 m-0">Seu link para convidar</p>
-    <p class="text-xs text-slate-500 mt-1 mb-0">Copie e envie para amigos que também amam um pet.</p>
+    <p class="le-ref-box__label">Seu link para convidar</p>
+    <p class="le-ref-box__hint">Copie e envie para amigos que também amam um pet.</p>
     <p class="le-ref-url" id="leRefUrl"><%= typeof referralUrl !== 'undefined' ? referralUrl : '' %></p>
     <div class="le-share-row">
-      <button type="button" id="leCopyBtn" class="lp-btn-primary text-sm py-2.5 px-5">Copiar link</button>
-      <a id="leWaBtn" class="lp-btn-ghost text-sm py-2.5 px-4 no-underline inline-flex items-center" href="#" rel="noopener">WhatsApp</a>
-      <a id="leXBtn" class="lp-btn-ghost text-sm py-2.5 px-4 no-underline inline-flex items-center" href="#" rel="noopener" target="_blank">X</a>
+      <button type="button" id="leCopyBtn" class="lp-btn-primary">Copiar link</button>
+      <a id="leWaBtn" class="le-share-btn--wa" href="#" rel="noopener">WhatsApp</a>
+      <a id="leXBtn" class="le-share-btn--x" href="#" rel="noopener" target="_blank">X</a>
     </div>
     <p id="leCopyFeedback" class="mt-2 text-sm text-emerald-700 hidden" role="status"></p>
   </div>
