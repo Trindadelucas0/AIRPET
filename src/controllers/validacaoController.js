@@ -91,7 +91,7 @@ async function exibirLanding(req, res) {
             'Conta pra gente o que você faria no primeiro minuto — e entra no sorteio de AirTag: 30 por cidade, sem pagar nada; a data do sorteio avisamos no WhatsApp.',
         }
       : {
-          headlineH1: 'Se o seu sumir, você merece uma linha direta com quem achou.',
+          headlineH1: 'Se o seu pet sumir, você merece uma linha direta com quem achou.',
           headlineSub:
             'O AIRPET ainda está nascendo: entra na lista, responde umas perguntas leves e participa do sorteio de AirTag — 30 tutores por cidade pra testar com a gente, sem custo. A data do sorteio mandamos no WhatsApp.',
         };
