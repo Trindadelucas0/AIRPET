@@ -139,13 +139,14 @@
 
   function updateProgress() {
     var pct = Math.round((state.step / TOTAL) * 100);
+    var label = stepLabelFor(state.step);
     if (progressLabel) {
-      progressLabel.textContent = 'Passo ' + state.step + ' de ' + TOTAL + ' — ' + stepLabelFor(state.step);
+      progressLabel.textContent = 'Passo ' + state.step + ' de ' + TOTAL + ' — ' + label;
     }
     if (progressPct) progressPct.textContent = pct + '%';
     if (progressBar) progressBar.style.width = pct + '%';
     if (progressWrap) progressWrap.setAttribute('aria-valuenow', String(state.step));
-    announce('Passo ' + state.step + ' de ' + TOTAL);
+    announce('Passo ' + state.step + ' de ' + TOTAL + (label ? ' — ' + label : ''));
   }
 
   function showStep(next) {
@@ -227,38 +228,38 @@
 
     if (n === 1) {
       if (!state.nome) {
-        showErr(1, 'Informe seu nome.');
+        showErr(1, 'Como a gente te chama? Preenche seu nome.');
         return false;
       }
       if (!state.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(state.email)) {
-        showErr(1, 'Informe um e-mail válido.');
+        showErr(1, 'Precisamos de um e-mail válido pra te avisar.');
         return false;
       }
     }
     if (n === 2) {
       if (!state.respostas.tipo_pet) {
-        showErr(2, 'Escolha o tipo de pet.');
+        showErr(2, 'Escolhe se é cachorro, gato ou outro — a gente quer saber.');
         return false;
       }
       if (!state.respostas.qtd_pets) {
-        showErr(2, 'Quantos pets você tem?');
+        showErr(2, 'Quantos pets moram com você? Marca uma opção.');
         return false;
       }
     }
     if (n === 3 && !state.respostas.ja_perdeu_pet) {
-      showErr(3, 'Escolha uma opção.');
+      showErr(3, 'Marca uma das três opções — ajuda a gente a te ouvir melhor.');
       return false;
     }
     if (n === 4 && (!state.respostas.metodos_busca || !state.respostas.metodos_busca.length)) {
-      showErr(4, 'Marque pelo menos uma opção.');
+      showErr(4, 'Marca pelo menos um jeito que você usaria de verdade.');
       return false;
     }
     if (n === 5 && (!state.respostas.prioridades || !state.respostas.prioridades.length)) {
-      showErr(5, 'Escolha pelo menos uma prioridade.');
+      showErr(5, 'Escolhe pelo menos uma coisa que faria diferença pra você.');
       return false;
     }
     if (n === 6 && !state.respostas.beta_interesse) {
-      showErr(6, 'Escolha uma opção sobre as vagas do AIRPET.');
+      showErr(6, 'Marca se quer ser avisado cedo quando chegar na sua região.');
       return false;
     }
     return true;
@@ -337,7 +338,7 @@
           if (max && list.length >= max) {
             input.checked = false;
             if (key === 'prioridades') {
-              showErr(5, 'Escolha só 2 — precisamos da sua prioridade real.');
+              showErr(5, 'No máximo duas — escolhe as que mais pesam no seu coração.');
             }
             return;
           }
@@ -426,11 +427,11 @@
           }
           var msg =
             (result.data && (result.data.error || result.data.mensagem)) ||
-            'Algo deu errado — tente de novo';
+            'Não rolou dessa vez — tenta de novo daqui a pouco.';
           showErr(6, msg);
         })
         .catch(function () {
-          showErr(6, 'Algo deu errado — tente de novo');
+          showErr(6, 'Falhou a conexão. Confere a internet e tenta de novo.');
         })
         .finally(function () {
           setLoading(false);

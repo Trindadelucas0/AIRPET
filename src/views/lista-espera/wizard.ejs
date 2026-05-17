@@ -3,8 +3,8 @@
 <head>
 <%- include('../partials/funil-meta', {
   ogTitle: 'Lista de espera | AIRPET',
-  metaDescription: 'Lista de espera AIRPET: formulário curto, sorteio de AirTag (30 por cidade, sem custo) e aviso da data pelo WhatsApp.',
-  ogDescription: 'Participa do sorteio de AirTag (30 por cidade, sem custo). Data do sorteio avisamos pelo WhatsApp.',
+  metaDescription: 'Lista de espera AIRPET: poucas perguntas, tom de conversa — sorteio de AirTag (30 por cidade, sem pagar nada) e data do sorteio no WhatsApp.',
+  ogDescription: 'Entra na lista em poucos minutos. Sorteio de AirTag por cidade; a data avisamos no WhatsApp.',
   ogUrl: (typeof BASE_URL !== 'undefined' ? BASE_URL : '') + '/lista-espera',
   ogImage: (typeof BASE_URL !== 'undefined' ? BASE_URL : '') + '/images/landing/og.jpg',
   canonicalUrl: (typeof BASE_URL !== 'undefined' ? BASE_URL : '') + '/lista-espera',
@@ -19,7 +19,7 @@
 <div class="le-progress-wrap" aria-hidden="false">
   <div class="le-progress-inner">
     <div class="le-progress-top">
-      <span id="leProgressLabel">Passo 1 de 6</span>
+      <span id="leProgressLabel">Passo 1 de 6 — Seus dados</span>
       <span id="leProgressPct">17%</span>
     </div>
     <div class="le-progress-bar-outer" role="progressbar" aria-valuemin="1" aria-valuemax="6" aria-valuenow="1" aria-labelledby="leProgressLabel" id="leProgressBarWrap">
@@ -33,8 +33,8 @@
   <div id="listaEsperaWizard" class="relative overflow-hidden" data-autoadvance="true" data-referral="<%= typeof referralOrigem !== 'undefined' && referralOrigem ? String(referralOrigem).replace(/"/g, '') : '' %>">
 
     <section class="le-step" data-step="1" data-step-label="Seus dados">
-      <h1>Vamos começar pelo seu nome</h1>
-      <p class="le-lead">Sem spam. Quem termina o formulário entra no <strong>sorteio de AirTag</strong> (30 por cidade, sem custo) — a <strong>data do sorteio</strong> a gente manda pelo <strong>WhatsApp</strong> no número que você informar.</p>
+      <h1>Antes de tudo: como a gente te chama?</h1>
+      <p class="le-lead">A gente não enche caixa de spam. Quem termina o passo a passo entra no <strong>sorteio de AirTag</strong> — <strong>30 tutores por cidade</strong>, sem pagar nada. A <strong>data do sorteio</strong> e as novidades mandamos no <strong>WhatsApp</strong> no número que você deixar aqui.</p>
       <div class="le-field">
         <label for="leNome">Seu nome <span class="text-red-600" aria-hidden="true">*</span></label>
         <input type="text" id="leNome" name="nome" maxlength="120" autocomplete="name" placeholder="Ex.: Marina Silva" required>
@@ -50,9 +50,9 @@
     </section>
 
     <section class="le-step hidden" data-step="2" data-step-label="Seu pet">
-      <h1>Com quem você divide a vida?</h1>
-      <p class="le-lead mt-2 text-xs font-bold uppercase tracking-wide text-slate-500">Tipo de pet <span class="text-red-600">*</span></p>
-      <div class="mt-3 grid grid-cols-3 gap-2" data-single="tipo_pet" role="group" aria-label="Tipo de pet">
+      <h1>Quem é o astro da casa?</h1>
+      <p class="le-lead mt-2 text-xs font-bold uppercase tracking-wide text-slate-500">Qual é o seu pet <span class="text-red-600">*</span></p>
+      <div class="mt-3 grid grid-cols-3 gap-2" data-single="tipo_pet" role="group" aria-label="Qual é o seu pet">
         <button type="button" class="le-pet-card flex flex-col items-center gap-2 rounded-2xl border-2 border-slate-200 bg-white p-4 hover:border-primary-300 transition-colors" data-value="cachorro" aria-pressed="false">
           <span class="text-3xl" aria-hidden="true">🐶</span>
           <span class="text-sm font-bold text-slate-800">Cachorro</span>
@@ -66,8 +66,8 @@
           <span class="text-sm font-bold text-slate-800">Outro</span>
         </button>
       </div>
-      <p class="mt-6 text-xs font-bold uppercase tracking-wide text-slate-500">Quantos pets? <span class="text-red-600">*</span></p>
-      <div class="mt-3 flex flex-wrap gap-2" data-single="qtd_pets" role="group" aria-label="Quantidade de pets">
+      <p class="mt-6 text-xs font-bold uppercase tracking-wide text-slate-500">Quantos moram na sua rotina? <span class="text-red-600">*</span></p>
+      <div class="mt-3 flex flex-wrap gap-2" data-single="qtd_pets" role="group" aria-label="Quantos pets moram com você">
         <button type="button" class="le-chip rounded-full border-2 border-slate-200 bg-white px-5 py-2 text-sm font-semibold text-slate-700" data-value="1" aria-pressed="false">1</button>
         <button type="button" class="le-chip rounded-full border-2 border-slate-200 bg-white px-5 py-2 text-sm font-semibold text-slate-700" data-value="2" aria-pressed="false">2</button>
         <button type="button" class="le-chip rounded-full border-2 border-slate-200 bg-white px-5 py-2 text-sm font-semibold text-slate-700" data-value="3+" aria-pressed="false">3 ou mais</button>
@@ -80,9 +80,9 @@
     </section>
 
     <section class="le-step hidden" data-step="3" data-step-label="Experiência">
-      <h1>Você já viveu um susto desses?</h1>
-      <p class="le-lead">Não existe resposta errada — queremos entender o que você já passou.</p>
-      <div class="mt-6 space-y-3" data-single="ja_perdeu_pet" role="radiogroup" aria-label="Experiência com pet perdido">
+      <h1>Já passou por um sumiço ou susto do tamanho do mundo?</h1>
+      <p class="le-lead">Conta com sinceridade — aqui não tem resposta errada, só história de verdade.</p>
+      <div class="mt-6 space-y-3" data-single="ja_perdeu_pet" role="radiogroup" aria-label="Se você já passou por sumiço ou susto com pet">
         <button type="button" class="le-big-card w-full text-left rounded-2xl border-2 border-slate-200 bg-white p-5 flex gap-4 items-start hover:border-primary-300 transition-colors" data-value="sim" aria-pressed="false">
           <svg class="le-icon-inline mt-0.5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
           <span class="font-semibold text-slate-900">Sim, já perdi um pet</span>
@@ -103,10 +103,10 @@
       </div>
     </section>
 
-    <section class="le-step hidden" data-step="4" data-step-label="Primeiro movimento">
+    <section class="le-step hidden" data-step="4" data-step-label="Primeiros passos">
       <h1>Se sumisse agora, o que você faria primeiro?</h1>
-      <p class="le-lead">Marque tudo que faria de verdade — não o que “deveria”.</p>
-      <div class="mt-6 space-y-2" data-multi="metodos_busca" role="group" aria-label="Métodos de busca">
+      <p class="le-lead">Marca tudo que faria de verdade — não o que “deveria” no papel.</p>
+      <div class="mt-6 space-y-2" data-multi="metodos_busca" role="group" aria-label="O que você faria na prática se o pet sumisse agora">
         <label class="le-check flex items-center gap-3 rounded-xl border-2 border-slate-200 bg-white p-4 cursor-pointer hover:border-primary-200 has-[:checked]:border-primary-500 has-[:checked]:bg-orange-50/60">
           <input type="checkbox" class="le-check-input sr-only" value="whatsapp">
           <svg class="le-icon-inline" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 18h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
@@ -145,10 +145,10 @@
       </div>
     </section>
 
-    <section class="le-step hidden" data-step="5" data-step-label="Prioridades">
-      <h1>O que mais ajudaria você no momento mais difícil?</h1>
-      <p class="le-lead">Escolha até 2 — isso define o que priorizamos primeiro.</p>
-      <div class="mt-6 space-y-2" data-multi="prioridades" data-max="2" role="group" aria-label="Prioridades">
+    <section class="le-step hidden" data-step="5" data-step-label="O que importa">
+      <h1>O que mais ajudaria você no pior momento?</h1>
+      <p class="le-lead">Escolhe até duas opções — ajuda a gente a saber o que mais importa pra você na hora H.</p>
+      <div class="mt-6 space-y-2" data-multi="prioridades" data-max="2" role="group" aria-label="O que mais importa pra você nessa hora">
         <label class="le-check le-prio flex items-center gap-3 rounded-xl border-2 border-slate-200 bg-white p-4 cursor-pointer hover:border-primary-200 has-[:checked]:border-primary-500 has-[:checked]:bg-orange-50/60">
           <input type="checkbox" class="le-check-input sr-only" value="identificar_dono">
           <svg class="le-icon-inline" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
@@ -172,9 +172,9 @@
       </div>
     </section>
 
-    <section class="le-step hidden" data-step="6" data-step-label="Cidade e beta">
-      <h1>Você é exatamente quem queremos ouvir</h1>
-      <p class="le-lead">Última parte: onde você mora? Priorizamos cidades com mais interesse.</p>
+    <section class="le-step hidden" data-step="6" data-step-label="Cidade e contato">
+      <h1>Último passo: onde você está nessa história?</h1>
+      <p class="le-lead">Cidade e contato ajudam a gente a ver onde tem mais gente esperando e a te avisar quando a vez chegar na sua região.</p>
       <div class="mt-6 grid grid-cols-3 gap-2">
         <div class="col-span-2 le-field mt-0">
           <label for="leCidade">Cidade</label>
@@ -187,11 +187,11 @@
       </div>
       <div class="le-field">
         <label for="leTelefone">WhatsApp / celular (recomendado)</label>
-        <p class="text-xs text-slate-500 mb-2">Usamos para avisar a <strong>data do sorteio da AirTag</strong> e convites de teste — não é lista de marketing genérica.</p>
+        <p class="text-xs text-slate-500 mb-2">A gente usa pra avisar a <strong>data do sorteio da AirTag</strong> e quando tiver novidade de verdade na sua região — sem encher seu saco.</p>
         <input type="tel" id="leTelefone" maxlength="30" placeholder="(00) 00000-0000" autocomplete="tel">
       </div>
-      <p class="mt-6 text-xs font-bold uppercase tracking-wide text-slate-500">Quer entrar nas primeiras vagas? <span class="text-red-600">*</span></p>
-      <div class="mt-3 space-y-2" data-single="beta_interesse" role="radiogroup" aria-label="Interesse nas vagas beta">
+      <p class="mt-6 text-xs font-bold uppercase tracking-wide text-slate-500">Quando abrir por aí, quer ser dos primeiros a saber? <span class="text-red-600">*</span></p>
+      <div class="mt-3 space-y-2" data-single="beta_interesse" role="radiogroup" aria-label="Quer ser avisado cedo quando chegar na sua região">
         <button type="button" class="le-big-card w-full text-left rounded-2xl border-2 border-slate-200 bg-white p-4 flex gap-3 items-center hover:border-primary-300 transition-colors" data-value="sim" aria-pressed="false">
           <svg class="le-icon-inline shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg>
           <span class="font-semibold text-slate-900">Sim, quero ser dos primeiros</span>
@@ -209,7 +209,7 @@
       <p id="errStep6" class="mt-3 text-sm text-red-600 hidden" role="alert"></p>
       <div class="mt-8 flex flex-col gap-3">
         <button type="button" id="leSubmit" class="lp-btn-primary w-full justify-center disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2">
-          <span id="leSubmitLabel">Garantir minha vaga</span>
+          <span id="leSubmitLabel">Enviar minha inscrição</span>
           <svg id="leSubmitSpinner" class="hidden w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24" aria-hidden="true">
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
