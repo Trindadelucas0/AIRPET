@@ -1787,6 +1787,7 @@ const explorarController = {
     try {
       const uid = req.session?.usuario?.id;
       if (!uid) return res.status(401).json({ sucesso: false, mensagem: 'Não autenticado.' });
+      res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
       const stories = await Story.listarAtivosParaPetsSeguidos(uid, 40);
       return res.json({ sucesso: true, stories });
     } catch (err) {

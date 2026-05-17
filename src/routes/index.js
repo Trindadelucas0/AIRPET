@@ -7,6 +7,7 @@ const multer = require('multer');
 const { estaAutenticado, estaAutenticadoAPI, obterUsuarioIdSessaoOuJwtCookie } = require('../middlewares/authMiddleware');
 const { sameNumericId } = require('../utils/sameNumericId');
 const { limiterGeral, limiterValidacao } = require('../middlewares/rateLimiter');
+const { assignAbVariant } = require('../middlewares/abVariant');
 const { validarListaEspera, validarProtegerMeuPetInscricao } = require('../middlewares/writeRouteValidators');
 const { validarResultado } = require('../middlewares/validator');
 const validacaoController = require('../controllers/validacaoController');
@@ -146,13 +147,35 @@ router.get('/', async (req, res) => {
   res.render('home', { titulo: 'Inicio', stats, petsPerdidosRecentes, statsCarregamentoFalhou });
 });
 
-router.get('/termos', (req, res) => res.render('termos', { titulo: 'Termos de Uso' }));
-router.get('/privacidade', (req, res) => res.render('privacidade', { titulo: 'Política de Privacidade' }));
+router.get('/termos', (req, res) =>
+  res.render('termos', { titulo: 'Termos de Uso', funilLegal: req.query.funil === '1' })
+);
+router.get('/privacidade', (req, res) =>
+  res.render('privacidade', { titulo: 'Política de Privacidade', funilLegal: req.query.funil === '1' })
+);
 
-router.get('/proteger-meu-pet', validacaoController.exibirLanding);
+router.get('/sitemap.xml', (req, res) => {
+  const base = (process.env.BASE_URL || `${req.protocol}://${req.get('host')}`).replace(/\/$/, '');
+  const urls = ['/', '/proteger-meu-pet', '/lista-espera', '/privacidade', '/termos'];
+  const body = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${urls
+  .map(
+    (p) => `  <url>
+    <loc>${base}${p === '/' ? '/' : p}</loc>
+    <changefreq>weekly</changefreq>
+    <priority>${p === '/' ? '1.0' : '0.7'}</priority>
+  </url>`
+  )
+  .join('\n')}
+</urlset>`;
+  res.type('application/xml').send(body);
+});
+
+router.get('/proteger-meu-pet', assignAbVariant, validacaoController.exibirLanding);
 router.get('/proteger-meu-pet/inscricao', (req, res) => res.redirect(302, '/lista-espera'));
-router.get('/lista-espera', listaEsperaController.exibirWizard);
-router.get('/obrigado', listaEsperaController.exibirObrigado);
+router.get('/lista-espera', assignAbVariant, listaEsperaController.exibirWizard);
+router.get('/obrigado', assignAbVariant, listaEsperaController.exibirObrigado);
 router.post(
   '/api/lista-espera',
   limiterValidacao,

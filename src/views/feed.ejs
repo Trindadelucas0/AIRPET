@@ -2262,7 +2262,19 @@
     var storyQueue = [];
     var storyIdx = 0;
     var storyTick = null;
+    /** Duração de cada slide no viewer (não é o TTL de 24h do story). */
     var STORY_MS = 6000;
+    var storiesRefreshTimer = null;
+
+    function storyAindaValido(s) {
+      if (!s || !s.expira_em) return true;
+      return new Date(s.expira_em).getTime() > Date.now();
+    }
+
+    function filtrarStoriesValidos(list) {
+      if (!Array.isArray(list)) return [];
+      return list.filter(storyAindaValido);
+    }
 
     function clearStoryTimer() {
       if (storyTick) {
@@ -2303,8 +2315,9 @@
     }
 
     function openViewerWithQueue(list, startIndex) {
-      if (!viewer || !Array.isArray(list) || !list.length) return;
-      storyQueue = list.slice();
+      var valid = filtrarStoriesValidos(list);
+      if (!viewer || !valid.length) return;
+      storyQueue = valid.slice();
       storyIdx = Math.max(0, Math.min(startIndex || 0, storyQueue.length - 1));
       viewer.classList.add('is-open');
       document.body.style.overflow = 'hidden';
@@ -2482,18 +2495,27 @@
       fetch('/explorar/api/stories', {
         headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
         credentials: 'same-origin',
+        cache: 'no-store',
       })
         .then(function (r) { return r.json(); })
         .then(function (d) {
           if (!d.sucesso || !Array.isArray(d.stories)) return;
-          lastStoriesList = d.stories;
+          lastStoriesList = filtrarStoriesValidos(d.stories);
           strip.querySelectorAll('.story-bubble[data-story]').forEach(function (b) { b.remove(); });
-          d.stories.forEach(function (s, idx) { appendStoryBubble(s, idx); });
+          lastStoriesList.forEach(function (s, idx) { appendStoryBubble(s, idx); });
         })
         .catch(function () {});
     }
 
     loadFeedStories();
+
+    document.addEventListener('visibilitychange', function () {
+      if (document.visibilityState === 'visible') loadFeedStories();
+    });
+
+    storiesRefreshTimer = setInterval(function () {
+      if (document.visibilityState === 'visible') loadFeedStories();
+    }, 5 * 60 * 1000);
   })();
 
   function buildFeedMeta(p) {

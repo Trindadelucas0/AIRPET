@@ -2,8 +2,12 @@
   'use strict';
 
   var TOTAL = 6;
+  var DRAFT_KEY = 'airpet:waitlist:draft';
   var root = document.getElementById('listaEsperaWizard');
   if (!root) return;
+
+  var autoAdvance = root.getAttribute('data-autoadvance') === 'true';
+  var referralOrigem = String(root.getAttribute('data-referral') || '').trim().slice(0, 32);
 
   var state = {
     step: 1,
@@ -25,21 +29,123 @@
   var progressLabel = document.getElementById('leProgressLabel');
   var progressPct = document.getElementById('leProgressPct');
   var progressBar = document.getElementById('leProgressBar');
+  var progressWrap = document.getElementById('leProgressBarWrap');
+  var liveRegion = document.getElementById('leLiveRegion');
   var reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function fa(name, label) {
+    if (window.FunilAnalytics && typeof window.FunilAnalytics.wizardStepView === 'function') {
+      window.FunilAnalytics.wizardStepView(name, label);
+    }
+  }
+
+  function announce(msg) {
+    if (!liveRegion) return;
+    liveRegion.textContent = '';
+    setTimeout(function () {
+      liveRegion.textContent = msg || '';
+    }, 50);
+  }
+
+  function loadDraft() {
+    try {
+      var raw = localStorage.getItem(DRAFT_KEY);
+      if (!raw) return;
+      var d = JSON.parse(raw);
+      if (!d || typeof d !== 'object') return;
+      state.step = Math.min(TOTAL, Math.max(1, parseInt(d.step, 10) || 1));
+      state.nome = d.nome || '';
+      state.email = d.email || '';
+      state.telefone = d.telefone || '';
+      state.cidade = d.cidade || '';
+      state.estado = d.estado || '';
+      if (d.respostas && typeof d.respostas === 'object') {
+        state.respostas = Object.assign(state.respostas, d.respostas);
+      }
+    } catch (e) {
+      /* ignore */
+    }
+  }
+
+  function saveDraft() {
+    try {
+      localStorage.setItem(
+        DRAFT_KEY,
+        JSON.stringify({
+          step: state.step,
+          nome: state.nome,
+          email: state.email,
+          telefone: state.telefone,
+          cidade: state.cidade,
+          estado: state.estado,
+          respostas: state.respostas,
+        })
+      );
+    } catch (e) {
+      /* ignore */
+    }
+  }
+
+  function clearDraft() {
+    try {
+      localStorage.removeItem(DRAFT_KEY);
+    } catch (e) {
+      /* ignore */
+    }
+  }
+
+  function applyDraftToDom() {
+    var nomeEl = document.getElementById('leNome');
+    var emailEl = document.getElementById('leEmail');
+    var telEl = document.getElementById('leTelefone');
+    var cidadeEl = document.getElementById('leCidade');
+    var estadoEl = document.getElementById('leEstado');
+    if (nomeEl) nomeEl.value = state.nome;
+    if (emailEl) emailEl.value = state.email;
+    if (telEl) telEl.value = state.telefone;
+    if (cidadeEl) cidadeEl.value = state.cidade;
+    if (estadoEl) estadoEl.value = state.estado;
+
+    Object.keys(state.respostas).forEach(function (key) {
+      var val = state.respostas[key];
+      if (key === 'metodos_busca' || key === 'prioridades') {
+        if (!Array.isArray(val)) return;
+        val.forEach(function (v) {
+          var inp = root.querySelector('.le-check-input[value="' + v + '"]');
+          if (inp) inp.checked = true;
+        });
+        return;
+      }
+      if (!val) return;
+      var btn = root.querySelector('[data-single="' + key + '"] [data-value="' + val + '"]');
+      if (btn) {
+        btn.classList.add('le-selected');
+        btn.setAttribute('aria-pressed', 'true');
+      }
+    });
+  }
+
+  loadDraft();
+  applyDraftToDom();
 
   function steps() {
     return root.querySelectorAll('.le-step');
   }
 
-  function currentSection() {
-    return root.querySelector('.le-step[data-step="' + state.step + '"]');
+  function stepLabelFor(n) {
+    var sec = root.querySelector('.le-step[data-step="' + n + '"]');
+    return sec ? sec.getAttribute('data-step-label') || '' : '';
   }
 
   function updateProgress() {
     var pct = Math.round((state.step / TOTAL) * 100);
-    if (progressLabel) progressLabel.textContent = 'Passo ' + state.step + ' de ' + TOTAL;
+    if (progressLabel) {
+      progressLabel.textContent = 'Passo ' + state.step + ' de ' + TOTAL + ' — ' + stepLabelFor(state.step);
+    }
     if (progressPct) progressPct.textContent = pct + '%';
     if (progressBar) progressBar.style.width = pct + '%';
+    if (progressWrap) progressWrap.setAttribute('aria-valuenow', String(state.step));
+    announce('Passo ' + state.step + ' de ' + TOTAL);
   }
 
   function showStep(next) {
@@ -59,6 +165,8 @@
       toEl.classList.remove('hidden');
       state.step = next;
       updateProgress();
+      saveDraft();
+      fa(next, stepLabelFor(next));
       window.scrollTo({ top: 0, behavior: reducedMotion ? 'auto' : 'smooth' });
     }
 
@@ -78,6 +186,8 @@
       });
       state.step = next;
       updateProgress();
+      saveDraft();
+      fa(next, stepLabelFor(next));
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }, 280);
   }
@@ -88,6 +198,10 @@
     if (msg) {
       el.textContent = msg;
       el.classList.remove('hidden');
+      announce(msg);
+      if (window.FunilAnalytics && window.FunilAnalytics.wizardSubmitErr) {
+        window.FunilAnalytics.wizardSubmitErr(msg);
+      }
     } else {
       el.textContent = '';
       el.classList.add('hidden');
@@ -150,6 +264,39 @@
     return true;
   }
 
+  function postListaEspera(payload) {
+    return fetch('/api/lista-espera', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify(payload),
+    }).then(function (res) {
+      return res.json().then(function (data) {
+        return { ok: res.ok, data: data };
+      });
+    });
+  }
+
+  function savePartialAfterStep1() {
+    if (!state.nome || !state.email) return;
+    var payload = {
+      nome: state.nome,
+      email: state.email,
+      origem: 'lista-espera-wizard',
+      wizard_completo: false,
+      respostas: state.respostas,
+      user_agent: navigator.userAgent,
+      website: document.getElementById('leWebsite') ? document.getElementById('leWebsite').value : '',
+    };
+    if (referralOrigem) payload.referral_origem = referralOrigem;
+    postListaEspera(payload).then(function (result) {
+      if (result.ok && result.data && result.data.success) {
+        if (window.FunilAnalytics && window.FunilAnalytics.wizardPartialLead) {
+          window.FunilAnalytics.wizardPartialLead();
+        }
+      }
+    });
+  }
+
   function bindSingle(groupEl, key) {
     if (!groupEl) return;
     var buttons = groupEl.querySelectorAll('[data-value]');
@@ -162,7 +309,19 @@
         btn.classList.add('le-selected');
         btn.setAttribute('aria-pressed', 'true');
         state.respostas[key] = btn.getAttribute('data-value');
-        showErr(parseInt(groupEl.closest('.le-step').getAttribute('data-step'), 10), '');
+        var stepNum = parseInt(groupEl.closest('.le-step').getAttribute('data-step'), 10);
+        showErr(stepNum, '');
+        saveDraft();
+        if (autoAdvance && key !== 'beta_interesse' && stepNum !== 2) {
+          setTimeout(function () {
+            if (validateStep(stepNum)) {
+              if (window.FunilAnalytics && window.FunilAnalytics.wizardStepComplete) {
+                window.FunilAnalytics.wizardStepComplete(stepNum);
+              }
+              showStep(stepNum + 1);
+            }
+          }, 260);
+        }
       });
     });
   }
@@ -191,6 +350,7 @@
         state.respostas[key] = list;
         if (key === 'prioridades') showErr(5, '');
         else showErr(4, '');
+        saveDraft();
       });
     });
   }
@@ -205,6 +365,12 @@
   root.querySelectorAll('.le-next').forEach(function (btn) {
     btn.addEventListener('click', function () {
       if (!validateStep(state.step)) return;
+      if (state.step === 1) {
+        savePartialAfterStep1();
+      }
+      if (window.FunilAnalytics && window.FunilAnalytics.wizardStepComplete) {
+        window.FunilAnalytics.wizardStepComplete(state.step);
+      }
       showStep(state.step + 1);
     });
   });
@@ -243,22 +409,18 @@
         user_agent: navigator.userAgent,
         website: website ? website.value : '',
       };
+      if (referralOrigem) payload.referral_origem = referralOrigem;
 
       setLoading(true);
       showErr(6, '');
 
-      fetch('/api/lista-espera', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify(payload),
-      })
-        .then(function (res) {
-          return res.json().then(function (data) {
-            return { ok: res.ok, data: data };
-          });
-        })
+      postListaEspera(payload)
         .then(function (result) {
           if (result.ok && result.data && result.data.success) {
+            clearDraft();
+            if (window.FunilAnalytics && window.FunilAnalytics.wizardSubmitOk) {
+              window.FunilAnalytics.wizardSubmitOk();
+            }
             window.location.href = '/obrigado';
             return;
           }
@@ -276,5 +438,18 @@
     });
   }
 
+  if (state.step > 1) {
+    var target = state.step;
+    var all = steps();
+    all.forEach(function (sec) {
+      sec.classList.add('hidden');
+    });
+    var cur = root.querySelector('.le-step[data-step="' + target + '"]');
+    if (cur) cur.classList.remove('hidden');
+    state.step = target;
+  }
   updateProgress();
+  if (window.FunilAnalytics && typeof window.FunilAnalytics.wizardStepView === 'function') {
+    window.FunilAnalytics.wizardStepView(state.step, stepLabelFor(state.step));
+  }
 })();

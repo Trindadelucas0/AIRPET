@@ -1,259 +1,232 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>Lista de espera | AIRPET</title>
+<%- include('../partials/funil-meta', {
+  ogTitle: 'Lista de espera | AIRPET',
+  metaDescription: 'Lista de espera AIRPET: formulário curto, sorteio de AirTag (30 por cidade, sem custo) e aviso da data pelo WhatsApp.',
+  ogDescription: 'Participa do sorteio de AirTag (30 por cidade, sem custo). Data do sorteio avisamos pelo WhatsApp.',
+  ogUrl: (typeof BASE_URL !== 'undefined' ? BASE_URL : '') + '/lista-espera',
+  ogImage: (typeof BASE_URL !== 'undefined' ? BASE_URL : '') + '/images/landing/og.jpg',
+  canonicalUrl: (typeof BASE_URL !== 'undefined' ? BASE_URL : '') + '/lista-espera',
+  jsonLd: null,
+  themeColor: '#fafaf7',
+}) %>
   <meta name="robots" content="noindex">
-  <meta name="theme-color" content="#ec5a1c">
-  <link rel="icon" type="image/svg+xml" href="/images/icons/icon-192.svg">
-  <link rel="stylesheet" href="/css/output.css">
 </head>
-<body class="min-h-screen bg-white text-gray-800 antialiased">
+<body class="le-wizard-page antialiased" id="lista-espera-body">
+<%- include('../partials/funil-header', { funilHeaderDark: false, funilBackHref: '/proteger-meu-pet' }) %>
 
-  <header class="border-b border-gray-200 bg-white/95 backdrop-blur-md sticky top-0 z-40">
-    <div class="max-w-lg mx-auto px-4 h-14 flex items-center justify-between">
-      <a href="/proteger-meu-pet" class="text-sm font-semibold text-gray-500 hover:text-primary-600 flex items-center gap-1">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-        Voltar
-      </a>
-      <span class="font-display font-extrabold text-gray-900">AIRPET</span>
+<div class="le-progress-wrap" aria-hidden="false">
+  <div class="le-progress-inner">
+    <div class="le-progress-top">
+      <span id="leProgressLabel">Passo 1 de 6</span>
+      <span id="leProgressPct">17%</span>
     </div>
-  </header>
-
-  <div class="sticky top-14 z-30 bg-white/95 backdrop-blur border-b border-gray-200">
-    <div class="max-w-lg mx-auto px-4 py-3">
-      <div class="flex items-center justify-between text-xs font-semibold text-gray-500 mb-2">
-        <span id="leProgressLabel">Passo 1 de 6</span>
-        <span id="leProgressPct">17%</span>
-      </div>
-      <div class="h-2 rounded-full bg-gray-200 overflow-hidden">
-        <div id="leProgressBar" class="h-full bg-primary-500 rounded-full transition-all duration-300 ease-out" style="width: 17%"></div>
-      </div>
+    <div class="le-progress-bar-outer" role="progressbar" aria-valuemin="1" aria-valuemax="6" aria-valuenow="1" aria-labelledby="leProgressLabel" id="leProgressBarWrap">
+      <div id="leProgressBar" class="le-progress-bar-inner" style="width:17%"></div>
     </div>
   </div>
+</div>
 
-  <main class="max-w-lg mx-auto px-4 py-6 pb-28">
-    <div id="listaEsperaWizard" class="relative overflow-hidden">
+<main id="conteudo-principal" class="le-main">
+  <p id="leLiveRegion" class="sr-only" aria-live="polite" aria-atomic="true"></p>
+  <div id="listaEsperaWizard" class="relative overflow-hidden" data-autoadvance="true" data-referral="<%= typeof referralOrigem !== 'undefined' && referralOrigem ? String(referralOrigem).replace(/"/g, '') : '' %>">
 
-      <!-- Passo 1 -->
-      <section class="le-step" data-step="1">
-        <h1 class="text-2xl font-display font-extrabold text-gray-900 leading-tight">Antes de tudo, como te chamamos?</h1>
-        <p class="mt-2 text-sm text-gray-600">Promessa: zero spam. Só te avisamos quando as vagas de teste abrirem.</p>
-        <div class="mt-6 space-y-4">
-          <div>
-            <label for="leNome" class="block text-sm font-semibold text-gray-700 mb-1">Seu nome *</label>
-            <input type="text" id="leNome" maxlength="120" autocomplete="name" placeholder="Seu nome"
-              class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-gray-900 shadow-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none">
-          </div>
-          <div>
-            <label for="leEmail" class="block text-sm font-semibold text-gray-700 mb-1">E-mail *</label>
-            <input type="email" id="leEmail" autocomplete="email" placeholder="seu@email.com"
-              class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-gray-900 shadow-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none">
-          </div>
-        </div>
-        <p id="errStep1" class="mt-3 text-sm text-red-600 hidden" role="alert"></p>
-        <div class="mt-8 flex flex-col gap-3">
-          <button type="button" class="le-next w-full rounded-full bg-primary-500 hover:bg-primary-600 text-white font-bold py-3.5 shadow-lg shadow-primary-500/20 transition-colors">Continuar</button>
-        </div>
-      </section>
+    <section class="le-step" data-step="1" data-step-label="Seus dados">
+      <h1>Vamos começar pelo seu nome</h1>
+      <p class="le-lead">Sem spam. Quem termina o formulário entra no <strong>sorteio de AirTag</strong> (30 por cidade, sem custo) — a <strong>data do sorteio</strong> a gente manda pelo <strong>WhatsApp</strong> no número que você informar.</p>
+      <div class="le-field">
+        <label for="leNome">Seu nome <span class="text-red-600" aria-hidden="true">*</span></label>
+        <input type="text" id="leNome" name="nome" maxlength="120" autocomplete="name" placeholder="Ex.: Marina Silva" required>
+      </div>
+      <div class="le-field">
+        <label for="leEmail">E-mail <span class="text-red-600" aria-hidden="true">*</span></label>
+        <input type="email" id="leEmail" name="email" autocomplete="email" placeholder="seu@email.com" required>
+      </div>
+      <p id="errStep1" class="mt-3 text-sm text-red-600 hidden" role="alert"></p>
+      <div class="mt-8 flex flex-col gap-3">
+        <button type="button" class="le-next lp-btn-primary w-full justify-center">Continuar</button>
+      </div>
+    </section>
 
-      <!-- Passo 2 -->
-      <section class="le-step hidden" data-step="2">
-        <h1 class="text-2xl font-display font-extrabold text-gray-900 leading-tight">Com quem você divide a vida?</h1>
-        <p class="mt-4 text-sm font-semibold text-gray-500 uppercase tracking-wide">Tipo de pet *</p>
-        <div class="mt-3 grid grid-cols-3 gap-2" data-single="tipo_pet">
-          <button type="button" class="le-pet-card flex flex-col items-center gap-2 rounded-2xl border-2 border-gray-200 bg-white p-4 hover:border-primary-300 transition-colors" data-value="cachorro">
-            <span class="text-4xl" aria-hidden="true">🐶</span>
-            <span class="text-sm font-bold text-gray-800">Cachorro</span>
-          </button>
-          <button type="button" class="le-pet-card flex flex-col items-center gap-2 rounded-2xl border-2 border-gray-200 bg-white p-4 hover:border-primary-300 transition-colors" data-value="gato">
-            <span class="text-4xl" aria-hidden="true">🐱</span>
-            <span class="text-sm font-bold text-gray-800">Gato</span>
-          </button>
-          <button type="button" class="le-pet-card flex flex-col items-center gap-2 rounded-2xl border-2 border-gray-200 bg-white p-4 hover:border-primary-300 transition-colors" data-value="outro">
-            <span class="text-4xl" aria-hidden="true">🐾</span>
-            <span class="text-sm font-bold text-gray-800">Outro</span>
-          </button>
-        </div>
-        <p class="mt-6 text-sm font-semibold text-gray-500 uppercase tracking-wide">Quantos pets? *</p>
-        <div class="mt-3 flex flex-wrap gap-2" data-single="qtd_pets">
-          <button type="button" class="le-chip rounded-full border-2 border-gray-200 bg-white px-5 py-2 text-sm font-semibold text-gray-700" data-value="1">1</button>
-          <button type="button" class="le-chip rounded-full border-2 border-gray-200 bg-white px-5 py-2 text-sm font-semibold text-gray-700" data-value="2">2</button>
-          <button type="button" class="le-chip rounded-full border-2 border-gray-200 bg-white px-5 py-2 text-sm font-semibold text-gray-700" data-value="3+">3 ou mais</button>
-        </div>
-        <p id="errStep2" class="mt-3 text-sm text-red-600 hidden" role="alert"></p>
-        <div class="mt-8 flex flex-col sm:flex-row gap-3">
-          <button type="button" class="le-next flex-1 rounded-full bg-primary-500 hover:bg-primary-600 text-white font-bold py-3.5">Continuar</button>
-          <button type="button" class="le-prev rounded-full border border-gray-200 bg-white text-gray-700 font-semibold py-3.5 px-6">Voltar</button>
-        </div>
-      </section>
+    <section class="le-step hidden" data-step="2" data-step-label="Seu pet">
+      <h1>Com quem você divide a vida?</h1>
+      <p class="le-lead mt-2 text-xs font-bold uppercase tracking-wide text-slate-500">Tipo de pet <span class="text-red-600">*</span></p>
+      <div class="mt-3 grid grid-cols-3 gap-2" data-single="tipo_pet" role="group" aria-label="Tipo de pet">
+        <button type="button" class="le-pet-card flex flex-col items-center gap-2 rounded-2xl border-2 border-slate-200 bg-white p-4 hover:border-primary-300 transition-colors" data-value="cachorro" aria-pressed="false">
+          <span class="text-3xl" aria-hidden="true">🐶</span>
+          <span class="text-sm font-bold text-slate-800">Cachorro</span>
+        </button>
+        <button type="button" class="le-pet-card flex flex-col items-center gap-2 rounded-2xl border-2 border-slate-200 bg-white p-4 hover:border-primary-300 transition-colors" data-value="gato" aria-pressed="false">
+          <span class="text-3xl" aria-hidden="true">🐱</span>
+          <span class="text-sm font-bold text-slate-800">Gato</span>
+        </button>
+        <button type="button" class="le-pet-card flex flex-col items-center gap-2 rounded-2xl border-2 border-slate-200 bg-white p-4 hover:border-primary-300 transition-colors" data-value="outro" aria-pressed="false">
+          <span class="text-3xl" aria-hidden="true">🐾</span>
+          <span class="text-sm font-bold text-slate-800">Outro</span>
+        </button>
+      </div>
+      <p class="mt-6 text-xs font-bold uppercase tracking-wide text-slate-500">Quantos pets? <span class="text-red-600">*</span></p>
+      <div class="mt-3 flex flex-wrap gap-2" data-single="qtd_pets" role="group" aria-label="Quantidade de pets">
+        <button type="button" class="le-chip rounded-full border-2 border-slate-200 bg-white px-5 py-2 text-sm font-semibold text-slate-700" data-value="1" aria-pressed="false">1</button>
+        <button type="button" class="le-chip rounded-full border-2 border-slate-200 bg-white px-5 py-2 text-sm font-semibold text-slate-700" data-value="2" aria-pressed="false">2</button>
+        <button type="button" class="le-chip rounded-full border-2 border-slate-200 bg-white px-5 py-2 text-sm font-semibold text-slate-700" data-value="3+" aria-pressed="false">3 ou mais</button>
+      </div>
+      <p id="errStep2" class="mt-3 text-sm text-red-600 hidden" role="alert"></p>
+      <div class="mt-8 flex flex-col sm:flex-row gap-3">
+        <button type="button" class="le-next lp-btn-primary flex-1 justify-center">Continuar</button>
+        <button type="button" class="le-prev rounded-full border-2 border-slate-200 bg-white text-slate-700 font-semibold py-3.5 px-6">Voltar</button>
+      </div>
+    </section>
 
-      <!-- Passo 3 -->
-      <section class="le-step hidden" data-step="3">
-        <h1 class="text-2xl font-display font-extrabold text-gray-900 leading-tight">Já viveu esse pesadelo?</h1>
-        <p class="mt-2 text-sm text-gray-600">Não tem resposta errada — queremos entender o que você já passou.</p>
-        <div class="mt-6 space-y-3" data-single="ja_perdeu_pet">
-          <button type="button" class="le-big-card w-full text-left rounded-2xl border-2 border-gray-200 bg-white p-5 flex gap-4 items-start hover:border-primary-300 transition-colors" data-value="sim">
-            <span class="text-3xl shrink-0" aria-hidden="true">😰</span>
-            <span class="font-semibold text-gray-900">Sim, já perdi um pet</span>
-          </button>
-          <button type="button" class="le-big-card w-full text-left rounded-2xl border-2 border-gray-200 bg-white p-5 flex gap-4 items-start hover:border-primary-300 transition-colors" data-value="quase">
-            <span class="text-3xl shrink-0" aria-hidden="true">😅</span>
-            <span class="font-semibold text-gray-900">Quase perdi, foi por pouco</span>
-          </button>
-          <button type="button" class="le-big-card w-full text-left rounded-2xl border-2 border-gray-200 bg-white p-5 flex gap-4 items-start hover:border-primary-300 transition-colors" data-value="nao">
-            <span class="text-3xl shrink-0" aria-hidden="true">😨</span>
-            <span class="font-semibold text-gray-900">Nunca perdi, mas tenho medo</span>
-          </button>
-        </div>
-        <p id="errStep3" class="mt-3 text-sm text-red-600 hidden" role="alert"></p>
-        <div class="mt-8 flex flex-col sm:flex-row gap-3">
-          <button type="button" class="le-next flex-1 rounded-full bg-primary-500 hover:bg-primary-600 text-white font-bold py-3.5">Continuar</button>
-          <button type="button" class="le-prev rounded-full border border-gray-200 bg-white text-gray-700 font-semibold py-3.5 px-6">Voltar</button>
-        </div>
-      </section>
+    <section class="le-step hidden" data-step="3" data-step-label="Experiência">
+      <h1>Você já viveu um susto desses?</h1>
+      <p class="le-lead">Não existe resposta errada — queremos entender o que você já passou.</p>
+      <div class="mt-6 space-y-3" data-single="ja_perdeu_pet" role="radiogroup" aria-label="Experiência com pet perdido">
+        <button type="button" class="le-big-card w-full text-left rounded-2xl border-2 border-slate-200 bg-white p-5 flex gap-4 items-start hover:border-primary-300 transition-colors" data-value="sim" aria-pressed="false">
+          <svg class="le-icon-inline mt-0.5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          <span class="font-semibold text-slate-900">Sim, já perdi um pet</span>
+        </button>
+        <button type="button" class="le-big-card w-full text-left rounded-2xl border-2 border-slate-200 bg-white p-5 flex gap-4 items-start hover:border-primary-300 transition-colors" data-value="quase" aria-pressed="false">
+          <svg class="le-icon-inline mt-0.5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M13 16h-1v-4h-1m1-4h.01M12 20a8 8 0 100-16 8 8 0 000 16z"/></svg>
+          <span class="font-semibold text-slate-900">Quase perdi, foi por pouco</span>
+        </button>
+        <button type="button" class="le-big-card w-full text-left rounded-2xl border-2 border-slate-200 bg-white p-5 flex gap-4 items-start hover:border-primary-300 transition-colors" data-value="nao" aria-pressed="false">
+          <svg class="le-icon-inline mt-0.5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
+          <span class="font-semibold text-slate-900">Nunca perdi, mas tenho medo</span>
+        </button>
+      </div>
+      <p id="errStep3" class="mt-3 text-sm text-red-600 hidden" role="alert"></p>
+      <div class="mt-8 flex flex-col sm:flex-row gap-3">
+        <button type="button" class="le-next lp-btn-primary flex-1 justify-center">Continuar</button>
+        <button type="button" class="le-prev rounded-full border-2 border-slate-200 bg-white text-slate-700 font-semibold py-3.5 px-6">Voltar</button>
+      </div>
+    </section>
 
-      <!-- Passo 4 -->
-      <section class="le-step hidden" data-step="4">
-        <h1 class="text-2xl font-display font-extrabold text-gray-900 leading-tight">Se sumisse agora, qual seria seu primeiro movimento?</h1>
-        <p class="mt-2 text-sm text-gray-600">Marque tudo que você realmente faria — não o que acha certo.</p>
-        <div class="mt-6 space-y-2" data-multi="metodos_busca">
-          <label class="le-check flex items-center gap-3 rounded-xl border-2 border-gray-200 bg-white p-4 cursor-pointer hover:border-primary-200 has-[:checked]:border-primary-500 has-[:checked]:bg-primary-50/50">
-            <input type="checkbox" class="le-check-input sr-only" value="whatsapp">
-            <span class="text-xl" aria-hidden="true">📱</span>
-            <span class="text-sm font-semibold text-gray-800">Grupos de WhatsApp do bairro</span>
-          </label>
-          <label class="le-check flex items-center gap-3 rounded-xl border-2 border-gray-200 bg-white p-4 cursor-pointer hover:border-primary-200 has-[:checked]:border-primary-500 has-[:checked]:bg-primary-50/50">
-            <input type="checkbox" class="le-check-input sr-only" value="facebook">
-            <span class="text-xl" aria-hidden="true">📣</span>
-            <span class="text-sm font-semibold text-gray-800">Facebook / Instagram</span>
-          </label>
-          <label class="le-check flex items-center gap-3 rounded-xl border-2 border-gray-200 bg-white p-4 cursor-pointer hover:border-primary-200 has-[:checked]:border-primary-500 has-[:checked]:bg-primary-50/50">
-            <input type="checkbox" class="le-check-input sr-only" value="panfletos">
-            <span class="text-xl" aria-hidden="true">🖨️</span>
-            <span class="text-sm font-semibold text-gray-800">Panfletos na rua</span>
-          </label>
-          <label class="le-check flex items-center gap-3 rounded-xl border-2 border-gray-200 bg-white p-4 cursor-pointer hover:border-primary-200 has-[:checked]:border-primary-500 has-[:checked]:bg-primary-50/50">
-            <input type="checkbox" class="le-check-input sr-only" value="rua">
-            <span class="text-xl" aria-hidden="true">🚶</span>
-            <span class="text-sm font-semibold text-gray-800">Sair andando e procurar</span>
-          </label>
-          <label class="le-check flex items-center gap-3 rounded-xl border-2 border-gray-200 bg-white p-4 cursor-pointer hover:border-primary-200 has-[:checked]:border-primary-500 has-[:checked]:bg-primary-50/50">
-            <input type="checkbox" class="le-check-input sr-only" value="veterinario">
-            <span class="text-xl" aria-hidden="true">🏥</span>
-            <span class="text-sm font-semibold text-gray-800">Ligar para clínicas e abrigos</span>
-          </label>
-          <label class="le-check flex items-center gap-3 rounded-xl border-2 border-gray-200 bg-white p-4 cursor-pointer hover:border-primary-200 has-[:checked]:border-primary-500 has-[:checked]:bg-primary-50/50">
-            <input type="checkbox" class="le-check-input sr-only" value="outro">
-            <span class="text-xl" aria-hidden="true">🤷</span>
-            <span class="text-sm font-semibold text-gray-800">Não saberia o que fazer</span>
-          </label>
-        </div>
-        <p id="errStep4" class="mt-3 text-sm text-red-600 hidden" role="alert"></p>
-        <div class="mt-8 flex flex-col sm:flex-row gap-3">
-          <button type="button" class="le-next flex-1 rounded-full bg-primary-500 hover:bg-primary-600 text-white font-bold py-3.5">Continuar</button>
-          <button type="button" class="le-prev rounded-full border border-gray-200 bg-white text-gray-700 font-semibold py-3.5 px-6">Voltar</button>
-        </div>
-      </section>
+    <section class="le-step hidden" data-step="4" data-step-label="Primeiro movimento">
+      <h1>Se sumisse agora, o que você faria primeiro?</h1>
+      <p class="le-lead">Marque tudo que faria de verdade — não o que “deveria”.</p>
+      <div class="mt-6 space-y-2" data-multi="metodos_busca" role="group" aria-label="Métodos de busca">
+        <label class="le-check flex items-center gap-3 rounded-xl border-2 border-slate-200 bg-white p-4 cursor-pointer hover:border-primary-200 has-[:checked]:border-primary-500 has-[:checked]:bg-orange-50/60">
+          <input type="checkbox" class="le-check-input sr-only" value="whatsapp">
+          <svg class="le-icon-inline" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 18h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+          <span class="text-sm font-semibold text-slate-800">Grupos de WhatsApp do bairro</span>
+        </label>
+        <label class="le-check flex items-center gap-3 rounded-xl border-2 border-slate-200 bg-white p-4 cursor-pointer hover:border-primary-200 has-[:checked]:border-primary-500 has-[:checked]:bg-orange-50/60">
+          <input type="checkbox" class="le-check-input sr-only" value="facebook">
+          <svg class="le-icon-inline" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4"/></svg>
+          <span class="text-sm font-semibold text-slate-800">Facebook / Instagram</span>
+        </label>
+        <label class="le-check flex items-center gap-3 rounded-xl border-2 border-slate-200 bg-white p-4 cursor-pointer hover:border-primary-200 has-[:checked]:border-primary-500 has-[:checked]:bg-orange-50/60">
+          <input type="checkbox" class="le-check-input sr-only" value="panfletos">
+          <svg class="le-icon-inline" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 12h6m-6 4h6M5 4h14l-1 16H6L5 4z"/></svg>
+          <span class="text-sm font-semibold text-slate-800">Panfletos na rua</span>
+        </label>
+        <label class="le-check flex items-center gap-3 rounded-xl border-2 border-slate-200 bg-white p-4 cursor-pointer hover:border-primary-200 has-[:checked]:border-primary-500 has-[:checked]:bg-orange-50/60">
+          <input type="checkbox" class="le-check-input sr-only" value="rua">
+          <svg class="le-icon-inline" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M13 7l5 5-5 5M6 12h12"/></svg>
+          <span class="text-sm font-semibold text-slate-800">Sair andando e procurar</span>
+        </label>
+        <label class="le-check flex items-center gap-3 rounded-xl border-2 border-slate-200 bg-white p-4 cursor-pointer hover:border-primary-200 has-[:checked]:border-primary-500 has-[:checked]:bg-orange-50/60">
+          <input type="checkbox" class="le-check-input sr-only" value="veterinario">
+          <svg class="le-icon-inline" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 9.5l7.5-5 7.5 5M4.5 9.5V19h15V9.5"/></svg>
+          <span class="text-sm font-semibold text-slate-800">Ligar para clínicas e abrigos</span>
+        </label>
+        <label class="le-check flex items-center gap-3 rounded-xl border-2 border-slate-200 bg-white p-4 cursor-pointer hover:border-primary-200 has-[:checked]:border-primary-500 has-[:checked]:bg-orange-50/60">
+          <input type="checkbox" class="le-check-input sr-only" value="outro">
+          <svg class="le-icon-inline" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/></svg>
+          <span class="text-sm font-semibold text-slate-800">Não saberia o que fazer</span>
+        </label>
+      </div>
+      <p id="errStep4" class="mt-3 text-sm text-red-600 hidden" role="alert"></p>
+      <div class="mt-8 flex flex-col sm:flex-row gap-3">
+        <button type="button" class="le-next lp-btn-primary flex-1 justify-center">Continuar</button>
+        <button type="button" class="le-prev rounded-full border-2 border-slate-200 bg-white text-slate-700 font-semibold py-3.5 px-6">Voltar</button>
+      </div>
+    </section>
 
-      <!-- Passo 5 -->
-      <section class="le-step hidden" data-step="5">
-        <h1 class="text-2xl font-display font-extrabold text-gray-900 leading-tight">Na hora do desespero, o que mais te salvaria?</h1>
-        <p class="mt-2 text-sm text-gray-600">Escolha até 2 — isso define o que priorizamos primeiro.</p>
-        <div class="mt-6 space-y-2" data-multi="prioridades" data-max="2">
-          <label class="le-check le-prio flex items-center gap-3 rounded-xl border-2 border-gray-200 bg-white p-4 cursor-pointer hover:border-primary-200 has-[:checked]:border-primary-500 has-[:checked]:bg-primary-50/50">
-            <input type="checkbox" class="le-check-input sr-only" value="identificar_dono">
-            <span class="text-xl" aria-hidden="true">🪪</span>
-            <span class="text-sm font-semibold text-gray-800">Saber na hora de quem é o pet</span>
-          </label>
-          <label class="le-check le-prio flex items-center gap-3 rounded-xl border-2 border-gray-200 bg-white p-4 cursor-pointer hover:border-primary-200 has-[:checked]:border-primary-500 has-[:checked]:bg-primary-50/50">
-            <input type="checkbox" class="le-check-input sr-only" value="contato_tutor">
-            <span class="text-xl" aria-hidden="true">📞</span>
-            <span class="text-sm font-semibold text-gray-800">Falar com o dono do pet em segundos</span>
-          </label>
-          <label class="le-check le-prio flex items-center gap-3 rounded-xl border-2 border-gray-200 bg-white p-4 cursor-pointer hover:border-primary-200 has-[:checked]:border-primary-500 has-[:checked]:bg-primary-50/50">
-            <input type="checkbox" class="le-check-input sr-only" value="ultima_localizacao">
-            <span class="text-xl" aria-hidden="true">📍</span>
-            <span class="text-sm font-semibold text-gray-800">Ver por onde o pet passou</span>
-          </label>
-        </div>
-        <p id="errStep5" class="mt-3 text-sm text-red-600 hidden" role="alert"></p>
-        <div class="mt-8 flex flex-col sm:flex-row gap-3">
-          <button type="button" class="le-next flex-1 rounded-full bg-primary-500 hover:bg-primary-600 text-white font-bold py-3.5">Continuar</button>
-          <button type="button" class="le-prev rounded-full border border-gray-200 bg-white text-gray-700 font-semibold py-3.5 px-6">Voltar</button>
-        </div>
-      </section>
+    <section class="le-step hidden" data-step="5" data-step-label="Prioridades">
+      <h1>O que mais ajudaria você no momento mais difícil?</h1>
+      <p class="le-lead">Escolha até 2 — isso define o que priorizamos primeiro.</p>
+      <div class="mt-6 space-y-2" data-multi="prioridades" data-max="2" role="group" aria-label="Prioridades">
+        <label class="le-check le-prio flex items-center gap-3 rounded-xl border-2 border-slate-200 bg-white p-4 cursor-pointer hover:border-primary-200 has-[:checked]:border-primary-500 has-[:checked]:bg-orange-50/60">
+          <input type="checkbox" class="le-check-input sr-only" value="identificar_dono">
+          <svg class="le-icon-inline" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+          <span class="text-sm font-semibold text-slate-800">Saber na hora de quem é o pet</span>
+        </label>
+        <label class="le-check le-prio flex items-center gap-3 rounded-xl border-2 border-slate-200 bg-white p-4 cursor-pointer hover:border-primary-200 has-[:checked]:border-primary-500 has-[:checked]:bg-orange-50/60">
+          <input type="checkbox" class="le-check-input sr-only" value="contato_tutor">
+          <svg class="le-icon-inline" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
+          <span class="text-sm font-semibold text-slate-800">Falar com o dono em segundos</span>
+        </label>
+        <label class="le-check le-prio flex items-center gap-3 rounded-xl border-2 border-slate-200 bg-white p-4 cursor-pointer hover:border-primary-200 has-[:checked]:border-primary-500 has-[:checked]:bg-orange-50/60">
+          <input type="checkbox" class="le-check-input sr-only" value="ultima_localizacao">
+          <svg class="le-icon-inline" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+          <span class="text-sm font-semibold text-slate-800">Ver por onde o pet passou</span>
+        </label>
+      </div>
+      <p id="errStep5" class="mt-3 text-sm text-red-600 hidden" role="alert"></p>
+      <div class="mt-8 flex flex-col sm:flex-row gap-3">
+        <button type="button" class="le-next lp-btn-primary flex-1 justify-center">Continuar</button>
+        <button type="button" class="le-prev rounded-full border-2 border-slate-200 bg-white text-slate-700 font-semibold py-3.5 px-6">Voltar</button>
+      </div>
+    </section>
 
-      <!-- Passo 6 -->
-      <section class="le-step hidden" data-step="6">
-        <h1 class="text-2xl font-display font-extrabold text-gray-900 leading-tight">Você é exatamente quem queremos no AIRPET.</h1>
-        <p class="mt-2 text-sm text-gray-600">Última coisa: onde você mora? Priorizamos cidades com mais candidatos.</p>
-        <div class="mt-6 grid grid-cols-3 gap-2">
-          <div class="col-span-2">
-            <label for="leCidade" class="block text-sm font-semibold text-gray-700 mb-1">Cidade</label>
-            <input type="text" id="leCidade" maxlength="80" placeholder="Sua cidade"
-              class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 shadow-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none">
-          </div>
-          <div>
-            <label for="leEstado" class="block text-sm font-semibold text-gray-700 mb-1">UF</label>
-            <input type="text" id="leEstado" maxlength="2" placeholder="UF"
-              class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 uppercase shadow-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none">
-          </div>
+    <section class="le-step hidden" data-step="6" data-step-label="Cidade e beta">
+      <h1>Você é exatamente quem queremos ouvir</h1>
+      <p class="le-lead">Última parte: onde você mora? Priorizamos cidades com mais interesse.</p>
+      <div class="mt-6 grid grid-cols-3 gap-2">
+        <div class="col-span-2 le-field mt-0">
+          <label for="leCidade">Cidade</label>
+          <input type="text" id="leCidade" maxlength="80" placeholder="Sua cidade" autocomplete="address-level2">
         </div>
-        <div class="mt-4">
-          <label for="leTelefone" class="block text-sm font-semibold text-gray-700 mb-1">Telefone</label>
-          <p class="text-xs text-gray-500 mb-2">WhatsApp facilita o contato para avisos do AIRPET</p>
-          <input type="tel" id="leTelefone" maxlength="30" placeholder="(00) 00000-0000" autocomplete="tel"
-            class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 shadow-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none">
+        <div class="le-field mt-0">
+          <label for="leEstado">UF</label>
+          <input type="text" id="leEstado" maxlength="2" placeholder="SP" autocomplete="address-level1" class="uppercase">
         </div>
-        <p class="mt-6 text-sm font-semibold text-gray-500 uppercase tracking-wide">Quer entrar nas primeiras vagas do AIRPET? *</p>
-        <div class="mt-3 space-y-2" data-single="beta_interesse">
-          <button type="button" class="le-big-card w-full text-left rounded-2xl border-2 border-gray-200 bg-white p-4 flex gap-3 items-center hover:border-primary-300 transition-colors" data-value="sim">
-            <span class="text-2xl" aria-hidden="true">✅</span>
-            <span class="font-semibold text-gray-900">Sim, quero ser dos primeiros</span>
-          </button>
-          <button type="button" class="le-big-card w-full text-left rounded-2xl border-2 border-gray-200 bg-white p-4 flex gap-3 items-center hover:border-primary-300 transition-colors" data-value="talvez">
-            <span class="text-2xl" aria-hidden="true">🤔</span>
-            <span class="font-semibold text-gray-900">Talvez, depende</span>
-          </button>
-          <button type="button" class="le-big-card w-full text-left rounded-2xl border-2 border-gray-200 bg-white p-4 flex gap-3 items-center hover:border-primary-300 transition-colors" data-value="nao">
-            <span class="text-2xl" aria-hidden="true">⏳</span>
-            <span class="font-semibold text-gray-900">Ainda não, mas quero acompanhar</span>
-          </button>
-        </div>
-        <input type="text" id="leWebsite" name="website" tabindex="-1" autocomplete="off" class="absolute opacity-0 pointer-events-none h-0 w-0" aria-hidden="true">
-        <p id="errStep6" class="mt-3 text-sm text-red-600 hidden" role="alert"></p>
-        <div class="mt-8 flex flex-col gap-3">
-          <button type="button" id="leSubmit" class="w-full rounded-full bg-primary-500 hover:bg-primary-600 disabled:opacity-60 disabled:cursor-not-allowed text-white font-bold py-3.5 shadow-lg shadow-primary-500/20 flex items-center justify-center gap-2 transition-colors">
-            <span id="leSubmitLabel">Garantir minha vaga</span>
-            <svg id="leSubmitSpinner" class="hidden w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24" aria-hidden="true">
-              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-            </svg>
-          </button>
-          <button type="button" class="le-prev rounded-full border border-gray-200 bg-white text-gray-700 font-semibold py-3">Voltar</button>
-        </div>
-        <p class="mt-4 text-xs text-gray-400 text-center">
-          <a href="/privacidade" class="underline hover:text-primary-600">Política de privacidade</a>
-        </p>
-      </section>
+      </div>
+      <div class="le-field">
+        <label for="leTelefone">WhatsApp / celular (recomendado)</label>
+        <p class="text-xs text-slate-500 mb-2">Usamos para avisar a <strong>data do sorteio da AirTag</strong> e convites de teste — não é lista de marketing genérica.</p>
+        <input type="tel" id="leTelefone" maxlength="30" placeholder="(00) 00000-0000" autocomplete="tel">
+      </div>
+      <p class="mt-6 text-xs font-bold uppercase tracking-wide text-slate-500">Quer entrar nas primeiras vagas? <span class="text-red-600">*</span></p>
+      <div class="mt-3 space-y-2" data-single="beta_interesse" role="radiogroup" aria-label="Interesse nas vagas beta">
+        <button type="button" class="le-big-card w-full text-left rounded-2xl border-2 border-slate-200 bg-white p-4 flex gap-3 items-center hover:border-primary-300 transition-colors" data-value="sim" aria-pressed="false">
+          <svg class="le-icon-inline shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg>
+          <span class="font-semibold text-slate-900">Sim, quero ser dos primeiros</span>
+        </button>
+        <button type="button" class="le-big-card w-full text-left rounded-2xl border-2 border-slate-200 bg-white p-4 flex gap-3 items-center hover:border-primary-300 transition-colors" data-value="talvez" aria-pressed="false">
+          <svg class="le-icon-inline shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          <span class="font-semibold text-slate-900">Talvez, depende</span>
+        </button>
+        <button type="button" class="le-big-card w-full text-left rounded-2xl border-2 border-slate-200 bg-white p-4 flex gap-3 items-center hover:border-primary-300 transition-colors" data-value="nao" aria-pressed="false">
+          <svg class="le-icon-inline shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          <span class="font-semibold text-slate-900">Ainda não, mas quero acompanhar</span>
+        </button>
+      </div>
+      <input type="text" id="leWebsite" name="website" tabindex="-1" autocomplete="off" class="absolute opacity-0 pointer-events-none h-0 w-0" aria-hidden="true">
+      <p id="errStep6" class="mt-3 text-sm text-red-600 hidden" role="alert"></p>
+      <div class="mt-8 flex flex-col gap-3">
+        <button type="button" id="leSubmit" class="lp-btn-primary w-full justify-center disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2">
+          <span id="leSubmitLabel">Garantir minha vaga</span>
+          <svg id="leSubmitSpinner" class="hidden w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+          </svg>
+        </button>
+        <button type="button" class="le-prev rounded-full border-2 border-slate-200 bg-white text-slate-700 font-semibold py-3">Voltar</button>
+      </div>
+      <p class="mt-4 text-xs text-slate-400 text-center">
+        <a href="/privacidade?funil=1" class="underline hover:text-primary-600">Política de privacidade</a>
+      </p>
+    </section>
 
-    </div>
-  </main>
+  </div>
+</main>
 
-  <style>
-    @media (prefers-reduced-motion: no-preference) {
-      .le-step { transition: transform 0.35s ease, opacity 0.35s ease; }
-      .le-step.le-enter { transform: translateX(1.5rem); opacity: 0; }
-      .le-step.le-exit { transform: translateX(-1.5rem); opacity: 0; }
-    }
-    .le-pet-card.le-selected, .le-chip.le-selected, .le-big-card.le-selected {
-      border-color: rgb(236 90 28);
-      background-color: rgb(255 247 237);
-      box-shadow: 0 0 0 1px rgb(236 90 28 / 0.2);
-    }
-  </style>
-  <script src="/js/lista-espera-wizard.js" defer></script>
+<%- include('../partials/funil-footer') %>
+<script src="/js/funil-analytics.js" defer></script>
+<script src="/js/lista-espera-wizard.js" defer></script>
 </body>
 </html>

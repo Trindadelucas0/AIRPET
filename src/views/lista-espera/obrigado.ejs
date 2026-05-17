@@ -1,66 +1,132 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>Vaga garantida | AIRPET</title>
+<%- include('../partials/funil-meta', {
+  ogTitle: typeof titulo !== 'undefined' ? titulo : 'Você está na lista | AIRPET',
+  metaDescription: 'Confirmação da lista de espera AIRPET — próximos passos e link para convidar outros tutores.',
+  ogDescription: 'Obrigado por confiar no AIRPET.',
+  ogUrl: (typeof BASE_URL !== 'undefined' ? BASE_URL : '') + '/obrigado',
+  ogImage: (typeof BASE_URL !== 'undefined' ? BASE_URL : '') + '/images/landing/og.jpg',
+  canonicalUrl: (typeof BASE_URL !== 'undefined' ? BASE_URL : '') + '/obrigado',
+  jsonLd: null,
+  themeColor: '#fafaf7',
+}) %>
   <meta name="robots" content="noindex">
-  <meta name="theme-color" content="#ec5a1c">
-  <link rel="icon" type="image/svg+xml" href="/images/icons/icon-192.svg">
-  <link rel="stylesheet" href="/css/output.css">
 </head>
-<body class="min-h-screen bg-[#fff7ed] text-gray-800 antialiased flex flex-col">
+<body class="le-done-page antialiased">
+<%- include('../partials/funil-header', { funilHeaderDark: false }) %>
 
-  <header class="border-b border-gray-900/5 bg-[#fff7ed]/90 backdrop-blur-md">
-    <div class="max-w-lg mx-auto px-4 h-14 flex items-center justify-center">
-      <span class="font-display font-extrabold text-gray-900">AIRPET</span>
+<main id="conteudo-principal" class="le-done-main text-center">
+  <p class="le-done-badge" aria-hidden="true">Lista confirmada</p>
+  <h1 class="le-done-title font-display">Você está na lista</h1>
+  <% if (typeof nomeUsuario !== 'undefined' && nomeUsuario) { %>
+  <p class="mt-3 text-slate-600">Obrigado, <strong class="text-slate-900"><%= nomeUsuario %></strong>.</p>
+  <% } %>
+  <% if (typeof posicaoNaFila === 'number' && posicaoNaFila && typeof totalFila === 'number' && totalFila) { %>
+  <p class="le-done-pos">Sua posição na fila: <strong>#<%= posicaoNaFila %></strong> de <strong><%= totalFila %></strong> inscrições completas.</p>
+  <% } else { %>
+  <p class="le-done-pos text-slate-600">Recebemos sua inscrição completa. Em breve você recebe um e-mail de confirmação.</p>
+  <% } %>
+
+  <div class="le-done-grid text-left">
+    <div class="le-done-card">
+      <strong>1. E-mail</strong>
+      <span>Confira a caixa de entrada (e o spam). Enviamos uma confirmação com o resumo.</span>
     </div>
-  </header>
+    <div class="le-done-card">
+      <strong>2. Indique tutores</strong>
+      <span>Quanto mais gente na sua cidade, mais rápido abrimos vagas por aqui.</span>
+    </div>
+    <div class="le-done-card">
+      <strong>3. Sorteio AirTag + WhatsApp</strong>
+      <span>Você entra no sorteio ao concluir a lista. São <strong>30 selecionados por cidade</strong> para testar uma <strong>AirTag</strong> com a gente, <strong>sem custo</strong>. A <strong>data do sorteio</strong> e as instruções enviamos pelo <strong>WhatsApp</strong> no número que você cadastrou.</span>
+    </div>
+  </div>
 
-  <main class="flex-1 flex flex-col items-center justify-center max-w-lg mx-auto px-6 py-16 text-center">
-    <p class="text-5xl mb-6" aria-hidden="true">🐾</p>
-    <h1 class="text-3xl font-display font-extrabold text-gray-900">Vaga garantida. 🐾</h1>
-    <p class="mt-4 text-gray-600 leading-relaxed max-w-sm">
-      Assim que o AIRPET abrir na sua cidade, você é o primeiro a saber. Fique de olho no seu e-mail.
-    </p>
-    <button type="button" id="leShareBtn"
-      class="mt-10 w-full sm:w-auto rounded-full border-2 border-primary-500 text-primary-600 hover:bg-primary-50 font-bold px-8 py-3.5 transition-colors">
-      Compartilhar com outros donos de pets
-    </button>
-    <p id="leShareFeedback" class="mt-3 text-sm text-green-700 hidden" role="status"></p>
-    <a href="/proteger-meu-pet" class="mt-8 text-sm text-gray-500 hover:text-primary-600 underline">Voltar à página inicial</a>
-  </main>
+  <p class="mt-4 text-center text-xs text-slate-500 max-w-md mx-auto">AirTag é marca registrada da Apple Inc. O sorteio é do AIRPET, sem vínculo com a Apple. Novidades do produto também no <a href="<%= typeof instagramUrl !== 'undefined' ? instagramUrl : 'https://instagram.com' %>" class="text-primary-600 font-semibold hover:underline" target="_blank" rel="noopener">Instagram</a>.</p>
 
-  <script>
-  (function () {
-    var SHARE_TEXT = 'Acabei de entrar na lista do AIRPET — tecnologia pra nunca mais perder um pet. airpet.com.br';
-    var shareUrl = '<%= typeof shareUrl !== "undefined" ? shareUrl : "https://airpet.com.br" %>';
-    var btn = document.getElementById('leShareBtn');
-    var feedback = document.getElementById('leShareFeedback');
+  <div class="le-ref-box text-left">
+    <p class="text-sm font-bold text-slate-900 m-0">Seu link para convidar</p>
+    <p class="text-xs text-slate-500 mt-1 mb-0">Copie e envie para amigos que também amam um pet.</p>
+    <p class="le-ref-url" id="leRefUrl"><%= typeof referralUrl !== 'undefined' ? referralUrl : '' %></p>
+    <div class="le-share-row">
+      <button type="button" id="leCopyBtn" class="lp-btn-primary text-sm py-2.5 px-5">Copiar link</button>
+      <a id="leWaBtn" class="lp-btn-ghost text-sm py-2.5 px-4 no-underline inline-flex items-center" href="#" rel="noopener">WhatsApp</a>
+      <a id="leXBtn" class="lp-btn-ghost text-sm py-2.5 px-4 no-underline inline-flex items-center" href="#" rel="noopener" target="_blank">X</a>
+    </div>
+    <p id="leCopyFeedback" class="mt-2 text-sm text-emerald-700 hidden" role="status"></p>
+  </div>
 
-    function showCopied() {
-      if (!feedback) return;
-      feedback.textContent = 'Link copiado!';
-      feedback.classList.remove('hidden');
-    }
+  <button type="button" id="leShareBtn" class="mt-8 lp-btn-ghost w-full justify-center font-bold py-3.5">
+    Compartilhar com outros tutores
+  </button>
+  <p id="leShareFeedback" class="mt-2 text-sm text-emerald-700 hidden" role="status"></p>
 
-    if (!btn) return;
+  <a href="/proteger-meu-pet" class="mt-8 inline-block text-sm text-slate-500 hover:text-primary-600 underline">Voltar à página da lista de espera</a>
+</main>
 
-    btn.addEventListener('click', function () {
-      if (navigator.share) {
-        navigator.share({ title: 'AIRPET', text: SHARE_TEXT, url: shareUrl }).catch(function () {});
-        return;
-      }
-      var full = SHARE_TEXT + ' ' + shareUrl;
+<%- include('../partials/funil-footer') %>
+<script src="/js/funil-analytics.js" defer></script>
+<script>
+(function () {
+  var shareUrl = '<%= typeof referralUrl !== "undefined" ? String(referralUrl).replace(/'/g, "\\'") : "" %>';
+  var shareText = 'Entrei na lista do AIRPET — ajuda a priorizar o reencontro de pets. Confere: ';
+  var btn = document.getElementById('leShareBtn');
+  var feedback = document.getElementById('leShareFeedback');
+  var copyBtn = document.getElementById('leCopyBtn');
+  var copyFb = document.getElementById('leCopyFeedback');
+  var refEl = document.getElementById('leRefUrl');
+
+  function showCopied(el, text) {
+    if (!el) return;
+    el.textContent = text;
+    el.classList.remove('hidden');
+    setTimeout(function () { el.classList.add('hidden'); }, 4000);
+  }
+
+  if (copyBtn && refEl) {
+    copyBtn.addEventListener('click', function () {
+      var t = refEl.textContent || '';
       if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(full).then(showCopied).catch(function () {
-          window.prompt('Copie e compartilhe:', full);
+        navigator.clipboard.writeText(t).then(function () {
+          showCopied(copyFb, 'Link copiado!');
+        }).catch(function () {
+          window.prompt('Copie o link:', t);
         });
-        return;
+      } else {
+        window.prompt('Copie o link:', t);
       }
-      window.prompt('Copie e compartilhe:', full);
     });
-  })();
-  </script>
+  }
+
+  var ig = '<%= typeof instagramUrl !== "undefined" ? String(instagramUrl).replace(/'/g, "\\'") : "https://instagram.com" %>';
+  var wa = document.getElementById('leWaBtn');
+  if (wa) {
+    wa.href = 'https://wa.me/?text=' + encodeURIComponent(shareText + ' ' + shareUrl);
+  }
+  var xb = document.getElementById('leXBtn');
+  if (xb) {
+    xb.href = 'https://twitter.com/intent/tweet?text=' + encodeURIComponent(shareText) + '&url=' + encodeURIComponent(shareUrl);
+  }
+
+  if (!btn) return;
+  btn.addEventListener('click', function () {
+    if (navigator.share) {
+      navigator.share({ title: 'AIRPET', text: shareText, url: shareUrl }).catch(function () {});
+      return;
+    }
+    var full = shareText + ' ' + shareUrl;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(full).then(function () {
+        showCopied(feedback, 'Texto copiado!');
+      }).catch(function () {
+        window.prompt('Copie e compartilhe:', full);
+      });
+      return;
+    }
+    window.prompt('Copie e compartilhe:', full);
+  });
+})();
+</script>
 </body>
 </html>

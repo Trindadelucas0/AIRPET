@@ -4,6 +4,7 @@ const Vacina = require('../models/Vacina');
 const CronExecucao = require('../models/CronExecucao');
 const petshopAppointmentService = require('./petshopAppointmentService');
 const petLostAlertService = require('../domain/alerts/petLostAlertService');
+const Story = require('../models/Story');
 const logger = require('../utils/logger');
 
 let notificacaoService = null;
@@ -86,6 +87,17 @@ async function enviarLembretesVacinas() {
   }
 }
 
+async function expirarStoriesVencidos() {
+  try {
+    const total = await Story.expirarVencidos();
+    if (total > 0) {
+      logger.info('Scheduler', `${total} story(s) ocultado(s) após expiração (24h).`);
+    }
+  } catch (erro) {
+    logger.error('Scheduler', 'Erro ao expirar stories vencidos', erro);
+  }
+}
+
 async function expirarSolicitacoesAgendaPendentes() {
   try {
     const configs = await ConfigSistema.listarTodas();
@@ -103,6 +115,9 @@ async function expirarSolicitacoesAgendaPendentes() {
 let escalarInterval = null;
 let vacinaInterval = null;
 let agendaExpiraInterval = null;
+let storiesExpiraInterval = null;
+
+const STORIES_EXPIRAR_INTERVAL_MS = 30 * 60 * 1000;
 
 async function iniciar() {
   const configs = await ConfigSistema.listarTodas();
@@ -114,18 +129,21 @@ async function iniciar() {
   escalarInterval = setInterval(escalarAlertasAutomaticamente, intervaloMs);
   vacinaInterval = setInterval(enviarLembretesVacinas, 6 * 60 * 60 * 1000);
   agendaExpiraInterval = setInterval(expirarSolicitacoesAgendaPendentes, intervaloAgendaMs);
+  storiesExpiraInterval = setInterval(expirarStoriesVencidos, STORIES_EXPIRAR_INTERVAL_MS);
 
   setTimeout(escalarAlertasAutomaticamente, 10000);
   setTimeout(enviarLembretesVacinas, 30000);
   setTimeout(expirarSolicitacoesAgendaPendentes, 45000);
+  setTimeout(expirarStoriesVencidos, 60000);
 
-  logger.info('Scheduler', `Jobs automáticos iniciados (alertas: ${intervaloAlertas}min, vacinas: 6h, agenda: ${intervaloAgenda}min)`);
+  logger.info('Scheduler', `Jobs automáticos iniciados (alertas: ${intervaloAlertas}min, vacinas: 6h, agenda: ${intervaloAgenda}min, stories: 30min)`);
 }
 
 function parar() {
   if (escalarInterval) clearInterval(escalarInterval);
   if (vacinaInterval) clearInterval(vacinaInterval);
   if (agendaExpiraInterval) clearInterval(agendaExpiraInterval);
+  if (storiesExpiraInterval) clearInterval(storiesExpiraInterval);
 }
 
 module.exports = {
@@ -135,4 +153,5 @@ module.exports = {
   escalarAlertasAutomaticamente,
   enviarLembretesVacinas,
   expirarSolicitacoesAgendaPendentes,
+  expirarStoriesVencidos,
 };

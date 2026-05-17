@@ -2,6 +2,7 @@
  * ListaEspera.js — Leads do wizard /lista-espera
  */
 
+const crypto = require('crypto');
 const { query } = require('../config/database');
 
 const ORIGEM_PADRAO = 'lista-espera-wizard';
@@ -26,6 +27,15 @@ function mapRow(row) {
   const respostas =
     typeof row.respostas === 'string' ? JSON.parse(row.respostas || '{}') : row.respostas || {};
   return { ...row, respostas, respostas_json: respostas };
+}
+
+async function gerarReferralCodeUnico() {
+  for (let i = 0; i < 10; i += 1) {
+    const code = crypto.randomBytes(6).toString('hex').slice(0, 10);
+    const existe = await query('SELECT 1 FROM lista_espera WHERE referral_code = $1 LIMIT 1', [code]);
+    if (existe.rows.length === 0) return code;
+  }
+  return crypto.randomBytes(8).toString('hex').slice(0, 12);
 }
 
 const ListaEspera = {
@@ -55,6 +65,12 @@ const ListaEspera = {
     } = dados;
 
     const emailNorm = normalizarEmail(email);
+    const existente = await this.buscarPorEmail(emailNorm);
+    let referral_code = dados.referral_code || existente?.referral_code;
+    if (!referral_code) {
+      referral_code = await gerarReferralCodeUnico();
+    }
+
     const estadoNorm = estado ? String(estado).trim().toUpperCase().slice(0, 2) : null;
     const respostasJson = JSON.stringify(sanitizarRespostas(respostas));
     const completo = wizard_completo !== false;
@@ -62,9 +78,9 @@ const ListaEspera = {
     const resultado = await query(
       `INSERT INTO lista_espera (
          nome, email, telefone, cidade, estado, origem,
-         respostas, user_agent, ip_hash, wizard_completo
+         respostas, user_agent, ip_hash, wizard_completo, referral_code
        )
-       VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb, $8, $9, $10)
+       VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb, $8, $9, $10, $11)
        ON CONFLICT (email) DO UPDATE SET
          nome = EXCLUDED.nome,
          telefone = COALESCE(EXCLUDED.telefone, lista_espera.telefone),
@@ -74,7 +90,8 @@ const ListaEspera = {
          respostas = EXCLUDED.respostas,
          user_agent = COALESCE(EXCLUDED.user_agent, lista_espera.user_agent),
          ip_hash = COALESCE(EXCLUDED.ip_hash, lista_espera.ip_hash),
-         wizard_completo = EXCLUDED.wizard_completo
+         wizard_completo = EXCLUDED.wizard_completo,
+         referral_code = COALESCE(lista_espera.referral_code, EXCLUDED.referral_code)
        RETURNING *`,
       [
         String(nome || '').trim().slice(0, 200) || 'Sem nome',
@@ -87,10 +104,32 @@ const ListaEspera = {
         user_agent || null,
         ip_hash || null,
         completo,
+        referral_code,
       ]
     );
 
     return mapRow(resultado.rows[0]);
+  },
+
+  async posicaoNaFila(email) {
+    const resultado = await query(
+      `WITH ord AS (
+         SELECT LOWER(email) AS em,
+                ROW_NUMBER() OVER (ORDER BY criado_em ASC, id ASC) AS pos
+         FROM lista_espera
+         WHERE wizard_completo = true
+       )
+       SELECT pos FROM ord WHERE em = $1 LIMIT 1`,
+      [normalizarEmail(email)]
+    );
+    return resultado.rows[0]?.pos ?? null;
+  },
+
+  async contarWizardCompleto() {
+    const resultado = await query(
+      `SELECT COUNT(*)::int AS c FROM lista_espera WHERE wizard_completo = true`
+    );
+    return resultado.rows[0]?.c ?? 0;
   },
 
   async listar({ origem, limite = PAGE_SIZE, offset = 0, buscaEmail } = {}) {
@@ -113,7 +152,7 @@ const ListaEspera = {
 
     const resultado = await query(
       `SELECT id, email, origem, nome, telefone, cidade, estado,
-              respostas, wizard_completo, user_agent, criado_em
+              respostas, wizard_completo, user_agent, criado_em, referral_code
        FROM lista_espera
        ${whereSql}
        ORDER BY criado_em DESC

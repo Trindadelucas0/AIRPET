@@ -1,11 +1,16 @@
 const { query } = require('../config/database');
 
+/** Tempo de vida público do story (autoexclusão da faixa após este período). */
+const STORY_TTL_HOURS = 24;
+
 const Story = {
+  STORY_TTL_HOURS,
+
   async contarUltimas24h(petId) {
     const r = await query(
       `SELECT COUNT(*)::int AS n FROM stories
-       WHERE pet_id = $1 AND criado_em > NOW() - INTERVAL '24 hours'`,
-      [petId]
+       WHERE pet_id = $1 AND criado_em > NOW() - $2::int * INTERVAL '1 hour'`,
+      [petId, STORY_TTL_HOURS]
     );
     return r.rows[0].n;
   },
@@ -19,11 +24,32 @@ const Story = {
     }
     const r = await query(
       `INSERT INTO stories (pet_id, autor_user_id, media_url, media_type, legenda, expira_em)
-       VALUES ($1, $2, $3, $4, $5, NOW() + INTERVAL '24 hours')
+       VALUES ($1, $2, $3, $4, $5, NOW() + $6::int * INTERVAL '1 hour')
        RETURNING *`,
-      [pet_id, autor_user_id, media_url, media_type, legenda ? String(legenda).slice(0, 280) : null]
+      [
+        pet_id,
+        autor_user_id,
+        media_url,
+        media_type,
+        legenda ? String(legenda).slice(0, 280) : null,
+        STORY_TTL_HOURS,
+      ]
     );
     return r.rows[0];
+  },
+
+  /**
+   * Oculta stories vencidos (expira_em passou). Mantém linhas para moderação.
+   * @returns {Promise<number>} Quantidade de stories atualizados
+   */
+  async expirarVencidos() {
+    const r = await query(
+      `UPDATE stories
+       SET visivel = false
+       WHERE visivel = true AND expira_em < NOW()
+       RETURNING id`
+    );
+    return r.rowCount || (r.rows && r.rows.length) || 0;
   },
 
   async listarAtivosParaPetsSeguidos(usuarioId, limite = 30) {

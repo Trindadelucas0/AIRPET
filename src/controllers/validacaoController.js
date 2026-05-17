@@ -4,7 +4,10 @@
 
 const crypto = require('crypto');
 const ValidacaoInteresse = require('../models/ValidacaoInteresse');
+const ListaEspera = require('../models/ListaEspera');
 const logger = require('../utils/logger');
+
+const landingStatsCache = { expires: 0, value: null };
 
 function baseUrl(req) {
   return process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
@@ -25,20 +28,99 @@ function metaComum(req) {
   const canonical = `${baseUrl(req)}/proteger-meu-pet`;
   return {
     metaDescription:
-      'Quando seu pet some, cada minuto pesa. O AIRPET conecta donos de pets a quem encontrou — entre na lista de espera.',
-    ogTitle: 'Seu pet pode desaparecer em segundos | AIRPET',
+      'AIRPET em validação: lista de espera e formulário curto pra tutores que topam ajudar a priorizar o que construir primeiro.',
+    ogTitle: 'Lista de espera | AIRPET (validação)',
     ogDescription:
-      'Proteção e reencontro mais rápido para quem ama um pet. Lista de espera AIRPET — leva cerca de 2 minutos.',
+      'Formulário curto, sem cartão. Sorteio de AirTag: 30 por cidade, sem custo — data do sorteio avisamos pelo WhatsApp.',
     ogImage: ogImageUrl(req),
     ogUrl: canonical,
     canonicalUrl: canonical,
   };
 }
 
-function exibirLanding(req, res) {
+async function carregarStatsLanding() {
+  const now = Date.now();
+  const ttl = Math.max(5000, parseInt(process.env.LANDING_STATS_TTL_MS || '60000', 10) || 60000);
+  if (landingStatsCache.value && landingStatsCache.expires > now) {
+    return landingStatsCache.value;
+  }
+  const ag = await ListaEspera.agregarValidacao();
+  const perdeu = ag.perdeuPet || [];
+  const countKey = (k) => perdeu.find((r) => r.k === k)?.c || 0;
+  const totalResp = perdeu.reduce((s, r) => s + r.c, 0) || 1;
+  const pctJaPerdeuOuQuase = Math.round(((countKey('sim') + countKey('quase')) / totalResp) * 100);
+  const value = {
+    totalInscritos: ag.total ?? 0,
+    wizardCompletoCount: ag.wizardCompleto ?? 0,
+    pctJaPerdeuOuQuase: Number.isFinite(pctJaPerdeuOuQuase) ? pctJaPerdeuOuQuase : 0,
+    topCidades: (ag.topCidades || []).slice(0, 5),
+  };
+  landingStatsCache.value = value;
+  landingStatsCache.expires = now + ttl;
+  return value;
+}
+
+async function exibirLanding(req, res) {
+  const useLegacy =
+    process.env.FEATURE_LANDING_V2 === '0' || String(process.env.FEATURE_LANDING_V2 || '').toLowerCase() === 'false';
+
+  if (useLegacy) {
+    return res.render('validacao/proteger-meu-pet-legacy', {
+      titulo: 'Proteger meu pet',
+      ...metaComum(req),
+    });
+  }
+
+  const bu = baseUrl(req);
+  const variant = String(res.locals.lpVariant || 'A').toUpperCase();
+  const headlines =
+    variant === 'B'
+      ? {
+          headlineH1: 'Pet someu? A gente quer ouvir o que você faria no primeiro minuto.',
+          headlineSub:
+            'Conta pra gente o que você faria no primeiro minuto — e entra no sorteio de AirTag: 30 por cidade, sem pagar nada; a data do sorteio avisamos no WhatsApp.',
+        }
+      : {
+          headlineH1: 'Se o seu sumir, você merece uma linha direta com quem achou.',
+          headlineSub:
+            'O AIRPET ainda está nascendo: entra na lista, responde umas perguntas leves e participa do sorteio de AirTag — 30 tutores por cidade pra testar com a gente, sem custo. A data do sorteio mandamos no WhatsApp.',
+        };
+
+  let stats = {
+    totalInscritos: 0,
+    wizardCompletoCount: 0,
+    pctJaPerdeuOuQuase: 0,
+    topCidades: [],
+  };
+  try {
+    stats = await carregarStatsLanding();
+  } catch (e) {
+    logger.error('VALIDACAO', 'Erro ao carregar stats da landing', e);
+  }
+
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    name: 'AIRPET',
+    url: bu,
+    description:
+      'AIRPET — lista de espera pra tutores, sorteio de AirTag (30 por cidade) e foco no reencontro de pets.',
+  };
+
   return res.render('validacao/proteger-meu-pet', {
     titulo: 'Proteger meu pet',
-    ...metaComum(req),
+    metaDescription:
+      'Lista de espera AIRPET: tutores que querem ajudar a moldar o reencontro de pets, sorteio de AirTag (30 por cidade) e aviso pelo WhatsApp.',
+    ogTitle: 'Lista de espera | AIRPET — validação com tutores',
+    ogDescription:
+      'Formulário leve, sem cartão. Sorteio de AirTag: 30 por cidade, sem pagar nada — data do sorteio no WhatsApp.',
+    ogImage: ogImageUrl(req),
+    ogUrl: `${bu}/proteger-meu-pet`,
+    canonicalUrl: `${bu}/proteger-meu-pet`,
+    jsonLd,
+    lpVariant: variant,
+    ...headlines,
+    ...stats,
   });
 }
 
@@ -80,6 +162,17 @@ async function inscrever(req, res) {
       user_agent: req.get('user-agent') || null,
       ip_hash: hashIp(req),
     });
+
+    if (wizardCompleto && email) {
+      setImmediate(() => {
+        try {
+          const emailService = require('../services/emailService');
+          emailService.enviarListaEsperaConfirmacao({ to: email, nome: req.body.nome }).catch(() => {});
+        } catch (_) {
+          /* ignore */
+        }
+      });
+    }
 
     if (eraNovo) {
       return res.status(201).json({

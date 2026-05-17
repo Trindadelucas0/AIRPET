@@ -1,0 +1,20 @@
+<% const funilDark = typeof funilHeaderDark !== 'undefined' && funilHeaderDark; %>
+<a href="#conteudo-principal" class="lp-skip-link">Pular para o conteúdo</a>
+<header class="lp-funil-header <%= funilDark ? 'lp-funil-header--dark' : '' %>">
+  <div class="lp-funil-header__inner">
+    <% if (typeof funilBackHref !== 'undefined' && funilBackHref) { %>
+    <a href="<%= funilBackHref %>" class="text-sm font-semibold text-slate-500 hover:text-primary-600 flex items-center gap-1 justify-self-start">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      Voltar
+    </a>
+    <% } else { %>
+    <span class="justify-self-start w-10" aria-hidden="true"></span>
+    <% } %>
+    <% var _funilHome = typeof funilLogoHref !== 'undefined' && funilLogoHref ? funilLogoHref : '/proteger-meu-pet'; %>
+    <a href="<%= _funilHome %>" class="lp-funil-logo font-display lp-funil-header__brand" aria-label="AIRPET — lista de validação">AIRPET</a>
+    <nav class="lp-funil-nav" aria-label="Links">
+      <a href="/privacidade?funil=1" class="lp-funil-nav__link">Privacidade</a>
+      <a href="/termos?funil=1" class="lp-funil-nav__link">Termos</a>
+    </nav>
+  </div>
+</header>

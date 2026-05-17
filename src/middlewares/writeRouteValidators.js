@@ -435,7 +435,7 @@ const validarAdminLogin = [
 const validarListaEspera = [
   camposPermitidos([
     'email', 'nome', 'telefone', 'cidade', 'estado', 'origem', 'respostas',
-    'wizard_completo', 'user_agent', 'website',
+    'wizard_completo', 'user_agent', 'website', 'referral_origem',
   ]),
   body('email').trim().notEmpty().withMessage('Informe seu e-mail.').isEmail().withMessage('E-mail invalido.').normalizeEmail(),
   body('nome').trim().notEmpty().withMessage('Informe seu nome.').isLength({ max: 120 }),
@@ -443,6 +443,7 @@ const validarListaEspera = [
   body('cidade').optional({ checkFalsy: true }).trim().isLength({ max: 80 }),
   body('estado').optional({ checkFalsy: true }).trim().isLength({ max: 2 }),
   body('origem').optional({ checkFalsy: true }).trim().isLength({ max: 64 }),
+  body('referral_origem').optional({ checkFalsy: true }).trim().isLength({ max: 32 }),
   body('wizard_completo').optional().isBoolean().withMessage('wizard_completo invalido.'),
   body('respostas').optional().isObject().withMessage('respostas deve ser um objeto.'),
   body('user_agent').optional({ checkFalsy: true }).trim().isLength({ max: 512 }),

@@ -1,0 +1,45 @@
+<% /* Espera: ogTitle, metaDescription, ogDescription, ogUrl, ogImage, canonicalUrl, jsonLd (objeto ou string JSON) */ %>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title><%= typeof ogTitle !== 'undefined' ? ogTitle : 'AIRPET' %></title>
+<% if (typeof metaDescription !== 'undefined' && metaDescription) { %>
+<meta name="description" content="<%= metaDescription %>">
+<% } %>
+<meta name="theme-color" content="<%= typeof themeColor !== 'undefined' ? themeColor : '#fafaf7' %>">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="AIRPET">
+<meta property="og:title" content="<%= typeof ogTitle !== 'undefined' ? ogTitle : 'AIRPET' %>">
+<meta property="og:description" content="<%= typeof ogDescription !== 'undefined' ? ogDescription : '' %>">
+<meta property="og:url" content="<%= typeof ogUrl !== 'undefined' ? ogUrl : '' %>">
+<meta property="og:image" content="<%= typeof ogImage !== 'undefined' ? ogImage : '' %>">
+<meta name="twitter:card" content="summary_large_image">
+<% if (typeof canonicalUrl !== 'undefined' && canonicalUrl) { %>
+<link rel="canonical" href="<%= canonicalUrl %>">
+<% } %>
+<% if (typeof jsonLd !== 'undefined' && jsonLd) { %>
+<script type="application/ld+json"><%- typeof jsonLd === 'string' ? jsonLd : JSON.stringify(jsonLd) %></script>
+<% } %>
+<link rel="icon" type="image/svg+xml" href="/images/icons/icon-192.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,500..800;1,500&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/output.css">
+<link rel="stylesheet" href="/css/design-system.css">
+<link rel="stylesheet" href="/css/landing-proteger.css">
+<% if (typeof FUNIL_PLAUSIBLE_DOMAIN !== 'undefined' && FUNIL_PLAUSIBLE_DOMAIN) { %>
+<script defer data-domain="<%= FUNIL_PLAUSIBLE_DOMAIN.replace(/"/g, '') %>" src="https://plausible.io/js/script.js"></script>
+<% } %>
+<% if (typeof FUNIL_GA_MEASUREMENT_ID !== 'undefined' && FUNIL_GA_MEASUREMENT_ID) { %>
+<script async src="https://www.googletagmanager.com/gtag/js?id=<%= FUNIL_GA_MEASUREMENT_ID.replace(/"/g, '') %>"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', '<%= FUNIL_GA_MEASUREMENT_ID.replace(/"/g, '') %>');
+</script>
+<% } %>
+<script>
+  window.FUNIL_PLAUSIBLE_DOMAIN = '<%= typeof FUNIL_PLAUSIBLE_DOMAIN !== "undefined" ? String(FUNIL_PLAUSIBLE_DOMAIN || "").replace(/'/g, "\\'") : "" %>';
+  window.FUNIL_GA_MEASUREMENT_ID = '<%= typeof FUNIL_GA_MEASUREMENT_ID !== "undefined" ? String(FUNIL_GA_MEASUREMENT_ID || "").replace(/'/g, "\\'") : "" %>';
+  window.FUNIL_DEBUG = <%= typeof FUNIL_DEBUG !== "undefined" && FUNIL_DEBUG ? "true" : "false" %>;
+</script>

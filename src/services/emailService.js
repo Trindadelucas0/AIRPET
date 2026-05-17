@@ -10,6 +10,7 @@ const { buildPartnerApprovedEmail } = require('../emails/templates/partnerApprov
 const { buildPartnerRejectedEmail } = require('../emails/templates/partnerRejected');
 const { buildTagShippedEmail } = require('../emails/templates/tagShipped');
 const { buildTagReservedEmail } = require('../emails/templates/tagReserved');
+const { buildListaEsperaConfirmacaoEmail } = require('../emails/templates/listaEsperaConfirmacao');
 
 let resendClient = null;
 
@@ -140,6 +141,19 @@ const emailService = {
       nome,
       tagCode,
       activationCode,
+      baseUrl: baseUrl(),
+    });
+    await enviarEmailBasico({ to, subject, html, text });
+  },
+
+  /**
+   * Confirmação após inscrição na lista de espera (wizard /lista-espera).
+   * @param {{ to: string, nome?: string }} opts
+   */
+  async enviarListaEsperaConfirmacao({ to, nome }) {
+    const { subject, html, text } = buildListaEsperaConfirmacaoEmail({
+      to,
+      nome,
       baseUrl: baseUrl(),
     });
     await enviarEmailBasico({ to, subject, html, text });
