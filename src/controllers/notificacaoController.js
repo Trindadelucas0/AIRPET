@@ -2,6 +2,7 @@ const Notificacao = require('../models/Notificacao');
 const PushSubscription = require('../models/PushSubscription');
 const Pet = require('../models/Pet');
 const Usuario = require('../models/Usuario');
+const NotifPreferencia = require('../models/NotifPreferencia');
 const logger = require('../utils/logger');
 
 const TIPOS_MENCOES = ['mencao'];
@@ -171,16 +172,23 @@ async function unsubscribe(req, res) {
 /**
  * Exibe a tela de configuração de preferências de notificação.
  * Rota: GET /notificacoes/configurar
+ *
+ * Lê preferências da tabela `notif_preferencias` (linha por usuário+pet) e
+ * passa um objeto `prefs` para a view, com defaults sensatos quando nada
+ * está persistido ainda.
  */
 async function mostrarConfigurar(req, res) {
   try {
     const usuarioId = req.session.usuario.id;
     const pets = await Pet.buscarPorUsuario(usuarioId);
-    const petId = req.query.pet ? parseInt(req.query.pet, 10) : null;
+    const queryPetId = req.query.pet ? parseInt(req.query.pet, 10) : null;
+    const petId = queryPetId && pets.some((p) => p.id === queryPetId) ? queryPetId : null;
+    const prefs = await NotifPreferencia.buscarParaUsuario(usuarioId, petId);
     return res.render('notificacoes/configurar', {
       titulo: 'Configurar notificações',
       pets,
       petFiltro: petId,
+      prefs,
     });
   } catch (erro) {
     logger.error('NotificacaoController', 'Erro ao carregar configurações de notificação', erro);
@@ -190,27 +198,38 @@ async function mostrarConfigurar(req, res) {
 }
 
 /**
- * Salva as preferências de notificação (stub — persiste em sessão enquanto não há tabela dedicada).
+ * Salva as preferências de notificação no banco (UPSERT).
  * Rota: POST /notificacoes/configurar
  */
 async function salvarConfigurar(req, res) {
   try {
-    // Preserva preferências na sessão para uso imediato (futuro: tabela notificacao_preferencias)
-    req.session.notifPrefs = {
-      pet_id: req.body.pet_id || null,
-      notif_racao: req.body.notif_racao === '1',
-      racao_dias: parseInt(req.body.racao_dias, 10) || 30,
-      notif_peso: req.body.notif_peso === '1',
-      peso_dias: parseInt(req.body.peso_dias, 10) || 30,
-      notif_48h: req.body.notif_48h === '1',
-      notif_2h: req.body.notif_2h === '1',
-      resumo_semanal: req.body.resumo_semanal === '1',
-      horario_quieto: req.body.horario_quieto === '1',
-      quieto_inicio: parseInt(req.body.quieto_inicio, 10) || 23,
-      quieto_fim: parseInt(req.body.quieto_fim, 10) || 7,
-    };
+    const usuarioId = req.session.usuario.id;
+    const petIdRaw = req.body.pet_id ? parseInt(req.body.pet_id, 10) : null;
+    // Validação básica: se vier um pet_id, ele tem que pertencer ao usuário.
+    let petId = null;
+    if (petIdRaw) {
+      const pets = await Pet.buscarPorUsuario(usuarioId);
+      if (pets.some((p) => p.id === petIdRaw)) {
+        petId = petIdRaw;
+      }
+    }
+
+    await NotifPreferencia.salvar(usuarioId, {
+      pet_id: petId,
+      notif_racao: req.body.notif_racao,
+      racao_dias: req.body.racao_dias,
+      notif_peso: req.body.notif_peso,
+      peso_dias: req.body.peso_dias,
+      notif_agenda_48h: req.body.notif_48h,
+      notif_agenda_2h: req.body.notif_2h,
+      resumo_semanal: req.body.resumo_semanal,
+      horario_quieto: req.body.horario_quieto,
+      quieto_inicio_h: req.body.quieto_inicio,
+      quieto_fim_h: req.body.quieto_fim,
+    });
+
     req.session.flash = { tipo: 'sucesso', mensagem: 'Preferências de notificação salvas!' };
-    return res.redirect('/notificacoes/configurar' + (req.body.pet_id ? '?pet=' + req.body.pet_id : ''));
+    return res.redirect('/notificacoes/configurar' + (petId ? '?pet=' + petId : ''));
   } catch (erro) {
     logger.error('NotificacaoController', 'Erro ao salvar configurações de notificação', erro);
     req.session.flash = { tipo: 'erro', mensagem: 'Erro ao salvar preferências.' };

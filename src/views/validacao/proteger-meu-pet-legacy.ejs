@@ -1,3 +1,9 @@
+<%
+// Propaga ?ref= para os CTAs que apontam ao wizard /lista-espera.
+var __refLegacy = (typeof referralRef !== 'undefined' && referralRef) ? String(referralRef) : '';
+__refLegacy = __refLegacy.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 16);
+var listaEsperaHref = '/lista-espera' + (__refLegacy ? ('?ref=' + encodeURIComponent(__refLegacy)) : '');
+%>
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -48,7 +54,7 @@
               Quando isso acontece, cada minuto pesa. O AIRPET nasce para reencontrar quem você ama — mais rápido que grupos e panfletos.
             </p>
             <div class="mt-10 flex flex-col sm:flex-row gap-4">
-              <a href="/lista-espera"
+              <a href="<%= listaEsperaHref %>"
                  class="inline-flex items-center justify-center gap-2 rounded-full bg-primary-500 hover:bg-primary-400 text-white font-bold text-base px-8 py-4 shadow-xl shadow-primary-500/30 transition-all hover:scale-[1.02]">
                 Entrar na lista do AIRPET
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
@@ -157,7 +163,7 @@
             <p class="mt-4 text-lg text-slate-300 max-w-xl mx-auto leading-relaxed">
               Responda um formulário rápido e honesto. Suas respostas definem o que construímos primeiro — sem compromisso.
             </p>
-            <a href="/lista-espera"
+            <a href="<%= listaEsperaHref %>"
                class="mt-10 inline-flex items-center justify-center rounded-full bg-primary-500 hover:bg-primary-400 text-white font-bold text-lg px-10 py-4 shadow-xl shadow-primary-500/30 transition-all hover:scale-[1.02]">
               Entrar na lista do AIRPET — ~2 min
             </a>

@@ -64,9 +64,19 @@ async function exibirLanding(req, res) {
   const useLegacy =
     process.env.FEATURE_LANDING_V2 === '0' || String(process.env.FEATURE_LANDING_V2 || '').toLowerCase() === 'false';
 
+  // Captura o codigo de indicacao da URL (?ref=) e/ou da sessao previa,
+  // para que possa ser propagado nos CTAs que levam ao wizard /lista-espera.
+  const refQuery = String(req.query?.ref || '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 16);
+  const refSession = req.session && req.session.waitlistRef ? String(req.session.waitlistRef) : '';
+  const referralRef = refQuery || refSession || '';
+  if (refQuery && req.session) {
+    req.session.waitlistRef = refQuery;
+  }
+
   if (useLegacy) {
     return res.render('validacao/proteger-meu-pet-legacy', {
       titulo: 'Proteger meu pet',
+      referralRef,
       ...metaComum(req),
     });
   }
@@ -119,6 +129,7 @@ async function exibirLanding(req, res) {
     canonicalUrl: `${bu}/proteger-meu-pet`,
     jsonLd,
     lpVariant: variant,
+    referralRef,
     ...headlines,
     ...stats,
   });

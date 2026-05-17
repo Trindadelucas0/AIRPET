@@ -13,6 +13,13 @@
 }) %>
 </head>
 <body class="lp-page antialiased">
+<%
+// Propaga o codigo de indicacao (?ref=) da landing para o wizard /lista-espera,
+// para que o programa de referral capture a origem correta do lead.
+var __ref = (typeof referralRef !== 'undefined' && referralRef) ? String(referralRef) : '';
+__ref = __ref.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 16);
+var listaEsperaHref = '/lista-espera' + (__ref ? ('?ref=' + encodeURIComponent(__ref)) : '');
+%>
 <%- include('../partials/funil-header', { funilHeaderDark: false }) %>
 
 <main id="conteudo-principal">
@@ -20,10 +27,10 @@
     <div class="lp-hero-v2__grid">
       <div>
         <p class="lp-eyebrow">Lista de espera · feito por quem ama pet</p>
-        <h1 id="lp-hero-title" class="lp-hero-title font-display"><%= typeof headlineH1 !== 'undefined' ? headlineH1 : 'Se o seu sumir, você merece uma linha direta com quem achou.' %></h1>
+        <h1 id="lp-hero-title" class="lp-hero-title font-display"><%= typeof headlineH1 !== 'undefined' ? headlineH1 : 'Se o seu pet sumir, você merece uma linha direta com quem achou.' %></h1>
         <p class="lp-hero-sub"><%= typeof headlineSub !== 'undefined' ? headlineSub : 'O AIRPET ainda está tomando forma: entra na lista, conta sua rotina em poucas perguntas e ajuda a gente a construir algo que faça sentido na vida real — com carinho e urgência na medida certa.' %></p>
         <div class="lp-hero-cta-row">
-          <a href="/lista-espera" class="lp-btn-primary" data-funil-cta="hero_primary">Quero entrar na lista</a>
+          <a href="<%= listaEsperaHref %>" class="lp-btn-primary" data-funil-cta="hero_primary">Quero entrar na lista</a>
           <a href="#como-funciona" class="lp-btn-ghost" data-funil-cta="hero_secondary">O que é isso</a>
         </div>
         <p class="lp-counter" aria-live="polite">
@@ -222,7 +229,7 @@
       <div class="lp-cta-final__inner">
         <h2 class="font-display">Vem com a gente nessa</h2>
         <p>Responde com o coração aberto. Cada linha sua ajuda a gente a desenhar um AIRPET que pareça feito pra quem ama pet de verdade.</p>
-        <a href="/lista-espera" class="lp-btn-primary" data-funil-cta="footer_primary">Abrir o formulário</a>
+        <a href="<%= listaEsperaHref %>" class="lp-btn-primary" data-funil-cta="footer_primary">Abrir o formulário</a>
         <p class="mt-6 text-sm text-white/70"><a href="/privacidade?funil=1" class="underline hover:text-white">Política de privacidade</a></p>
       </div>
     </div>

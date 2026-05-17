@@ -126,7 +126,7 @@ const authService = {
    * @example
    * const { usuario, token } = await authService.login('joao@email.com', 'minhasenha123');
    */
-  async login({ email, senha }) {
+  async login({ email, senha, lembrar = false }) {
     logger.info('AuthService', `Tentativa de login para: ${email}`);
 
     /* Busca o usuário pelo e-mail — retorna undefined se não existir */
@@ -157,8 +157,10 @@ const authService = {
     /**
      * Gera o token JWT com payload contendo dados essenciais do usuário.
      * O token é assinado com a chave secreta definida em JWT_SECRET.
-     * Expiração de 7 dias (7d) — o tutor não precisa fazer login frequente.
+     * Expiração padrão: 7 dias. Quando "Lembrar de mim" é marcado, sobe
+     * para 30 dias — mantendo o JWT alinhado com o maxAge do cookie.
      */
+    const expiresIn = lembrar ? '30d' : '7d';
     const token = jwt.sign(
       {
         id: usuario.id,
@@ -166,7 +168,7 @@ const authService = {
         role: usuario.role,
       },
       process.env.JWT_SECRET,
-      { expiresIn: '7d' }
+      { expiresIn }
     );
 
     logger.info('AuthService', `Login bem-sucedido para: ${email}`);

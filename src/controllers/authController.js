@@ -19,6 +19,8 @@
 const authService = require('../services/authService');
 const Usuario = require('../models/Usuario');
 const PetshopAccount = require('../models/PetshopAccount');
+const PasswordResetToken = require('../models/PasswordResetToken');
+const EmailVerification = require('../models/EmailVerification');
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
 const logger = require('../utils/logger');
@@ -26,7 +28,47 @@ const emailService = require('../services/emailService');
 const Pet = require('../models/Pet');
 const { PASSWORD_RESET_TTL_MS, PASSWORD_RESET_TTL_MINUTES } = require('../emails/authTiming');
 
-const resetTokens = new Map();
+// TTL do link de verificação de e-mail (padrão 24h, configurável via env).
+const EMAIL_VERIFICATION_TTL_MS = Math.max(
+  60 * 60 * 1000,
+  parseInt(process.env.EMAIL_VERIFICATION_TTL_MS || `${24 * 60 * 60 * 1000}`, 10) || 24 * 60 * 60 * 1000
+);
+
+/**
+ * Gera um token de verificação, persiste e dispara o e-mail de confirmação.
+ * Falhas no envio são logadas mas NÃO propagam — o cadastro/login não pode
+ * quebrar por causa de uma indisponibilidade do gateway de e-mail.
+ */
+async function emitirEmailVerificacao(usuario, { baseUrl } = {}) {
+  const token = crypto.randomBytes(32).toString('hex');
+  try {
+    await EmailVerification.invalidarPendentesDoUsuario(usuario.id);
+    await EmailVerification.criar({
+      usuarioId: usuario.id,
+      email: usuario.email,
+      token,
+      ttlMs: EMAIL_VERIFICATION_TTL_MS,
+    });
+  } catch (dbErr) {
+    logger.error('AUTH_CTRL', 'Falha ao persistir token de verificação de e-mail', dbErr);
+    return null;
+  }
+
+  const base = (baseUrl || process.env.BASE_URL || 'http://localhost:3000').replace(/\/$/, '');
+  const linkConfirmacao = `${base}/auth/verificar-email/${token}`;
+
+  try {
+    await emailService.enviarConfirmacaoConta({
+      to: usuario.email,
+      nome: usuario.nome,
+      linkConfirmacao,
+    });
+  } catch (mailErr) {
+    logger.error('AUTH_CTRL', 'Falha ao enviar e-mail de verificação', mailErr);
+  }
+
+  return { token, linkConfirmacao };
+}
 
 const authController = {
 
@@ -168,7 +210,15 @@ const authController = {
         logger.error('AUTH_CTRL', 'Falha ao enviar e-mail de boas-vindas', emailErro);
       }
 
-      req.session.flash = { tipo: 'sucesso', mensagem: 'Conta criada com sucesso! Bem-vindo ao AIRPET.' };
+      // Dispara verificação de e-mail (não bloqueante).
+      setImmediate(() => {
+        emitirEmailVerificacao(resultado.usuario).catch(() => { /* já logado dentro */ });
+      });
+
+      req.session.flash = {
+        tipo: 'sucesso',
+        mensagem: 'Conta criada! Enviamos um e-mail para você confirmar seu endereço. Verifique também a caixa de spam.',
+      };
       res.redirect('/explorar');
     } catch (erro) {
       logger.error('AUTH_CTRL', 'Erro ao registrar usuário', erro);
@@ -205,9 +255,10 @@ const authController = {
     try {
       /* Extrai credenciais do formulário */
       const { email, senha } = req.body;
+      const lembrar = ['1', 'true', 'on'].includes(String(req.body.lembrar || '').toLowerCase());
 
       /* Chama o serviço de autenticação para validar credenciais */
-      const resultado = await authService.login({ email, senha });
+      const resultado = await authService.login({ email, senha, lembrar });
 
       /* Verifica se o serviço retornou erro (credenciais inválidas) */
       if (resultado.erro) {
@@ -247,15 +298,22 @@ const authController = {
        * Define cookie HTTP-only com o JWT.
        * httpOnly: true impede acesso via JavaScript (proteção contra XSS).
        * secure: true em produção garante envio apenas via HTTPS.
-       * maxAge: 24 horas em milissegundos.
+       * maxAge alinhado com a expiração do JWT (7 dias por padrão) e
+       * estendido para 30 dias quando o usuário marca "Lembrar de mim".
        */
       if (resultado.token) {
+        const cookieMaxAgeMs = lembrar
+          ? 30 * 24 * 60 * 60 * 1000
+          : 7 * 24 * 60 * 60 * 1000;
         res.cookie('airpet_token', resultado.token, {
           httpOnly: true,
           secure: process.env.NODE_ENV === 'production',
-          maxAge: 24 * 60 * 60 * 1000,
+          maxAge: cookieMaxAgeMs,
           sameSite: 'lax',
         });
+        if (req.session && req.session.cookie) {
+          req.session.cookie.maxAge = cookieMaxAgeMs;
+        }
       }
 
       req.session.verificarPermissoes = true;
@@ -296,8 +354,24 @@ const authController = {
       const usuario = await Usuario.buscarPorEmail(email);
 
       if (usuario) {
+        // Invalida tokens pendentes anteriores deste usuário antes de gerar um novo,
+        // para que o link enviado por e-mail mais recente seja o único válido.
+        try {
+          await PasswordResetToken.invalidarPendentesDoUsuario(usuario.id);
+        } catch (_) { /* ignore */ }
+
         const token = crypto.randomBytes(32).toString('hex');
-        resetTokens.set(token, { userId: usuario.id, expira: Date.now() + PASSWORD_RESET_TTL_MS });
+        try {
+          await PasswordResetToken.criar({
+            usuarioId: usuario.id,
+            token,
+            ttlMs: PASSWORD_RESET_TTL_MS,
+            ipOrigem: (req.ip || '').slice(0, 64),
+          });
+        } catch (dbErr) {
+          logger.error('AUTH_CTRL', 'Falha ao persistir token de redefinição', dbErr);
+          throw dbErr;
+        }
 
         const linkRedefinir = `${process.env.BASE_URL || 'http://localhost:3000'}/auth/redefinir-senha/${token}`;
         logger.info('AUTH_CTRL', `Token de recuperação gerado para ${email}`);
@@ -314,7 +388,7 @@ const authController = {
         }
       }
 
-      req.session.flash = { tipo: 'sucesso', mensagem: 'Se o e-mail estiver cadastrado, você receberá um link de recuperação. Verifique sua caixa de entrada.' };
+      req.session.flash = { tipo: 'sucesso', mensagem: 'Se o e-mail estiver cadastrado, você receberá um link de recuperação. Verifique sua caixa de entrada (e também a pasta de spam).' };
       res.redirect('/auth/esqueci-senha');
     } catch (erro) {
       logger.error('AUTH_CTRL', 'Erro ao processar recuperação de senha', erro);
@@ -323,11 +397,11 @@ const authController = {
     }
   },
 
-  mostrarRedefinirSenha(req, res) {
+  async mostrarRedefinirSenha(req, res) {
     const { token } = req.params;
-    const dados = resetTokens.get(token);
+    const dados = await PasswordResetToken.buscarValido(token);
 
-    if (!dados || dados.expira < Date.now()) {
+    if (!dados) {
       req.session.flash = { tipo: 'erro', mensagem: 'Link de recuperação inválido ou expirado.' };
       return res.redirect('/auth/esqueci-senha');
     }
@@ -339,9 +413,9 @@ const authController = {
     try {
       const { token } = req.params;
       const { senha, confirmar_senha } = req.body;
-      const dados = resetTokens.get(token);
+      const dados = await PasswordResetToken.buscarValido(token);
 
-      if (!dados || dados.expira < Date.now()) {
+      if (!dados) {
         req.session.flash = { tipo: 'erro', mensagem: 'Link de recuperação inválido ou expirado.' };
         return res.redirect('/auth/esqueci-senha');
       }
@@ -351,17 +425,22 @@ const authController = {
         return res.redirect(`/auth/redefinir-senha/${token}`);
       }
 
-      if (senha.length < 6) {
+      if (!senha || senha.length < 6) {
         req.session.flash = { tipo: 'erro', mensagem: 'A senha deve ter no mínimo 6 caracteres.' };
         return res.redirect(`/auth/redefinir-senha/${token}`);
       }
 
       const senhaHash = await bcrypt.hash(senha, 12);
-      await Usuario.atualizarSenhaHash(dados.userId, senhaHash);
+      await Usuario.atualizarSenhaHash(dados.usuario_id, senhaHash);
 
-      resetTokens.delete(token);
+      // Marca este token como usado e invalida quaisquer outros pendentes
+      // (proteção: nenhum link antigo deve voltar a funcionar após a troca).
+      await PasswordResetToken.marcarComoUsado(token);
+      try {
+        await PasswordResetToken.invalidarPendentesDoUsuario(dados.usuario_id);
+      } catch (_) { /* ignore */ }
 
-      logger.info('AUTH_CTRL', `Senha redefinida para usuário ${dados.userId}`);
+      logger.info('AUTH_CTRL', `Senha redefinida para usuário ${dados.usuario_id}`);
 
       req.session.flash = { tipo: 'sucesso', mensagem: 'Senha redefinida com sucesso! Faça login com sua nova senha.' };
       res.redirect('/auth/login');
@@ -369,6 +448,85 @@ const authController = {
       logger.error('AUTH_CTRL', 'Erro ao redefinir senha', erro);
       req.session.flash = { tipo: 'erro', mensagem: 'Erro ao redefinir a senha.' };
       res.redirect('/auth/esqueci-senha');
+    }
+  },
+
+  /**
+   * GET /auth/verificar-email/:token
+   * Confirma o e-mail do usuário a partir do link enviado por email.
+   */
+  async verificarEmail(req, res) {
+    try {
+      const { token } = req.params;
+      const registro = await EmailVerification.buscarValido(token);
+
+      if (!registro) {
+        req.session.flash = {
+          tipo: 'erro',
+          mensagem: 'Link de verificação inválido ou expirado. Faça login e peça um novo.',
+        };
+        return res.redirect(req.session?.usuario ? '/perfil' : '/auth/login');
+      }
+
+      const atualizado = await Usuario.marcarEmailVerificado(registro.usuario_id);
+      await EmailVerification.marcarComoUsado(token);
+      // Invalida outros tokens pendentes do mesmo usuário.
+      try {
+        await EmailVerification.invalidarPendentesDoUsuario(registro.usuario_id);
+      } catch (_) { /* ignore */ }
+
+      logger.info('AUTH_CTRL', `E-mail verificado para usuário ${registro.usuario_id}`);
+
+      req.session.flash = {
+        tipo: 'sucesso',
+        mensagem: atualizado
+          ? 'E-mail confirmado! Obrigado por validar seu endereço.'
+          : 'Seu e-mail já estava confirmado. Tudo certo.',
+      };
+      return res.redirect(req.session?.usuario ? '/perfil' : '/auth/login');
+    } catch (erro) {
+      logger.error('AUTH_CTRL', 'Erro ao verificar e-mail', erro);
+      req.session.flash = { tipo: 'erro', mensagem: 'Não foi possível confirmar agora. Tente de novo em instantes.' };
+      return res.redirect(req.session?.usuario ? '/perfil' : '/auth/login');
+    }
+  },
+
+  /**
+   * POST /auth/reenviar-verificacao
+   * Reenvia o e-mail de verificação para o usuário autenticado.
+   * Aceita também `email` no body para usuários não autenticados (com rate limit
+   * via limiterAuth na rota) — útil para "Não recebi o email" pós-cadastro.
+   */
+  async reenviarVerificacao(req, res) {
+    try {
+      let usuario = null;
+      if (req.session?.usuario?.id) {
+        usuario = await Usuario.buscarPorId(req.session.usuario.id);
+      } else if (req.body?.email) {
+        const email = String(req.body.email).trim().toLowerCase();
+        usuario = await Usuario.buscarPorEmail(email);
+      }
+
+      // Resposta neutra para não revelar existência da conta.
+      if (!usuario || usuario.email_verificado_em) {
+        req.session.flash = {
+          tipo: 'sucesso',
+          mensagem: 'Se o e-mail estiver cadastrado e ainda não confirmado, enviamos o link novamente.',
+        };
+        return res.redirect(req.get('Referer') || '/auth/login');
+      }
+
+      await emitirEmailVerificacao(usuario);
+
+      req.session.flash = {
+        tipo: 'sucesso',
+        mensagem: 'Enviamos o link de confirmação. Verifique também a caixa de spam.',
+      };
+      return res.redirect(req.get('Referer') || '/auth/login');
+    } catch (erro) {
+      logger.error('AUTH_CTRL', 'Erro ao reenviar verificação de e-mail', erro);
+      req.session.flash = { tipo: 'erro', mensagem: 'Não foi possível reenviar agora.' };
+      return res.redirect(req.get('Referer') || '/auth/login');
     }
   },
 

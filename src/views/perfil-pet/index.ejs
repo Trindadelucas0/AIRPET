@@ -220,6 +220,17 @@ locals.extraHead = '<link rel="stylesheet" href="/css/perfil-pet-unificado.css">
 
   <%# Modais reutilizados (post detail, comentarios, seguidores) %>
   <%- include('../partials/post-detail-modal') %>
+
+  <%# Modal: lista de seguidores do pet (acionado por #btnVerSeguidores) %>
+  <div id="listaSegModal" class="hidden fixed inset-0 z-[110] flex items-center justify-center px-4" style="background:rgba(15,23,42,0.55);">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[80vh] overflow-hidden flex flex-col">
+      <div class="flex items-center justify-between px-5 py-3 border-b border-slate-100">
+        <h3 class="text-base font-bold text-slate-900"><i class="fa-solid fa-paw mr-2 text-primary-500"></i>Seguidores</h3>
+        <button type="button" id="closeListaSegModal" class="text-slate-400 hover:text-slate-700 text-xl leading-none" aria-label="Fechar">&times;</button>
+      </div>
+      <div id="listaSegBody" class="flex-1 overflow-y-auto px-5 py-4 space-y-2"></div>
+    </div>
+  </div>
 </main>
 
 <script src="/js/airpet-post-detail-organic.js"></script>
@@ -227,10 +238,117 @@ locals.extraHead = '<link rel="stylesheet" href="/css/perfil-pet-unificado.css">
 <script>
   /*
    * Boot da pagina:
+   *   - Seguir/deixar de seguir o pet (toggle via /pets/:id/seguir).
+   *   - Listagem de seguidores (modal alimentado por /explorar/pet/:id/seguidores).
    *   - Web Share API + fallback de clipboard para o botao "Compartilhar".
    *   - Hook do "Novo post" abre o composer dentro do contexto deste pet.
    */
   (function () {
+    var PET_ID = <%= pet.id %>;
+
+    function escHtml(s) {
+      var d = document.createElement('div');
+      d.textContent = String(s == null ? '' : s);
+      return d.innerHTML;
+    }
+
+    /* ── Seguir / Deixar de seguir o pet ── */
+    var btnFollow = document.getElementById('btnFollowPet');
+    if (btnFollow) {
+      btnFollow.addEventListener('click', function () {
+        if (btnFollow.disabled) return;
+        btnFollow.disabled = true;
+        var label = btnFollow.querySelector('span');
+        fetch('/pets/' + PET_ID + '/seguir', {
+          method: 'POST',
+          headers: { 'Accept': 'application/json' },
+          credentials: 'same-origin',
+        })
+          .then(function (r) {
+            if (r.status === 401 || r.redirected) {
+              window.location.href = '/auth/login?return_to=' + encodeURIComponent(window.location.pathname);
+              return null;
+            }
+            return r.json();
+          })
+          .then(function (data) {
+            if (!data || !data.sucesso) return;
+            var seguindo = !!data.seguindo;
+            btnFollow.setAttribute('data-following', seguindo ? 'true' : 'false');
+            if (label) label.textContent = seguindo ? 'Seguindo' : 'Seguir';
+            if (seguindo) btnFollow.classList.remove('pp-btn--primary');
+            else btnFollow.classList.add('pp-btn--primary');
+            if (typeof data.totalSeguidores !== 'undefined' && btnVerSeg) {
+              var strong = btnVerSeg.querySelector('strong');
+              if (strong) strong.textContent = String(data.totalSeguidores);
+            }
+          })
+          .catch(function () { /* silencioso */ })
+          .finally(function () { btnFollow.disabled = false; });
+      });
+    }
+
+    /* ── Modal de seguidores ── */
+    var btnVerSeg = document.getElementById('btnVerSeguidores');
+    var modalSeg = document.getElementById('listaSegModal');
+    var modalSegBody = document.getElementById('listaSegBody');
+    var closeSegBtn = document.getElementById('closeListaSegModal');
+
+    function fecharSegModal() {
+      if (modalSeg) modalSeg.classList.add('hidden');
+    }
+    if (closeSegBtn) closeSegBtn.addEventListener('click', fecharSegModal);
+    if (modalSeg) {
+      modalSeg.addEventListener('click', function (e) {
+        if (e.target === modalSeg) fecharSegModal();
+      });
+    }
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && modalSeg && !modalSeg.classList.contains('hidden')) fecharSegModal();
+    });
+
+    if (btnVerSeg && modalSeg && modalSegBody) {
+      btnVerSeg.addEventListener('click', function () {
+        modalSegBody.innerHTML = '<div class="text-center py-8 text-slate-400"><i class="fa-solid fa-spinner fa-spin text-xl"></i></div>';
+        modalSeg.classList.remove('hidden');
+        fetch('/explorar/pet/' + PET_ID + '/seguidores', {
+          headers: { 'Accept': 'application/json' },
+          credentials: 'same-origin',
+        })
+          .then(function (r) {
+            if (r.status === 401) {
+              window.location.href = '/auth/login?return_to=' + encodeURIComponent(window.location.pathname);
+              return null;
+            }
+            return r.json();
+          })
+          .then(function (data) {
+            if (!data) return;
+            var lista = data.lista || data.seguidores || [];
+            if (!lista.length) {
+              modalSegBody.innerHTML = '<p class="text-sm text-slate-500 text-center py-6">Nenhum seguidor ainda.</p>';
+              return;
+            }
+            modalSegBody.innerHTML = lista.map(function (u) {
+              var avatar = u.foto_perfil
+                ? '<img src="' + escHtml(u.foto_perfil) + '" class="w-10 h-10 rounded-full object-cover" alt="">'
+                : '<span class="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-bold" style="background:' + escHtml(u.cor_perfil || '#ec5a1c') + '">' + escHtml(String(u.nome || 'U').charAt(0).toUpperCase()) + '</span>';
+              var href = u.id ? '/explorar/perfil/' + encodeURIComponent(u.id) : '#';
+              return '<a href="' + href + '" class="flex items-center gap-3 py-2 px-2 rounded-lg hover:bg-slate-50 transition">'
+                + avatar
+                + '<div class="flex-1 min-w-0">'
+                + '<p class="text-sm font-semibold text-slate-900 truncate">' + escHtml(u.nome || 'Usuário') + '</p>'
+                + (u.apelido ? '<p class="text-xs text-slate-500 truncate">@' + escHtml(u.apelido) + '</p>' : '')
+                + '</div></a>';
+            }).join('');
+          })
+          .catch(function () {
+            modalSegBody.innerHTML = '<p class="text-sm text-rose-600 text-center py-6">Não foi possível carregar a lista agora.</p>';
+          });
+      });
+    }
+
+    /* ── Compartilhar ── */
     var btnShare = document.getElementById('btnSharePet');
     if (btnShare) {
       btnShare.addEventListener('click', async function () {
@@ -252,6 +370,7 @@ locals.extraHead = '<link rel="stylesheet" href="/css/perfil-pet-unificado.css">
       });
     }
 
+    /* ── Novo post (composer no feed) ── */
     var btnNovoPost = document.getElementById('btnNovoPost');
     if (btnNovoPost) {
       btnNovoPost.addEventListener('click', function () {

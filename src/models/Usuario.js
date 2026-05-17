@@ -275,6 +275,17 @@ const Usuario = {
     );
   },
 
+  async marcarEmailVerificado(userId) {
+    const r = await query(
+      `UPDATE usuarios
+       SET email_verificado_em = NOW(), data_atualizacao = NOW()
+       WHERE id = $1 AND email_verificado_em IS NULL
+       RETURNING id, email_verificado_em`,
+      [userId]
+    );
+    return r.rows[0] || null;
+  },
+
   async anularReferenciasAntesExcluir(id) {
     await query('UPDATE tag_batches SET criado_por = NULL WHERE criado_por = $1', [id]);
     await query('UPDATE nfc_tags SET user_id = NULL WHERE user_id = $1', [id]);

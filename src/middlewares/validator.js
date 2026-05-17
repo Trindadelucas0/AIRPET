@@ -12,9 +12,6 @@ const { body, validationResult } = require('express-validator');
  * Resposta unificada para falhas de validacao (flash + redirect ou JSON 422).
  */
 function responderValidacaoFalha(req, res, listaErros) {
-  // #region agent log
-  fetch('http://127.0.0.1:7619/ingest/ae098eda-cae8-4273-b296-012a1e446933',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'8f331f'},body:JSON.stringify({sessionId:'8f331f',runId:'partner-debug',hypothesisId:'H1',location:'validator.js:responderValidacaoFalha',message:'Validation failed',data:{path:req.originalUrl||req.url||'',method:req.method||'',errorsCount:Array.isArray(listaErros)?listaErros.length:0,firstError:Array.isArray(listaErros)&&listaErros[0]?String(listaErros[0]).slice(0,160):''},timestamp:Date.now()})}).catch(()=>{});
-  // #endregion
   if (req.accepts('json') && !req.accepts('html')) {
     const mensagem = Array.isArray(listaErros) ? listaErros.join(' | ') : String(listaErros || '');
     return res.status(422).json({
@@ -150,9 +147,14 @@ const validarLogin = [
       if (!v || (v.startsWith('/') && !v.startsWith('//'))) return true;
       throw new Error('URL de retorno invalida.');
     }),
+
+  body('lembrar')
+    .optional({ checkFalsy: true })
+    .isIn(['1', 'true', 'on'])
+    .withMessage('Valor invalido para "Lembrar de mim".'),
 ];
 
-const CAMPOS_LOGIN = ['email', 'senha', 'returnUrl'];
+const CAMPOS_LOGIN = ['email', 'senha', 'returnUrl', 'lembrar'];
 
 const validarEsqueciSenha = [
   body('email')

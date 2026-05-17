@@ -39,11 +39,16 @@ router.post(
 router.get('/redefinir-senha/:token', authController.mostrarRedefinirSenha);
 router.post(
   '/redefinir-senha/:token',
+  limiterAuth,
   camposPermitidos(CAMPOS_REDEFINIR_SENHA),
   validarRedefinirSenha,
   validarResultado,
   authController.redefinirSenha
 );
+
+// Verificação de e-mail (cadastro)
+router.get('/verificar-email/:token', authController.verificarEmail);
+router.post('/reenviar-verificacao', limiterAuth, authController.reenviarVerificacao);
 
 // Encerrar sessão
 router.get('/logout', authController.logout);

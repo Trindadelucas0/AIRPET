@@ -111,7 +111,7 @@
               <div class="loc-option-icon" style="background:rgba(96,165,250,0.1);"><i class="fa-solid fa-satellite-dish" style="color:#2563eb;"></i></div>
               <div>
                 <div class="loc-option-name">Ultima leitura da tag NFC</div>
-                <div class="loc-option-sub"><%= scanLabelPreview %><% if (ultimoScan && ultimoScan.data) { var dtScan = new Date(ultimoScan.data); %> · <%= dtScan.toLocaleDateString('pt-BR') %> as <%= dtScan.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}) %><% } %></motion>
+                <div class="loc-option-sub"><%= scanLabelPreview %><% if (ultimoScan && ultimoScan.data) { var dtScan = new Date(ultimoScan.data); %> · <%= dtScan.toLocaleDateString('pt-BR') %> as <%= dtScan.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}) %><% } %></div>
               </div>
             </button>
             <% } %>
