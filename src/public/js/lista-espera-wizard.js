@@ -68,6 +68,7 @@
   }
 
   function saveDraft() {
+    syncFields();
     try {
       localStorage.setItem(
         DRAFT_KEY,
@@ -160,6 +161,7 @@
     if (!toEl) return;
 
     function apply() {
+      syncFields();
       sections.forEach(function (sec) {
         sec.classList.add('hidden');
         sec.classList.remove('le-enter', 'le-exit');
@@ -186,6 +188,7 @@
       requestAnimationFrame(function () {
         toEl.classList.remove('le-enter');
       });
+      syncFields();
       state.step = next;
       updateProgress();
       saveDraft();
@@ -384,6 +387,15 @@
   bindMulti(root.querySelector('[data-multi="metodos_busca"]'), 'metodos_busca', 0);
   bindMulti(root.querySelector('[data-multi="prioridades"]'), 'prioridades', 2);
 
+  ['leNome', 'leEmail', 'leTelefone', 'leCidade', 'leEstado'].forEach(function (id) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('input', function () {
+      syncFields();
+      saveDraft();
+    });
+  });
+
   root.querySelectorAll('.le-next').forEach(function (btn) {
     btn.addEventListener('click', function () {
       if (!validateStep(state.step)) return;
@@ -416,6 +428,7 @@
 
   if (submitBtn) {
     submitBtn.addEventListener('click', function () {
+      syncFields();
       if (!validateStep(6)) return;
 
       var website = document.getElementById('leWebsite');
