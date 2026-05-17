@@ -907,16 +907,22 @@
   padding: 1rem 1.1rem;
   text-align: left;
 }
-.le-done-card strong {
+.le-done-card > strong {
   display: block;
   font-size: 0.8125rem;
   color: var(--lp-accent);
   margin-bottom: 0.25rem;
 }
-.le-done-card span {
+.le-done-card > span,
+.le-done-card-body {
   font-size: 0.875rem;
   color: var(--lp-ink-soft);
   line-height: 1.45;
+  margin: 0;
+}
+.le-done-kw {
+  color: var(--lp-accent);
+  font-weight: 600;
 }
 .le-ref-box {
   margin-top: 2rem;
