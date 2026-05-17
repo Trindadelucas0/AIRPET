@@ -127,6 +127,7 @@
 
   loadDraft();
   applyDraftToDom();
+  updatePrioridadesUi();
 
   function steps() {
     return root.querySelectorAll('.le-step');
@@ -327,6 +328,22 @@
     });
   }
 
+  function updatePrioridadesUi() {
+    var group = root.querySelector('[data-multi="prioridades"]');
+    if (!group) return;
+    var list = state.respostas.prioridades || [];
+    var atMax = list.length >= 2;
+    group.querySelectorAll('.le-prio').forEach(function (label) {
+      var inp = label.querySelector('.le-check-input');
+      if (!inp) return;
+      if (atMax && !inp.checked) {
+        label.classList.add('le-option-disabled');
+      } else {
+        label.classList.remove('le-option-disabled');
+      }
+    });
+  }
+
   function bindMulti(groupEl, key, max) {
     if (!groupEl) return;
     var inputs = groupEl.querySelectorAll('.le-check-input');
@@ -349,8 +366,12 @@
           });
         }
         state.respostas[key] = list;
-        if (key === 'prioridades') showErr(5, '');
-        else showErr(4, '');
+        if (key === 'prioridades') {
+          showErr(5, '');
+          updatePrioridadesUi();
+        } else {
+          showErr(4, '');
+        }
         saveDraft();
       });
     });
